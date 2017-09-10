@@ -1,7 +1,6 @@
 # encoding: utf-8
 """
-Created on April 6, 2016
-@author: thom.hopmans
+Most of it from https://github.com/thomhopmans/themarketingtechnologist/tree/master/6_deploy_spark_cluster_on_aws
 """
 
 import logging
@@ -39,21 +38,22 @@ class DeployPySparkScriptOnAws(object):
     Programmatically deploy a local PySpark script on an AWS cluster
     """
 
-    def __init__(self, app_name, path_script, setup='dev'):
+    def __init__(self, app_file, path_script, setup='dev'):
 
         config = ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.cfg'))
 
-        self.app_name = app_name                  # Application name
-        self.ec2_key_name = config.get(setup, 'ec2_key_name')                  # Key name to use for cluster
+        self.app_file = app_file
+        self.app_name = self.app_file.replace('.py','')
+        self.ec2_key_name = config.get(setup, 'ec2_key_name')
         self.job_flow_id = None                             # Returned by AWS in start_spark_cluster()
         self.job_name = None                                # Filled by generate_job_name()
-        self.path_script = path_script                 # Path of Spark script to be deployed on AWS Cluster
-        self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')   # S3 Bucket to store AWS EMR logs
-        self.s3_bucket_temp_files = config.get(setup, 's3_bucket_temp_files')     # S3 Bucket to store temporary files
-        self.s3_region = config.get(setup, 's3_region')       # S3 region to specifiy s3Endpoint in s3-dist-cp step
-        self.user = config.get(setup, 'user')                              # Define user name
-        self.profile_name = config.get(setup, 'profile_name')                              # Define user name
+        self.path_script = path_script
+        self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')
+        self.s3_bucket_temp_files = config.get(setup, 's3_bucket_temp_files')
+        self.s3_region = config.get(setup, 's3_region')
+        self.user = config.get(setup, 'user')
+        self.profile_name = config.get(setup, 'profile_name')
 
     def run(self):
         session = boto3.Session(profile_name=self.profile_name)        # Select AWS IAM profile
@@ -64,7 +64,7 @@ class DeployPySparkScriptOnAws(object):
         self.upload_temp_files(s3)                          # Move the Spark files to a S3 bucket for temporary files
         c = session.client('emr')                           # Open EMR connection
         self.start_spark_cluster(c)                         # Start Spark EMR cluster
-        self.step_spark_submit(c, {})                           # Add step 'spark-submit'
+        self.step_spark_submit(c, self.app_file, {})                           # Add step 'spark-submit'
         # self.describe_status_until_terminated(c)            # Describe cluster status until terminated
         # self.remove_temp_files(s3)                          # Remove files from the temporary files S3 bucket
 
@@ -215,7 +215,7 @@ class DeployPySparkScriptOnAws(object):
             logger.info(state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
 
-    def step_spark_submit(self, c, arguments):
+    def step_spark_submit(self, c, app_file, arguments):
         """
 
         :param c:
@@ -232,7 +232,7 @@ class DeployPySparkScriptOnAws(object):
                         'Args': [
                             "spark-submit",
                             # "/home/hadoop/run.py",
-                            "/home/hadoop/wordcount.py",  # should be passed as variable
+                            "/home/hadoop/%s"%app_file,  # should be passed as variable
                             # arguments
                         ]
                     }
@@ -270,4 +270,4 @@ class DeployPySparkScriptOnAws(object):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    DeployPySparkScriptOnAws(app_name="word_count_spark", path_script="spark_example/", setup='perso').run()
+    DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="spark_example/", setup='perso').run()
