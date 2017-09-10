@@ -11,6 +11,8 @@ import time
 import tarfile
 import boto3
 import botocore
+from ConfigParser import ConfigParser
+import os
 
 
 def setup_logging(default_level=logging.WARNING):
@@ -37,19 +39,24 @@ class DeployPySparkScriptOnAws(object):
     Programmatically deploy a local PySpark script on an AWS cluster
     """
 
-    def __init__(self):
-        self.app_name = "word_count_spark"                  # Application name
-        self.ec2_key_name = "e2_key_name"                   # Key name to use for cluster
+    def __init__(self, app_name, path_script, setup='dev'):
+
+        config = ConfigParser()
+        config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.cfg'))
+
+        self.app_name = app_name                  # Application name
+        self.ec2_key_name = config.get(setup, 'ec2_key_name')                  # Key name to use for cluster
         self.job_flow_id = None                             # Returned by AWS in start_spark_cluster()
         self.job_name = None                                # Filled by generate_job_name()
-        self.path_script = "spark_example/"                 # Path of Spark script to be deployed on AWS Cluster
-        self.s3_bucket_logs = "aws-logs-XXXXXX-eu-west-1"   # S3 Bucket to store AWS EMR logs
-        self.s3_bucket_temp_files = "bucket-temp-files"     # S3 Bucket to store temporary files
-        self.s3_region = 's3-eu-west-1.amazonaws.com'       # S3 region to specifiy s3Endpoint in s3-dist-cp step
-        self.user = 'thom'                                  # Define user name
+        self.path_script = path_script                 # Path of Spark script to be deployed on AWS Cluster
+        self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')   # S3 Bucket to store AWS EMR logs
+        self.s3_bucket_temp_files = config.get(setup, 's3_bucket_temp_files')     # S3 Bucket to store temporary files
+        self.s3_region = config.get(setup, 's3_region')       # S3 region to specifiy s3Endpoint in s3-dist-cp step
+        self.user = config.get(setup, 'user')                              # Define user name
+        self.profile_name = config.get(setup, 'profile_name')                              # Define user name
 
     def run(self):
-        session = boto3.Session(profile_name='thom')        # Select AWS IAM profile
+        session = boto3.Session(profile_name=self.profile_name)        # Select AWS IAM profile
         s3 = session.resource('s3')                         # Open S3 connection
         self.generate_job_name()                            # Generate job name
         self.temp_bucket_exists(s3)                         # Check if S3 bucket to store temporary files in exists
@@ -57,9 +64,10 @@ class DeployPySparkScriptOnAws(object):
         self.upload_temp_files(s3)                          # Move the Spark files to a S3 bucket for temporary files
         c = session.client('emr')                           # Open EMR connection
         self.start_spark_cluster(c)                         # Start Spark EMR cluster
-        self.step_spark_submit(c)                           # Add step 'spark-submit'
-        self.describe_status_until_terminated(c)            # Describe cluster status until terminated
-        self.remove_temp_files(s3)                          # Remove files from the temporary files S3 bucket
+        self.step_spark_submit(c, {})                           # Add step 'spark-submit'
+        # self.describe_status_until_terminated(c)            # Describe cluster status until terminated
+        # self.remove_temp_files(s3)                          # Remove files from the temporary files S3 bucket
+
 
     def generate_job_name(self):
         self.job_name = "{}.{}.{}".format(self.app_name,
@@ -143,17 +151,17 @@ class DeployPySparkScriptOnAws(object):
                 'InstanceGroups': [
                     {
                         'Name': 'EmrMaster',
-                        'Market': 'SPOT',
+                        # 'Market': 'SPOT',
                         'InstanceRole': 'MASTER',
-                        'BidPrice': '0.05',
+                        # 'BidPrice': '0.05',
                         'InstanceType': 'm3.xlarge',
                         'InstanceCount': 1,
                     },
                     {
                         'Name': 'EmrCore',
-                        'Market': 'SPOT',
+                        # 'Market': 'SPOT',
                         'InstanceRole': 'CORE',
-                        'BidPrice': '0.05',
+                        # 'BidPrice': '0.05',
                         'InstanceType': 'm3.xlarge',
                         'InstanceCount': 2,
                     },
@@ -175,13 +183,13 @@ class DeployPySparkScriptOnAws(object):
                         ]
                     }
                 },
-                {
-                    'Name': 'idle timeout',
-                    'ScriptBootstrapAction': {
-                        'Path':'s3n://{}/{}/terminate_idle_cluster.sh'.format(self.s3_bucket_temp_files, self.job_name),
-                        'Args': ['3600', '300']
-                    }
-                },
+                # {
+                #     'Name': 'idle timeout',
+                #     'ScriptBootstrapAction': {
+                #         'Path':'s3n://{}/{}/terminate_idle_cluster.sh'.format(self.s3_bucket_temp_files, self.job_name),
+                #         'Args': ['3600', '300']
+                #     }
+                # },
             ],
         )
         # Process response to determine if Spark cluster was started, and if so, the JobFlowId of the cluster
@@ -223,8 +231,9 @@ class DeployPySparkScriptOnAws(object):
                         'Jar': 'command-runner.jar',
                         'Args': [
                             "spark-submit",
-                            "/home/hadoop/run.py",
-                            arguments
+                            # "/home/hadoop/run.py",
+                            "/home/hadoop/wordcount.py",  # should be passed as variable
+                            # arguments
                         ]
                     }
                 },
@@ -261,4 +270,4 @@ class DeployPySparkScriptOnAws(object):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    DeployPySparkScriptOnAws().run()
+    DeployPySparkScriptOnAws(app_name="word_count_spark", path_script="spark_example/", setup='perso').run()
