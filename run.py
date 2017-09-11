@@ -14,25 +14,6 @@ from ConfigParser import ConfigParser
 import os
 
 
-def setup_logging(default_level=logging.WARNING):
-    """
-    Setup logging configuration
-    """
-    logging.basicConfig(level=default_level)
-    return logging.getLogger('DeployPySparkScriptOnAws')
-
-
-def terminate(error_message=None):
-    """
-    Method to exit the Python script. It will log the given message and then exit().
-    :param error_message:
-    """
-    if error_message:
-        logger.error(error_message)
-    logger.critical('The script is now terminating')
-    exit()
-
-
 class DeployPySparkScriptOnAws(object):
     """
     Programmatically deploy a local PySpark script on an AWS cluster
@@ -47,6 +28,8 @@ class DeployPySparkScriptOnAws(object):
         self.app_name = self.app_file.replace('.py','')
         self.ec2_key_name = config.get(setup, 'ec2_key_name')
         self.job_flow_id = None                             # Returned by AWS in start_spark_cluster()
+        # self.job_flow_id = 'j-IC2QMU3BB2TR' # None                             # Returned by AWS in start_spark_cluster()
+        # self.job_flow_id = 'j-3J8NB1GCZ6D9S' # None                             # Returned by AWS in start_spark_cluster()
         self.job_name = None                                # Filled by generate_job_name()
         self.path_script = path_script
         self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')
@@ -64,6 +47,7 @@ class DeployPySparkScriptOnAws(object):
         self.upload_temp_files(s3)                          # Move the Spark files to a S3 bucket for temporary files
         c = session.client('emr')                           # Open EMR connection
         self.start_spark_cluster(c)                         # Start Spark EMR cluster
+        # self.step_submit_files(c, self.app_file, {})
         self.step_spark_submit(c, self.app_file, {})                           # Add step 'spark-submit'
         # self.describe_status_until_terminated(c)            # Describe cluster status until terminated
         # self.remove_temp_files(s3)                          # Remove files from the temporary files S3 bucket
@@ -81,15 +65,17 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         try:
+            # import ipdb; ipdb.set_trace()
             s3.meta.client.head_bucket(Bucket=self.s3_bucket_temp_files)
         except botocore.exceptions.ClientError as e:
             # If a client error is thrown, then check that it was a 404 error.
             # If it was a 404 error, then the bucket does not exist.
             error_code = int(e.response['Error']['Code'])
             if error_code == 404:
-                terminate("Bucket for temporary files does not exist")
-            terminate("Error while connecting to Bucket")
-        logger.info("S3 bucket for temporary files exists")
+                terminate("Bucket for temporary files does not exist: "+self.s3_bucket_temp_files+' '+e.message)
+            # import ipdb; ipdb.set_trace()
+            terminate("Error while connecting to temporary Bucket: "+self.s3_bucket_temp_files+' '+e.message)
+        logger.info("S3 bucket for temporary files exists: "+self.s3_bucket_temp_files)
 
     def tar_python_script(self):
         """
@@ -143,6 +129,7 @@ class DeployPySparkScriptOnAws(object):
         :param c: EMR client
         :return:
         """
+        # import ipdb; ipdb.set_trace()
         response = c.run_job_flow(
             Name=self.job_name,
             LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),
@@ -215,12 +202,47 @@ class DeployPySparkScriptOnAws(object):
             logger.info(state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
 
+    # def step_submit_files(self, c, app_file, arguments):
+    #     """
+    #
+    #     :param c:
+    #     :return:
+    #     """
+    #     # import ipdb; ipdb.set_trace()
+    #     response = c.add_job_flow_steps(
+    #         JobFlowId=self.job_flow_id,
+    #         Steps=[
+    #
+    #             {
+    #                 'Name': 'setup',
+    #                 'ActionOnFailure': 'CONTINUE',
+    #                 'HadoopJarStep': {
+    #                     'Jar': 'command-runner.jar',
+    #                     'Args': [
+    #                         's3n://{}/{}/setup.sh'.format(self.s3_bucket_temp_files, self.job_name),
+    #                         's3://{}/{}'.format(self.s3_bucket_temp_files, self.job_name),
+    #                     ]
+    #                 }
+    #                 # 'ScriptBootstrapAction': {
+    #                 #     'Path': 's3n://{}/{}/setup.sh'.format(self.s3_bucket_temp_files, self.job_name),
+    #                 #     'Args': [
+    #                 #         's3://{}/{}'.format(self.s3_bucket_temp_files, self.job_name),
+    #                 #     ]
+    #                 # }
+    #             },
+    #         ]
+    #     )
+    #     logger.info("Added step 'spark-submit' with argument '{}'".format(arguments))
+    #     time.sleep(1)  # Prevent ThrottlingException
+
+
     def step_spark_submit(self, c, app_file, arguments):
         """
 
         :param c:
         :return:
         """
+        # import ipdb; ipdb.set_trace()
         response = c.add_job_flow_steps(
             JobFlowId=self.job_flow_id,
             Steps=[
@@ -265,6 +287,25 @@ class DeployPySparkScriptOnAws(object):
                 }]
         )
         logger.info("Added step 'Copy data from {} to {}'".format(src, dest))
+
+
+def setup_logging(default_level=logging.WARNING):
+    """
+    Setup logging configuration
+    """
+    logging.basicConfig(level=default_level)
+    return logging.getLogger('DeployPySparkScriptOnAws')
+
+
+def terminate(error_message=None):
+    """
+    Method to exit the Python script. It will log the given message and then exit().
+    :param error_message:
+    """
+    if error_message:
+        logger.error(error_message)
+    logger.critical('The script is now terminating')
+    exit()
 
 
 logger = setup_logging()
