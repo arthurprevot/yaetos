@@ -18,11 +18,12 @@ class DeployPySparkScriptOnAws(object):
     """
     Programmatically deploy a local PySpark script on an AWS cluster
     """
+    tmp = '../tmp/files_to_ship/'
 
     def __init__(self, app_file, path_script, setup='dev'):
 
         config = ConfigParser()
-        config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.cfg'))
+        config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../conf/config.cfg'))
 
         self.app_file = app_file
         self.app_name = self.app_file.replace('.py','')
@@ -83,7 +84,7 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         # Create tar.gz file
-        t_file = tarfile.open("files/script.tar.gz", 'w:gz')
+        t_file = tarfile.open(self.tmp + "script.tar.gz", 'w:gz')
         # Add Spark script path to tar.gz file
         files = os.listdir(self.path_script)
         for f in files:
@@ -101,13 +102,13 @@ class DeployPySparkScriptOnAws(object):
         """
         # Shell file: setup (download S3 files to local machine)
         s3.Object(self.s3_bucket_temp_files, self.job_name + '/setup.sh')\
-          .put(Body=open('files/setup.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(self.tmp+'setup.sh', 'rb'), ContentType='text/x-sh')
         # Shell file: Terminate idle cluster
         s3.Object(self.s3_bucket_temp_files, self.job_name + '/terminate_idle_cluster.sh')\
-          .put(Body=open('files/terminate_idle_cluster.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(self.tmp+'terminate_idle_cluster.sh', 'rb'), ContentType='text/x-sh')
         # Compressed Python script files (tar.gz)
         s3.Object(self.s3_bucket_temp_files, self.job_name + '/script.tar.gz')\
-          .put(Body=open('files/script.tar.gz', 'rb'), ContentType='application/x-tar')
+          .put(Body=open(self.tmp+'script.tar.gz', 'rb'), ContentType='application/x-tar')
         logger.info("Uploaded files to key '{}' in bucket '{}'".format(self.job_name, self.s3_bucket_temp_files))
         return True
 
@@ -311,4 +312,4 @@ def terminate(error_message=None):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="spark_example/", setup='perso').run()
+    DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
