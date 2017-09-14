@@ -12,13 +12,15 @@ import boto3
 import botocore
 from ConfigParser import ConfigParser
 import os
+from shutil import copyfile
 
 
 class DeployPySparkScriptOnAws(object):
     """
     Programmatically deploy a local PySpark script on an AWS cluster
     """
-    tmp = '../tmp/files_to_ship/'
+    scripts = 'core/scripts/'
+    tmp = 'tmp/files_to_ship/'
 
     def __init__(self, app_file, path_script, setup='dev'):
 
@@ -45,6 +47,7 @@ class DeployPySparkScriptOnAws(object):
         self.generate_job_name()                            # Generate job name
         self.temp_bucket_exists(s3)                         # Check if S3 bucket to store temporary files in exists
         self.tar_python_script()                            # Tar the Python Spark script
+        self.move_bash_to_temp()
         self.upload_temp_files(s3)                          # Move the Spark files to a S3 bucket for temporary files
         c = session.client('emr')                           # Open EMR connection
         self.start_spark_cluster(c)                         # Start Spark EMR cluster
@@ -93,6 +96,10 @@ class DeployPySparkScriptOnAws(object):
         for f in t_file.getnames():
             logger.info("Added %s to tar-file" % f)
         t_file.close()
+
+    def move_bash_to_temp(self):
+        for item in ['setup.sh', 'terminate_idle_cluster.sh']:
+            copyfile(self.scripts+item, self.tmp+item)
 
     def upload_temp_files(self, s3):
         """
@@ -236,10 +243,8 @@ class DeployPySparkScriptOnAws(object):
     #     logger.info("Added step 'spark-submit' with argument '{}'".format(arguments))
     #     time.sleep(1)  # Prevent ThrottlingException
 
-
     def step_spark_submit(self, c, app_file, arguments):
         """
-
         :param c:
         :return:
         """

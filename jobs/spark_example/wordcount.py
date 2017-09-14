@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # Start SparkContext
     sc = SparkContext(appName="PythonWordCount")
     # Load data from S3 bucket
-    lines = sc.textFile("s3://bucket-input-themarketingtechnologist-test/readmeAP.txt", 1)
+    lines = sc.textFile("s3://bucket-scratch/wordcount_test/input/sample_text.txt", 1)
     # Calculate word counts
     counts = lines.flatMap(lambda x: x.split(' ')) \
                   .map(lambda x: (x, 1)) \
@@ -35,6 +35,6 @@ if __name__ == "__main__":
     for (word, count) in output:
         print("%s: %i" % (word, count))
     # Save word counts in S3 bucket
-    counts.saveAsTextFile("s3://bucket-output-themarketingtechnologist-test_v2/")
+    counts.saveAsTextFile("s3://bucket-scratch/wordcount_test/output/v1/")
     # Stop SparkContext
     sc.stop()
