@@ -14,6 +14,7 @@ from ConfigParser import ConfigParser
 import os
 from shutil import copyfile
 
+# TODO: replace job_flow_id by cluster_id
 
 class DeployPySparkScriptOnAws(object):
     """
@@ -22,46 +23,96 @@ class DeployPySparkScriptOnAws(object):
     scripts = 'core/scripts/'
     tmp = 'tmp/files_to_ship/'
 
-    def __init__(self, app_file, path_script, setup='dev'):
+    def __init__(self, app_file, path_script, setup='dev'): #, cluster_live=True):
 
         config = ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../conf/config.cfg'))
 
         self.app_file = app_file
+        self.setup = setup
         self.app_name = self.app_file.replace('.py','')
         self.ec2_key_name = config.get(setup, 'ec2_key_name')
-        # self.job_flow_id = None                             # Returned by AWS in start_spark_cluster()
-        # self.job_flow_id = 'j-IC2QMU3BB2TR' # None
-        # self.job_flow_id = 'j-3J8NB1GCZ6D9S' # None
-        self.job_flow_id = 'j-2K55PSJVTHTUW' # TODO: parametrise
-        self.job_name = None                                # Filled by generate_job_name()
+        # if not cluster_live:
+        #     self.job_flow_id = None                             # Returned by AWS in start_spark_cluster()
+        # else:
+        #     self.job_flow_id = 'j-IC2QMU3BB2TR' # None
+        #     self.job_flow_id = 'j-3J8NB1GCZ6D9S' # None
+        #     self.job_flow_id = 'j-2K55PSJVTHTUW' # TODO: parametrise
+        # self.job_name = None                                # Filled by generate_job_name()
         self.path_script = path_script
         self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')
         self.s3_bucket_temp_files = config.get(setup, 's3_bucket_temp_files')
         self.s3_region = config.get(setup, 's3_region')
         self.user = config.get(setup, 'user')
         self.profile_name = config.get(setup, 'profile_name')
+        # self.cluster_live = cluster_live
 
     def run(self):
         session = boto3.Session(profile_name=self.profile_name)        # Select AWS IAM profile
+        # S3 ops
         s3 = session.resource('s3')                         # Open S3 connection
-        self.generate_job_name()                            # Generate job name
         self.temp_bucket_exists(s3)                         # Check if S3 bucket to store temporary files in exists
-        self.tar_python_script()                            # Tar the Python Spark script
-        self.move_bash_to_temp()
+        self.generate_job_name()                            # Generate job name
+        self.tar_python_scripts()                            # Tar the Python Spark script
+        self.move_bash_to_local_temp()
         self.upload_temp_files(s3)                          # Move the Spark files to a S3 bucket for temporary files
-        c = session.client('emr')                           # Open EMR connection
-        # self.start_spark_cluster(c)  # TODO: parametrize                        # Start Spark EMR cluster
-        self.step_run_setup_scripts(c, self.app_file, {})   # TODO: parametrize
-        self.step_spark_submit(c, self.app_file, {})                           # Add step 'spark-submit'
-        # self.describe_status_until_terminated(c)            # Describe cluster status until terminated
-        # self.remove_temp_files(s3)                          # Remove files from the temporary files S3 bucket
 
+        # EMR ops
+        c = session.client('emr')                           # Open EMR connection
+        clusters = self.get_active_clusters(c)
+        cluster = self.choose_cluster(clusters)
+        existing_cluster = int(cluster) != 0
+        if existing_cluster:
+            print "Reusing existing cluster", clusters[int(cluster)-1]
+            self.job_flow_id = self.get_cluster_id(cluster, clusters)
+            self.step_run_setup_scripts(c, self.app_file, {})
+        else:
+            print "Starting new cluster"
+            self.start_spark_cluster(c)                        # Start Spark EMR cluster
+            print "cluster_id: %s"%(self.job_flow_id)
+
+        # Run job
+        self.step_spark_submit(c, self.app_file, {})                           # Add step 'spark-submit'
+
+        # Clean
+        if not existing_cluster:
+            self.describe_status_until_terminated(c)            # Describe cluster status until terminated
+            self.remove_temp_files(s3)                          # Remove files from the temporary files S3 bucket
+
+    def get_active_clusters(self, c):
+        response = c.list_clusters(
+            # CreatedAfter=datetime(2015, 1, 1),
+            # CreatedBefore=datetime(2015, 1, 1),
+            ClusterStates=['STARTING','BOOTSTRAPPING','RUNNING','WAITING'],
+            #Marker='string'
+            )
+        clusters = [(ii+1, item['Id'],item['Name']) for ii, item in enumerate(response['Clusters'])]
+        # TODO: remove cluster that are meant to die after running their job from list, may be by checking they have boostrap ops with terminate_...sh
+        return clusters
+
+    def choose_cluster(self, clusters):
+        if len(clusters) == 0:
+            print 'No cluster found, will create a new one'
+            return None
+
+        print 'Clusters found for AWS account "%s", your options:'%(self.setup)
+        print '[0] Create a new cluster'
+        print '\n'.join(['[%s] %s'%(item[0], item[2]) for item in clusters])
+        # print 'Your choice ?'
+
+        answer = raw_input('Your choice ? ')
+        #cluster_id =
+        return answer
+
+    def get_cluster_id(self, cluster, clusters):
+        # import ipdb; ipdb.set_trace()
+        return clusters[int(cluster)-1][1]
 
     def generate_job_name(self):
         self.job_name = "{}.{}.{}".format(self.app_name,
                                           self.user,
-                                          datetime.now().strftime("%Y%m%d.%H%M%S.%f"))
+                                        #   datetime.now().strftime("%Y%m%d.%H%M%S.%f"))
+                                          datetime.now().strftime("%Y-%m-%d.%H-%M-%S"))
 
     def temp_bucket_exists(self, s3):
         """
@@ -70,7 +121,6 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         try:
-            # import ipdb; ipdb.set_trace()
             s3.meta.client.head_bucket(Bucket=self.s3_bucket_temp_files)
         except botocore.exceptions.ClientError as e:
             # If a client error is thrown, then check that it was a 404 error.
@@ -78,13 +128,11 @@ class DeployPySparkScriptOnAws(object):
             error_code = int(e.response['Error']['Code'])
             if error_code == 404:
                 terminate("Bucket for temporary files does not exist: "+self.s3_bucket_temp_files+' '+e.message)
-            # import ipdb; ipdb.set_trace()
             terminate("Error while connecting to temporary Bucket: "+self.s3_bucket_temp_files+' '+e.message)
         logger.info("S3 bucket for temporary files exists: "+self.s3_bucket_temp_files)
 
-    def tar_python_script(self):
+    def tar_python_scripts(self):
         """
-
         :return:
         """
         # Create tar.gz file
@@ -98,13 +146,13 @@ class DeployPySparkScriptOnAws(object):
             logger.info("Added %s to tar-file" % f)
         t_file.close()
 
-    def move_bash_to_temp(self):
+    def move_bash_to_local_temp(self):
         for item in ['setup.sh', 'terminate_idle_cluster.sh']:
             copyfile(self.scripts+item, self.tmp+item)
 
     def upload_temp_files(self, s3):
         """
-        Move the PySpark script files to the S3 bucket we use to store temporary files
+        Move the PySpark + bash scripts to the S3 bucket we use to store temporary files
         :param s3:
         :return:
         """
@@ -138,7 +186,6 @@ class DeployPySparkScriptOnAws(object):
         :param c: EMR client
         :return:
         """
-        # import ipdb; ipdb.set_trace()
         response = c.run_job_flow(
             Name=self.job_name,
             LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),
@@ -220,36 +267,13 @@ class DeployPySparkScriptOnAws(object):
         response = c.add_job_flow_steps(
             JobFlowId=self.job_flow_id,
             Steps=[
-                    # 'ScriptBootstrapAction': {
-                    #     'Path': 's3n://{}/{}/setup.sh'.format(self.s3_bucket_temp_files, self.job_name),
-                    #     'Args': [
-                    #         's3://{}/{}'.format(self.s3_bucket_temp_files, self.job_name),
-                    #     ]
-                    # }
-                # {  # works but not needed in the end
-                #     'Name': 'copy setup',
-                #     'ActionOnFailure': 'CONTINUE',
-                #     'HadoopJarStep': {
-                #         'Jar': 'command-runner.jar',
-                #         'Args': [
-                #             "aws",
-                #             "s3",
-                #             "cp",
-                #             "s3://{}/{}/setup.sh".format(self.s3_bucket_temp_files, self.job_name),
-                #             "/home/hadoop/setup.sh",
-                #         ]
-                #     }
-                # },
                 {
                     'Name': 'run setup',
                     'ActionOnFailure': 'CONTINUE',
                     'HadoopJarStep': {
-                        # 'Jar': 'script-runner.jar',
                         'Jar': 's3://elasticmapreduce/libs/script-runner/script-runner.jar',
                         'Args': [
-                            # "source",
                             "s3://{}/{}/setup.sh".format(self.s3_bucket_temp_files, self.job_name),
-                            # "/home/hadoop/setup.sh",
                             "s3://{}/{}".format(self.s3_bucket_temp_files, self.job_name),
                         ]
                     }
@@ -275,9 +299,7 @@ class DeployPySparkScriptOnAws(object):
                         'Jar': 'command-runner.jar',
                         'Args': [
                             "spark-submit",
-                            # "/home/hadoop/run.py",
-                            "/home/hadoop/%s"%app_file,  # should be passed as variable
-                            # arguments
+                            "/home/hadoop/%s"%app_file,
                         ]
                     }
                 },
@@ -333,4 +355,4 @@ def terminate(error_message=None):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
+    DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run() #, cluster_live=True).run()
