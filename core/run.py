@@ -32,20 +32,12 @@ class DeployPySparkScriptOnAws(object):
         self.setup = setup
         self.app_name = self.app_file.replace('.py','')
         self.ec2_key_name = config.get(setup, 'ec2_key_name')
-        # if not cluster_live:
-        #     self.job_flow_id = None                             # Returned by AWS in start_spark_cluster()
-        # else:
-        #     self.job_flow_id = 'j-IC2QMU3BB2TR' # None
-        #     self.job_flow_id = 'j-3J8NB1GCZ6D9S' # None
-        #     self.job_flow_id = 'j-2K55PSJVTHTUW' # TODO: parametrise
-        # self.job_name = None                                # Filled by generate_job_name()
         self.path_script = path_script
         self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')
         self.s3_bucket_temp_files = config.get(setup, 's3_bucket_temp_files')
         self.s3_region = config.get(setup, 's3_region')
         self.user = config.get(setup, 'user')
         self.profile_name = config.get(setup, 'profile_name')
-        # self.cluster_live = cluster_live
 
     def run(self):
         session = boto3.Session(profile_name=self.profile_name)        # Select AWS IAM profile
@@ -69,7 +61,7 @@ class DeployPySparkScriptOnAws(object):
         else:
             print "Starting new cluster"
             self.start_spark_cluster(c)                        # Start Spark EMR cluster
-            print "cluster_id: %s"%(self.job_flow_id)
+            print "cluster: %s %s"%(self.job_flow_id, self.job_name)
 
         # Run job
         self.step_spark_submit(c, self.app_file, {})                           # Add step 'spark-submit'
@@ -81,10 +73,7 @@ class DeployPySparkScriptOnAws(object):
 
     def get_active_clusters(self, c):
         response = c.list_clusters(
-            # CreatedAfter=datetime(2015, 1, 1),
-            # CreatedBefore=datetime(2015, 1, 1),
             ClusterStates=['STARTING','BOOTSTRAPPING','RUNNING','WAITING'],
-            #Marker='string'
             )
         clusters = [(ii+1, item['Id'],item['Name']) for ii, item in enumerate(response['Clusters'])]
         # TODO: remove cluster that are meant to die after running their job from list, may be by checking they have boostrap ops with terminate_...sh
@@ -98,21 +87,16 @@ class DeployPySparkScriptOnAws(object):
         print 'Clusters found for AWS account "%s", your options:'%(self.setup)
         print '[0] Create a new cluster'
         print '\n'.join(['[%s] %s'%(item[0], item[2]) for item in clusters])
-        # print 'Your choice ?'
 
-        answer = raw_input('Your choice ? ')
-        #cluster_id =
-        return answer
+        return raw_input('Your choice ? ')
 
     def get_cluster_id(self, cluster, clusters):
-        # import ipdb; ipdb.set_trace()
         return clusters[int(cluster)-1][1]
 
     def generate_job_name(self):
         self.job_name = "{}.{}.{}".format(self.app_name,
                                           self.user,
-                                        #   datetime.now().strftime("%Y%m%d.%H%M%S.%f"))
-                                          datetime.now().strftime("%Y-%m-%d.%H-%M-%S"))
+                                          datetime.now().strftime("%Y%m%d.%H%M%S"))
 
     def temp_bucket_exists(self, s3):
         """
