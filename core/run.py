@@ -23,7 +23,7 @@ class DeployPySparkScriptOnAws(object):
     scripts = 'core/scripts/'
     tmp = 'tmp/files_to_ship/'
 
-    def __init__(self, app_file, path_script, setup='dev'): #, cluster_live=True):
+    def __init__(self, app_file, path_script, setup='dev', **kwargs):
 
         config = ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../conf/config.cfg'))
@@ -40,36 +40,36 @@ class DeployPySparkScriptOnAws(object):
         self.profile_name = config.get(setup, 'profile_name')
 
     def run(self):
-        session = boto3.Session(profile_name=self.profile_name)        # Select AWS IAM profile
+        session = boto3.Session(profile_name=self.profile_name)  # Select AWS IAM profile
         # S3 ops
-        s3 = session.resource('s3')                         # Open S3 connection
-        self.temp_bucket_exists(s3)                         # Check if S3 bucket to store temporary files in exists
-        self.generate_job_name()                            # Generate job name
-        self.tar_python_scripts()                            # Tar the Python Spark script
+        s3 = session.resource('s3')
+        self.temp_bucket_exists(s3)
+        self.generate_job_name()
+        self.tar_python_scripts()
         self.move_bash_to_local_temp()
-        self.upload_temp_files(s3)                          # Move the Spark files to a S3 bucket for temporary files
+        self.upload_temp_files(s3)
 
         # EMR ops
-        c = session.client('emr')                           # Open EMR connection
+        c = session.client('emr')
         clusters = self.get_active_clusters(c)
         cluster = self.choose_cluster(clusters)
-        existing_cluster = int(cluster) != 0
-        if existing_cluster:
-            print "Reusing existing cluster", clusters[int(cluster)-1]
-            self.job_flow_id = self.get_cluster_id(cluster, clusters)
-            self.step_run_setup_scripts(c, self.app_file, {})
-        else:
+        new_cluster = cluster['id'] is None
+        if new_cluster:
             print "Starting new cluster"
-            self.start_spark_cluster(c)                        # Start Spark EMR cluster
-            print "cluster: %s %s"%(self.job_flow_id, self.job_name)
+            self.start_spark_cluster(c)
+            print "cluster name: %s, and id: %s"%(self.job_name, self.job_flow_id)
+        else:
+            print "Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id'])
+            self.job_flow_id = cluster['id']
+            self.step_run_setup_scripts(c, self.app_file, {})
 
         # Run job
-        self.step_spark_submit(c, self.app_file, {})                           # Add step 'spark-submit'
+        self.step_spark_submit(c, self.app_file, {})
 
         # Clean
-        if not existing_cluster:
-            self.describe_status_until_terminated(c)            # Describe cluster status until terminated
-            self.remove_temp_files(s3)                          # Remove files from the temporary files S3 bucket
+        if new_cluster:
+            self.describe_status_until_terminated(c)
+            self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
 
     def get_active_clusters(self, c):
         response = c.list_clusters(
@@ -82,16 +82,19 @@ class DeployPySparkScriptOnAws(object):
     def choose_cluster(self, clusters):
         if len(clusters) == 0:
             print 'No cluster found, will create a new one'
-            return None
+            return {'id': None,
+                    'name': None}
 
-        print 'Clusters found for AWS account "%s", your options:'%(self.setup)
-        print '[0] Create a new cluster'
+        clusters.append((len(clusters)+1, None, 'Create a new cluster'))
+        print 'Clusters found for AWS account "%s":'%(self.setup)
+        # print '[0] Create a new cluster'
         print '\n'.join(['[%s] %s'%(item[0], item[2]) for item in clusters])
 
-        return raw_input('Your choice ? ')
+        answer = raw_input('Your choice ? ')
+        # cluster_id = clusters[int(answer)-1][1]
 
-    def get_cluster_id(self, cluster, clusters):
-        return clusters[int(cluster)-1][1]
+        return {'id':clusters[int(answer)-1][1],
+                'name':clusters[int(answer)-1][2]}
 
     def generate_job_name(self):
         self.job_name = "{}.{}.{}".format(self.app_name,
@@ -233,6 +236,7 @@ class DeployPySparkScriptOnAws(object):
         :param c:
         :return:
         """
+        print 'Waiting until job is finished'
         stop = False
         while stop is False:
             description = c.describe_cluster(ClusterId=self.job_flow_id)
