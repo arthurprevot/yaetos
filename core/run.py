@@ -23,7 +23,6 @@ class DeployPySparkScriptOnAws(object):
     scripts = 'core/scripts/'
     tmp = 'tmp/files_to_ship/'
 
-    # def __init__(self, app_file, path_script, setup='dev', **kwargs):
     def __init__(self, app_file, setup='dev', **kwargs):
 
         config = ConfigParser()
@@ -33,7 +32,6 @@ class DeployPySparkScriptOnAws(object):
         self.setup = setup
         self.app_name = self.app_file.replace('.py','').split('/')[-1]
         self.ec2_key_name = config.get(setup, 'ec2_key_name')
-        # self.path_script = path_script
         self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')
         self.s3_bucket_temp_files = config.get(setup, 's3_bucket_temp_files')
         self.s3_region = config.get(setup, 's3_region')
@@ -91,15 +89,10 @@ class DeployPySparkScriptOnAws(object):
             return {'id': cluster_id,
                     'name': None}
 
-
         clusters.append((len(clusters)+1, None, 'Create a new cluster'))
         print 'Clusters found for AWS account "%s":'%(self.setup)
-        # print '[0] Create a new cluster'
         print '\n'.join(['[%s] %s'%(item[0], item[2]) for item in clusters])
-
         answer = raw_input('Your choice ? ')
-        # cluster_id = clusters[int(answer)-1][1]
-
         return {'id':clusters[int(answer)-1][1],
                 'name':clusters[int(answer)-1][2]}
 
@@ -133,12 +126,6 @@ class DeployPySparkScriptOnAws(object):
         t_file = tarfile.open(self.tmp + "script.tar.gz", 'w:gz')
         # Add Spark script path to tar.gz file
 
-        # def get_schedule(file):
-        #     print '###',file, type(file)
-        #     return file if file == 'scheduling.yml' else None
-
-        # import ipdb; ipdb.set_trace()
-
         # ./conf file
         t_file.add('conf/scheduling.yml')
 
@@ -149,25 +136,12 @@ class DeployPySparkScriptOnAws(object):
             t_file.add('core/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./jobs files and folder
-        # files = os.listdir('jobs/')
-        # for f in files:
-        #     print '### f', f
-        #     t_file.add('jobs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
         t_file.add('jobs/')
-
-        #
-        #
-        # import ipdb; ipdb.set_trace()
-
-        # files = os.listdir(self.path_script)
-        # for f in files:
-        #     t_file.add(self.path_script + f, arcname=f)
 
         # List all files in tar.gz
         for f in t_file.getnames():
             logger.info("Added %s to tar-file" % f)
         t_file.close()
-        # sys.exit()
 
     def move_bash_to_local_temp(self):
         for item in ['setup.sh', 'terminate_idle_cluster.sh']:
@@ -217,17 +191,13 @@ class DeployPySparkScriptOnAws(object):
                 'InstanceGroups': [
                     {
                         'Name': 'EmrMaster',
-                        # 'Market': 'SPOT',
                         'InstanceRole': 'MASTER',
-                        # 'BidPrice': '0.05',
                         'InstanceType': 'm3.xlarge',
                         'InstanceCount': 1,
                     },
                     {
                         'Name': 'EmrCore',
-                        # 'Market': 'SPOT',
                         'InstanceRole': 'CORE',
-                        # 'BidPrice': '0.05',
                         'InstanceType': 'm3.xlarge',
                         'InstanceCount': 2,
                     },
@@ -313,7 +283,6 @@ class DeployPySparkScriptOnAws(object):
         :param c:
         :return:
         """
-        # import ipdb; ipdb.set_trace()
         response = c.add_job_flow_steps(
             JobFlowId=self.job_flow_id,
             Steps=[
