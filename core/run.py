@@ -242,13 +242,14 @@ class DeployPySparkScriptOnAws(object):
         :param c:
         :return:
         """
-        print 'Waiting until job is finished'
+        print 'Waiting for job to finish on cluster'
         stop = False
         while stop is False:
             description = c.describe_cluster(ClusterId=self.job_flow_id)
             state = description['Cluster']['Status']['State']
             if state == 'TERMINATED' or state == 'TERMINATED_WITH_ERRORS':
                 stop = True
+                print 'Job is finished'
             logger.info(state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
 
@@ -349,4 +350,5 @@ def terminate(error_message=None):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
+    # DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
+    DeployPySparkScriptOnAws(app_file="wordcount_frameworked.py", path_script="jobs/spark_example/", setup='perso').run()

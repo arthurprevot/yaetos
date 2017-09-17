@@ -47,5 +47,5 @@ if __name__ == "__main__":
     # Stop SparkContext
     sc.stop()
 
-    # To run locally, put local i/o paths and run: python wordcount.py
+    # To run locally, put local i/o paths and run: python jobs/spark_example/wordcount.py
     # To run on cluster, put s3 i/o paths and run: python core/run.py ## no easy way to ship to cluster from this script
