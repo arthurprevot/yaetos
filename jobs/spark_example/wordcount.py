@@ -22,10 +22,15 @@ from pyspark import SparkContext
 
 
 if __name__ == "__main__":
+    run_type = 'cluster'
+
     # Start SparkContext
     sc = SparkContext(appName="PythonWordCount")
     # Load data from S3 bucket
-    lines = sc.textFile("s3://bucket-scratch/wordcount_test/input/sample_text.txt", 1)
+    if run_type == 'cluster':
+        lines = sc.textFile("s3://bucket-scratch/wordcount_test/input/sample_text.txt", 1)
+    elif run_type == 'local':
+        lines = sc.textFile("sample_text.txt", 1)
     # Calculate word counts
     counts = lines.flatMap(lambda x: x.split(' ')) \
                   .map(lambda x: (x, 1)) \
@@ -35,6 +40,12 @@ if __name__ == "__main__":
     for (word, count) in output:
         print("%s: %i" % (word, count))
     # Save word counts in S3 bucket
-    counts.saveAsTextFile("s3://bucket-scratch/wordcount_test/output/v1/")
+    if run_type == 'cluster':
+        counts.saveAsTextFile("s3://bucket-scratch/wordcount_test/output/v3/")
+    elif run_type == 'local':
+        counts.saveAsTextFile("tmp/output_v3/")
     # Stop SparkContext
     sc.stop()
+
+    # To run locally, put local i/o paths and run: python wordcount.py
+    # To run on cluster, put s3 i/o paths and run: python core/run.py ## no easy way to ship to cluster from this script
