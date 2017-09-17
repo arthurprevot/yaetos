@@ -79,11 +79,17 @@ class DeployPySparkScriptOnAws(object):
         # TODO: remove cluster that are meant to die after running their job from list, may be by checking they have boostrap ops with terminate_...sh
         return clusters
 
-    def choose_cluster(self, clusters):
+    def choose_cluster(self, clusters, cluster_id=None):
         if len(clusters) == 0:
             print 'No cluster found, will create a new one'
             return {'id': None,
                     'name': None}
+
+        if cluster_id is not None:
+            print 'Cluster_id set by user to ', cluster_id
+            return {'id': cluster_id,
+                    'name': None}
+
 
         clusters.append((len(clusters)+1, None, 'Create a new cluster'))
         print 'Clusters found for AWS account "%s":'%(self.setup)
@@ -343,4 +349,4 @@ def terminate(error_message=None):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run() #, cluster_live=True).run()
+    DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
