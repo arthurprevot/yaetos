@@ -23,16 +23,17 @@ class DeployPySparkScriptOnAws(object):
     scripts = 'core/scripts/'
     tmp = 'tmp/files_to_ship/'
 
-    def __init__(self, app_file, path_script, setup='dev', **kwargs):
+    # def __init__(self, app_file, path_script, setup='dev', **kwargs):
+    def __init__(self, app_file, setup='dev', **kwargs):
 
         config = ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../conf/config.cfg'))
 
         self.app_file = app_file
         self.setup = setup
-        self.app_name = self.app_file.replace('.py','')
+        self.app_name = self.app_file.replace('.py','').split('/')[-1]
         self.ec2_key_name = config.get(setup, 'ec2_key_name')
-        self.path_script = path_script
+        # self.path_script = path_script
         self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')
         self.s3_bucket_temp_files = config.get(setup, 's3_bucket_temp_files')
         self.s3_region = config.get(setup, 's3_region')
@@ -61,7 +62,7 @@ class DeployPySparkScriptOnAws(object):
         else:
             print "Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id'])
             self.job_flow_id = cluster['id']
-            self.step_run_setup_scripts(c, self.app_file, {})
+            self.step_run_setup_scripts(c)
 
         # Run job
         self.step_spark_submit(c, self.app_file, {})
@@ -131,13 +132,42 @@ class DeployPySparkScriptOnAws(object):
         # Create tar.gz file
         t_file = tarfile.open(self.tmp + "script.tar.gz", 'w:gz')
         # Add Spark script path to tar.gz file
-        files = os.listdir(self.path_script)
+
+        # def get_schedule(file):
+        #     print '###',file, type(file)
+        #     return file if file == 'scheduling.yml' else None
+
+        # import ipdb; ipdb.set_trace()
+
+        # ./conf file
+        t_file.add('conf/scheduling.yml')
+
+        # ./core files
+        files = os.listdir('core/')
         for f in files:
-            t_file.add(self.path_script + f, arcname=f)
+            print '### f', f
+            t_file.add('core/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+
+        # ./jobs files and folder
+        # files = os.listdir('jobs/')
+        # for f in files:
+        #     print '### f', f
+        #     t_file.add('jobs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+        t_file.add('jobs/')
+
+        #
+        #
+        # import ipdb; ipdb.set_trace()
+
+        # files = os.listdir(self.path_script)
+        # for f in files:
+        #     t_file.add(self.path_script + f, arcname=f)
+
         # List all files in tar.gz
         for f in t_file.getnames():
             logger.info("Added %s to tar-file" % f)
         t_file.close()
+        # sys.exit()
 
     def move_bash_to_local_temp(self):
         for item in ['setup.sh', 'terminate_idle_cluster.sh']:
@@ -253,7 +283,7 @@ class DeployPySparkScriptOnAws(object):
             logger.info(state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
 
-    def step_run_setup_scripts(self, c, app_file, arguments):
+    def step_run_setup_scripts(self, c):
         """
         :param c:
         :return:
@@ -351,4 +381,5 @@ logger = setup_logging()
 
 if __name__ == "__main__":
     # DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
-    DeployPySparkScriptOnAws(app_file="wordcount_frameworked.py", path_script="jobs/spark_example/", setup='perso').run()
+    # DeployPySparkScriptOnAws(app_file="wordcount_frameworked.py", path_script="jobs/spark_example/", setup='perso').run()
+    DeployPySparkScriptOnAws(app_file="jobs/spark_example/wordcount_frameworked.py", setup='perso').run()
