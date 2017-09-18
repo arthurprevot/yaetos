@@ -124,15 +124,14 @@ class DeployPySparkScriptOnAws(object):
         """
         # Create tar.gz file
         t_file = tarfile.open(self.tmp + "script.tar.gz", 'w:gz')
-        # Add Spark script path to tar.gz file
 
-        # ./conf file
+        # Add files
+        t_file.add('__init__.py')
         t_file.add('conf/scheduling.yml')
 
         # ./core files
         files = os.listdir('core/')
         for f in files:
-            print '### f', f
             t_file.add('core/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./jobs files and folder
@@ -293,7 +292,8 @@ class DeployPySparkScriptOnAws(object):
                         'Jar': 'command-runner.jar',
                         'Args': [
                             "spark-submit",
-                            "/home/hadoop/%s"%app_file,
+                            "--py-files=/home/hadoop/app/scripts.zip",
+                            "/home/hadoop/app/%s"%app_file,
                         ]
                     }
                 },
@@ -302,29 +302,29 @@ class DeployPySparkScriptOnAws(object):
         logger.info("Added step 'spark-submit' with argument '{}'".format(arguments))
         time.sleep(1)  # Prevent ThrottlingException
 
-    def step_copy_data_between_s3_and_hdfs(self, c, src, dest):
-        """
-        Copy data between S3 and HDFS (not used for now)
-        :param c:
-        :return:
-        """
-        response = c.add_job_flow_steps(
-            JobFlowId=self.job_flow_id,
-            Steps=[{
-                    'Name': 'Copy data from S3 to HDFS',
-                    'ActionOnFailure': 'CANCEL_AND_WAIT',
-                    'HadoopJarStep': {
-                        'Jar': 'command-runner.jar',
-                        'Args': [
-                            "s3-dist-cp",
-                            "--s3Endpoint=s3-eu-west-1.amazonaws.com",
-                            "--src={}".format(src),
-                            "--dest={}".format(dest)
-                        ]
-                    }
-                }]
-        )
-        logger.info("Added step 'Copy data from {} to {}'".format(src, dest))
+    # def step_copy_data_between_s3_and_hdfs(self, c, src, dest):
+    #     """
+    #     Copy data between S3 and HDFS (not used for now)
+    #     :param c:
+    #     :return:
+    #     """
+    #     response = c.add_job_flow_steps(
+    #         JobFlowId=self.job_flow_id,
+    #         Steps=[{
+    #                 'Name': 'Copy data from S3 to HDFS',
+    #                 'ActionOnFailure': 'CANCEL_AND_WAIT',
+    #                 'HadoopJarStep': {
+    #                     'Jar': 'command-runner.jar',
+    #                     'Args': [
+    #                         "s3-dist-cp",
+    #                         "--s3Endpoint=s3-eu-west-1.amazonaws.com",
+    #                         "--src={}".format(src),
+    #                         "--dest={}".format(dest)
+    #                     ]
+    #                 }
+    #             }]
+    #     )
+    #     logger.info("Added step 'Copy data from {} to {}'".format(src, dest))
 
 
 def setup_logging(default_level=logging.WARNING):

@@ -3,7 +3,13 @@ import sys
 from operator import add
 from pyspark import SparkContext
 # from core.run import DeployPySparkScriptOnAws
-from helpers import etl
+
+import os
+print('### -- 1', os.path.dirname(os.path.abspath(__file__)))
+print("### -- 2 ", os.getcwd())
+print("### -- 3 ", sys.path)
+
+from core.helpers import etl
 
 class wordcount(etl):
     def run(self, sc, lines):
