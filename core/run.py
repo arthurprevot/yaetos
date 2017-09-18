@@ -127,7 +127,9 @@ class DeployPySparkScriptOnAws(object):
 
         # Add files
         t_file.add('__init__.py')
-        t_file.add('conf/scheduling.yml')
+        t_file.add('conf/__init__.py')
+        t_file.add('conf/scheduling.py')
+        # t_file.add('conf/scheduling.yml')
 
         # ./core files
         files = os.listdir('core/')

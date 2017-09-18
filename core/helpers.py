@@ -8,7 +8,12 @@ class etl():
 
     def runner(self, sc):
         # import ipdb; ipdb.set_trace()
-        new_args = {item[0]:sc.textFile(item[1]) for item in schedule['wordcount']['inputs']}
+
+        new_args = {}
+        for item in self.INPUTS.keys():
+            new_args[item] = sc.textFile(self.INPUTS[item]['path'])
+
         output = self.run(sc, **new_args)
-        output.saveAsTextFile(schedule['wordcount']['output'])
+        output.saveAsTextFile(self.OUTPUT['path'])
+        print 'Wrote output to ',self.OUTPUT['path']
         return output
