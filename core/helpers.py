@@ -1,3 +1,6 @@
+import sys
+
+
 class etl():
     def run(self, sc, **kwargs):
         raise NotImplementedError
@@ -14,15 +17,12 @@ class etl():
 
 
 def launch(classname, appName, app_file, aws):
-    import sys
-    process = 'run_local'
-    if len(sys.argv) > 1:
-        process = sys.argv[1]
+    process = sys.argv[1] if len(sys.argv) > 1 else process = 'locally'
 
-    if process == 'run_local':
+    if process == 'locally':
         from pyspark import SparkContext
         sc = SparkContext(appName=appName)
         classname().runner(sc)
-    elif process == 'ship_cluster':
+    elif process == 'clusterly':
         from core.run import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=app_file, setup=aws).run()
