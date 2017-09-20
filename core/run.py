@@ -328,4 +328,4 @@ logger = setup_logging()
 if __name__ == "__main__":
     # DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
     # DeployPySparkScriptOnAws(app_file="wordcount_frameworked.py", path_script="jobs/spark_example/", setup='perso').run()
-    DeployPySparkScriptOnAws(app_file="jobs/spark_example/wordcount_frameworked.py", setup='perso').run()
+    DeployPySparkScriptOnAws(app_file="jobs/spark_example/wordcount_frameworked.py", setup='perso').run()  # TODO: change to use run for any script from command line, not hardcoded here.
