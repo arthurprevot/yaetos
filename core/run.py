@@ -180,7 +180,6 @@ class DeployPySparkScriptOnAws(object):
 
     def start_spark_cluster(self, c):
         """
-
         :param c: EMR client
         :return:
         """
@@ -303,30 +302,6 @@ class DeployPySparkScriptOnAws(object):
         )
         logger.info("Added step 'spark-submit' with argument '{}'".format(arguments))
         time.sleep(1)  # Prevent ThrottlingException
-
-    # def step_copy_data_between_s3_and_hdfs(self, c, src, dest):
-    #     """
-    #     Copy data between S3 and HDFS (not used for now)
-    #     :param c:
-    #     :return:
-    #     """
-    #     response = c.add_job_flow_steps(
-    #         JobFlowId=self.job_flow_id,
-    #         Steps=[{
-    #                 'Name': 'Copy data from S3 to HDFS',
-    #                 'ActionOnFailure': 'CANCEL_AND_WAIT',
-    #                 'HadoopJarStep': {
-    #                     'Jar': 'command-runner.jar',
-    #                     'Args': [
-    #                         "s3-dist-cp",
-    #                         "--s3Endpoint=s3-eu-west-1.amazonaws.com",
-    #                         "--src={}".format(src),
-    #                         "--dest={}".format(dest)
-    #                     ]
-    #                 }
-    #             }]
-    #     )
-    #     logger.info("Added step 'Copy data from {} to {}'".format(src, dest))
 
 
 def setup_logging(default_level=logging.WARNING):
