@@ -23,16 +23,15 @@ class DeployPySparkScriptOnAws(object):
     scripts = 'core/scripts/'
     tmp = 'tmp/files_to_ship/'
 
-    def __init__(self, app_file, path_script, setup='dev', **kwargs):
+    def __init__(self, app_file, setup='dev', **kwargs):
 
         config = ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../conf/config.cfg'))
 
         self.app_file = app_file
         self.setup = setup
-        self.app_name = self.app_file.replace('.py','')
+        self.app_name = self.app_file.replace('.py','').split('/')[-1]
         self.ec2_key_name = config.get(setup, 'ec2_key_name')
-        self.path_script = path_script
         self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')
         self.s3_bucket_temp_files = config.get(setup, 's3_bucket_temp_files')
         self.s3_region = config.get(setup, 's3_region')
@@ -61,7 +60,7 @@ class DeployPySparkScriptOnAws(object):
         else:
             print "Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id'])
             self.job_flow_id = cluster['id']
-            self.step_run_setup_scripts(c, self.app_file, {})
+            self.step_run_setup_scripts(c)
 
         # Run job
         self.step_spark_submit(c, self.app_file, {})
@@ -90,15 +89,10 @@ class DeployPySparkScriptOnAws(object):
             return {'id': cluster_id,
                     'name': None}
 
-
         clusters.append((len(clusters)+1, None, 'Create a new cluster'))
         print 'Clusters found for AWS account "%s":'%(self.setup)
-        # print '[0] Create a new cluster'
         print '\n'.join(['[%s] %s'%(item[0], item[2]) for item in clusters])
-
         answer = raw_input('Your choice ? ')
-        # cluster_id = clusters[int(answer)-1][1]
-
         return {'id':clusters[int(answer)-1][1],
                 'name':clusters[int(answer)-1][2]}
 
@@ -130,10 +124,21 @@ class DeployPySparkScriptOnAws(object):
         """
         # Create tar.gz file
         t_file = tarfile.open(self.tmp + "script.tar.gz", 'w:gz')
-        # Add Spark script path to tar.gz file
-        files = os.listdir(self.path_script)
+
+        # Add files
+        t_file.add('__init__.py')
+        t_file.add('conf/__init__.py')
+        t_file.add('conf/scheduling.py')
+        # t_file.add('conf/scheduling.yml')
+
+        # ./core files
+        files = os.listdir('core/')
         for f in files:
-            t_file.add(self.path_script + f, arcname=f)
+            t_file.add('core/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+
+        # ./jobs files and folder
+        t_file.add('jobs/')
+
         # List all files in tar.gz
         for f in t_file.getnames():
             logger.info("Added %s to tar-file" % f)
@@ -187,17 +192,13 @@ class DeployPySparkScriptOnAws(object):
                 'InstanceGroups': [
                     {
                         'Name': 'EmrMaster',
-                        # 'Market': 'SPOT',
                         'InstanceRole': 'MASTER',
-                        # 'BidPrice': '0.05',
                         'InstanceType': 'm3.xlarge',
                         'InstanceCount': 1,
                     },
                     {
                         'Name': 'EmrCore',
-                        # 'Market': 'SPOT',
                         'InstanceRole': 'CORE',
-                        # 'BidPrice': '0.05',
                         'InstanceType': 'm3.xlarge',
                         'InstanceCount': 2,
                     },
@@ -242,17 +243,18 @@ class DeployPySparkScriptOnAws(object):
         :param c:
         :return:
         """
-        print 'Waiting until job is finished'
+        print 'Waiting for job to finish on cluster'
         stop = False
         while stop is False:
             description = c.describe_cluster(ClusterId=self.job_flow_id)
             state = description['Cluster']['Status']['State']
             if state == 'TERMINATED' or state == 'TERMINATED_WITH_ERRORS':
                 stop = True
+                print 'Job is finished'
             logger.info(state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
 
-    def step_run_setup_scripts(self, c, app_file, arguments):
+    def step_run_setup_scripts(self, c):
         """
         :param c:
         :return:
@@ -282,7 +284,6 @@ class DeployPySparkScriptOnAws(object):
         :param c:
         :return:
         """
-        # import ipdb; ipdb.set_trace()
         response = c.add_job_flow_steps(
             JobFlowId=self.job_flow_id,
             Steps=[
@@ -293,7 +294,8 @@ class DeployPySparkScriptOnAws(object):
                         'Jar': 'command-runner.jar',
                         'Args': [
                             "spark-submit",
-                            "/home/hadoop/%s"%app_file,
+                            "--py-files=/home/hadoop/app/scripts.zip",
+                            "/home/hadoop/app/%s"%app_file,
                         ]
                     }
                 },
@@ -302,29 +304,29 @@ class DeployPySparkScriptOnAws(object):
         logger.info("Added step 'spark-submit' with argument '{}'".format(arguments))
         time.sleep(1)  # Prevent ThrottlingException
 
-    def step_copy_data_between_s3_and_hdfs(self, c, src, dest):
-        """
-        Copy data between S3 and HDFS (not used for now)
-        :param c:
-        :return:
-        """
-        response = c.add_job_flow_steps(
-            JobFlowId=self.job_flow_id,
-            Steps=[{
-                    'Name': 'Copy data from S3 to HDFS',
-                    'ActionOnFailure': 'CANCEL_AND_WAIT',
-                    'HadoopJarStep': {
-                        'Jar': 'command-runner.jar',
-                        'Args': [
-                            "s3-dist-cp",
-                            "--s3Endpoint=s3-eu-west-1.amazonaws.com",
-                            "--src={}".format(src),
-                            "--dest={}".format(dest)
-                        ]
-                    }
-                }]
-        )
-        logger.info("Added step 'Copy data from {} to {}'".format(src, dest))
+    # def step_copy_data_between_s3_and_hdfs(self, c, src, dest):
+    #     """
+    #     Copy data between S3 and HDFS (not used for now)
+    #     :param c:
+    #     :return:
+    #     """
+    #     response = c.add_job_flow_steps(
+    #         JobFlowId=self.job_flow_id,
+    #         Steps=[{
+    #                 'Name': 'Copy data from S3 to HDFS',
+    #                 'ActionOnFailure': 'CANCEL_AND_WAIT',
+    #                 'HadoopJarStep': {
+    #                     'Jar': 'command-runner.jar',
+    #                     'Args': [
+    #                         "s3-dist-cp",
+    #                         "--s3Endpoint=s3-eu-west-1.amazonaws.com",
+    #                         "--src={}".format(src),
+    #                         "--dest={}".format(dest)
+    #                     ]
+    #                 }
+    #             }]
+    #     )
+    #     logger.info("Added step 'Copy data from {} to {}'".format(src, dest))
 
 
 def setup_logging(default_level=logging.WARNING):
@@ -349,4 +351,6 @@ def terminate(error_message=None):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
+    # DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
+    # DeployPySparkScriptOnAws(app_file="wordcount_frameworked.py", path_script="jobs/spark_example/", setup='perso').run()
+    DeployPySparkScriptOnAws(app_file="jobs/spark_example/wordcount_frameworked.py", setup='perso').run()
