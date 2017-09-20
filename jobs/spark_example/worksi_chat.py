@@ -18,4 +18,4 @@ class worksi_user_dimension(etl):
 
 
 if __name__ == "__main__":
-    launch(classname=worksi_user_dimension, app_file='jobs/spark_example/worksi_chat.py', aws='perso')
+    launch(job_class=worksi_user_dimension, aws='perso')

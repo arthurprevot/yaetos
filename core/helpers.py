@@ -1,7 +1,8 @@
 import sys
+import inspect
 
 
-class etl():
+class etl(object):
     def run(self, sc, **kwargs):
         raise NotImplementedError
 
@@ -35,10 +36,11 @@ class etl():
 
 
 
-def launch(job_class, app_file, aws):
+def launch(job_class, aws):
     process = sys.argv[1] if len(sys.argv) > 1 else 'locally'
-
     # import ipdb; ipdb.set_trace()
+    app_file = inspect.getfile(job_class)
+    # print '####', app_file
     app_name = job_class.__name__
     if process == 'locally':
         from pyspark import SparkContext

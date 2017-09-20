@@ -15,4 +15,4 @@ class wordcount(etl):
 
 
 if __name__ == "__main__":
-    launch(classname=wordcount, appName='wordcount', app_file='jobs/spark_example/wordcount_frameworked.py', aws='perso')
+    launch(job_class=wordcount, aws='perso')
