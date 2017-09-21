@@ -1,6 +1,7 @@
 # encoding: utf-8
 """
 Most of it from https://github.com/thomhopmans/themarketingtechnologist/tree/master/6_deploy_spark_cluster_on_aws
+# TODO: replace schedule by jobs_metadata
 """
 
 import logging
@@ -13,8 +14,8 @@ import botocore
 from ConfigParser import ConfigParser
 import os
 from shutil import copyfile
+from helpers import JOBS_METADATA_FILE, CLUSTER_APP_FOLDER
 
-# TODO: replace job_flow_id by cluster_id
 
 class DeployPySparkScriptOnAws(object):
     """
@@ -56,10 +57,10 @@ class DeployPySparkScriptOnAws(object):
         if new_cluster:
             print "Starting new cluster"
             self.start_spark_cluster(c)
-            print "cluster name: %s, and id: %s"%(self.job_name, self.job_flow_id)
+            print "cluster name: %s, and id: %s"%(self.job_name, self.cluster_id)
         else:
             print "Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id'])
-            self.job_flow_id = cluster['id']
+            self.cluster_id = cluster['id']
             self.step_run_setup_scripts(c)
 
         # Run job
@@ -128,8 +129,7 @@ class DeployPySparkScriptOnAws(object):
         # Add files
         t_file.add('__init__.py')
         t_file.add('conf/__init__.py')
-        t_file.add('conf/scheduling.py')
-        # t_file.add('conf/scheduling.yml')
+        t_file.add(JOBS_METADATA_FILE)
 
         # ./core files
         files = os.listdir('core/')
@@ -180,7 +180,6 @@ class DeployPySparkScriptOnAws(object):
 
     def start_spark_cluster(self, c):
         """
-
         :param c: EMR client
         :return:
         """
@@ -232,11 +231,11 @@ class DeployPySparkScriptOnAws(object):
         # Process response to determine if Spark cluster was started, and if so, the JobFlowId of the cluster
         response_code = response['ResponseMetadata']['HTTPStatusCode']
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-            self.job_flow_id = response['JobFlowId']
+            self.cluster_id = response['JobFlowId']
         else:
             terminate("Could not create EMR cluster (status code {})".format(response_code))
 
-        logger.info("Created Spark EMR-4.4.0 cluster with JobFlowId {}".format(self.job_flow_id))
+        logger.info("Created Spark EMR-4.4.0 cluster with JobFlowId {}".format(self.cluster_id))
 
     def describe_status_until_terminated(self, c):
         """
@@ -246,7 +245,7 @@ class DeployPySparkScriptOnAws(object):
         print 'Waiting for job to finish on cluster'
         stop = False
         while stop is False:
-            description = c.describe_cluster(ClusterId=self.job_flow_id)
+            description = c.describe_cluster(ClusterId=self.cluster_id)
             state = description['Cluster']['Status']['State']
             if state == 'TERMINATED' or state == 'TERMINATED_WITH_ERRORS':
                 stop = True
@@ -259,9 +258,8 @@ class DeployPySparkScriptOnAws(object):
         :param c:
         :return:
         """
-        # import ipdb; ipdb.set_trace()
         response = c.add_job_flow_steps(
-            JobFlowId=self.job_flow_id,
+            JobFlowId=self.cluster_id,
             Steps=[
                 {
                     'Name': 'run setup',
@@ -285,7 +283,7 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         response = c.add_job_flow_steps(
-            JobFlowId=self.job_flow_id,
+            JobFlowId=self.cluster_id,
             Steps=[
                 {
                     'Name': 'Spark Application',
@@ -294,8 +292,10 @@ class DeployPySparkScriptOnAws(object):
                         'Jar': 'command-runner.jar',
                         'Args': [
                             "spark-submit",
-                            "--py-files=/home/hadoop/app/scripts.zip",
-                            "/home/hadoop/app/%s"%app_file,
+                            "--py-files=%sscripts.zip"%CLUSTER_APP_FOLDER,
+                            CLUSTER_APP_FOLDER+app_file,
+                            "run",
+                            "cluster",
                         ]
                     }
                 },
@@ -303,30 +303,6 @@ class DeployPySparkScriptOnAws(object):
         )
         logger.info("Added step 'spark-submit' with argument '{}'".format(arguments))
         time.sleep(1)  # Prevent ThrottlingException
-
-    # def step_copy_data_between_s3_and_hdfs(self, c, src, dest):
-    #     """
-    #     Copy data between S3 and HDFS (not used for now)
-    #     :param c:
-    #     :return:
-    #     """
-    #     response = c.add_job_flow_steps(
-    #         JobFlowId=self.job_flow_id,
-    #         Steps=[{
-    #                 'Name': 'Copy data from S3 to HDFS',
-    #                 'ActionOnFailure': 'CANCEL_AND_WAIT',
-    #                 'HadoopJarStep': {
-    #                     'Jar': 'command-runner.jar',
-    #                     'Args': [
-    #                         "s3-dist-cp",
-    #                         "--s3Endpoint=s3-eu-west-1.amazonaws.com",
-    #                         "--src={}".format(src),
-    #                         "--dest={}".format(dest)
-    #                     ]
-    #                 }
-    #             }]
-    #     )
-    #     logger.info("Added step 'Copy data from {} to {}'".format(src, dest))
 
 
 def setup_logging(default_level=logging.WARNING):
@@ -351,6 +327,5 @@ def terminate(error_message=None):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    # DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
-    # DeployPySparkScriptOnAws(app_file="wordcount_frameworked.py", path_script="jobs/spark_example/", setup='perso').run()
-    DeployPySparkScriptOnAws(app_file="jobs/spark_example/wordcount_frameworked.py", setup='perso').run()
+    app_file = sys.argv[1] if len(sys.argv) > 1 else 'jobs/spark_example/wordcount_frameworked.py'
+    DeployPySparkScriptOnAws(app_file=app_file, setup='perso').run()
