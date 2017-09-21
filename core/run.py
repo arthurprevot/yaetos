@@ -1,7 +1,6 @@
 # encoding: utf-8
 """
 Most of it from https://github.com/thomhopmans/themarketingtechnologist/tree/master/6_deploy_spark_cluster_on_aws
-# TODO: replace job_flow_id by cluster_id
 # TODO: replace schedule by jobs_metadata
 """
 
@@ -58,10 +57,10 @@ class DeployPySparkScriptOnAws(object):
         if new_cluster:
             print "Starting new cluster"
             self.start_spark_cluster(c)
-            print "cluster name: %s, and id: %s"%(self.job_name, self.job_flow_id)
+            print "cluster name: %s, and id: %s"%(self.job_name, self.cluster_id)
         else:
             print "Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id'])
-            self.job_flow_id = cluster['id']
+            self.cluster_id = cluster['id']
             self.step_run_setup_scripts(c)
 
         # Run job
@@ -232,11 +231,11 @@ class DeployPySparkScriptOnAws(object):
         # Process response to determine if Spark cluster was started, and if so, the JobFlowId of the cluster
         response_code = response['ResponseMetadata']['HTTPStatusCode']
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-            self.job_flow_id = response['JobFlowId']
+            self.cluster_id = response['JobFlowId']
         else:
             terminate("Could not create EMR cluster (status code {})".format(response_code))
 
-        logger.info("Created Spark EMR-4.4.0 cluster with JobFlowId {}".format(self.job_flow_id))
+        logger.info("Created Spark EMR-4.4.0 cluster with JobFlowId {}".format(self.cluster_id))
 
     def describe_status_until_terminated(self, c):
         """
@@ -246,7 +245,7 @@ class DeployPySparkScriptOnAws(object):
         print 'Waiting for job to finish on cluster'
         stop = False
         while stop is False:
-            description = c.describe_cluster(ClusterId=self.job_flow_id)
+            description = c.describe_cluster(ClusterId=self.cluster_id)
             state = description['Cluster']['Status']['State']
             if state == 'TERMINATED' or state == 'TERMINATED_WITH_ERRORS':
                 stop = True
@@ -260,7 +259,7 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         response = c.add_job_flow_steps(
-            JobFlowId=self.job_flow_id,
+            JobFlowId=self.cluster_id,
             Steps=[
                 {
                     'Name': 'run setup',
@@ -284,7 +283,7 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         response = c.add_job_flow_steps(
-            JobFlowId=self.job_flow_id,
+            JobFlowId=self.cluster_id,
             Steps=[
                 {
                     'Name': 'Spark Application',

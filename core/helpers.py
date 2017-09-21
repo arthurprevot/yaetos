@@ -15,12 +15,6 @@ class etl(object):
     def run(self, sc, **kwargs):
         raise NotImplementedError
 
-    def set_path(self, fname_schedule, app_name):
-        """Can override this method to force paths regardless of job_meta file."""
-        yml = self.load_schedule(fname_schedule)
-        self.INPUTS = yml[app_name]['inputs']
-        self.OUTPUT = yml[app_name]['output']
-
     def runner(self, sc, sc_sql):
         self.sc = sc
         self.sc_sql = sc_sql
@@ -29,6 +23,12 @@ class etl(object):
         output = self.run(**run_args)
         self.save(output)
         return output
+
+    def set_path(self, fname_schedule, app_name):
+        """Can override this method to force paths regardless of job_meta file."""
+        yml = self.load_schedule(fname_schedule)
+        self.INPUTS = yml[app_name]['inputs']
+        self.OUTPUT = yml[app_name]['output']
 
     def load_inputs(self):
         run_args = {}
