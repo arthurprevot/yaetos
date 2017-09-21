@@ -13,8 +13,10 @@ import botocore
 from ConfigParser import ConfigParser
 import os
 from shutil import copyfile
+from helpers import JOBS_METADATA_FILE, CLUSTER_APP_FOLDER
 
 # TODO: replace job_flow_id by cluster_id
+# TODO: replace schedule by jobs_metadata
 
 class DeployPySparkScriptOnAws(object):
     """
@@ -128,8 +130,8 @@ class DeployPySparkScriptOnAws(object):
         # Add files
         t_file.add('__init__.py')
         t_file.add('conf/__init__.py')
-        t_file.add('conf/scheduling.py')
-        # t_file.add('conf/scheduling.yml')
+        # t_file.add('conf/scheduling.py')
+        t_file.add(JOBS_METADATA_FILE)
 
         # ./core files
         files = os.listdir('core/')
@@ -293,8 +295,10 @@ class DeployPySparkScriptOnAws(object):
                         'Jar': 'command-runner.jar',
                         'Args': [
                             "spark-submit",
-                            "--py-files=/home/hadoop/app/scripts.zip",
-                            "/home/hadoop/app/%s"%app_file,
+                            "--py-files=%sscripts.zip"%CLUSTER_APP_FOLDER,
+                            CLUSTER_APP_FOLDER+app_file,
+                            "run",
+                            "cluster",
                         ]
                     }
                 },

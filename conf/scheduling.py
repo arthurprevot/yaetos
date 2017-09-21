@@ -2,11 +2,11 @@
 schedule = {
     'wordcount':{
         'inputs': {'lines':{'path':"s3://bucket-scratch/wordcount_test/input/sample_text.txt", 'type':'txt'}},
-        'output': {'path':'s3://bucket-scratch/wordcount_test/output/v6/', 'type':'csv'},
+        'output': {'path':'s3://bucket-scratch/wordcount_test/output/v6/', 'type':'txt'},
     },
     'worksi_chat':{
-        'inputs': {'chats':{'path':"s3://asdf.txt", 'type':'parquet'}},
-        'output': {'path':'s3://bucket-scratch/wordcount_test/output/v6/', 'type':'csv'},
+        'inputs': {'chats':{'path':"s3://bucket-scratch/worksi_chat/input/...", 'type':'parquet'}},
+        'output': {'path':'s3://bucket-scratch/worksi_chat/output/v1/', 'type':'csv'},
     }
 }
 
