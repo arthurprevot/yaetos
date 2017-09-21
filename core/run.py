@@ -1,6 +1,8 @@
 # encoding: utf-8
 """
 Most of it from https://github.com/thomhopmans/themarketingtechnologist/tree/master/6_deploy_spark_cluster_on_aws
+# TODO: replace job_flow_id by cluster_id
+# TODO: replace schedule by jobs_metadata
 """
 
 import logging
@@ -15,8 +17,6 @@ import os
 from shutil import copyfile
 from helpers import JOBS_METADATA_FILE, CLUSTER_APP_FOLDER
 
-# TODO: replace job_flow_id by cluster_id
-# TODO: replace schedule by jobs_metadata
 
 class DeployPySparkScriptOnAws(object):
     """
@@ -130,7 +130,6 @@ class DeployPySparkScriptOnAws(object):
         # Add files
         t_file.add('__init__.py')
         t_file.add('conf/__init__.py')
-        # t_file.add('conf/scheduling.py')
         t_file.add(JOBS_METADATA_FILE)
 
         # ./core files
@@ -260,7 +259,6 @@ class DeployPySparkScriptOnAws(object):
         :param c:
         :return:
         """
-        # import ipdb; ipdb.set_trace()
         response = c.add_job_flow_steps(
             JobFlowId=self.job_flow_id,
             Steps=[
@@ -330,6 +328,5 @@ def terminate(error_message=None):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    # DeployPySparkScriptOnAws(app_file="wordcount.py", path_script="jobs/spark_example/", setup='perso').run()
-    # DeployPySparkScriptOnAws(app_file="wordcount_frameworked.py", path_script="jobs/spark_example/", setup='perso').run()
-    DeployPySparkScriptOnAws(app_file="jobs/spark_example/wordcount_frameworked.py", setup='perso').run()  # TODO: change to use run for any script from command line, not hardcoded here.
+    app_file = sys.argv[1] if len(sys.argv) > 1 else 'jobs/spark_example/wordcount_frameworked.py'
+    DeployPySparkScriptOnAws(app_file=app_file, setup='perso').run()

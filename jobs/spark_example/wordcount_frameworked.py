@@ -1,11 +1,8 @@
 from core.helpers import etl, launch
-from conf.scheduling import schedule_local as schedule  # TODO for testing
 from operator import add
 
-class wordcount(etl):
 
-    INPUTS = {'lines':schedule['wordcount']['inputs']['lines']}
-    OUTPUT = schedule['wordcount']['output']
+class wordcount(etl):
 
     def run(self, lines):
         counts = lines.flatMap(lambda x: x.split(' ')) \

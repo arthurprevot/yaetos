@@ -1,7 +1,7 @@
 wordcount:
   inputs:
     lines: {'path':"data/sample_text.txt", 'type':'txt'}
-  output: {'path':'data/sample_text_output_v1/', 'type':'txt'}
+  output: {'path':'data/sample_text_output_v2/', 'type':'txt'}
 
 worksi_session_facts:
   inputs:
