@@ -3,12 +3,13 @@ from core.helpers import etl, launch
 
 class worksi_session_facts(etl):
 
-    def run(self, chats):
+    def run(self, some_events, other_events):
         tb = self.query("""
-            SELECT session_id, count(*)
-            FROM chats
-            WHERE action='searchResultPage' and n_results>0
-            group by session_id
+            SELECT se.session_id, count(*)
+            FROM some_events se
+            JOIN other_events oe on se.session_id=oe.session_id
+            WHERE se.action='searchResultPage' and se.n_results>0
+            group by se.session_id
             order by count(*) desc
             """)
         return tb
