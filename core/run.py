@@ -186,7 +186,7 @@ class DeployPySparkScriptOnAws(object):
         response = c.run_job_flow(
             Name=self.job_name,
             LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),
-            ReleaseLabel="emr-4.4.0",
+            ReleaseLabel="emr-5.8.0",
             Instances={
                 'InstanceGroups': [
                     {
