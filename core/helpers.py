@@ -70,6 +70,7 @@ class etl(object):
         print 'Wrote output to ',path
 
     def listdir(self, path):
+        # TODO: make function cleaner
         # For local path
         if not path.lower().startswith('s3://'):
             return os.listdir(path)
@@ -108,5 +109,5 @@ def launch(job_class, aws):
         myjob.set_path(meta_file, app_name)
         myjob.runner(sc, sc_sql)
     elif process == 'deploy':
-        from core.run import DeployPySparkScriptOnAws
+        from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=app_file, setup=aws).run()

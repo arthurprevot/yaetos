@@ -28,4 +28,4 @@ counts.saveAsTextFile(output)
 sc.stop()
 
 # To run locally, put local i/o paths and run: python jobs/spark_example/wordcount.py
-# To run on cluster, put s3 i/o paths and run: python core/run.py jobs/spark_example/wordcount_frameworked.py
+# To run on cluster, put s3 i/o paths and run: python core/deploy.py jobs/spark_example/wordcount_frameworked.py
