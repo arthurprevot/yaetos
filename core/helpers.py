@@ -5,6 +5,9 @@ Helper functions. Setup to run locally and on cluster.
 import sys
 import inspect
 import yaml
+from datetime import datetime
+import os
+import boto3
 
 
 JOBS_METADATA_FILE = 'conf/scheduling.yml'
@@ -33,25 +36,51 @@ class etl(object):
     def load_inputs(self):
         run_args = {}
         for item in self.INPUTS.keys():
+            path = self.INPUTS[item]['path']
+            if '{latest}' in path:
+                upstream_path = path.split('{latest}')[0]
+                paths = self.listdir(upstream_path)
+                latest_date = max(paths)
+                path = path.format(latest=latest_date)
+
             if self.INPUTS[item]['type'] == 'txt':
-                run_args[item] = self.sc.textFile(self.INPUTS[item]['path'])
+                run_args[item] = self.sc.textFile(path)
             elif self.INPUTS[item]['type'] == 'csv':
-                run_args[item] = self.sc_sql.read.csv(self.INPUTS[item]['path'], header=True)
+                run_args[item] = self.sc_sql.read.csv(path, header=True)
                 run_args[item].createOrReplaceTempView(item)
             elif self.INPUTS[item]['type'] == 'parquet':
-                run_args[item] = self.sc_sql.read.parquet(self.INPUTS[item]['path'])
+                run_args[item] = self.sc_sql.read.parquet(path)
                 run_args[item].createOrReplaceTempView(item)
         return run_args
 
     def save(self, output):
-        if self.OUTPUT['type'] == 'txt':
-            output.saveAsTextFile(self.OUTPUT['path'])
-        elif self.OUTPUT['type'] == 'parquet':
-            output.write.parquet(self.OUTPUT['path'])
-        elif self.OUTPUT['type'] == 'csv':
-            output.write.csv(self.OUTPUT['path'])
+        path = self.OUTPUT['path']
+        if '{now}' in path:
+            current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
+            path = path.format(now=current_time)
 
-        print 'Wrote output to ',self.OUTPUT['path']
+        # TODO deal with cases where "output" is df when expecting rdd and vice versa, or at least raise issue in a cleaner way.
+        if self.OUTPUT['type'] == 'txt':
+            output.saveAsTextFile(path)
+        elif self.OUTPUT['type'] == 'parquet':
+            output.write.parquet(path)
+        elif self.OUTPUT['type'] == 'csv':
+            output.write.csv(path)
+
+        print 'Wrote output to ',path
+
+    def listdir(self, path):
+        # For local path
+        if not path.lower().startswith('s3://'):
+            return os.listdir(path)
+
+        # For s3 path
+        bucket_name = path.split('s3://')[1].split('/')[0]
+        prefix = '/'.join(path.split('s3://')[1].split('/')[1:])
+        client = boto3.client('s3')
+        objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
+        paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
+        return paths
 
     def query(self, query_str):
         print 'Query string:', query_str
