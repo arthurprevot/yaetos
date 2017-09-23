@@ -1,5 +1,6 @@
 # encoding: utf-8
 """
+Code running on client side to push code to AWS and execute it there.
 Most of it from https://github.com/thomhopmans/themarketingtechnologist/tree/master/6_deploy_spark_cluster_on_aws
 # TODO: replace schedule by jobs_metadata
 """

@@ -5,6 +5,9 @@ Helper functions. Setup to run locally and on cluster.
 import sys
 import inspect
 import yaml
+from datetime import datetime
+import os
+import boto3
 
 
 JOBS_METADATA_FILE = 'conf/scheduling.yml'
@@ -33,25 +36,68 @@ class etl(object):
     def load_inputs(self):
         run_args = {}
         for item in self.INPUTS.keys():
+            path = self.INPUTS[item]['path']
+            # print '####### path',path
+            if '{latest}' in path:
+                upstream_path = path.split('{latest}')[0]
+                # paths = os.listdir(upstream_path)  # TODO make work on s3 path too.
+                paths = self.listdir(upstream_path)  # TODO make work on s3 path too.
+                # print '#### all',paths
+                latest_date = max(paths)
+                path = path.format(latest=latest_date)
+                # print '#### latest',path
+
+            # import ipdb; ipdb.set_trace()
+
             if self.INPUTS[item]['type'] == 'txt':
-                run_args[item] = self.sc.textFile(self.INPUTS[item]['path'])
+                run_args[item] = self.sc.textFile(path)
             elif self.INPUTS[item]['type'] == 'csv':
-                run_args[item] = self.sc_sql.read.csv(self.INPUTS[item]['path'], header=True)
+                run_args[item] = self.sc_sql.read.csv(path, header=True)
                 run_args[item].createOrReplaceTempView(item)
             elif self.INPUTS[item]['type'] == 'parquet':
-                run_args[item] = self.sc_sql.read.parquet(self.INPUTS[item]['path'])
+                run_args[item] = self.sc_sql.read.parquet(path)
                 run_args[item].createOrReplaceTempView(item)
         return run_args
 
     def save(self, output):
-        if self.OUTPUT['type'] == 'txt':
-            output.saveAsTextFile(self.OUTPUT['path'])
-        elif self.OUTPUT['type'] == 'parquet':
-            output.write.parquet(self.OUTPUT['path'])
-        elif self.OUTPUT['type'] == 'csv':
-            output.write.csv(self.OUTPUT['path'])
+        path = self.OUTPUT['path']
+        if '{now}' in path:
+            current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
+            # import ipdb; ipdb.set_trace()
+            path = path.format(now=current_time)
 
-        print 'Wrote output to ',self.OUTPUT['path']
+        if self.OUTPUT['type'] == 'txt':
+            # TODO deal with case where it is df, or just raise issue if df.
+            output.saveAsTextFile(path)
+        elif self.OUTPUT['type'] == 'parquet':
+            # TODO deal with case where it is rdd.
+            output.write.parquet(path)
+        elif self.OUTPUT['type'] == 'csv':
+            # TODO deal with case where it is rdd.
+            output.write.csv(path)
+
+        print 'Wrote output to ',path
+
+    def listdir(self, path):
+        if not path.lower().startswith('s3://'):
+            return os.listdir(path)
+
+        # For s3 path
+        # TODO: not scalable. May have issues if returns more than 1000 elements.
+        # s3 = boto3.resource('s3')
+        print '### path', path
+        bucket_name = path.split('s3://')[1].split('/')[0]
+        print '### bucket_name', bucket_name
+        # bucket = s3.Bucket(name=bucket_name)
+        prefix = '/'.join(path.split('s3://')[1].split('/')[1:])
+        print '### prefix', prefix
+        # objects = bucket.objects.filter(Prefix=prefix)
+        client = boto3.client('s3')
+        print '### client', client
+        objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
+        print '### objects', objects
+        paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
+        return paths
 
     def query(self, query_str):
         print 'Query string:', query_str
