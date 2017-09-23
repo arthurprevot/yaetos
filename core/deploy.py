@@ -328,5 +328,5 @@ def terminate(error_message=None):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    app_file = sys.argv[1] if len(sys.argv) > 1 else 'jobs/spark_example/wordcount_frameworked.py'
+    app_file = sys.argv[1] if len(sys.argv) > 1 else 'jobs/examples/wordcount_frameworked.py'
     DeployPySparkScriptOnAws(app_file=app_file, setup='perso').run()
