@@ -37,17 +37,11 @@ class etl(object):
         run_args = {}
         for item in self.INPUTS.keys():
             path = self.INPUTS[item]['path']
-            # print '####### path',path
             if '{latest}' in path:
                 upstream_path = path.split('{latest}')[0]
-                # paths = os.listdir(upstream_path)  # TODO make work on s3 path too.
-                paths = self.listdir(upstream_path)  # TODO make work on s3 path too.
-                # print '#### all',paths
+                paths = self.listdir(upstream_path)
                 latest_date = max(paths)
                 path = path.format(latest=latest_date)
-                # print '#### latest',path
-
-            # import ipdb; ipdb.set_trace()
 
             if self.INPUTS[item]['type'] == 'txt':
                 run_args[item] = self.sc.textFile(path)
@@ -63,39 +57,28 @@ class etl(object):
         path = self.OUTPUT['path']
         if '{now}' in path:
             current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
-            # import ipdb; ipdb.set_trace()
             path = path.format(now=current_time)
 
+        # TODO deal with cases where "output" is df when expecting rdd and vice versa, or at least raise issue in a cleaner way.
         if self.OUTPUT['type'] == 'txt':
-            # TODO deal with case where it is df, or just raise issue if df.
             output.saveAsTextFile(path)
         elif self.OUTPUT['type'] == 'parquet':
-            # TODO deal with case where it is rdd.
             output.write.parquet(path)
         elif self.OUTPUT['type'] == 'csv':
-            # TODO deal with case where it is rdd.
             output.write.csv(path)
 
         print 'Wrote output to ',path
 
     def listdir(self, path):
+        # For local path
         if not path.lower().startswith('s3://'):
             return os.listdir(path)
 
         # For s3 path
-        # TODO: not scalable. May have issues if returns more than 1000 elements.
-        # s3 = boto3.resource('s3')
-        print '### path', path
         bucket_name = path.split('s3://')[1].split('/')[0]
-        print '### bucket_name', bucket_name
-        # bucket = s3.Bucket(name=bucket_name)
         prefix = '/'.join(path.split('s3://')[1].split('/')[1:])
-        print '### prefix', prefix
-        # objects = bucket.objects.filter(Prefix=prefix)
         client = boto3.client('s3')
-        print '### client', client
         objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
-        print '### objects', objects
         paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
         return paths
 
