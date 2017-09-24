@@ -15,7 +15,7 @@ import botocore
 from ConfigParser import ConfigParser
 import os
 from shutil import copyfile
-from helpers import JOBS_METADATA_FILE, CLUSTER_APP_FOLDER
+from etl_utils import JOBS_METADATA_FILE, CLUSTER_APP_FOLDER
 
 
 class DeployPySparkScriptOnAws(object):
