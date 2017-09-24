@@ -39,7 +39,7 @@ class DeployPySparkScriptOnAws(object):
         self.s3_region = config.get(setup, 's3_region')
         self.user = config.get(setup, 'user')
         self.profile_name = config.get(setup, 'profile_name')
-        self.emr_core_instances = kwargs.get('emr_core_instances')
+        self.emr_core_instances = 2
 
     def run(self):
         session = boto3.Session(profile_name=self.profile_name)  # Select AWS IAM profile
