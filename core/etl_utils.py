@@ -93,7 +93,7 @@ class etl(object):
         return yml
 
 
-def launch(job_class, aws):
+def launch(job_class, aws_setup):
     """This function input should not be dependent on whether the job is run locally or deployed to cluster."""
     process = sys.argv[1] if len(sys.argv) > 1 else 'run'
     location = sys.argv[2] if len(sys.argv) > 2 else 'local'
@@ -110,4 +110,4 @@ def launch(job_class, aws):
         myjob.runner(sc, sc_sql)
     elif process == 'deploy':
         from core.deploy import DeployPySparkScriptOnAws
-        DeployPySparkScriptOnAws(app_file=app_file, setup=aws).run()
+        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup).run()

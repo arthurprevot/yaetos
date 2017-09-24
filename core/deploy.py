@@ -25,21 +25,21 @@ class DeployPySparkScriptOnAws(object):
     scripts = 'core/scripts/'
     tmp = 'tmp/files_to_ship/'
 
-    def __init__(self, app_file, setup='dev', **kwargs):
+    def __init__(self, app_file, aws_setup='dev', **app_args):
 
         config = ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../conf/config.cfg'))
 
         self.app_file = app_file
-        self.setup = setup
+        self.aws_setup = aws_setup
         self.app_name = self.app_file.replace('.py','').split('/')[-1]
-        self.ec2_key_name = config.get(setup, 'ec2_key_name')
-        self.s3_bucket_logs = config.get(setup, 's3_bucket_logs')
-        self.s3_bucket_temp_files = config.get(setup, 's3_bucket_temp_files')
-        self.s3_region = config.get(setup, 's3_region')
-        self.user = config.get(setup, 'user')
-        self.profile_name = config.get(setup, 'profile_name')
-        self.emr_core_instances = 2
+        self.ec2_key_name = config.get(aws_setup, 'ec2_key_name')
+        self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
+        self.s3_bucket_temp_files = config.get(aws_setup, 's3_bucket_temp_files')
+        self.s3_region = config.get(aws_setup, 's3_region')
+        self.user = config.get(aws_setup, 'user')
+        self.profile_name = config.get(aws_setup, 'profile_name')
+        self.emr_core_instances = config.get(aws_setup, 'emr_core_instances')
 
     def run(self):
         session = boto3.Session(profile_name=self.profile_name)  # Select AWS IAM profile
@@ -94,7 +94,7 @@ class DeployPySparkScriptOnAws(object):
                     'name': None}
 
         clusters.append((len(clusters)+1, None, 'Create a new cluster'))
-        print 'Clusters found for AWS account "%s":'%(self.setup)
+        print 'Clusters found for AWS account "%s":'%(self.aws_setup)
         print '\n'.join(['[%s] %s'%(item[0], item[2]) for item in clusters])
         answer = raw_input('Your choice ? ')
         return {'id':clusters[int(answer)-1][1],
@@ -181,7 +181,7 @@ class DeployPySparkScriptOnAws(object):
                 key.delete()
                 logger.info("Removed '{}' from bucket for temporary files".format(key.key))
 
-    def start_spark_cluster(self, c, emr_core_instances):
+    def start_spark_cluster(self, c):
         """
         :param c: EMR client
         :return:
@@ -203,7 +203,7 @@ class DeployPySparkScriptOnAws(object):
                         'Name': 'EmrCore',
                         'InstanceRole': 'CORE',
                         'InstanceType': 'm3.xlarge',
-                        'InstanceCount': emr_core_instances,
+                        'InstanceCount': self.emr_core_instances,
                     },
                 ],
                 'Ec2KeyName': self.ec2_key_name,
@@ -332,4 +332,4 @@ logger = setup_logging()
 
 if __name__ == "__main__":
     app_file = sys.argv[1] if len(sys.argv) > 1 else 'jobs/examples/wordcount_frameworked.py'
-    DeployPySparkScriptOnAws(app_file=app_file, setup='perso').run()
+    DeployPySparkScriptOnAws(app_file=app_file, aws_setup='perso').run()

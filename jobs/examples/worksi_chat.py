@@ -16,4 +16,4 @@ class worksi_session_facts(etl):
 
 
 if __name__ == "__main__":
-    launch(job_class=worksi_session_facts, aws='perso')
+    launch(job_class=worksi_session_facts, aws_setup='perso')

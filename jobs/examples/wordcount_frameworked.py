@@ -12,4 +12,4 @@ class wordcount(etl):
 
 
 if __name__ == "__main__":
-    launch(job_class=wordcount, aws='perso')
+    launch(job_class=wordcount, aws_setup='perso')
