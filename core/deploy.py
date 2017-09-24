@@ -39,9 +39,11 @@ class DeployPySparkScriptOnAws(object):
         self.s3_region = config.get(setup, 's3_region')
         self.user = config.get(setup, 'user')
         self.profile_name = config.get(setup, 'profile_name')
+        self.emr_core_instances = kwargs.get('emr_core_instances')
 
     def run(self):
         session = boto3.Session(profile_name=self.profile_name)  # Select AWS IAM profile
+
         # S3 ops
         s3 = session.resource('s3')
         self.temp_bucket_exists(s3)
@@ -57,7 +59,7 @@ class DeployPySparkScriptOnAws(object):
         new_cluster = cluster['id'] is None
         if new_cluster:
             print "Starting new cluster"
-            self.start_spark_cluster(c)
+            self.start_spark_cluster(c, self.emr_core_instances)
             print "cluster name: %s, and id: %s"%(self.job_name, self.cluster_id)
         else:
             print "Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id'])
@@ -179,15 +181,16 @@ class DeployPySparkScriptOnAws(object):
                 key.delete()
                 logger.info("Removed '{}' from bucket for temporary files".format(key.key))
 
-    def start_spark_cluster(self, c):
+    def start_spark_cluster(self, c, emr_core_instances):
         """
         :param c: EMR client
         :return:
         """
+        emr_version = "emr-5.8.0"
         response = c.run_job_flow(
             Name=self.job_name,
             LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),
-            ReleaseLabel="emr-5.8.0",
+            ReleaseLabel=emr_version,
             Instances={
                 'InstanceGroups': [
                     {
@@ -200,7 +203,7 @@ class DeployPySparkScriptOnAws(object):
                         'Name': 'EmrCore',
                         'InstanceRole': 'CORE',
                         'InstanceType': 'm3.xlarge',
-                        'InstanceCount': 2,
+                        'InstanceCount': emr_core_instances,
                     },
                 ],
                 'Ec2KeyName': self.ec2_key_name,
@@ -236,7 +239,7 @@ class DeployPySparkScriptOnAws(object):
         else:
             terminate("Could not create EMR cluster (status code {})".format(response_code))
 
-        logger.info("Created Spark EMR-4.4.0 cluster with JobFlowId {}".format(self.cluster_id))
+        logger.info("Created Spark EMR cluster ({}) with cluster_id {}".format(emr_version, self.cluster_id))
 
     def describe_status_until_terminated(self, c):
         """
