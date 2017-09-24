@@ -10,9 +10,9 @@ import os
 import boto3
 
 
-JOBS_METADATA_FILE = 'conf/scheduling.yml'
+JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-
+# TODO: may be get inputs and output as param of python file launch to be more explicit and flexible
 
 class etl(object):
     def run(self, sc, **kwargs):
@@ -104,7 +104,7 @@ def launch(job_class, aws):
         from pyspark.sql import SQLContext
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if location=='cluster' else 'conf/scheduling_local.yml'
+        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if location=='cluster' else 'conf/jobs_metadata_local.yml'
         myjob = job_class()
         myjob.set_path(meta_file, app_name)
         myjob.runner(sc, sc_sql)
