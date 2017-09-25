@@ -27,5 +27,5 @@ counts.saveAsTextFile(output)
 # Stop SparkContext
 sc.stop()
 
-# To run locally, put local i/o paths and run: python jobs/examples/wordcount.py
-# To run on cluster, put s3 i/o paths and run: python core/deploy.py jobs/examples/wordcount_frameworked.py
+# To run locally, put local i/o paths and run: python jobs/examples/ex3_raw_spark_job.py
+# To run on cluster, put s3 i/o paths and run: python core/deploy.py jobs/examples/ex3_raw_spark_job.py

@@ -1,4 +1,4 @@
-wordcount:
+ex3_raw_spark_job:
   inputs:
     lines: {'path':"s3://bucket-scratch/wordcount_test/input/sample_text.txt", 'type':'txt'}
   output: {'path':'s3://bucket-scratch/wordcount_test/output/{now}/', 'type':'txt'}
