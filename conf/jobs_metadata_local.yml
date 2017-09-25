@@ -1,16 +1,22 @@
-ex3_raw_spark_job:  # shows raw pyspark ops, full flexibility, no helper functions
-  inputs:
-    lines: {'path':"data/wordcount/input/sample_text.txt", 'type':'txt'}
-  output: {'path':'data/wordcount/output/{now}/', 'type':'txt'}
-
-ex2_frameworked_job:  # shows frameworked pyspark ops, helper functions deals with boilerplate.
-  inputs:
-    some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-    other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'data/bogus_data/output/{now}/', 'type':'csv'}
-
 ex1_full_sql_job:  # shows 100% sql job, easier but less flexible
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'data/bogus_data/output_sql/{now}/', 'type':'csv'}
+
+ex1_frameworked_job:  # shows frameworked pyspark ops, helper functions deals with boilerplate.
+  inputs:
+    some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+  output: {'path':'data/bogus_data/output/{now}/', 'type':'csv'}
+
+ex2_frameworked_job:  # more complex version of ex1_frameworked_job
+  inputs:
+    some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+  output: {'path':'data/bogus_data/output/{now}/', 'type':'csv'}
+
+wordcount_raw_job:  # shows raw pyspark ops, full flexibility, no helper functions
+  inputs:
+    lines: {'path':"data/wordcount/input/sample_text.txt", 'type':'txt'}
+  output: {'path':'data/wordcount/output/{now}/', 'type':'txt'}

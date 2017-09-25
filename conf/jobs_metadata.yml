@@ -1,7 +1,19 @@
-ex3_raw_spark_job:
+ex1_full_sql_job:
   inputs:
-    lines: {'path':"s3://bucket-scratch/wordcount_test/input/sample_text.txt", 'type':'txt'}
-  output: {'path':'s3://bucket-scratch/wordcount_test/output/{now}/', 'type':'txt'}
+    some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
+    other_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
+  output: {'path':'s3://bucket-scratch/bogus_data_sql/output/{now}/', 'type':'csv'}
+  dependencies: [] # list here if any
+  frequency: 24h
+  email: 'some_group@scmspain.com'
+
+ex1_frameworked_job:
+  inputs:
+    some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
+    other_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
+  output: {'path':'s3://bucket-scratch/bogus_data/output/{now}/', 'type':'csv'}
+  dependencies: [] # list here if any
+  frequency: 24h
   email: 'some_group@scmspain.com'
 
 ex2_frameworked_job:
@@ -9,38 +21,14 @@ ex2_frameworked_job:
     some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'s3://bucket-scratch/bogus_data/output/{now}/', 'type':'csv'}
-  email: 'some_group@scmspain.com'
-
-ex1_full_sql_job:
-  inputs:
-    some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
-    other_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'s3://bucket-scratch/bogus_data_sql/output/{now}/', 'type':'csv'}
-  email: 'some_group@scmspain.com'
-
-some_job_1:
-  inputs:
-    some_dataset : 's3://some_path'
-    some_other_dataset : 's3://some_other_path'
-  output: 's3://some_other_path2'
-  dependencies:
-    - some_job_2
-    - some_job_3
+  dependencies: [] # list here if any
   frequency: 24h
   email: 'some_group@scmspain.com'
 
-some_job_2:
+wordcount_raw_job:
   inputs:
-    some_dataset : 's3://some_path'
-    some_other_dataset : 's3://some_other_path'
-  output: 's3://some_other_path2'
-  frequency: 12h
-  email: 'some_group@scmspain.com'
-
-some_job_3:
-  inputs:
-    some_dataset : 's3://some_path'
-    some_other_dataset : 's3://some_other_path'
-  output: 's3://some_other_path2'
-  frequency: 12h
+    lines: {'path':"s3://bucket-scratch/wordcount_test/input/sample_text.txt", 'type':'txt'}
+  output: {'path':'s3://bucket-scratch/wordcount_test/output/{now}/', 'type':'txt'}
+  dependencies: [] # list here if any
+  frequency: 24h
   email: 'some_group@scmspain.com'
