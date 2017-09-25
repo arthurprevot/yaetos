@@ -12,7 +12,7 @@ worksi_session_facts:  # showcases frameworked pyspark ops (can mix sql, df and 
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'data/bogus_data/output/{now}/', 'type':'csv'}
 
-some_sql_job:  # showcases 100% sql job, easier, less flexibility
+ex1_full_sql_job:  # showcases 100% sql job, easier but less flexible
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}

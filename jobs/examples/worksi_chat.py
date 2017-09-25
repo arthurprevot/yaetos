@@ -64,6 +64,5 @@ class worksi_session_facts(etl):
         return int((y-x).total_seconds())
 
 
-
 if __name__ == "__main__":
     launch(job_class=worksi_session_facts, aws_setup='perso')

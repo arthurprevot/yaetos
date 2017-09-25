@@ -1,4 +1,4 @@
--- to run: python core/sql_generic_job.py --sql_file=jobs/examples/some_sql_job.sql
+-- to run: python core/sql_generic_job.py --sql_file=jobs/examples/ex1_full_sql_job.sql
 
 SELECT se.session_id, count(*)
 FROM some_events se
