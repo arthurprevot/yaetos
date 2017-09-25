@@ -16,7 +16,7 @@ JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 
 class etl(object):
-    def run(self, **kwargs):
+    def run(self, **app_args):
         raise NotImplementedError
 
     def runner(self, sc, sc_sql, **app_args):
@@ -111,7 +111,9 @@ def launch(job_class, **kwargs):
     parser.add_argument("-s", "--sql_file", default=None, help="path of sql file to run")
     args = parser.parse_args()
 
-    app_args = {'sql_file': args.sql_file}  # TODO: add app_name there
+    app_args = {}
+    if args.sql_file:
+        app_args = {'sql_file': args.sql_file}  # TODO: add app_name there
 
     if args.execution == 'run':
         from pyspark import SparkContext
