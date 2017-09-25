@@ -4,7 +4,7 @@ wordcount:
   output: {'path':'s3://bucket-scratch/wordcount_test/output/{now}/', 'type':'txt'}
   email: 'some_group@scmspain.com'
 
-worksi_session_facts:
+ex2_frameworked_job:
   inputs:
     some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
