@@ -19,13 +19,13 @@ class etl(object):
     def run(self, **kwargs):
         raise NotImplementedError
 
-    def runner(self, sc, sc_sql, **run_args):
+    def runner(self, sc, sc_sql, **app_args):
         self.sc = sc
         self.sc_sql = sc_sql
 
-        datasets = self.load_inputs()
-        run_args.update(datasets)
-        output = self.run(**run_args)
+        loaded_datasets = self.load_inputs()
+        app_args.update(loaded_datasets)
+        output = self.run(**app_args)
         self.save(output)
         return output
 
@@ -36,7 +36,7 @@ class etl(object):
         self.OUTPUT = yml[app_name]['output']
 
     def load_inputs(self):
-        run_args = {}
+        app_args = {}
         for item in self.INPUTS.keys():
             path = self.INPUTS[item]['path']
             if '{latest}' in path:
@@ -46,14 +46,14 @@ class etl(object):
                 path = path.format(latest=latest_date)
 
             if self.INPUTS[item]['type'] == 'txt':
-                run_args[item] = self.sc.textFile(path)
+                app_args[item] = self.sc.textFile(path)
             elif self.INPUTS[item]['type'] == 'csv':
-                run_args[item] = self.sc_sql.read.csv(path, header=True)
-                run_args[item].createOrReplaceTempView(item)
+                app_args[item] = self.sc_sql.read.csv(path, header=True)
+                app_args[item].createOrReplaceTempView(item)
             elif self.INPUTS[item]['type'] == 'parquet':
-                run_args[item] = self.sc_sql.read.parquet(path)
-                run_args[item].createOrReplaceTempView(item)
-        return run_args
+                app_args[item] = self.sc_sql.read.parquet(path)
+                app_args[item].createOrReplaceTempView(item)
+        return app_args
 
     def save(self, output):
         path = self.OUTPUT['path']
@@ -99,9 +99,8 @@ def launch(job_class, **kwargs):
     """
     This function inputs should not be dependent on whether the job is run locally or deployed to cluster.
     """
-    # TODO: redo this function to clarify commandline args vs function args.. use kwargs to set params below if not overriden by commandline args.
+    # TODO: redo this function to clarify commandline args vs function args vs args to go into deploy or run mode.. could use kwargs to set params below if not overriden by commandline args.
     # TODO: look at adding input and output path as cmdline as a way to override schedule ones.
-    # TODO: clean run_args vs app_args vs job_args, use job_args
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--execution", default='run', help="choose 'run' (default) or 'deploy_and_run'.", choices=set(['deploy_and_run', 'run'])) # comes from cmd line since value is set when running on cluster
@@ -112,7 +111,7 @@ def launch(job_class, **kwargs):
     parser.add_argument("-s", "--sql_file", default=None, help="path of sql file to run")
     args = parser.parse_args()
 
-    run_args = {'sql_file': args.sql_file}
+    app_args = {'sql_file': args.sql_file}  # TODO: add app_name there
 
     if args.execution == 'run':
         from pyspark import SparkContext
@@ -121,12 +120,11 @@ def launch(job_class, **kwargs):
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args.location=='cluster' else JOBS_METADATA_LOCAL_FILE
-        run_args['sql_file'] = CLUSTER_APP_FOLDER+run_args['sql_file'] if args.location=='cluster' else run_args['sql_file']
         myjob = job_class()
         myjob.set_path(meta_file, app_name)
-        myjob.runner(sc, sc_sql, **run_args)
+        myjob.runner(sc, sc_sql, **app_args)
     elif args.execution == 'deploy_and_run':
         from core.deploy import DeployPySparkScriptOnAws
         aws_setup = kwargs.get('aws_setup', 'dev')
         app_file = inspect.getfile(job_class)
-        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **run_args).run()
+        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
