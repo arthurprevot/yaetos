@@ -8,6 +8,7 @@ import yaml
 from datetime import datetime
 import os
 import boto3
+import argparse
 
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
@@ -15,14 +16,15 @@ CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 # TODO: may be get inputs and output as param of python file launch to be more explicit and flexible
 
 class etl(object):
-    def run(self, sc, **kwargs):
+    def run(self, **kwargs):
         raise NotImplementedError
 
-    def runner(self, sc, sc_sql):
+    def runner(self, sc, sc_sql, **run_args):
         self.sc = sc
         self.sc_sql = sc_sql
 
-        run_args = self.load_inputs()
+        datasets = self.load_inputs()
+        run_args.update(datasets)
         output = self.run(**run_args)
         self.save(output)
         return output
@@ -93,12 +95,29 @@ class etl(object):
         return yml
 
 
-def launch(job_class, aws_setup):
-    """This function input should not be dependent on whether the job is run locally or deployed to cluster."""
-    process = sys.argv[1] if len(sys.argv) > 1 else 'run'
-    location = sys.argv[2] if len(sys.argv) > 2 else 'local'
+def launch(job_class, **kwargs):
+    """
+    This function inputs should not be dependent on whether the job is run locally or deployed to cluster.
+    """
+    # TODO: redo this function to clarify commandline args vs function args.. use kwargs to set params below if not overriden by commandline args.
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e", "--execution", default='run', help="choose 'run' (default) or 'deploy_and_run'.", choices=set(['deploy_and_run', 'run'])) # comes from cmd line since value is set when running on cluster
+    parser.add_argument("-l", "--location", default='local', help="choose 'local' (default) or 'cluster'.", choices=set(['local', 'cluster'])) # comes from cmd line since value is set when running on cluster
+    # parser.add_argument("-m", "--job_metadata_file", default='conf/jobs_metadata.yml', help="To override repo job")  # TODO better integrate
+    # parser.add_argument("-w", "--machines", default=2, help="To set number of instance . Only relevant if choosing to create a new cluster.")
+    # parser.add_argument("-a", "--aws_setup", default='dev', help="asdf . Only relevant if choosing to deploy to a cluster.")
+    # parser.add_argument("-s", "--sql_job", default=None, help="path of sql file to run")
+    args = parser.parse_args()
+    # print '## args',args
+    process = args.execution
+    location = args.location
+
+    aws_setup = kwargs.get('aws_setup', 'dev')
+
     app_file = inspect.getfile(job_class)
     app_name = job_class.__name__
+    # app_name = job_class.__name__ if not sql_job else sql_job_name
     if process == 'run':
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
@@ -108,6 +127,6 @@ def launch(job_class, aws_setup):
         myjob = job_class()
         myjob.set_path(meta_file, app_name)
         myjob.runner(sc, sc_sql)
-    elif process == 'deploy':
+    elif process == 'deploy_and_run':
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup).run()

@@ -39,7 +39,8 @@ class DeployPySparkScriptOnAws(object):
         self.s3_region = config.get(aws_setup, 's3_region')
         self.user = config.get(aws_setup, 'user')
         self.profile_name = config.get(aws_setup, 'profile_name')
-        self.emr_core_instances = config.get(aws_setup, 'emr_core_instances')
+        self.emr_core_instances = int(config.get(aws_setup, 'emr_core_instances'))
+        self.app_args = app_args
 
     def run(self):
         session = boto3.Session(profile_name=self.profile_name)  # Select AWS IAM profile
@@ -59,7 +60,7 @@ class DeployPySparkScriptOnAws(object):
         new_cluster = cluster['id'] is None
         if new_cluster:
             print "Starting new cluster"
-            self.start_spark_cluster(c, self.emr_core_instances)
+            self.start_spark_cluster(c)
             print "cluster name: %s, and id: %s"%(self.job_name, self.cluster_id)
         else:
             print "Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id'])
@@ -281,7 +282,7 @@ class DeployPySparkScriptOnAws(object):
         logger.info("Added step")
         time.sleep(1)  # Prevent ThrottlingException
 
-    def step_spark_submit(self, c, app_file, arguments):
+    def step_spark_submit(self, c, app_file, app_args):
         """
         :param c:
         :return:
@@ -298,14 +299,14 @@ class DeployPySparkScriptOnAws(object):
                             "spark-submit",
                             "--py-files=%sscripts.zip"%CLUSTER_APP_FOLDER,
                             CLUSTER_APP_FOLDER+app_file,
-                            "run",
-                            "cluster",
+                            "--execution=run",
+                            "--location=cluster",
                         ]
                     }
                 },
             ]
         )
-        logger.info("Added step 'spark-submit' with argument '{}'".format(arguments))
+        logger.info("Added step 'spark-submit' with argument '{}'".format(app_args))
         time.sleep(1)  # Prevent ThrottlingException
 
 
