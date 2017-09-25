@@ -8,6 +8,7 @@ class generic(etl):
         tb = self.query(sql)
         return tb
 
+
 def read_sql_file(fname):
     fh = open(fname, 'r')
     sql = fh.read()
@@ -16,4 +17,4 @@ def read_sql_file(fname):
 
 
 if __name__ == "__main__":
-    launch(job_class=generic, aws_setup='perso')
+    launch(job_class=generic, aws_setup='perso')  # TODO: pass aws_setup as arg to make this generic.
