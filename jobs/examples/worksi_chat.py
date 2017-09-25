@@ -9,16 +9,17 @@ class worksi_session_facts(etl):
     def run(self, some_events, other_events):
         """For demo only. Functional but no specific business logic."""
 
-        tb = self.query("""
-            SELECT *
+        df = self.query("""
+            SELECT se.timestamp, se.session_id, se.group, se.action
             FROM some_events se
+            JOIN other_events oe on se.session_id=oe.session_id
             WHERE se.action='searchResultPage' and se.n_results>0
             """)
 
         udf_format_datetime = udf(self.format_datetime, StringType())
 
-        cleaned = tb \
-            .withColumn('timestamp_obj', udf_format_datetime(tb.timestamp).cast("timestamp")) \
+        events_cleaned = df \
+            .withColumn('timestamp_obj', udf_format_datetime(df.timestamp).cast("timestamp")) \
             .where(col('timestamp').like("%2.016%") == False)
 
         events_cleaned.createOrReplaceTempView("events_cleaned")
