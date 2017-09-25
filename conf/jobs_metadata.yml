@@ -16,6 +16,15 @@ ex1_frameworked_job:
   frequency: 24h
   email: 'some_group@scmspain.com'
 
+ex1_raw_job:
+  inputs:
+    some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
+    other_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
+  output: {'path':'s3://bucket-scratch/bogus_data/output/{now}/', 'type':'csv'}
+  dependencies: [] # list here if any
+  frequency: 24h
+  email: 'some_group@scmspain.com'
+
 ex2_frameworked_job:
   inputs:
     some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
