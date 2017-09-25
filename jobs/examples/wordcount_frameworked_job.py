@@ -2,7 +2,7 @@ from core.etl_utils import etl, launch
 from operator import add
 
 
-class wordcount(etl):
+class wordcount_frameworked_job(etl):
 
     def run(self, lines):
         counts = lines.flatMap(lambda x: x.split(' ')) \

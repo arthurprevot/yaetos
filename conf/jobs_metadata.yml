@@ -32,3 +32,11 @@ wordcount_raw_job:
   dependencies: [] # list here if any
   frequency: 24h
   email: 'some_group@scmspain.com'
+
+wordcount_frameworked_job:
+  inputs:
+    lines: {'path':"s3://bucket-scratch/wordcount_test/input/sample_text.txt", 'type':'txt'}
+  output: {'path':'s3://bucket-scratch/wordcount_test/output/{now}/', 'type':'txt'}
+  dependencies: [] # list here if any
+  frequency: 24h
+  email: 'some_group@scmspain.com'
