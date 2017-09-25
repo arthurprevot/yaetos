@@ -12,8 +12,8 @@ import argparse
 
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
+JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-# TODO: may be get inputs and output as param of python file launch to be more explicit and flexible
 
 class etl(object):
     def run(self, **kwargs):
@@ -32,7 +32,7 @@ class etl(object):
     def set_path(self, fname_schedule, app_name):
         """Can override this method to force paths regardless of job_meta file."""
         yml = self.load_schedule(fname_schedule)
-        self.INPUTS = yml[app_name]['inputs']
+        self.INPUTS = yml[app_name]['inputs']  # TODO: add error handling to deal with KeyError when name not found in jobs_metadata.
         self.OUTPUT = yml[app_name]['output']
 
     def load_inputs(self):
@@ -100,6 +100,7 @@ def launch(job_class, **kwargs):
     This function inputs should not be dependent on whether the job is run locally or deployed to cluster.
     """
     # TODO: redo this function to clarify commandline args vs function args.. use kwargs to set params below if not overriden by commandline args.
+    # TODO: look at adding input and output path as cmdline as a way to override schedule ones.
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--execution", default='run', help="choose 'run' (default) or 'deploy_and_run'.", choices=set(['deploy_and_run', 'run'])) # comes from cmd line since value is set when running on cluster
@@ -107,26 +108,24 @@ def launch(job_class, **kwargs):
     # parser.add_argument("-m", "--job_metadata_file", default='conf/jobs_metadata.yml', help="To override repo job")  # TODO better integrate
     # parser.add_argument("-w", "--machines", default=2, help="To set number of instance . Only relevant if choosing to create a new cluster.")
     # parser.add_argument("-a", "--aws_setup", default='dev', help="asdf . Only relevant if choosing to deploy to a cluster.")
-    # parser.add_argument("-s", "--sql_job", default=None, help="path of sql file to run")
+    parser.add_argument("-s", "--sql_file", default=None, help="path of sql file to run")
     args = parser.parse_args()
-    # print '## args',args
-    process = args.execution
-    location = args.location
 
-    aws_setup = kwargs.get('aws_setup', 'dev')
+    run_args = {'sql_file': args.sql_file}
 
-    app_file = inspect.getfile(job_class)
-    app_name = job_class.__name__
-    # app_name = job_class.__name__ if not sql_job else sql_job_name
-    if process == 'run':
+    if args.execution == 'run':
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
+        app_name = job_class.__name__ if not args.sql_file else args.sql_file.split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if location=='cluster' else 'conf/jobs_metadata_local.yml'
+        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args.location=='cluster' else JOBS_METADATA_LOCAL_FILE
+        run_args['sql_file'] = CLUSTER_APP_FOLDER+run_args['sql_file'] if args.location=='cluster' else run_args['sql_file']
         myjob = job_class()
         myjob.set_path(meta_file, app_name)
-        myjob.runner(sc, sc_sql)
-    elif process == 'deploy_and_run':
+        myjob.runner(sc, sc_sql, **run_args)
+    elif args.execution == 'deploy_and_run':
         from core.deploy import DeployPySparkScriptOnAws
-        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup).run()
+        aws_setup = kwargs.get('aws_setup', 'dev')
+        app_file = inspect.getfile(job_class)
+        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **run_args).run()

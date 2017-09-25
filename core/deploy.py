@@ -68,7 +68,7 @@ class DeployPySparkScriptOnAws(object):
             self.step_run_setup_scripts(c)
 
         # Run job
-        self.step_spark_submit(c, self.app_file, {})
+        self.step_spark_submit(c, self.app_file, self.app_args)
 
         # Clean
         if new_cluster:
@@ -301,6 +301,7 @@ class DeployPySparkScriptOnAws(object):
                             CLUSTER_APP_FOLDER+app_file,
                             "--execution=run",
                             "--location=cluster",
+                            "--sql_file=%s"%app_args['sql_file'] if app_args.get('sql_file') else "",
                         ]
                     }
                 },
