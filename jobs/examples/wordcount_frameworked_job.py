@@ -12,4 +12,4 @@ class wordcount_frameworked_job(etl):
 
 
 if __name__ == "__main__":
-    launch(job_class=wordcount, aws_setup='perso')
+    launch(job_class=wordcount_frameworked_job, aws_setup='perso')

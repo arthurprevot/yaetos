@@ -4,10 +4,10 @@ from operator import add
 from pyspark import SparkContext
 
 
-inputs = "s3://bucket-scratch/wordcount_test/input/sample_text.txt"  # cluster
-inputs = "sample_text.txt"  # local
-output = "s3://bucket-scratch/wordcount_test/output/v4/"  # cluster
-output = "tmp/output_v3/"  # local
+# inputs = "s3://bucket-scratch/wordcount_test/input/sample_text.txt"  # cluster
+inputs = "data/wordcount/inputs/sample_text.txt"  # local
+# output = "s3://bucket-scratch/wordcount_test/output/v4/"  # cluster
+output = "data/wordcount/output/v2/"  # local
 
 
 # Start SparkContext
@@ -18,9 +18,9 @@ lines = sc.textFile(inputs, 1)
 counts = lines.flatMap(lambda x: x.split(' ')) \
               .map(lambda x: (x, 1)) \
               .reduceByKey(add)
-output = counts.collect()
+counts_data = counts.collect()
 # Print word counts
-for (word, count) in output:
+for (word, count) in counts_data:
     print("%s: %i" % (word, count))
 # Save word counts in S3 bucket
 counts.saveAsTextFile(output)

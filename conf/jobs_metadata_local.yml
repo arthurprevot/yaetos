@@ -10,11 +10,7 @@ ex1_frameworked_job:  # shows frameworked pyspark ops, same as ex1_full_sql_job 
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'data/bogus_data/output/{now}/', 'type':'csv'}
 
-ex1_raw_job:  # shows raw pyspark ops, no helper functions to deal with boilerplate.
-  inputs:
-    some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-    other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'data/bogus_data/output/{now}/', 'type':'csv'}
+# ex1_raw_job:  # shows raw pyspark ops, no helper functions to deal with boilerplate. Job exists but doesn't rely on jobs_metadata entries
 
 ex2_frameworked_job:  # more complex version of ex1_frameworked_job
   inputs:
@@ -22,12 +18,9 @@ ex2_frameworked_job:  # more complex version of ex1_frameworked_job
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'data/bogus_data/output/{now}/', 'type':'csv'}
 
-wordcount_raw_job:  # shows raw pyspark rdd ops
-  inputs:
-    lines: {'path':"data/wordcount/input/sample_text.txt", 'type':'txt'}
-  output: {'path':'data/wordcount/output/{now}/', 'type':'txt'}
-
 wordcount_frameworked_job:  # shows raw pyspark rdd ops in framework, same as wordcount_raw_job
   inputs:
-    lines: {'path':"data/wordcount/input/sample_text.txt", 'type':'txt'}
+    lines: {'path':"data/wordcount/inputs/sample_text.txt", 'type':'txt'}
   output: {'path':'data/wordcount/output/{now}/', 'type':'txt'}
+
+# wordcount_raw_job:  # shows raw pyspark rdd ops. Job exists but doesn't rely on jobs_metadata entries

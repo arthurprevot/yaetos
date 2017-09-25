@@ -6,9 +6,9 @@ from pyspark import SparkContext
 
 # inputs/output paths
 # input_some_events = "s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz"  # cluster
-input_some_events = "data/bogus_data/inputs/events_log.csv.gz"  # local
+input_some_events = "data/bogus_data/inputs/2017-01-02/events_log.csv.gz"  # local
 # input_other_events = "s3://bucket-scratch/bogus_data/inputs2/events_log.csv.gz"  # cluster
-input_other_events = "data/bogus_data/inputs/events_log.csv.gz"  # local
+input_other_events = "data/bogus_data/inputs/2017-01-02/events_log.csv.gz"  # local
 # output = "s3://bucket-scratch/bogus_data_sql/output/v1/"  # cluster
 output = "data/bogus_data/output/v1/"  # local
 
@@ -19,9 +19,9 @@ sc = SparkContext(appName='ex1_raw_job')
 sc_sql = SQLContext(sc)
 
 # Load data from S3 bucket
-some_events = self.sc_sql.read.csv(input_some_events, header=True)
+some_events = sc_sql.read.csv(input_some_events, header=True)
 some_events.createOrReplaceTempView('some_events')
-other_events = self.sc_sql.read.csv(input_other_events, header=True)
+other_events = sc_sql.read.csv(input_other_events, header=True)
 other_events.createOrReplaceTempView('other_events')
 
 # Calculate word counts
@@ -34,10 +34,10 @@ query_str = """
     order by count(*) desc
     """
 
-sc_sql.sql(query_str)
+df = sc_sql.sql(query_str)
 
 # Save word counts in S3 bucket
-output.write.csv(output)
+df.write.csv(output)
 
 # Stop SparkContext
 sc.stop()
