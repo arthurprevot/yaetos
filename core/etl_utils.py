@@ -101,6 +101,7 @@ def launch(job_class, **kwargs):
     """
     # TODO: redo this function to clarify commandline args vs function args.. use kwargs to set params below if not overriden by commandline args.
     # TODO: look at adding input and output path as cmdline as a way to override schedule ones.
+    # TODO: clean run_args vs app_args vs job_args, use job_args
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--execution", default='run', help="choose 'run' (default) or 'deploy_and_run'.", choices=set(['deploy_and_run', 'run'])) # comes from cmd line since value is set when running on cluster
