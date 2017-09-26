@@ -1,7 +1,8 @@
 from __future__ import print_function
 import sys
-from operator import add
+#from operator import add
 from pyspark import SparkContext
+from pyspark.sql import SQLContext
 
 
 # inputs/output paths
@@ -10,11 +11,9 @@ input_some_events = "data/bogus_data/inputs/2017-01-02/events_log.csv.gz"  # loc
 # input_other_events = "s3://bucket-scratch/bogus_data/inputs2/events_log.csv.gz"  # cluster
 input_other_events = "data/bogus_data/inputs/2017-01-02/events_log.csv.gz"  # local
 # output = "s3://bucket-scratch/bogus_data_sql/output/v1/"  # cluster
-output = "data/bogus_data/output/v1/"  # local
+output = "data/bogus_data/output/v2/"  # local
 
 # Start SparkContext
-from pyspark import SparkContext
-from pyspark.sql import SQLContext
 sc = SparkContext(appName='ex1_raw_job')
 sc_sql = SQLContext(sc)
 
