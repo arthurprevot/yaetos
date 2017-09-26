@@ -95,9 +95,11 @@ class etl(object):
         return yml
 
 
-def launch(job_class, **kwargs):
+def launch(job_class, sql_job=False, **kwargs):
     """
-    This function inputs should not be dependent on whether the job is run locally or deployed to cluster.
+    This function is used to deploy the script to aws and run it there or to run it locally.
+    When deployed on cluster, this function is called again to run the script from the cluster.
+    The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
     """
     # TODO: redo this function to clarify commandline args vs function args vs args to go into deploy or run mode.. could use kwargs to set params below if not overriden by commandline args.
     # TODO: look at adding input and output path as cmdline as a way to override schedule ones.
@@ -108,17 +110,18 @@ def launch(job_class, **kwargs):
     # parser.add_argument("-m", "--job_metadata_file", default='conf/jobs_metadata.yml', help="To override repo job")  # TODO better integrate
     # parser.add_argument("-w", "--machines", default=2, help="To set number of instance . Only relevant if choosing to create a new cluster.")
     # parser.add_argument("-a", "--aws_setup", default='dev', help="asdf . Only relevant if choosing to deploy to a cluster.")
-    parser.add_argument("-s", "--sql_file", default=None, help="path of sql file to run")
+    if sql_job:
+        parser.add_argument("-s", "--sql_file", help="path of sql file to run") # TODO: make mandatory
     args = parser.parse_args()
 
     app_args = {}
-    if args.sql_file:
-        app_args = {'sql_file': args.sql_file}  # TODO: add app_name there
+    if sql_job and args.sql_file is not None:
+        app_args['sql_file']= args.sql_file  # TODO: add app_name there
 
     if args.execution == 'run':
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        app_name = job_class.__name__ if not args.sql_file else args.sql_file.split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
+        app_name = job_class.__name__ if not sql_job else app_args['sql_file'].split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args.location=='cluster' else JOBS_METADATA_LOCAL_FILE
