@@ -1,9 +1,9 @@
 from core.etl_utils import etl, launch
 
 
-class generic(etl):
+class sql_job(etl):
 
-    def run(self, some_events, other_events, sql_file):
+    def run(self, sql_file, **ignored):
         sql = self.read_sql_file(sql_file)
         tb = self.query(sql)
         return tb
@@ -17,4 +17,4 @@ class generic(etl):
 
 
 if __name__ == "__main__":
-    launch(job_class=generic, aws_setup='perso')  # TODO: pass aws_setup as arg to make this generic.
+    launch(job_class=sql_job, aws_setup='perso')  # TODO: pass aws_setup as arg to make this generic.

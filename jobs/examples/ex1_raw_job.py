@@ -1,3 +1,8 @@
+"""
+Same as ex1_full_sql_job.sql and ex1_frameworked_job, but with no helper functions.
+The script is responsible for creating and closing spark context, defining pathsregistering tables in sparkSQL if needed...
+"""
+
 from __future__ import print_function
 import sys
 #from operator import add
