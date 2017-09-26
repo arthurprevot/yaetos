@@ -193,20 +193,17 @@ class DeployPySparkScriptOnAws(object):
             LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),
             ReleaseLabel=emr_version,
             Instances={
-                'InstanceGroups': [
-                    {
-                        'Name': 'EmrMaster',
-                        'InstanceRole': 'MASTER',
-                        'InstanceType': 'm3.xlarge',
-                        'InstanceCount': 1,
-                    },
-                    {
-                        'Name': 'EmrCore',
-                        'InstanceRole': 'CORE',
-                        'InstanceType': 'm3.xlarge',
-                        'InstanceCount': self.emr_core_instances,
-                    },
-                ],
+                'InstanceGroups': [{
+                    'Name': 'EmrMaster',
+                    'InstanceRole': 'MASTER',
+                    'InstanceType': 'm3.xlarge',
+                    'InstanceCount': 1,
+                    }, {
+                    'Name': 'EmrCore',
+                    'InstanceRole': 'CORE',
+                    'InstanceType': 'm3.xlarge',
+                    'InstanceCount': self.emr_core_instances,
+                    }],
                 'Ec2KeyName': self.ec2_key_name,
                 'KeepJobFlowAliveWhenNoSteps': False
             },
@@ -214,25 +211,21 @@ class DeployPySparkScriptOnAws(object):
             JobFlowRole='EMR_EC2_DefaultRole',
             ServiceRole='EMR_DefaultRole',
             VisibleToAllUsers=True,
-            BootstrapActions=[
-                {
-                    'Name': 'setup',
-                    'ScriptBootstrapAction': {
-                        'Path': 's3n://{}/{}/setup.sh'.format(self.s3_bucket_temp_files, self.job_name),
-                        'Args': [
-                            's3://{}/{}'.format(self.s3_bucket_temp_files, self.job_name),
-                        ]
+            BootstrapActions=[{
+                'Name': 'setup',
+                'ScriptBootstrapAction': {
+                    'Path': 's3n://{}/{}/setup.sh'.format(self.s3_bucket_temp_files, self.job_name),
+                    'Args': ['s3://{}/{}'.format(self.s3_bucket_temp_files, self.job_name)]
                     }
-                },
-                # {
-                #     'Name': 'idle timeout',
-                #     'ScriptBootstrapAction': {
-                #         'Path':'s3n://{}/{}/terminate_idle_cluster.sh'.format(self.s3_bucket_temp_files, self.job_name),
-                #         'Args': ['3600', '300']
+                }, # {
+                # 'Name': 'idle timeout',
+                # 'ScriptBootstrapAction': {
+                #     'Path':'s3n://{}/{}/terminate_idle_cluster.sh'.format(self.s3_bucket_temp_files, self.job_name),
+                #     'Args': ['3600', '300']
                 #     }
                 # },
-            ],
-        )
+                ],
+            )
         # Process response to determine if Spark cluster was started, and if so, the JobFlowId of the cluster
         response_code = response['ResponseMetadata']['HTTPStatusCode']
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
@@ -265,20 +258,18 @@ class DeployPySparkScriptOnAws(object):
         """
         response = c.add_job_flow_steps(
             JobFlowId=self.cluster_id,
-            Steps=[
-                {
-                    'Name': 'run setup',
-                    'ActionOnFailure': 'CONTINUE',
-                    'HadoopJarStep': {
-                        'Jar': 's3://elasticmapreduce/libs/script-runner/script-runner.jar',
-                        'Args': [
-                            "s3://{}/{}/setup.sh".format(self.s3_bucket_temp_files, self.job_name),
-                            "s3://{}/{}".format(self.s3_bucket_temp_files, self.job_name),
+            Steps=[{
+                'Name': 'run setup',
+                'ActionOnFailure': 'CONTINUE',
+                'HadoopJarStep': {
+                    'Jar': 's3://elasticmapreduce/libs/script-runner/script-runner.jar',
+                    'Args': [
+                        "s3://{}/{}/setup.sh".format(self.s3_bucket_temp_files, self.job_name),
+                        "s3://{}/{}".format(self.s3_bucket_temp_files, self.job_name),
                         ]
                     }
-                },
-            ]
-        )
+                }]
+            )
         logger.info("Added step")
         time.sleep(1)  # Prevent ThrottlingException
 
@@ -289,24 +280,22 @@ class DeployPySparkScriptOnAws(object):
         """
         response = c.add_job_flow_steps(
             JobFlowId=self.cluster_id,
-            Steps=[
-                {
-                    'Name': 'Spark Application',
-                    'ActionOnFailure': 'CONTINUE',
-                    'HadoopJarStep': {
-                        'Jar': 'command-runner.jar',
-                        'Args': [
-                            "spark-submit",
-                            "--py-files=%sscripts.zip"%CLUSTER_APP_FOLDER,
-                            CLUSTER_APP_FOLDER+app_file,
-                            "--execution=run",
-                            "--location=cluster",
-                            "--sql_file=%s"%(CLUSTER_APP_FOLDER+app_args['sql_file']) if app_args.get('sql_file') else "",  # TODO: better handling of app_args
+            Steps=[{
+                'Name': 'Spark Application',
+                'ActionOnFailure': 'CONTINUE',
+                'HadoopJarStep': {
+                    'Jar': 'command-runner.jar',
+                    'Args': [
+                        "spark-submit",
+                        "--py-files=%sscripts.zip"%CLUSTER_APP_FOLDER,
+                        CLUSTER_APP_FOLDER+app_file,
+                        "--execution=run",
+                        "--location=cluster",
+                        "--sql_file=%s"%(CLUSTER_APP_FOLDER+app_args['sql_file']) if app_args.get('sql_file') else "",  # TODO: better handling of app_args
                         ]
                     }
-                },
-            ]
-        )
+                }]
+            )
         logger.info("Added step 'spark-submit' with argument '{}'".format(app_args))
         time.sleep(1)  # Prevent ThrottlingException
 

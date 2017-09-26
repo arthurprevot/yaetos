@@ -61,7 +61,7 @@ class etl(object):
             current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
             path = path.format(now=current_time)
 
-        # TODO deal with cases where "output" is df when expecting rdd and vice versa, or at least raise issue in a cleaner way.
+        # TODO: deal with cases where "output" is df when expecting rdd and vice versa, or at least raise issue in a cleaner way.
         if self.OUTPUT['type'] == 'txt':
             output.saveAsTextFile(path)
         elif self.OUTPUT['type'] == 'parquet':
@@ -72,7 +72,7 @@ class etl(object):
         print 'Wrote output to ',path
 
     def listdir(self, path):
-        # TODO: make function cleaner
+        # TODO: make function clearer
         # For local path
         if not path.lower().startswith('s3://'):
             return os.listdir(path)
