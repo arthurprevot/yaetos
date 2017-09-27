@@ -290,7 +290,7 @@ class DeployPySparkScriptOnAws(object):
                         "--py-files=%sscripts.zip"%CLUSTER_APP_FOLDER,
                         CLUSTER_APP_FOLDER+app_file,
                         "--execution=run",
-                        "--location=cluster",
+                        "--storage=s3",
                         "--sql_file=%s"%(CLUSTER_APP_FOLDER+app_args['sql_file']) if app_args.get('sql_file') else "",  # TODO: better handling of app_args
                         ]
                     }
