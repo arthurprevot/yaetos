@@ -106,18 +106,6 @@ class etl(object):
     def save_metadata_cluster(fname, content):
         bucket_name = fname.split('s3://')[1].split('/')[0]  # TODO: remove redundancy
         bucket_fname = '/'.join(fname.split('s3://')[1].split('/')[1:])  # TODO: remove redundancy
-        # import ipdb; ipdb.set_trace()
-        # bucket_fname = bucket_folder + fname.split('/')[-1]
-        # client = boto3.client('s3')
-        # resource = boto3.resource('s3')
-        # bucket = resource.Bucket(bucket_name)
-
-        # client = boto3.client('s3')
-        # bucket2 = client.Bucket(bucket_name)
-
-        # key = bucket.new_key(bucket_fname)  # doesn't work
-        # key.set_contents_from_string(content)
-
         fake_handle = StringIO.StringIO(content)
         s3c = boto3.client('s3')
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
