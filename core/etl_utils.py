@@ -10,6 +10,7 @@ import os
 import boto3
 import argparse
 from time import time
+import StringIO
 
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
@@ -83,26 +84,43 @@ class etl(object):
         self.path = path
 
     def save_metadata(self, elapsed):
-        fname = self.path+'metadata.txt'
+        fname = self.path + 'metadata.txt'
         content = """
             -- name: %s
             -- time (s): %s
+            -- cluster_setup : TBD
+            -- input folders : TBD
+            -- output folder : TBD
             -- github hash: TBD
             -- code: TBD
-            -- end
             """%(self.app_name, elapsed)
         self.save_metadata_cluster(fname, content) if self.storage=='s3' else self.save_metadata_local(fname, content)
 
     @staticmethod
-    def save_metadata_local(fname_meta, content):
-        fh = open(fname_meta, 'w')
+    def save_metadata_local(fname, content):
+        fh = open(fname, 'w')
         fh.write(content)
         fh.close()
 
     @staticmethod
-    def save_metadata_cluster(fname_meta, content):
-        # TODO: implement
-        pass
+    def save_metadata_cluster(fname, content):
+        bucket_name = fname.split('s3://')[1].split('/')[0]  # TODO: remove redundancy
+        bucket_fname = '/'.join(fname.split('s3://')[1].split('/')[1:])  # TODO: remove redundancy
+        # import ipdb; ipdb.set_trace()
+        # bucket_fname = bucket_folder + fname.split('/')[-1]
+        # client = boto3.client('s3')
+        # resource = boto3.resource('s3')
+        # bucket = resource.Bucket(bucket_name)
+
+        # client = boto3.client('s3')
+        # bucket2 = client.Bucket(bucket_name)
+
+        # key = bucket.new_key(bucket_fname)  # doesn't work
+        # key.set_contents_from_string(content)
+
+        fake_handle = StringIO.StringIO(content)
+        s3c = boto3.client('s3')
+        s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
 
     def listdir(self, path):
         return self.listdir_cluster(path) if self.storage=='s3' else self.listdir_local(path)
