@@ -152,14 +152,20 @@ def launch(job_class, sql_job=False, **kwargs):
         app_args['sql_file']= args.sql_file  # TODO: add app_name and meta_file args there
 
     if args.execution == 'run':
-        from pyspark import SparkContext
-        from pyspark.sql import SQLContext
-        app_name = job_class.__name__ if not sql_job else app_args['sql_file'].split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
-        sc = SparkContext(appName=app_name)
-        sc_sql = SQLContext(sc)
-        job_class().run_handler(sc, sc_sql, args.location, **app_args)
+        launch_run_mode(job_class, sql_job, args.location, **app_args)
     elif args.execution == 'deploy_and_run':
-        from core.deploy import DeployPySparkScriptOnAws
-        aws_setup = kwargs.get('aws_setup', 'dev')
-        app_file = inspect.getfile(job_class)
-        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
+        launch_deploy_mode(job_class, kwargs, **app_args)
+
+def launch_run_mode(job_class, sql_job, location, **app_args):
+    from pyspark import SparkContext
+    from pyspark.sql import SQLContext
+    app_name = job_class.__name__ if not sql_job else app_args['sql_file'].split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
+    sc = SparkContext(appName=app_name)
+    sc_sql = SQLContext(sc)
+    job_class().run_handler(sc, sc_sql, location, **app_args)
+
+def launch_deploy_mode(job_class, kwargs, **app_args):
+    from core.deploy import DeployPySparkScriptOnAws
+    aws_setup = kwargs.get('aws_setup', 'dev')
+    app_file = inspect.getfile(job_class)
+    DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
