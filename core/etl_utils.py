@@ -20,11 +20,11 @@ class etl(object):
     def run(self, **app_args):
         raise NotImplementedError
 
-    def run_handler(self, sc, sc_sql, location, **app_args):
+    def run_handler(self, sc, sc_sql, storage, **app_args):
         # start_time = time()
         self.sc = sc
         self.sc_sql = sc_sql
-        self.location = location
+        self.storage = storage
         self.app_name = sc.appName
         self.set_path()
 
@@ -39,7 +39,7 @@ class etl(object):
         return output
 
     def set_path(self):
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.location=='cluster' else JOBS_METADATA_LOCAL_FILE
+        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.storage=='cluster' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
         self.INPUTS = yml[self.app_name]['inputs']  # TODO: add error handling to deal with KeyError when name not found in jobs_metadata.
         self.OUTPUT = yml[self.app_name]['output']
@@ -81,7 +81,7 @@ class etl(object):
         print 'Wrote output to ',path
 
     # def save_metadata(self):
-    #     return self.save_metadata_cluster() if self.location=='cluster' else self.save_metadata_local()
+    #     return self.save_metadata_cluster() if self.storage=='cluster' else self.save_metadata_local()
     #
     # def save_metadata_local(self):
     #     content = "-- name: %s\n-- db_creds (#db_type#): %s\n-- time (s): %s\n-- query: \n%s\n-- end"%(name, db_type, elapsed, query_str)
@@ -92,7 +92,7 @@ class etl(object):
     #     write_file(fname_sql, content)
 
     def listdir(self, path):
-        return self.listdir_cluster(path) if self.location=='cluster' else self.listdir_local(path)
+        return self.listdir_cluster(path) if self.storage=='cluster' else self.listdir_local(path)
 
     @staticmethod
     def listdir_local(path):
@@ -138,8 +138,8 @@ def launch(job_class, sql_job=False, **kwargs):
     # TODO: look at adding input and output path as cmdline as a way to override schedule ones. or better differentiate cmdline args vs app_args
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--execution", default='run', help="choose 'run' (default) or 'deploy_and_run'.", choices=set(['deploy_and_run', 'run'])) # comes from cmd line since value is set when running on cluster
-    parser.add_argument("-l", "--location", default='local', help="choose 'local' (default) or 'cluster'.", choices=set(['local', 'cluster'])) # comes from cmd line since value is set when running on cluster
+    parser.add_argument("-e", "--execution", default='run', help="choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
+    parser.add_argument("-l", "--storage", default='local', help="choose 'local' (default) or 'cluster'.", choices=set(['local', 'cluster'])) # comes from cmd line since value is set when running on cluster
     # parser.add_argument("-m", "--job_metadata_file", default='conf/jobs_metadata.yml', help="To override repo job")  # TODO better integrate
     # parser.add_argument("-w", "--machines", default=2, help="To set number of instance . Only relevant if choosing to create a new cluster.")
     # parser.add_argument("-a", "--aws_setup", default='dev', help="asdf . Only relevant if choosing to deploy to a cluster.")
@@ -152,17 +152,17 @@ def launch(job_class, sql_job=False, **kwargs):
         app_args['sql_file']= args.sql_file  # TODO: add app_name and meta_file args there
 
     if args.execution == 'run':
-        launch_run_mode(job_class, sql_job, args.location, **app_args)
-    elif args.execution == 'deploy_and_run':
+        launch_run_mode(job_class, sql_job, args.storage, **app_args)
+    elif args.execution == 'deploy':
         launch_deploy_mode(job_class, kwargs, **app_args)
 
-def launch_run_mode(job_class, sql_job, location, **app_args):
+def launch_run_mode(job_class, sql_job, storage, **app_args):
     from pyspark import SparkContext
     from pyspark.sql import SQLContext
     app_name = job_class.__name__ if not sql_job else app_args['sql_file'].split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
     sc = SparkContext(appName=app_name)
     sc_sql = SQLContext(sc)
-    job_class().run_handler(sc, sc_sql, location, **app_args)
+    job_class().run_handler(sc, sc_sql, storage, **app_args)
 
 def launch_deploy_mode(job_class, kwargs, **app_args):
     from core.deploy import DeployPySparkScriptOnAws
