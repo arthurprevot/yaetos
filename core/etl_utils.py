@@ -16,12 +16,13 @@ JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 
+
 class etl(object):
     def run(self, **app_args):
         raise NotImplementedError
 
     def run_handler(self, sc, sc_sql, storage, **app_args):
-        # start_time = time()
+        start_time = time()
         self.sc = sc
         self.sc_sql = sc_sql
         self.storage = storage
@@ -33,13 +34,13 @@ class etl(object):
         output = self.run(**app_args)
         self.save(output)
 
-        # end_time = time()
-        # elapsed = end_time - start_time
-        # self.save_metadata()
+        end_time = time()
+        elapsed = end_time - start_time
+        self.save_metadata(elapsed)
         return output
 
     def set_path(self):
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.storage=='cluster' else JOBS_METADATA_LOCAL_FILE
+        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.storage=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
         self.INPUTS = yml[self.app_name]['inputs']  # TODO: add error handling to deal with KeyError when name not found in jobs_metadata.
         self.OUTPUT = yml[self.app_name]['output']
@@ -79,27 +80,35 @@ class etl(object):
             output.write.csv(path)
 
         print 'Wrote output to ',path
+        self.path = path
 
-    # def save_metadata(self):
-    #     return self.save_metadata_cluster() if self.storage=='cluster' else self.save_metadata_local()
-    #
-    # def save_metadata_local(self):
-    #     content = "-- name: %s\n-- db_creds (#db_type#): %s\n-- time (s): %s\n-- query: \n%s\n-- end"%(name, db_type, elapsed, query_str)
-    #     write_file(fname_sql, content)
-    #
-    # def save_metadata_cluster(self):
-    #     content = "-- name: %s\n-- db_creds (#db_type#): %s\n-- time (s): %s\n-- query: \n%s\n-- end"%(name, db_type, elapsed, query_str)
-    #     write_file(fname_sql, content)
+    def save_metadata(self, elapsed):
+        fname = self.path+'metadata.txt'
+        content = """
+            -- name: %s
+            -- time (s): %s
+            -- github hash: TBD
+            -- code: TBD
+            -- end
+            """%(self.app_name, elapsed)
+        self.save_metadata_cluster(fname, content) if self.storage=='s3' else self.save_metadata_local(fname, content)
+
+    @staticmethod
+    def save_metadata_local(fname_meta, content):
+        fh = open(fname_meta, 'w')
+        fh.write(content)
+        fh.close()
+
+    @staticmethod
+    def save_metadata_cluster(fname_meta, content):
+        # TODO: implement
+        pass
 
     def listdir(self, path):
-        return self.listdir_cluster(path) if self.storage=='cluster' else self.listdir_local(path)
+        return self.listdir_cluster(path) if self.storage=='s3' else self.listdir_local(path)
 
     @staticmethod
     def listdir_local(path):
-        # TODO: make function clearer
-        # For local path
-        # if not path.lower().startswith('s3://'):  # TODO: use boolean set upstream to decide on local vs cluster.
-            # return os.listdir(path)
         return os.listdir(path)
 
     @staticmethod
@@ -122,12 +131,6 @@ class etl(object):
         return yml
 
 
-# def write_file(fname, content):
-#     fh = open(fname, 'w')
-#     fh.write(content)
-#     fh.close()
-
-
 def launch(job_class, sql_job=False, **kwargs):
     """
     This function is used to deploy the script to aws and run it there or to run it locally.
@@ -139,7 +142,7 @@ def launch(job_class, sql_job=False, **kwargs):
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--execution", default='run', help="choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
-    parser.add_argument("-l", "--storage", default='local', help="choose 'local' (default) or 'cluster'.", choices=set(['local', 'cluster'])) # comes from cmd line since value is set when running on cluster
+    parser.add_argument("-l", "--storage", default='local', help="choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
     # parser.add_argument("-m", "--job_metadata_file", default='conf/jobs_metadata.yml', help="To override repo job")  # TODO better integrate
     # parser.add_argument("-w", "--machines", default=2, help="To set number of instance . Only relevant if choosing to create a new cluster.")
     # parser.add_argument("-a", "--aws_setup", default='dev', help="asdf . Only relevant if choosing to deploy to a cluster.")
