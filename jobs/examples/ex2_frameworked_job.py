@@ -1,4 +1,4 @@
-from core.etl_utils import etl, launch
+from core.etl_utils import etl
 from pyspark.sql.functions import udf, array
 from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import col
@@ -6,7 +6,7 @@ from pyspark.sql.functions import col
 
 class ex2_frameworked_job(etl):
 
-    def run(self, some_events, other_events):
+    def transform(self, some_events, other_events):
         """For demo only. Functional but no specific business logic."""
 
         df = self.query("""
@@ -65,4 +65,4 @@ class ex2_frameworked_job(etl):
 
 
 if __name__ == "__main__":
-    launch(job_class=ex2_frameworked_job, aws_setup='perso')
+    ex2_frameworked_job().commandline_launch(aws_setup='perso')

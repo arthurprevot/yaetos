@@ -9,7 +9,6 @@ import sys
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
 
-
 # inputs/output paths
 # input_some_events = "s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz"  # cluster
 input_some_events = "data/bogus_data/inputs/2017-01-02/events_log.csv.gz"  # local

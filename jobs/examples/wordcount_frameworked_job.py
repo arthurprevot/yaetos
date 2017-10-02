@@ -1,10 +1,9 @@
-from core.etl_utils import etl, launch
+from core.etl_utils import etl
 from operator import add
 
 
 class wordcount_frameworked_job(etl):
-
-    def run(self, lines):
+    def transform(self, lines):
         counts = lines.flatMap(lambda x: x.split(' ')) \
                       .map(lambda x: (x, 1)) \
                       .reduceByKey(add)
@@ -12,4 +11,4 @@ class wordcount_frameworked_job(etl):
 
 
 if __name__ == "__main__":
-    launch(job_class=wordcount_frameworked_job, aws_setup='perso')
+    wordcount_frameworked_job().commandline_launch(aws_setup='perso')

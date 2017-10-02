@@ -7,13 +7,13 @@ Most of it from https://github.com/thomhopmans/themarketingtechnologist/tree/mas
 
 import logging
 import os
+import sys
 from datetime import datetime
 import time
 import tarfile
 import boto3
 import botocore
 from ConfigParser import ConfigParser
-import os
 from shutil import copyfile
 from etl_utils import JOBS_METADATA_FILE, CLUSTER_APP_FOLDER
 
@@ -322,5 +322,6 @@ def terminate(error_message=None):
 logger = setup_logging()
 
 if __name__ == "__main__":
+    print 'command line: ', ' '.join(sys.argv)
     app_file = sys.argv[1] if len(sys.argv) > 1 else 'jobs/examples/wordcount_frameworked.py'
     DeployPySparkScriptOnAws(app_file=app_file, aws_setup='perso').run()
