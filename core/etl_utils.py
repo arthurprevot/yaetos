@@ -22,12 +22,12 @@ class etl(object):
     def transform(self, **app_args):
         raise NotImplementedError
 
-    def etl(self, **app_args):
+    def etl(self, sc, sc_sql, app_name, args):
         start_time = time()
-        # self.sc = sc
-        # self.sc_sql = sc_sql
-        # self.storage = storage
-        # self.app_name = sc.appName
+        self.sc = sc
+        self.sc_sql = sc_sql
+        self.app_name = app_name
+        self.args = args
         self.set_path()
 
         loaded_datasets = self.load_inputs()
@@ -39,20 +39,19 @@ class etl(object):
         self.save_metadata(elapsed)
         return output
 
-    def commandline_launch(self, **cmd_args):
+    def commandline_launch(self, **args):
         """
         This function is used to deploy the script to aws and run it there or to run it locally.
         When deployed on cluster, this function is called again to run the script from the cluster.
         The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
         """
         parser = self.define_commandline_args()
-        args = parser.parse_args()
-        self.args = cmd_args
-        self.args.update(args.__dict__)  # commandline arguments take precedence over function ones.
-        if self.args['execution'] == 'run':
-            self.launch_run_mode(**self.args)
-        elif self.args['execution'] == 'deploy':
-            self.launch_deploy_mode(**self.args)
+        cmd_args = parser.parse_args()
+        args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
+        if args['execution'] == 'run':
+            self.launch_run_mode(**args)
+        elif args['execution'] == 'deploy':
+            self.launch_deploy_mode(**args)
 
     @staticmethod
     def define_commandline_args():
@@ -61,18 +60,17 @@ class etl(object):
         parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='dev', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
-        # For later : --job_metadata_file, --machines, --aws_setup, to be integrated only as a way to overide values from file.
+        # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
         return parser
 
-    def launch_run_mode(self, storage, **app_args):
+    def launch_run_mode(self, **args):
         # Load spark here instead of module to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        self.app_name = self.get_app_name()
-        self.sc = SparkContext(appName=self.app_name)
-        self.sc_sql = SQLContext(self.sc)
-        self.storage = storage
-        self.etl()
+        app_name = self.get_app_name()
+        sc = SparkContext(appName=app_name)
+        sc_sql = SQLContext(sc)
+        self.etl(sc, sc_sql, app_name, args)
 
     def launch_deploy_mode(self, aws_setup, **app_args):
         # Load deploy lib here instead of module to remove dependency on it when running code locally
@@ -85,7 +83,7 @@ class etl(object):
         return self.__class__.__name__
 
     def set_path(self):
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.storage=='s3' else JOBS_METADATA_LOCAL_FILE
+        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
         self.INPUTS = yml[self.app_name]['inputs']  # TODO: add error handling to deal with KeyError when name not found in jobs_metadata.
         self.OUTPUT = yml[self.app_name]['output']
@@ -138,7 +136,7 @@ class etl(object):
             -- github hash: TBD
             -- code: TBD
             """%(self.app_name, elapsed)
-        self.save_metadata_cluster(fname, content) if self.storage=='s3' else self.save_metadata_local(fname, content)
+        self.save_metadata_cluster(fname, content) if self.args['storage']=='s3' else self.save_metadata_local(fname, content)
 
     @staticmethod
     def save_metadata_local(fname, content):
@@ -155,7 +153,7 @@ class etl(object):
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
 
     def listdir(self, path):
-        return self.listdir_cluster(path) if self.storage=='s3' else self.listdir_local(path)
+        return self.listdir_cluster(path) if self.args['storage']=='s3' else self.listdir_local(path)
 
     @staticmethod
     def listdir_local(path):
