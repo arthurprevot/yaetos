@@ -19,10 +19,11 @@ CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 
 
 class etl(object):
-    def run(self, **app_args):
+    def transform(self, **app_args):
         raise NotImplementedError
 
-    def run_handler(self, sc, sc_sql, storage, **app_args):
+    # def etl(self, sc, sc_sql, storage, **app_args):
+    def etl(self, **app_args):
         start_time = time()
         self.sc = sc
         self.sc_sql = sc_sql
@@ -39,6 +40,26 @@ class etl(object):
         elapsed = end_time - start_time
         self.save_metadata(elapsed)
         return output
+
+    # def load_spark_and_etl(self, sql_job, storage, **app_args):
+    def launch_run_mode(self, storage, **app_args):
+        # Load spark here instead of module to remove dependency on spark when only deploying code to aws.
+        from pyspark import SparkContext
+        from pyspark.sql import SQLContext
+        self.app_name = self.__name__ if not sql_job else app_args['sql_file'].split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
+        self.sc = SparkContext(appName=app_name)
+        self.sc_sql = SQLContext(sc)
+        # self.run_handler(sc, sc_sql, storage, **app_args)
+        self.storage = storage
+        self.run_handler(**app_args)
+
+    def launch_deploy_mode(self, aws_setup, **app_args):
+        # Load deploy lib here instead of module to remove dependency on it when running code locally
+        from core.deploy import DeployPySparkScriptOnAws
+        # aws_setup = kwargs.get('aws_setup', 'dev')
+        app_file = inspect.getfile(job_class)
+        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
+
 
     def set_path(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.storage=='s3' else JOBS_METADATA_LOCAL_FILE
@@ -161,20 +182,23 @@ def launch(job_class, sql_job=False, **kwargs):
         app_args['sql_file']= args.sql_file  # TODO: add app_name and meta_file args there
 
     if args.execution == 'run':
-        launch_run_mode(job_class, sql_job, args.storage, **app_args)
+        # launch_run_mode(job_class, sql_job, args.storage, **app_args)
+        job_class().launch_spark_and_etl(args.storage, **app_args)
     elif args.execution == 'deploy':
-        launch_deploy_mode(job_class, kwargs, **app_args)
+        # launch_deploy_mode(job_class, kwargs, **app_args)
+        job_class().launch_deploy_mode(job_class, kwargs, **app_args):
 
-def launch_run_mode(job_class, sql_job, storage, **app_args):
-    from pyspark import SparkContext
-    from pyspark.sql import SQLContext
-    app_name = job_class.__name__ if not sql_job else app_args['sql_file'].split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
-    sc = SparkContext(appName=app_name)
-    sc_sql = SQLContext(sc)
-    job_class().run_handler(sc, sc_sql, storage, **app_args)
 
-def launch_deploy_mode(job_class, kwargs, **app_args):
-    from core.deploy import DeployPySparkScriptOnAws
-    aws_setup = kwargs.get('aws_setup', 'dev')
-    app_file = inspect.getfile(job_class)
-    DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
+# def launch_run_mode(job_class, sql_job, storage, **app_args):
+#     from pyspark import SparkContext
+#     from pyspark.sql import SQLContext
+#     app_name = job_class.__name__ if not sql_job else app_args['sql_file'].split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
+#     sc = SparkContext(appName=app_name)
+#     sc_sql = SQLContext(sc)
+#     job_class().run_handler(sc, sc_sql, storage, **app_args)
+
+# def launch_deploy_mode(job_class, kwargs, **app_args):
+#     from core.deploy import DeployPySparkScriptOnAws
+#     aws_setup = kwargs.get('aws_setup', 'dev')
+#     app_file = inspect.getfile(job_class)
+#     DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
