@@ -19,26 +19,70 @@ CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 
 
 class etl(object):
-    def run(self, **app_args):
+    def transform(self, **app_args):
         raise NotImplementedError
 
-    def run_handler(self, sc, sc_sql, storage, **app_args):
+    def etl(self, **app_args):
         start_time = time()
-        self.sc = sc
-        self.sc_sql = sc_sql
-        self.storage = storage
-        self.app_name = sc.appName
+        # self.sc = sc
+        # self.sc_sql = sc_sql
+        # self.storage = storage
+        # self.app_name = sc.appName
         self.set_path()
 
         loaded_datasets = self.load_inputs()
-        app_args.update(loaded_datasets)
-        output = self.run(**app_args)
+        output = self.transform(**loaded_datasets)
         self.save(output)
 
         end_time = time()
         elapsed = end_time - start_time
         self.save_metadata(elapsed)
         return output
+
+    def commandline_launch(self, **cmd_args):
+        """
+        This function is used to deploy the script to aws and run it there or to run it locally.
+        When deployed on cluster, this function is called again to run the script from the cluster.
+        The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
+        """
+        parser = self.define_commandline_args()
+        args = parser.parse_args()
+        self.args = cmd_args
+        self.args.update(args.__dict__)  # commandline arguments take precedence over function ones.
+        if self.args['execution'] == 'run':
+            self.launch_run_mode(**self.args)
+        elif self.args['execution'] == 'deploy':
+            self.launch_deploy_mode(**self.args)
+
+    @staticmethod
+    def define_commandline_args():
+        # Defined here separatly for overridability.
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
+        parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
+        parser.add_argument("-a", "--aws_setup", default='dev', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
+        # For later : --job_metadata_file, --machines, --aws_setup, to be integrated only as a way to overide values from file.
+        return parser
+
+    def launch_run_mode(self, storage, **app_args):
+        # Load spark here instead of module to remove dependency on spark when only deploying code to aws.
+        from pyspark import SparkContext
+        from pyspark.sql import SQLContext
+        self.app_name = self.get_app_name()
+        self.sc = SparkContext(appName=self.app_name)
+        self.sc_sql = SQLContext(self.sc)
+        self.storage = storage
+        self.etl()
+
+    def launch_deploy_mode(self, aws_setup, **app_args):
+        # Load deploy lib here instead of module to remove dependency on it when running code locally
+        from core.deploy import DeployPySparkScriptOnAws
+        app_file = inspect.getfile(self.__class__)
+        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
+
+    def get_app_name(self):
+        # Isolated in function for overridability
+        return self.__class__.__name__
 
     def set_path(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.storage=='s3' else JOBS_METADATA_LOCAL_FILE
@@ -135,46 +179,3 @@ class etl(object):
         with open(fname, 'r') as stream:
             yml = yaml.load(stream)
         return yml
-
-
-def launch(job_class, sql_job=False, **kwargs):
-    """
-    This function is used to deploy the script to aws and run it there or to run it locally.
-    When deployed on cluster, this function is called again to run the script from the cluster.
-    The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
-    """
-    # TODO: redo this function to clarify commandline args vs function args vs args to go into deploy or run mode.. could use kwargs to set params below if not overriden by commandline args.
-    # TODO: look at adding input and output path as cmdline as a way to override schedule ones. or better differentiate cmdline args vs app_args
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--execution", default='run', help="choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
-    parser.add_argument("-l", "--storage", default='local', help="choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
-    # parser.add_argument("-m", "--job_metadata_file", default='conf/jobs_metadata.yml', help="To override repo job")  # TODO better integrate
-    # parser.add_argument("-w", "--machines", default=2, help="To set number of instance . Only relevant if choosing to create a new cluster.")
-    # parser.add_argument("-a", "--aws_setup", default='dev', help="asdf . Only relevant if choosing to deploy to a cluster.")
-    if sql_job:
-        parser.add_argument("-s", "--sql_file", help="path of sql file to run") # TODO: make mandatory
-    args = parser.parse_args()
-
-    app_args = {}
-    if sql_job and args.sql_file is not None:
-        app_args['sql_file']= args.sql_file  # TODO: add app_name and meta_file args there
-
-    if args.execution == 'run':
-        launch_run_mode(job_class, sql_job, args.storage, **app_args)
-    elif args.execution == 'deploy':
-        launch_deploy_mode(job_class, kwargs, **app_args)
-
-def launch_run_mode(job_class, sql_job, storage, **app_args):
-    from pyspark import SparkContext
-    from pyspark.sql import SQLContext
-    app_name = job_class.__name__ if not sql_job else app_args['sql_file'].split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
-    sc = SparkContext(appName=app_name)
-    sc_sql = SQLContext(sc)
-    job_class().run_handler(sc, sc_sql, storage, **app_args)
-
-def launch_deploy_mode(job_class, kwargs, **app_args):
-    from core.deploy import DeployPySparkScriptOnAws
-    aws_setup = kwargs.get('aws_setup', 'dev')
-    app_file = inspect.getfile(job_class)
-    DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
