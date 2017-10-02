@@ -32,8 +32,9 @@ class etl(object):
         self.set_path()
 
         loaded_datasets = self.load_inputs()
-        app_args.update(loaded_datasets)
-        output = self.run(**app_args)
+        # app_args.update(loaded_datasets)
+        # output = self.transform(**app_args)
+        output = self.transform(**loaded_datasets)
         self.save(output)
 
         end_time = time()
@@ -47,22 +48,23 @@ class etl(object):
         When deployed on cluster, this function is called again to run the script from the cluster.
         The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
         """
-        # TODO: redo this function to clarify commandline args vs function args vs args to go into deploy or run mode.. could use kwargs to set params below if not overriden by commandline args.
-        # TODO: look at adding input and output path as cmdline as a way to override schedule ones. or better differentiate cmdline args vs app_args
-
         parser = self.define_commandline_args()
         args = parser.parse_args()
-
-        aws_setup = cmd_args.pop('aws_setup', 'dev')  # TODO: remove aws_setup from app_args
+        # aws_setup = cmd_args.pop('aws_setup', 'dev')  # TODO: remove aws_setup from app_args
+        self.args = cmd_args
+        self.args.update(args.__dict__)  # commandline arguments take precedence over function ones.
         # import ipdb; ipdb.set_trace()
-        app_args = cmd_args
+        # app_args = cmd_args
+        # self.set_app_args(cmd_args)
         # app_args = {}
-        if args.execution == 'run':
+        if self.args['execution'] == 'run':
             # launch_run_mode(job_class, sql_job, args.storage, **app_args)
-            self.launch_run_mode(args.storage, **app_args)
-        elif args.execution == 'deploy':
+            # self.launch_run_mode(self.args['storage'], **self.app_args)
+            # self.launch_run_mode(self.args['storage'], **self.app_args)
+            self.launch_run_mode(**self.args)
+        elif self.args['execution'] == 'deploy':
             # launch_deploy_mode(job_class, kwargs, **app_args)
-            self.launch_deploy_mode(aws_setup, **app_args)
+            self.launch_deploy_mode(**self.args)
 
     @staticmethod
     def define_commandline_args():
@@ -83,13 +85,16 @@ class etl(object):
         self.sc_sql = SQLContext(self.sc)
         # self.run_handler(sc, sc_sql, storage, **app_args)
         self.storage = storage
-        self.etl(**app_args)
+        # self.etl(**app_args)
+        self.etl()
 
     def launch_deploy_mode(self, aws_setup, **app_args):
         # Load deploy lib here instead of module to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
         # aws_setup = kwargs.get('aws_setup', 'dev')
-        app_file = inspect.getfile(self)
+        # import ipdb; ipdb.set_trace()
+        app_file = inspect.getfile(self.__class__)
+        print '#### app_file', app_file
         DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
 
     def get_app_name(self):
@@ -98,11 +103,17 @@ class etl(object):
         # Isolated in function to be overriden-able
         # return self.__name__
         # return self.__str__()  # TODO: back to self.__name__ when feasible.
-        return "ex1_frameworked_job"  # TODO: back to self.__name__ when feasible.
+        # return "ex1_frameworked_job"  # TODO: back to self.__name__ when feasible.
+        return self.__class__.__name__
+
+    # def set_app_args(self, cmd_args):
+    #     # Isolated in function for overridability
+    #     self.app_args = cmd_args
 
     def set_path(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.storage=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
+        # import ipdb; ipdb.set_trace()
         self.INPUTS = yml[self.app_name]['inputs']  # TODO: add error handling to deal with KeyError when name not found in jobs_metadata.
         self.OUTPUT = yml[self.app_name]['output']
 
@@ -224,8 +235,8 @@ class etl(object):
 #         # launch_run_mode(job_class, sql_job, args.storage, **app_args)
 #         job_class().launch_spark_and_etl(args.storage, **app_args)
 #     elif args.execution == 'deploy':
-#         # launch_deploy_mode(job_class, kwargs, **app_args)
-#         job_class().launch_deploy_mode(job_class, kwargs, **app_args):
+#         launch_deploy_mode(job_class, kwargs, **app_args)
+#         # job_class().launch_deploy_mode(job_class, kwargs, **app_args)
 
 
 # def launch_run_mode(job_class, sql_job, storage, **app_args):
@@ -239,5 +250,6 @@ class etl(object):
 # def launch_deploy_mode(job_class, kwargs, **app_args):
 #     from core.deploy import DeployPySparkScriptOnAws
 #     aws_setup = kwargs.get('aws_setup', 'dev')
+#     import ipdb; ipdb.set_trace()
 #     app_file = inspect.getfile(job_class)
-#     DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
+#     # DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
