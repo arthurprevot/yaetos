@@ -2,7 +2,7 @@
 from core.etl_utils import etl
 
 
-class ex1_frameworked_job(etl):
+class Job(etl):
     def transform(self, some_events, other_events):
         df = self.query("""
             SELECT se.session_id, count(*)
@@ -16,4 +16,4 @@ class ex1_frameworked_job(etl):
 
 
 if __name__ == "__main__":
-    ex1_frameworked_job().commandline_launch(aws_setup='perso')
+    Job().commandline_launch(aws_setup='perso')

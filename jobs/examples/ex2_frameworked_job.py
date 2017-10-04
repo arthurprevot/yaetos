@@ -4,8 +4,7 @@ from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import col
 
 
-class ex2_frameworked_job(etl):
-
+class Job(etl):
     def transform(self, some_events, other_events):
         """For demo only. Functional but no specific business logic."""
 
@@ -65,4 +64,4 @@ class ex2_frameworked_job(etl):
 
 
 if __name__ == "__main__":
-    ex2_frameworked_job().commandline_launch(aws_setup='perso')
+    Job().commandline_launch(aws_setup='perso')

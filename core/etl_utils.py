@@ -41,8 +41,7 @@ class etl(object):
 
     def commandline_launch(self, **args):
         """
-        This function is used to deploy the script to aws and run it there or to run it locally.
-        When deployed on cluster, this function is called again to run the script from the cluster.
+        This function is used to run the job locally or deploy it to aws and run it there.
         The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
         """
         parser = self.define_commandline_args()
@@ -75,12 +74,15 @@ class etl(object):
     def launch_deploy_mode(self, aws_setup, **app_args):
         # Load deploy lib here instead of module to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
-        app_file = inspect.getfile(self.__class__)
-        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
+        DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
 
     def get_app_name(self):
         # Isolated in function for overridability
-        return self.__class__.__name__
+        app_file = self.get_app_file()
+        return app_file.split('/')[-1].replace('.py','')  # TODO make better with os.path functions.
+
+    def get_app_file(self):
+        return inspect.getfile(self.__class__)
 
     def set_path(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
