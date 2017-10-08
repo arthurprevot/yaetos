@@ -1,8 +1,8 @@
-from core.etl_utils import etl
+from core.etl_utils import etl_base
 from operator import add
 
 
-class wordcount_frameworked_job(etl):
+class Job(etl_base):
     def transform(self, lines):
         counts = lines.flatMap(lambda x: x.split(' ')) \
                       .map(lambda x: (x, 1)) \
@@ -11,4 +11,4 @@ class wordcount_frameworked_job(etl):
 
 
 if __name__ == "__main__":
-    wordcount_frameworked_job().commandline_launch(aws_setup='perso')
+    Job().commandline_launch(aws_setup='perso')

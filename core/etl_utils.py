@@ -18,7 +18,7 @@ JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 
 
-class etl(object):
+class etl_base(object):
     def transform(self, **app_args):
         raise NotImplementedError
 
@@ -28,7 +28,10 @@ class etl(object):
         self.sc_sql = sc_sql
         self.app_name = app_name
         self.args = args
-        self.set_path()
+        self.set_app_yml()
+        self.set_paths()
+        self.set_is_incremental()
+        self.set_frequency()
 
         loaded_datasets = self.load_inputs()
         output = self.transform(**loaded_datasets)
@@ -41,8 +44,7 @@ class etl(object):
 
     def commandline_launch(self, **args):
         """
-        This function is used to deploy the script to aws and run it there or to run it locally.
-        When deployed on cluster, this function is called again to run the script from the cluster.
+        This function is used to run the job locally or deploy it to aws and run it there.
         The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
         """
         parser = self.define_commandline_args()
@@ -67,7 +69,7 @@ class etl(object):
         # Load spark here instead of module to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        app_name = self.get_app_name()
+        app_name = self.get_app_name(args)
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         self.etl(sc, sc_sql, app_name, args)
@@ -75,18 +77,33 @@ class etl(object):
     def launch_deploy_mode(self, aws_setup, **app_args):
         # Load deploy lib here instead of module to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
-        app_file = inspect.getfile(self.__class__)
-        DeployPySparkScriptOnAws(app_file=app_file, aws_setup=aws_setup, **app_args).run()
+        DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
 
-    def get_app_name(self):
+    def get_app_name(self, args):
         # Isolated in function for overridability
-        return self.__class__.__name__
+        app_file = self.get_app_file()
+        return app_file.split('/')[-1].replace('.py','')  # TODO make better with os.path functions.
 
-    def set_path(self):
+    def get_app_file(self):
+        return inspect.getfile(self.__class__)
+
+    def set_app_yml(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
-        self.INPUTS = yml[self.app_name]['inputs']  # TODO: add error handling to deal with KeyError when name not found in jobs_metadata.
-        self.OUTPUT = yml[self.app_name]['output']
+        try:
+            self.app_yml = yml[self.app_name]
+        except KeyError:
+            raise KeyError("Your app ({}) can't be found in jobs_metadata file ({}). Add it there or make sure the name matches".format(self.app_name, meta_file))
+
+    def set_paths(self):
+        self.INPUTS = self.app_yml['inputs']
+        self.OUTPUT = self.app_yml['output']
+
+    def set_is_incremental(self):
+        self.is_incremental = any([self.INPUTS[item].get('inc_field', None) is not None for item in self.INPUTS.keys()])
+
+    def set_frequency(self):
+        self.frequency = self.app_yml.get('frequency', None)
 
     def load_inputs(self):
         app_args = {}
@@ -97,16 +114,70 @@ class etl(object):
                 paths = self.listdir(upstream_path)
                 latest_date = max(paths)
                 path = path.format(latest=latest_date)
+            app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
 
-            if self.INPUTS[item]['type'] == 'txt':
-                app_args[item] = self.sc.textFile(path)
-            elif self.INPUTS[item]['type'] == 'csv':
-                app_args[item] = self.sc_sql.read.csv(path, header=True)
-                app_args[item].createOrReplaceTempView(item)
-            elif self.INPUTS[item]['type'] == 'parquet':
-                app_args[item] = self.sc_sql.read.parquet(path)
-                app_args[item].createOrReplaceTempView(item)
+        if self.is_incremental:
+            app_args = self.filter_incremental_inputs(app_args)
+
+        self.sql_register(app_args)
         return app_args
+
+    def filter_incremental_inputs(self, app_args):
+        min_dt = self.get_output_max_timestamp()
+
+        # Get latest timestamp in common across incremental inputs
+        maxes = []
+        for item in app_args.keys():
+            input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
+            inc = self.INPUTS[item].get('inc_field', None)
+            if input_is_tabular and inc:
+                max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
+                maxes.append(max_dt)
+        max_dt = min(maxes) if len(maxes)>0 else None
+
+        # Filter
+        for item in app_args.keys():
+            input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
+            inc = self.INPUTS[item].get('inc_field', None)
+            if inc:
+                if input_is_tabular:
+                    inc_type = {k:v for k, v in app_args[item].dtypes}[inc]
+                    print "Input dataset '{}' will be filtered for min_dt={} max_dt={}".format(item, min_dt, max_dt)
+                    if min_dt:
+                        # min_dt = to_date(lit(s)).cast(TimestampType()  # TODO: deal with dt type, as coming from parquet
+                        app_args[item] = app_args[item].filter(app_args[item][inc] > min_dt)
+                    if max_dt:
+                        app_args[item] = app_args[item].filter(app_args[item][inc] <= max_dt)
+                else:
+                    raise "Incremental loading is not supported for unstructured input. You need to handle the incremental logic in the job code."
+        return app_args
+
+    def sql_register(self, app_args):
+        for item in app_args.keys():
+            input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
+            if input_is_tabular:
+                app_args[item].createOrReplaceTempView(item)
+
+    def load_data(self, path, path_type):
+        if path_type == 'txt':
+            return self.sc.textFile(path)
+        elif path_type == 'csv':
+            return self.sc_sql.read.csv(path, header=True)
+        elif path_type == 'parquet':
+            return self.sc_sql.read.parquet(path)
+
+    def get_output_max_timestamp(self):
+        path = self.OUTPUT['path']
+        path += '*' # to go into subfolders
+        try:
+            df = self.load_data(path, self.OUTPUT['type'])
+        except Exception as e:  # TODO: don't catch all
+            print "Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e)
+            return None
+
+        dt = df.agg({self.OUTPUT['inc_field']: "max"}).collect()[0][0]
+        print "Max timestamp of previous increment: '{}'".format(dt)
+        return dt
 
     def save(self, output):
         path = self.OUTPUT['path']
@@ -114,13 +185,17 @@ class etl(object):
             current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
             path = path.format(now=current_time)
 
-        # TODO: deal with cases where "output" is df when expecting rdd and vice versa, or at least raise issue in a cleaner way.
+        if self.is_incremental:
+            current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
+            path += 'inc_%s/'%current_time
+
+        # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
         if self.OUTPUT['type'] == 'txt':
             output.saveAsTextFile(path)
         elif self.OUTPUT['type'] == 'parquet':
             output.write.parquet(path)
         elif self.OUTPUT['type'] == 'csv':
-            output.write.csv(path)
+            output.write.option("header", "true").csv(path)
 
         print 'Wrote output to ',path
         self.path = path
@@ -167,6 +242,17 @@ class etl(object):
         objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
         paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
         return paths
+
+    def dir_exist(self, path):
+        return self.dir_exist_cluster(path) if self.args['storage']=='s3' else self.dir_exist_local(path)
+
+    @staticmethod
+    def dir_exist_local(path):
+        return os.path.isdir(path)
+
+    @staticmethod
+    def dir_exist_cluster(path):
+        raise "Not implemented"
 
     def query(self, query_str):
         print 'Query string:', query_str
