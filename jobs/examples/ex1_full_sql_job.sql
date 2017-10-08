@@ -1,4 +1,5 @@
--- to run: python core/sql_generic_job.py --sql_file=jobs/examples/ex1_full_sql_job.sql
+-- Path of 'some_events' and 'other_events' tables can be found in conf/jobs_metadata.yml or conf/jobs_metadata_local.yml
+-- to run: python core/sql_job.py --sql_file=jobs/examples/ex1_full_sql_job.sql
 
 SELECT se.session_id, count(*)
 FROM some_events se

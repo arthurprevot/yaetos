@@ -1,7 +1,7 @@
-from core.etl_utils import etl
+from core.etl_utils import etl_base
 
 
-class sql_job(etl):
+class sql_job(etl_base):
     """To run/deploy sql jobs, using --sql_file arg."""
 
     def transform(self, **ignored):
@@ -9,12 +9,12 @@ class sql_job(etl):
         df = self.query(sql)
         return df
 
-    def get_app_name(self):
-        return self.args['sql_file'].split('/')[-1].replace('.sql','')  # TODO: redo better
+    def get_app_name(self, args):
+        return args['sql_file'].split('/')[-1].replace('.sql','')  # TODO: redo better
 
     @staticmethod
     def define_commandline_args():
-        parser = etl.define_commandline_args()
+        parser = etl_base.define_commandline_args()
         parser.add_argument("-s", "--sql_file", help="path of sql file to run")
         return parser
 

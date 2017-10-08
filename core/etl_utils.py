@@ -69,7 +69,7 @@ class etl_base(object):
         # Load spark here instead of module to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        app_name = self.get_app_name()
+        app_name = self.get_app_name(args)
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         self.etl(sc, sc_sql, app_name, args)
@@ -79,7 +79,7 @@ class etl_base(object):
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
 
-    def get_app_name(self):
+    def get_app_name(self, args):
         # Isolated in function for overridability
         app_file = self.get_app_file()
         return app_file.split('/')[-1].replace('.py','')  # TODO make better with os.path functions.
@@ -125,28 +125,27 @@ class etl_base(object):
     def filter_incremental_inputs(self, app_args):
         min_dt = self.get_output_max_timestamp()
 
-        # Get min of max
+        # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
             input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
-            if input_is_tabular:
-                # import ipdb; ipdb.set_trace()
-                max_dt = app_args[item].agg({self.INPUTS[item]['inc_field']: "max"}).collect()[0][0]
+            inc = self.INPUTS[item].get('inc_field', None)
+            if input_is_tabular and inc:
+                max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
                 maxes.append(max_dt)
         max_dt = min(maxes) if len(maxes)>0 else None
 
-        # filter
+        # Filter
         for item in app_args.keys():
             input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
             inc = self.INPUTS[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
                     inc_type = {k:v for k, v in app_args[item].dtypes}[inc]
-                    # import ipdb; ipdb.set_trace()
                     print "Input dataset '{}' will be filtered for min_dt={} max_dt={}".format(item, min_dt, max_dt)
                     if min_dt:
-                        # min_dt = to_date(lit(s)).cast(TimestampType()
-                        app_args[item] = app_args[item].filter(app_args[item][inc] > min_dt)  # '20160301005734' # TODO: finish
+                        # min_dt = to_date(lit(s)).cast(TimestampType()  # TODO: deal with dt type, as coming from parquet
+                        app_args[item] = app_args[item].filter(app_args[item][inc] > min_dt)
                     if max_dt:
                         app_args[item] = app_args[item].filter(app_args[item][inc] <= max_dt)
                 else:
@@ -190,7 +189,7 @@ class etl_base(object):
             current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
             path += 'inc_%s/'%current_time
 
-        # TODO: deal with cases where "output" is df when expecting rdd and vice versa, or at least raise issue in a cleaner way.
+        # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
         if self.OUTPUT['type'] == 'txt':
             output.saveAsTextFile(path)
         elif self.OUTPUT['type'] == 'parquet':
