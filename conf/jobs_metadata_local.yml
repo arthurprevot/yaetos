@@ -16,7 +16,20 @@ ex2_frameworked_job:  # more complex version of ex1_frameworked_job
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'data/bogus_data/output/{now}/', 'type':'csv'}
+  output: {'path':'data/bogus_data/output_ex2/{now}/', 'type':'csv'}
+
+ex3_incremental_job:  # focus on incremental loading and dropping
+  inputs:
+    processed_events: {'path':"data/bogus_data/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj'}
+  # output: {'path':'data/bogus_data/output_ex3_inc/{now}/', 'type':'csv', 'inc_field': 'other_timestamp'}
+  output: {'path':'data/bogus_data/output_ex3_inc/incremental_build_v1/', 'type':'csv', 'inc_field': 'other_timestamp'}
+  frequency: 24h
+
+ex3_dependant_job:  # shows dependency as necessary for ex3_incremental_job
+  inputs:
+    some_events: {'path':"data/bogus_data/inputs/{latest}/events_log_small.csv", 'type':'csv'}
+  output: {'path':'data/bogus_data/output_ex3_dep/{now}/', 'type':'csv'}
+  frequency: 24h
 
 wordcount_frameworked_job:  # shows raw pyspark rdd ops in framework, same as wordcount_raw_job
   inputs:

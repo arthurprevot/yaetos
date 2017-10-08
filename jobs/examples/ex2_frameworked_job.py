@@ -1,10 +1,10 @@
-from core.etl_utils import etl
+from core.etl_utils import etl_base
 from pyspark.sql.functions import udf, array
 from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import col
 
 
-class Job(etl):
+class Job(etl_base):
     def transform(self, some_events, other_events):
         """For demo only. Functional but no specific business logic."""
 

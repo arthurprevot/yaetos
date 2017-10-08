@@ -10,7 +10,7 @@ class sql_job(etl):
         return df
 
     def get_app_name(self):
-        return self.args['sql_file'].split('/')[-1].replace('.sql','')  # Quick and dirty, forces name of sql file to match schedule entry
+        return self.args['sql_file'].split('/')[-1].replace('.sql','')  # TODO: redo better
 
     @staticmethod
     def define_commandline_args():
