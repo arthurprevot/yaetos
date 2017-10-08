@@ -114,22 +114,16 @@ class etl_base(object):
                 paths = self.listdir(upstream_path)
                 latest_date = max(paths)
                 path = path.format(latest=latest_date)
-
-            # if self.INPUTS[item]['type'] == 'txt':
-            #     app_args[item] = self.sc.textFile(path)
-            # elif self.INPUTS[item]['type'] == 'csv':
-            #     app_args[item] = self.sc_sql.read.csv(path, header=True)
-            # elif self.INPUTS[item]['type'] == 'parquet':
-            #     app_args[item] = self.sc_sql.read.parquet(path)
             app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
 
-        app_args = self.filter_incremental_inputs(app_args)
+        if self.is_incremental:
+            app_args = self.filter_incremental_inputs(app_args)
+
         self.sql_register(app_args)
         return app_args
 
     def filter_incremental_inputs(self, app_args):
-        if self.is_incremental:
-            min_dt = self.get_output_max_timestamp()
+        min_dt = self.get_output_max_timestamp()
 
         # Get min of max
         maxes = []
@@ -143,13 +137,13 @@ class etl_base(object):
 
         # filter
         for item in app_args.keys():
-            # Filter if incremental
             input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
             inc = self.INPUTS[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
                     inc_type = {k:v for k, v in app_args[item].dtypes}[inc]
                     # import ipdb; ipdb.set_trace()
+                    print "Input dataset '{}' will be filtered for min_dt={} max_dt={}".format(item, min_dt, max_dt)
                     if min_dt:
                         # min_dt = to_date(lit(s)).cast(TimestampType()
                         app_args[item] = app_args[item].filter(app_args[item][inc] > min_dt)  # '20160301005734' # TODO: finish
@@ -162,7 +156,6 @@ class etl_base(object):
     def sql_register(self, app_args):
         for item in app_args.keys():
             input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
-            # Register in sql
             if input_is_tabular:
                 app_args[item].createOrReplaceTempView(item)
 
@@ -176,35 +169,13 @@ class etl_base(object):
 
     def get_output_max_timestamp(self):
         path = self.OUTPUT['path']
-        path = path+'*' # to go into subfolders
-        # import ipdb; ipdb.set_trace()
-
-        # if not path.__contains__('{now}'):
-        #     raise "get_last_output_timestamp : Path without {now} not supported"
-
-        # upstream_path = path.split('{now}')[0]
-        # if not self.dir_exist(upstream_path):
-        #     return None
-
-        # paths = self.listdir(upstream_path)
-        # latest_date = max(paths)
-        # path = path.format(now=latest_date)
-        # print "### Folder '{}'".format(path)
-
-        # if not self.dir_exist(path) or self.listdir(path) == []:
-        #     print "Folder '{}' doesn't exist or is empty".format(path)
-        #     return None
-
-        # import ipdb; ipdb.set_trace()
-        # test : self.sc_sql.read.csv(path, header=True)
+        path += '*' # to go into subfolders
         try:
             df = self.load_data(path, self.OUTPUT['type'])
-        # except pyspark.sql.utils.IllegalArgumentException as e:
-        except:
-            print "Folder '{}' couldn't be loaded with error '{}', may be empty or not existing.".format(path, 'TBD')
+        except Exception as e:  # TODO: don't catch all
+            print "Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e)
             return None
-        # import ipdb; ipdb.set_trace()
-        # dt = df[self.OUTPUT['inc_field']].max()  # TODO: get proper max
+
         dt = df.agg({self.OUTPUT['inc_field']: "max"}).collect()[0][0]
         print "Max timestamp of previous increment: '{}'".format(dt)
         return dt
