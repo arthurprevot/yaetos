@@ -27,6 +27,22 @@ ex2_frameworked_job:
   frequency: 24h
   email: 'some_group@scmspain.com'
 
+ex3_incremental_job:
+  inputs:
+    processed_events: {'path':"s3://bucket-scratch/bogus_data/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj'}
+  output: {'path':'s3://bucket-scratch/bogus_data/output_ex3_inc/incremental_build_v1/', 'type':'csv', 'inc_field': 'other_timestamp'}
+  dependencies: [] # list here if any
+  frequency: 24h
+  email: 'some_group@scmspain.com'
+
+ex3_dependant_job:
+  inputs:
+    some_events: {'path':"s3://bucket-scratch/bogus_data/inputs/events_log_small.csv", 'type':'csv'}
+  output: {'path':'s3://bucket-scratch/bogus_data/output_ex3_dep/{now}/', 'type':'csv'}
+  dependencies: [] # list here if any
+  frequency: 24h
+  email: 'some_group@scmspain.com'
+
 wordcount_frameworked_job:
   inputs:
     lines: {'path':"s3://bucket-scratch/wordcount_test/input/sample_text.txt", 'type':'txt'}
