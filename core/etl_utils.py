@@ -1,6 +1,7 @@
 """
 Helper functions. Setup to run locally and on cluster.
 """
+# TODO: add logger
 
 import sys
 import inspect
@@ -22,18 +23,20 @@ class etl_base(object):
     def transform(self, **app_args):
         raise NotImplementedError
 
-    def etl(self, sc, sc_sql, app_name, args):
+    def etl(self, sc, sc_sql, args, loaded_inputs={}):
         start_time = time()
         self.sc = sc
         self.sc_sql = sc_sql
-        self.app_name = app_name
+        self.app_name = sc.appName
+        self.job_name = self.get_job_name(args)  # differs from app_name when one spark app runs several jobs.
         self.args = args
-        self.set_app_yml()
+        self.set_job_yml()
         self.set_paths()
         self.set_is_incremental()
         self.set_frequency()
+        print "Starting running job '{}' in spark app '{}'.".format(self.job_name, self.app_name)
 
-        loaded_datasets = self.load_inputs()
+        loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
         self.save(output)
 
@@ -69,45 +72,50 @@ class etl_base(object):
         # Load spark here instead of module to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        app_name = self.get_app_name(args)
+        app_name = self.get_job_name(args)
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
-        self.etl(sc, sc_sql, app_name, args)
+        self.etl(sc, sc_sql, args)
 
     def launch_deploy_mode(self, aws_setup, **app_args):
         # Load deploy lib here instead of module to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
 
-    def get_app_name(self, args):
+    def get_job_name(self, args):
         # Isolated in function for overridability
-        app_file = self.get_app_file()
+        app_file = self.get_app_file()  # TODO rename to job_file and get_job_file()
         return app_file.split('/')[-1].replace('.py','')  # TODO make better with os.path functions.
 
     def get_app_file(self):
-        return inspect.getfile(self.__class__)
+        return inspect.getsourcefile(self.__class__)
 
-    def set_app_yml(self):
+    def set_job_yml(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
         try:
-            self.app_yml = yml[self.app_name]
+            self.job_yml = yml[self.job_name]
         except KeyError:
-            raise KeyError("Your app ({}) can't be found in jobs_metadata file ({}). Add it there or make sure the name matches".format(self.app_name, meta_file))
+            raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(self.job_name, meta_file))
 
     def set_paths(self):
-        self.INPUTS = self.app_yml['inputs']
-        self.OUTPUT = self.app_yml['output']
+        self.INPUTS = self.job_yml['inputs']
+        self.OUTPUT = self.job_yml['output']
 
     def set_is_incremental(self):
         self.is_incremental = any([self.INPUTS[item].get('inc_field', None) is not None for item in self.INPUTS.keys()])
 
     def set_frequency(self):
-        self.frequency = self.app_yml.get('frequency', None)
+        self.frequency = self.job_yml.get('frequency', None)
 
-    def load_inputs(self):
+    def load_inputs(self, loaded_inputs):
         app_args = {}
         for item in self.INPUTS.keys():
+            if item in loaded_inputs.keys():
+                app_args[item] = loaded_inputs[item]
+                print "Input '{}' passed in memory from a previous job.".format(item)
+                continue
+
             path = self.INPUTS[item]['path']
             if '{latest}' in path:
                 upstream_path = path.split('{latest}')[0]
@@ -115,6 +123,7 @@ class etl_base(object):
                 latest_date = max(paths)
                 path = path.format(latest=latest_date)
             app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
+            print "Input '{}' loaded from files '{}'.".format(item, path)
 
         if self.is_incremental:
             app_args = self.filter_incremental_inputs(app_args)
@@ -203,14 +212,15 @@ class etl_base(object):
     def save_metadata(self, elapsed):
         fname = self.path + 'metadata.txt'
         content = """
-            -- name: %s
+            -- app_name: %s
+            -- job_name: %s
             -- time (s): %s
             -- cluster_setup : TBD
             -- input folders : TBD
             -- output folder : TBD
             -- github hash: TBD
             -- code: TBD
-            """%(self.app_name, elapsed)
+            """%(self.app_name, self.job_name, elapsed)
         self.save_metadata_cluster(fname, content) if self.args['storage']=='s3' else self.save_metadata_local(fname, content)
 
     @staticmethod

@@ -9,7 +9,7 @@ class sql_job(etl_base):
         df = self.query(sql)
         return df
 
-    def get_app_name(self, args):
+    def get_job_name(self, args):
         return args['sql_file'].split('/')[-1].replace('.sql','')  # TODO: redo better
 
     @staticmethod
