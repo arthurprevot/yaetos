@@ -1,7 +1,9 @@
 """
 Helper functions. Setup to run locally and on cluster.
 """
-# TODO: add logger
+# TODO:
+# - add logger
+
 
 import sys
 import inspect
@@ -64,7 +66,7 @@ class etl_base(object):
         parser = argparse.ArgumentParser()
         parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
-        parser.add_argument("-a", "--aws_setup", default='dev', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
+        parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
         return parser
 
@@ -111,17 +113,21 @@ class etl_base(object):
     def load_inputs(self, loaded_inputs):
         app_args = {}
         for item in self.INPUTS.keys():
+
+            # Load from memory if available
             if item in loaded_inputs.keys():
                 app_args[item] = loaded_inputs[item]
                 print "Input '{}' passed in memory from a previous job.".format(item)
                 continue
 
+            # Load from disk
             path = self.INPUTS[item]['path']
-            if '{latest}' in path:
-                upstream_path = path.split('{latest}')[0]
-                paths = self.listdir(upstream_path)
-                latest_date = max(paths)
-                path = path.format(latest=latest_date)
+            # if '{latest}' in path:
+            #     upstream_path = path.split('{latest}')[0]
+            #     paths = fs().listdir(upstream_path, self.args['storage'])
+            #     latest_date = max(paths)
+            #     path = path.format(latest=latest_date)
+            path = Path(path).expand_later(self.args['storage'])
             app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
             print "Input '{}' loaded from files '{}'.".format(item, path)
 
@@ -174,6 +180,9 @@ class etl_base(object):
             return self.sc_sql.read.csv(path, header=True)
         elif path_type == 'parquet':
             return self.sc_sql.read.parquet(path)
+        else:
+            supported = ['txt', 'csv', 'parquet']  # TODO: register types differently without duplicating
+            raise "Unsupported file type '{}' for path '{}'. Supported types are: {}. ".format(path_type, path, supported)
 
     def get_output_max_timestamp(self):
         path = self.OUTPUT['path']
@@ -189,10 +198,11 @@ class etl_base(object):
         return dt
 
     def save(self, output):
-        path = self.OUTPUT['path']
-        if '{now}' in path:
-            current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
-            path = path.format(now=current_time)
+        # path = self.OUTPUT['path']
+        # if '{now}' in path:
+        #     current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
+        #     path = path.format(now=current_time)
+        path = Path(self.OUTPUT['path']).expand_now()
 
         if self.is_incremental:
             current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
@@ -221,7 +231,23 @@ class etl_base(object):
             -- github hash: TBD
             -- code: TBD
             """%(self.app_name, self.job_name, elapsed)
-        self.save_metadata_cluster(fname, content) if self.args['storage']=='s3' else self.save_metadata_local(fname, content)
+        # self.save_metadata_cluster(fname, content) if self.args['storage']=='s3' else self.save_metadata_local(fname, content)
+        fs().save_metadata(fname, content, self.args['storage'])
+
+    def query(self, query_str):
+        print 'Query string:', query_str
+        return self.sc_sql.sql(query_str)
+
+    @staticmethod
+    def load_meta(fname):
+        with open(fname, 'r') as stream:
+            yml = yaml.load(stream)
+        return yml
+
+
+class fs():
+    def save_metadata(self, fname, content, storage):
+        self.save_metadata_cluster(fname, content) if storage=='s3' else self.save_metadata_local(fname, content)
 
     @staticmethod
     def save_metadata_local(fname, content):
@@ -237,8 +263,8 @@ class etl_base(object):
         s3c = boto3.client('s3')
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
 
-    def listdir(self, path):
-        return self.listdir_cluster(path) if self.args['storage']=='s3' else self.listdir_local(path)
+    def listdir(self, path, storage):
+        return self.listdir_cluster(path) if storage=='s3' else self.listdir_local(path)
 
     @staticmethod
     def listdir_local(path):
@@ -253,8 +279,8 @@ class etl_base(object):
         paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
         return paths
 
-    def dir_exist(self, path):
-        return self.dir_exist_cluster(path) if self.args['storage']=='s3' else self.dir_exist_local(path)
+    def dir_exist(self, path, storage):
+        return self.dir_exist_cluster(path) if storage=='s3' else self.dir_exist_local(path)
 
     @staticmethod
     def dir_exist_local(path):
@@ -264,12 +290,33 @@ class etl_base(object):
     def dir_exist_cluster(path):
         raise "Not implemented"
 
-    def query(self, query_str):
-        print 'Query string:', query_str
-        return self.sc_sql.sql(query_str)
 
-    @staticmethod
-    def load_meta(fname):
-        with open(fname, 'r') as stream:
-            yml = yaml.load(stream)
-        return yml
+class Path():
+    def __init__(self, path):
+        self.path = path
+
+    def expand_later(self, storage):
+        if '{latest}' in self.path:
+            upstream_path = self.path.split('{latest}')[0]
+            paths = fs().listdir(upstream_path, storage)
+            latest_date = max(paths)
+            path = self.path.format(latest=latest_date)
+        return path
+
+    def expand_now(self):
+        if '{now}' in self.path:
+            current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
+            path = self.path.format(now=current_time)
+        return path
+
+    def get_base():
+        if '{latest}' in self.path:
+            base = self.path.split('{latest}')[0]
+        elif '{now}' in self.path:
+            base = self.path.split('{now}')[0]
+        return base
+
+
+class Flow():
+    def __init__(jobs):
+        pass
