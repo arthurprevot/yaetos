@@ -122,11 +122,6 @@ class etl_base(object):
 
             # Load from disk
             path = self.INPUTS[item]['path']
-            # if '{latest}' in path:
-            #     upstream_path = path.split('{latest}')[0]
-            #     paths = fs().listdir(upstream_path, self.args['storage'])
-            #     latest_date = max(paths)
-            #     path = path.format(latest=latest_date)
             path = Path(path).expand_later(self.args['storage'])
             app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
             print "Input '{}' loaded from files '{}'.".format(item, path)
@@ -198,10 +193,6 @@ class etl_base(object):
         return dt
 
     def save(self, output):
-        # path = self.OUTPUT['path']
-        # if '{now}' in path:
-        #     current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
-        #     path = path.format(now=current_time)
         path = Path(self.OUTPUT['path']).expand_now()
 
         if self.is_incremental:
@@ -231,7 +222,6 @@ class etl_base(object):
             -- github hash: TBD
             -- code: TBD
             """%(self.app_name, self.job_name, elapsed)
-        # self.save_metadata_cluster(fname, content) if self.args['storage']=='s3' else self.save_metadata_local(fname, content)
         fs().save_metadata(fname, content, self.args['storage'])
 
     def query(self, query_str):
