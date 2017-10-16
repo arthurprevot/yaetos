@@ -343,11 +343,11 @@ class Flow():
 
             tree = self.create_tree(DG, 'upstream', ref_node, include_dup=True, fname=None)
             print '### job', item , [(item, tree.node[item]) for item in tree.nodes()]
-            # import ipdb; ipdb.set_trace()
+        import ipdb; ipdb.set_trace()
 
     def create_connections(self, storage):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base
-        yml = etl_base.load_meta(meta_file)
+        yml = ETL_Base.load_meta(meta_file)
 
         connections = []
         for job_name, job_meta in yml.iteritems():
