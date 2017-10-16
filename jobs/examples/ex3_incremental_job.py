@@ -1,7 +1,7 @@
-from core.etl_utils import etl_base
+from core.etl_utils import ETL_Base
 
 
-class Job(etl_base):
+class Job(ETL_Base):
     def transform(self, processed_events):
         # import ipdb; ipdb.set_trace()
         df = self.query("""

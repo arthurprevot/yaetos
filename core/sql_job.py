@@ -1,7 +1,7 @@
-from core.etl_utils import etl_base
+from core.etl_utils import ETL_Base
 
 
-class sql_job(etl_base):
+class sql_job(ETL_Base):
     """To run/deploy sql jobs, using --sql_file arg."""
 
     def transform(self, **ignored):

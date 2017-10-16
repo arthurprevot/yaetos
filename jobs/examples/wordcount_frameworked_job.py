@@ -1,8 +1,8 @@
-from core.etl_utils import etl_base
+from core.etl_utils import ETL_Base
 from operator import add
 
 
-class Job(etl_base):
+class Job(ETL_Base):
     def transform(self, lines):
         counts = lines.flatMap(lambda x: x.split(' ')) \
                       .map(lambda x: (x, 1)) \

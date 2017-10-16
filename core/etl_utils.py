@@ -3,6 +3,7 @@ Helper functions. Setup to run locally and on cluster.
 """
 # TODO:
 # - add logger
+# - extract yml ops to separate class for reuse in Flow()
 
 
 import sys
@@ -21,21 +22,23 @@ JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 
 
-class etl_base(object):
+class ETL_Base(object):
+
     def transform(self, **app_args):
         raise NotImplementedError
 
     def etl(self, sc, sc_sql, args, loaded_inputs={}):
         start_time = time()
-        self.sc = sc
-        self.sc_sql = sc_sql
-        self.app_name = sc.appName
-        self.job_name = self.get_job_name(args)  # differs from app_name when one spark app runs several jobs.
-        self.args = args
-        self.set_job_yml()
-        self.set_paths()
-        self.set_is_incremental()
-        self.set_frequency()
+        # self.sc = sc
+        # self.sc_sql = sc_sql
+        # self.app_name = sc.appName
+        # self.job_name = self.get_job_name()  # differs from app_name when one spark app runs several jobs.
+        # self.args = args
+        # self.set_job_yml()
+        # self.set_paths()
+        # self.set_is_incremental()
+        # self.set_frequency()
+        self.set_attributes(sc, sc_sql, args)
         print "Starting running job '{}' in spark app '{}'.".format(self.job_name, self.app_name)
 
         loaded_datasets = self.load_inputs(loaded_inputs)
@@ -46,6 +49,17 @@ class etl_base(object):
         elapsed = end_time - start_time
         self.save_metadata(elapsed)
         return output
+
+    def set_attributes(self, sc, sc_sql, args):
+        self.sc = sc
+        self.sc_sql = sc_sql
+        self.app_name = sc.appName
+        self.job_name = self.get_job_name()  # differs from app_name when one spark app runs several jobs.
+        self.args = args
+        self.set_job_yml()
+        self.set_paths()
+        self.set_is_incremental()
+        self.set_frequency()
 
     def commandline_launch(self, **args):
         """
@@ -74,7 +88,7 @@ class etl_base(object):
         # Load spark here instead of module to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        app_name = self.get_job_name(args)
+        app_name = self.get_job_name()
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         self.etl(sc, sc_sql, args)
@@ -84,7 +98,7 @@ class etl_base(object):
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
 
-    def get_job_name(self, args):
+    def get_job_name(self):
         # Isolated in function for overridability
         app_file = self.get_app_file()  # TODO rename to job_file and get_job_file()
         return app_file.split('/')[-1].replace('.py','')  # TODO make better with os.path functions.
@@ -222,7 +236,7 @@ class etl_base(object):
             -- github hash: TBD
             -- code: TBD
             """%(self.app_name, self.job_name, elapsed)
-        fs().save_metadata(fname, content, self.args['storage'])
+        FS().save_metadata(fname, content, self.args['storage'])
 
     def query(self, query_str):
         print 'Query string:', query_str
@@ -235,7 +249,7 @@ class etl_base(object):
         return yml
 
 
-class fs():
+class FS():
     def save_metadata(self, fname, content, storage):
         self.save_metadata_cluster(fname, content) if storage=='s3' else self.save_metadata_local(fname, content)
 
@@ -288,7 +302,7 @@ class Path():
     def expand_later(self, storage):
         if '{latest}' in self.path:
             upstream_path = self.path.split('{latest}')[0]
-            paths = fs().listdir(upstream_path, storage)
+            paths = FS().listdir(upstream_path, storage)
             latest_date = max(paths)
             path = self.path.format(latest=latest_date)
         return path
@@ -299,14 +313,103 @@ class Path():
             path = self.path.format(now=current_time)
         return path
 
-    def get_base():
+    def get_base(self):
         if '{latest}' in self.path:
-            base = self.path.split('{latest}')[0]
+            return self.path.split('{latest}')[0]
         elif '{now}' in self.path:
-            base = self.path.split('{now}')[0]
-        return base
+            return self.path.split('{now}')[0]
+        else:
+            return self.path
+
+
+import networkx as nx
+import random
+import pandas as pd
 
 
 class Flow():
-    def __init__(jobs):
-        pass
+    def __init__(self, sc, sc_sql, args, jobs):
+        self.jobs = jobs
+        storage = args['storage']
+        df = self.create_connections(storage)
+        DG = self.create_master_graph(df)
+        # import ipdb; ipdb.set_trace()
+        for item in jobs:
+            # nodes = self.get_predecessors(sc, sc_sql, args, DG, item)
+
+            job = item()
+            job.set_attributes(sc, sc_sql, args)
+            ref_node = Path(job.OUTPUT['path']).get_base()
+
+            tree = self.create_tree(DG, 'upstream', ref_node, include_dup=True, fname=None)
+            print '### job', item , [(item, tree.node[item]) for item in tree.nodes()]
+            # import ipdb; ipdb.set_trace()
+
+    def create_connections(self, storage):
+        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base
+        yml = etl_base.load_meta(meta_file)
+
+        connections = []
+        for job_name, job_meta in yml.iteritems():
+            output_path = Path(job_meta['output']['path']).get_base()
+            for input_name, input_meta in job_meta['inputs'].iteritems():
+                input_path = Path(input_meta['path']).get_base()
+                row = {'input_path': input_path, 'input_name': input_name, 'job_name':job_name, 'output_path': output_path, 'output_name':job_name+'_output'}
+                connections.append(row)
+
+        return pd.DataFrame(connections)
+
+    def create_master_graph(self, df):
+        """ Directed Graph from source to target. df must contain 'source_dataset' and 'target_dataset'.
+        All other fields are attributed to target."""
+        DG = nx.DiGraph()
+        for ii, item in df.iterrows():
+            item = item.to_dict()
+            source_dataset = item.pop('input_path')
+            target_dataset = item.pop('output_path')
+            item.update({'name':target_dataset})
+
+            DG.add_edge(source_dataset, target_dataset)
+            DG.add_node(source_dataset, {'name':source_dataset})
+            DG.add_node(target_dataset, item)
+        return DG
+
+    def get_predecessors(self, sc, sc_sql, args, DG, ref_job):
+        job = ref_job()
+        job.set_attributes(sc, sc_sql, args)
+        import ipdb; ipdb.set_trace()
+        ref_node = Path(job.OUTPUT['path']).get_base()
+        nodes = DG.predecessors(ref_node)
+        return nodes
+
+    def create_tree(self, DG, direction, root, include_dup=True, fname=None):
+        tree = nx.DiGraph()
+        tree = self.create_tree_recursive(DG, tree, direction, root, include_dup)
+        return tree
+
+    def create_tree_recursive(self, DG, tree, direction, ref_node, include_dup=True):
+        """ Builds tree recursively. Uses graph data structure but enforces tree to allow using json_graph.tree_data() later."""
+        if direction == 'upstream':
+            nodes = DG.predecessors(ref_node)
+        elif direction == 'downstream':
+            nodes = DG.successors(ref_node)
+        else:
+            raise 'Invalid "direction" input.'
+
+        tree.add_node(ref_node, DG.node[ref_node])
+
+        for item in nodes:
+            if not tree.has_node(item):
+                tree.add_edge(ref_node, item)
+                tree.add_node(item, DG.node[item])
+                self.create_tree_recursive(DG, tree, direction, item, include_dup)
+            elif include_dup:
+                ii = random.randint(1,1000001)  # TODO: find better (deterministic) way
+                suffix_name = '_dup'
+                suffix_id = '%s_%s'%(suffix_name, ii)
+                child_id = item + suffix_id
+                child_attributes = DG.node[item]
+                child_attributes['name'] = item + suffix_name
+                tree.add_edge(ref_node, child_id)
+                tree.add_node(child_id, child_attributes)
+        return tree
