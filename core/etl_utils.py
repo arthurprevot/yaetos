@@ -98,7 +98,7 @@ class ETL_Base(object):
 
             # Load from disk
             path = self.INPUTS[item]['path']
-            path = Path(path).expand_later(self.args['storage'])
+            path = Path_Handler(path).expand_later(self.args['storage'])
             app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
             print "Input '{}' loaded from files '{}'.".format(item, path)
 
@@ -169,7 +169,7 @@ class ETL_Base(object):
         return dt
 
     def save(self, output):
-        path = Path(self.OUTPUT['path']).expand_now()
+        path = Path_Handler(self.OUTPUT['path']).expand_now()
 
         if self.is_incremental:
             current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
@@ -198,7 +198,7 @@ class ETL_Base(object):
             -- github hash: TBD
             -- code: TBD
             """%(self.app_name, self.job_name, elapsed)
-        FS().save_metadata(fname, content, self.args['storage'])
+        FS_Ops_Dispatcher().save_metadata(fname, content, self.args['storage'])
 
     def query(self, query_str):
         print 'Query string:', query_str
@@ -211,7 +211,7 @@ class ETL_Base(object):
         return yml
 
 
-class FS():
+class FS_Ops_Dispatcher():
     def save_metadata(self, fname, content, storage):
         self.save_metadata_cluster(fname, content) if storage=='s3' else self.save_metadata_local(fname, content)
 
@@ -257,14 +257,14 @@ class FS():
         raise "Not implemented"
 
 
-class Path():
+class Path_Handler():
     def __init__(self, path):
         self.path = path
 
     def expand_later(self, storage):
         if '{latest}' in self.path:
             upstream_path = self.path.split('{latest}')[0]
-            paths = FS().listdir(upstream_path, storage)
+            paths = FS_Ops_Dispatcher().listdir(upstream_path, storage)
             latest_date = max(paths)
             path = self.path.format(latest=latest_date)
         return path
@@ -403,9 +403,9 @@ class Flow():
 
         connections = []
         for job_name, job_meta in yml.iteritems():
-            output_path = Path(job_meta['output']['path']).get_base()
+            output_path = Path_Handler(job_meta['output']['path']).get_base()
             for input_name, input_meta in job_meta['inputs'].iteritems():
-                input_path = Path(input_meta['path']).get_base()
+                input_path = Path_Handler(input_meta['path']).get_base()
                 row = {'input_path': input_path, 'input_name': input_name, 'job_name':job_name, 'output_path': output_path, 'output_name':job_name+'_output'}
                 connections.append(row)
 
@@ -445,7 +445,7 @@ class Flow():
         job = ref_job()
         job.set_attributes(sc, sc_sql, args)
         import ipdb; ipdb.set_trace()
-        ref_node = Path(job.OUTPUT['path']).get_base()
+        ref_node = Path_Handler(job.OUTPUT['path']).get_base()
         nodes = DG.predecessors(ref_node)
         return nodes
 
