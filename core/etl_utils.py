@@ -4,6 +4,8 @@ Helper functions. Setup to run locally and on cluster.
 # TODO:
 # - add logger
 # - extract yml ops to separate class for reuse in Flow()
+# - extract commandline ops to separate class to be used in ETL_Base.
+# - setup command line args defaults to None so they can be overriden only if set in commandline and default would be in config file or jobs_metadata.yml
 
 
 import sys
@@ -29,15 +31,6 @@ class ETL_Base(object):
 
     def etl(self, sc, sc_sql, args, loaded_inputs={}):
         start_time = time()
-        # self.sc = sc
-        # self.sc_sql = sc_sql
-        # self.app_name = sc.appName
-        # self.job_name = self.get_job_name()  # differs from app_name when one spark app runs several jobs.
-        # self.args = args
-        # self.set_job_yml()
-        # self.set_paths()
-        # self.set_is_incremental()
-        # self.set_frequency()
         self.set_attributes(sc, sc_sql, args)
         print "Starting running job '{}' in spark app '{}'.".format(self.job_name, self.app_name)
 
@@ -62,41 +55,46 @@ class ETL_Base(object):
         self.set_frequency()
 
     def commandline_launch(self, **args):
-        """
-        This function is used to run the job locally or deploy it to aws and run it there.
-        The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
-        """
-        parser = self.define_commandline_args()
-        cmd_args = parser.parse_args()
-        args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
-        if args['execution'] == 'run':
-            self.launch_run_mode(**args)
-        elif args['execution'] == 'deploy':
-            self.launch_deploy_mode(**args)
-
-    @staticmethod
-    def define_commandline_args():
-        # Defined here separatly for overridability.
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
-        parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
-        parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
-        # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
-        return parser
-
-    def launch_run_mode(self, **args):
-        # Load spark here instead of module to remove dependency on spark when only deploying code to aws.
-        from pyspark import SparkContext
-        from pyspark.sql import SQLContext
         app_name = self.get_job_name()
-        sc = SparkContext(appName=app_name)
-        sc_sql = SQLContext(sc)
-        self.etl(sc, sc_sql, args)
+        job_file = self.get_app_file()
+        commandliner = CommandLiner()
+        commandliner.commandline_launch(app_name, job_file, args, callback=self.etl)
 
-    def launch_deploy_mode(self, aws_setup, **app_args):
-        # Load deploy lib here instead of module to remove dependency on it when running code locally
-        from core.deploy import DeployPySparkScriptOnAws
-        DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
+        # """
+        # This function is used to run the job locally or deploy it to aws and run it there.
+        # The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
+        # """
+        # parser = self.define_commandline_args()
+        # cmd_args = parser.parse_args()
+        # args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
+        # if args['execution'] == 'run':
+        #     self.launch_run_mode(**args)
+        # elif args['execution'] == 'deploy':
+        #     self.launch_deploy_mode(**args)
+
+    # @staticmethod
+    # def define_commandline_args():
+    #     # Defined here separatly for overridability.
+    #     parser = argparse.ArgumentParser()
+    #     parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
+    #     parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
+    #     parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
+    #     # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
+    #     return parser
+    #
+    # def launch_run_mode(self, **args):
+    #     # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
+    #     from pyspark import SparkContext
+    #     from pyspark.sql import SQLContext
+    #     app_name = self.get_job_name()
+    #     sc = SparkContext(appName=app_name)
+    #     sc_sql = SQLContext(sc)
+    #     self.etl(sc, sc_sql, args)
+    #
+    # def launch_deploy_mode(self, aws_setup, **app_args):
+    #     # Load deploy lib here instead of at module level to remove dependency on it when running code locally
+    #     from core.deploy import DeployPySparkScriptOnAws
+    #     DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
 
     def get_job_name(self):
         # Isolated in function for overridability
@@ -322,30 +320,129 @@ class Path():
             return self.path
 
 
+class CommandLiner():
+    # def commandline_launch(self, **args):
+    def commandline_launch(self, app_name, job_file, args, callback):
+        """
+        This function is used to run the job locally or deploy it to aws and run it there.
+        The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
+        """
+        parser = self.define_commandline_args()
+        cmd_args = parser.parse_args()
+        args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
+        if args['execution'] == 'run':
+            # self.launch_run_mode(**args)
+            self.launch_run_mode(app_name, args, callback)
+        elif args['execution'] == 'deploy':
+            # self.launch_deploy_mode(**args)
+            self.launch_deploy_mode(job_file, **args)
+
+    @staticmethod
+    def define_commandline_args():
+        # Defined here separatly for overridability.
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
+        parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
+        parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
+        # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
+        return parser
+
+    # def launch_run_mode(self, **args):
+    def launch_run_mode(self, app_name, args, callback):
+        # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
+        from pyspark import SparkContext
+        from pyspark.sql import SQLContext
+        # app_name = self.get_job_name()
+        sc = SparkContext(appName=app_name)
+        sc_sql = SQLContext(sc)
+        # self.etl(sc, sc_sql, args)
+        callback(sc, sc_sql, args)
+        # return sc, sc_sql, args
+
+    # def launch_deploy_mode(self, aws_setup, **app_args):
+    def launch_deploy_mode(self, job_file, aws_setup, **app_args):
+        # Load deploy lib here instead of at module level to remove dependency on it when running code locally
+        from core.deploy import DeployPySparkScriptOnAws
+        # DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
+        DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()  # TODO: fix mismatch job vs app.
+
+
+
 import networkx as nx
 import random
 import pandas as pd
 
 
 class Flow():
-    def __init__(self, sc, sc_sql, args, jobs):
-        self.jobs = jobs
+    # def __init__(self, sc, sc_sql, args, jobs):
+    #     self.jobs = jobs
+    #     storage = args['storage']
+    #     df = self.create_connections_jobs(storage)
+    #     DG = self.create_master_graph(df)
+    #     import ipdb; ipdb.set_trace()
+    #     for item in jobs:
+    #         # nodes = self.get_predecessors(sc, sc_sql, args, DG, item)
+    #
+    #         job = item()
+    #         job.set_attributes(sc, sc_sql, args)
+    #         ref_node = Path(job.OUTPUT['path']).get_base()
+    #
+    #         tree = self.create_tree(DG, 'upstream', ref_node, include_dup=True, fname=None)
+    #         print '### job', item , [(item, tree.node[item]) for item in tree.nodes()]
+    #
+    #     import ipdb; ipdb.set_trace()
+
+    def __init__(self, sc, sc_sql, args, job):
+        self.job = job
         storage = args['storage']
-        df = self.create_connections(storage)
-        DG = self.create_master_graph(df)
+        df = self.create_connections_jobs(storage)
+        DG = self.create_master_graph(df)  # from top to bottom
+        tree = self.create_tree(DG, 'upstream', job, include_dup=False, fname=None) # from bottom to top
+
+        # leafs = [node for node in tree.nodes() if tree.in_degree(node)!=0 and tree.out_degree(node)==0]
+        leafs = self.get_leafs_recursive(tree, leafs=[])
+
         # import ipdb; ipdb.set_trace()
-        for item in jobs:
-            # nodes = self.get_predecessors(sc, sc_sql, args, DG, item)
 
-            job = item()
-            job.set_attributes(sc, sc_sql, args)
-            ref_node = Path(job.OUTPUT['path']).get_base()
+        # load all job classes
+        job_classes = {}
+        loaded_inputs = []
+        for leaf in leafs:
+            job_classes[leaf] = self.get_class_from(leaf)
+            import ipdb; ipdb.set_trace()
+            job_classes[leaf].etl(sc, sc_sql, args, loaded_inputs)
 
-            tree = self.create_tree(DG, 'upstream', ref_node, include_dup=True, fname=None)
-            print '### job', item , [(item, tree.node[item]) for item in tree.nodes()]
         import ipdb; ipdb.set_trace()
 
-    def create_connections(self, storage):
+    def get_leafs_recursive(self, tree, leafs):
+        """Recursive function to extract all leafs in order out of tree.
+        Each pass, jobs are moved from "tree" to "leafs" variables until done.
+        """
+        print '### get_leafs_recursive', tree.nodes(), leafs
+        cur_leafs = [node for node in tree.nodes() if tree.in_degree(node)!=0 and tree.out_degree(node)==0]
+        leafs += cur_leafs
+
+        for leaf in cur_leafs:
+            tree.remove_node(leaf)
+
+        if len(tree.nodes()) == 1:
+            # import ipdb; ipdb.set_trace()
+            last_leaf = tree.nodes()
+            leafs += last_leaf
+            # tree.remove_node(last_leaf)
+            return leafs
+        else:
+            self.get_leafs_recursive(tree, leafs)
+
+    @staticmethod
+    def get_class_from(name):
+        name_import = name.replace('/','.')
+        import_cmd = "from jobs.{} import Job".format(name_import)
+        exec(import_cmd)
+        return Job
+
+
+    def create_connections_path(self, storage):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base
         yml = ETL_Base.load_meta(meta_file)
 
@@ -359,14 +456,29 @@ class Flow():
 
         return pd.DataFrame(connections)
 
+    def create_connections_jobs(self, storage):
+        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base
+        yml = ETL_Base.load_meta(meta_file)
+
+        connections = []
+        for job_name, job_meta in yml.iteritems():
+            dependencies = job_meta.get('dependencies') or []
+            for dependency in dependencies:
+                row = {'source_job': dependency, 'destination_job': job_name}
+                connections.append(row)
+
+        return pd.DataFrame(connections)
+
     def create_master_graph(self, df):
         """ Directed Graph from source to target. df must contain 'source_dataset' and 'target_dataset'.
         All other fields are attributed to target."""
         DG = nx.DiGraph()
         for ii, item in df.iterrows():
             item = item.to_dict()
-            source_dataset = item.pop('input_path')
-            target_dataset = item.pop('output_path')
+            # source_dataset = item.pop('input_path')
+            # target_dataset = item.pop('output_path')
+            source_dataset = item.pop('source_job')
+            target_dataset = item.pop('destination_job')
             item.update({'name':target_dataset})
 
             DG.add_edge(source_dataset, target_dataset)
@@ -388,7 +500,7 @@ class Flow():
         return tree
 
     def create_tree_recursive(self, DG, tree, direction, ref_node, include_dup=True):
-        """ Builds tree recursively. Uses graph data structure but enforces tree to allow using json_graph.tree_data() later."""
+        """ Builds tree recursively. Uses graph data structure but enforces tree to simplify downstream."""
         if direction == 'upstream':
             nodes = DG.predecessors(ref_node)
         elif direction == 'downstream':
