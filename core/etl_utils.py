@@ -26,8 +26,11 @@ CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 
 class ETL_Base(object):
 
-    def transform(self, **app_args):
-        raise NotImplementedError
+    def commandline_launch(self, **args):
+        app_name = self.get_job_name()
+        job_file = self.get_app_file()
+        commandliner = CommandLiner()
+        commandliner.commandline_launch(app_name, job_file, args, callback=self.etl)
 
     def etl(self, sc, sc_sql, args, loaded_inputs={}):
         start_time = time()
@@ -43,6 +46,9 @@ class ETL_Base(object):
         self.save_metadata(elapsed)
         return output
 
+    def transform(self, **app_args):
+        raise NotImplementedError
+
     def set_attributes(self, sc, sc_sql, args):
         self.sc = sc
         self.sc_sql = sc_sql
@@ -53,48 +59,6 @@ class ETL_Base(object):
         self.set_paths()
         self.set_is_incremental()
         self.set_frequency()
-
-    def commandline_launch(self, **args):
-        app_name = self.get_job_name()
-        job_file = self.get_app_file()
-        commandliner = CommandLiner()
-        commandliner.commandline_launch(app_name, job_file, args, callback=self.etl)
-
-        # """
-        # This function is used to run the job locally or deploy it to aws and run it there.
-        # The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
-        # """
-        # parser = self.define_commandline_args()
-        # cmd_args = parser.parse_args()
-        # args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
-        # if args['execution'] == 'run':
-        #     self.launch_run_mode(**args)
-        # elif args['execution'] == 'deploy':
-        #     self.launch_deploy_mode(**args)
-
-    # @staticmethod
-    # def define_commandline_args():
-    #     # Defined here separatly for overridability.
-    #     parser = argparse.ArgumentParser()
-    #     parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
-    #     parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
-    #     parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
-    #     # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
-    #     return parser
-    #
-    # def launch_run_mode(self, **args):
-    #     # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
-    #     from pyspark import SparkContext
-    #     from pyspark.sql import SQLContext
-    #     app_name = self.get_job_name()
-    #     sc = SparkContext(appName=app_name)
-    #     sc_sql = SQLContext(sc)
-    #     self.etl(sc, sc_sql, args)
-    #
-    # def launch_deploy_mode(self, aws_setup, **app_args):
-    #     # Load deploy lib here instead of at module level to remove dependency on it when running code locally
-    #     from core.deploy import DeployPySparkScriptOnAws
-    #     DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
 
     def get_job_name(self):
         # Isolated in function for overridability
@@ -321,7 +285,6 @@ class Path():
 
 
 class CommandLiner():
-    # def commandline_launch(self, **args):
     def commandline_launch(self, app_name, job_file, args, callback):
         """
         This function is used to run the job locally or deploy it to aws and run it there.
@@ -331,10 +294,8 @@ class CommandLiner():
         cmd_args = parser.parse_args()
         args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
         if args['execution'] == 'run':
-            # self.launch_run_mode(**args)
             self.launch_run_mode(app_name, args, callback)
         elif args['execution'] == 'deploy':
-            # self.launch_deploy_mode(**args)
             self.launch_deploy_mode(job_file, **args)
 
     @staticmethod
@@ -347,23 +308,17 @@ class CommandLiner():
         # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
         return parser
 
-    # def launch_run_mode(self, **args):
     def launch_run_mode(self, app_name, args, callback):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        # app_name = self.get_job_name()
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
-        # self.etl(sc, sc_sql, args)
         callback(sc, sc_sql, args)
-        # return sc, sc_sql, args
 
-    # def launch_deploy_mode(self, aws_setup, **app_args):
     def launch_deploy_mode(self, job_file, aws_setup, **app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
-        # DeployPySparkScriptOnAws(app_file=self.get_app_file(), aws_setup=aws_setup, **app_args).run()
         DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()  # TODO: fix mismatch job vs app.
 
 
