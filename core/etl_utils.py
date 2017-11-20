@@ -29,7 +29,7 @@ class ETL_Base(object):
 
     def commandline_launch(self, **args):
         app_name = self.get_job_name()
-        job_file = self.get_app_file()
+        job_file = self.get_job_file()
         commandliner = CommandLiner()
         commandliner.commandline_launch(app_name, job_file, args, callback=self.etl)
 
@@ -63,13 +63,12 @@ class ETL_Base(object):
 
     def get_job_name(self):
         # Isolated in function for overridability
-        app_file = self.get_app_file()  # TODO rename to job_file and get_job_file()
-        # return app_file.split('/')[-1].replace('.py','')  # TODO make better with os.path functions.
-        # print '### app_file', app_file, app_file.replace(GIT_REPO+'/Jobs','').replace('.py','')
-        # import ipdb; ipdb.set_trace()
-        return app_file.replace(GIT_REPO+'jobs/','').replace('.py','')  # TODO make better with os.path functions.
+        job_file = self.get_job_file()
+        # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." . 
+        # TODO change this hacky way to deal with it.
+        return job_file.replace(GIT_REPO+'jobs/','').replace('jobs/','').replace('.py','')  # TODO make better with os.path functions.
 
-    def get_app_file(self):
+    def get_job_file(self):
         return inspect.getsourcefile(self.__class__)
 
     def set_job_yml(self):
@@ -336,24 +335,6 @@ import pandas as pd
 
 
 class Flow():
-    # def __init__(self, sc, sc_sql, args, jobs):
-    #     self.jobs = jobs
-    #     storage = args['storage']
-    #     df = self.create_connections_jobs(storage)
-    #     DG = self.create_master_graph(df)
-    #     import ipdb; ipdb.set_trace()
-    #     for item in jobs:
-    #         # nodes = self.get_predecessors(sc, sc_sql, args, DG, item)
-    #
-    #         job = item()
-    #         job.set_attributes(sc, sc_sql, args)
-    #         ref_node = Path(job.OUTPUT['path']).get_base()
-    #
-    #         tree = self.create_tree(DG, 'upstream', ref_node, include_dup=True, fname=None)
-    #         print '### job', item , [(item, tree.node[item]) for item in tree.nodes()]
-    #
-    #     import ipdb; ipdb.set_trace()
-
     def __init__(self, sc, sc_sql, args, job):
         self.job = job
         storage = args['storage']
@@ -363,17 +344,12 @@ class Flow():
         leafs = self.get_leafs_recursive(tree, leafs=[])
 
         # load all job classes and run them
-        job_classes = {}
-        df = {} # TODO finish
-        # loaded_inputs = []
+        df = {}
         for leaf in leafs:
             print '### leaf', leaf
             job_class = self.get_class_from(leaf)
             job_obj = job_class()
-            # import ipdb; ipdb.set_trace()
             job_obj.set_attributes(sc, sc_sql, args)
-            # import ipdb; ipdb.set_trace()
-            # if job_obj.job_yml.get('')
             loaded_inputs = {}
             for in_name, in_properties in job_obj.job_yml['inputs'].iteritems():
                 print '## in_name, in_properties', in_name, in_properties
@@ -382,9 +358,6 @@ class Flow():
                     loaded_inputs[in_name] = df[in_properties['from']]
             print '## loaded_inputs', loaded_inputs
             df[leaf] = job_obj.etl(sc, sc_sql, args, loaded_inputs)
-            # job_classes[leaf] = job_class
-
-        # import ipdb; ipdb.set_trace()
 
     def get_leafs_recursive(self, tree, leafs):
         """Recursive function to extract all leafs in order out of tree.
@@ -398,11 +371,7 @@ class Flow():
             tree.remove_node(leaf)
 
         if len(tree.nodes()) == 1:
-            # import ipdb; ipdb.set_trace()
-            last_leaf = tree.nodes()
-            leafs += last_leaf
-            # tree.remove_node(last_leaf)
-            return leafs
+            return leafs + tree.nodes()
         else:
             self.get_leafs_recursive(tree, leafs)
 
@@ -412,7 +381,6 @@ class Flow():
         import_cmd = "from jobs.{} import Job".format(name_import)
         exec(import_cmd)
         return Job
-
 
     def create_connections_path(self, storage):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base
@@ -447,8 +415,6 @@ class Flow():
         DG = nx.DiGraph()
         for ii, item in df.iterrows():
             item = item.to_dict()
-            # source_dataset = item.pop('input_path')
-            # target_dataset = item.pop('output_path')
             source_dataset = item.pop('source_job')
             target_dataset = item.pop('destination_job')
             item.update({'name':target_dataset})
@@ -457,14 +423,6 @@ class Flow():
             DG.add_node(source_dataset, {'name':source_dataset})
             DG.add_node(target_dataset, item)
         return DG
-
-    def get_predecessors(self, sc, sc_sql, args, DG, ref_job):
-        job = ref_job()
-        job.set_attributes(sc, sc_sql, args)
-        import ipdb; ipdb.set_trace()
-        ref_node = Path_Handler(job.OUTPUT['path']).get_base()
-        nodes = DG.predecessors(ref_node)
-        return nodes
 
     def create_tree(self, DG, direction, root, include_dup=True, fname=None):
         tree = nx.DiGraph()
