@@ -4,8 +4,8 @@ Helper functions. Setup to run locally and on cluster.
 # TODO:
 # - add logger
 # - extract yml ops to separate class for reuse in Flow()
-# - extract commandline ops to separate class to be used in ETL_Base.
 # - setup command line args defaults to None so they can be overriden only if set in commandline and default would be in config file or jobs_metadata.yml
+# - make yml look more like command line info, with path of python script.
 
 
 import sys
@@ -22,6 +22,7 @@ import StringIO
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
+GIT_REPO = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'
 
 
 class ETL_Base(object):
@@ -63,7 +64,10 @@ class ETL_Base(object):
     def get_job_name(self):
         # Isolated in function for overridability
         app_file = self.get_app_file()  # TODO rename to job_file and get_job_file()
-        return app_file.split('/')[-1].replace('.py','')  # TODO make better with os.path functions.
+        # return app_file.split('/')[-1].replace('.py','')  # TODO make better with os.path functions.
+        # print '### app_file', app_file, app_file.replace(GIT_REPO+'/Jobs','').replace('.py','')
+        # import ipdb; ipdb.set_trace()
+        return app_file.replace(GIT_REPO+'jobs/','').replace('.py','')  # TODO make better with os.path functions.
 
     def get_app_file(self):
         return inspect.getsourcefile(self.__class__)
@@ -262,17 +266,19 @@ class Path_Handler():
         self.path = path
 
     def expand_later(self, storage):
-        if '{latest}' in self.path:
-            upstream_path = self.path.split('{latest}')[0]
+        path = self.path
+        if '{latest}' in path:
+            upstream_path = path.split('{latest}')[0]
             paths = FS_Ops_Dispatcher().listdir(upstream_path, storage)
             latest_date = max(paths)
-            path = self.path.format(latest=latest_date)
+            path = path.format(latest=latest_date)
         return path
 
     def expand_now(self):
-        if '{now}' in self.path:
+        path = self.path
+        if '{now}' in path:
             current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
-            path = self.path.format(now=current_time)
+            path = path.format(now=current_time)
         return path
 
     def get_base(self):
@@ -290,6 +296,7 @@ class CommandLiner():
         This function is used to run the job locally or deploy it to aws and run it there.
         The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
         """
+        # TODO: avoid having to specify funct input params that may not be used (app_name, job_file, callback)
         parser = self.define_commandline_args()
         cmd_args = parser.parse_args()
         args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
@@ -353,21 +360,31 @@ class Flow():
         df = self.create_connections_jobs(storage)
         DG = self.create_master_graph(df)  # from top to bottom
         tree = self.create_tree(DG, 'upstream', job, include_dup=False, fname=None) # from bottom to top
-
-        # leafs = [node for node in tree.nodes() if tree.in_degree(node)!=0 and tree.out_degree(node)==0]
         leafs = self.get_leafs_recursive(tree, leafs=[])
 
-        # import ipdb; ipdb.set_trace()
-
-        # load all job classes
+        # load all job classes and run them
         job_classes = {}
-        loaded_inputs = []
+        df = {} # TODO finish
+        # loaded_inputs = []
         for leaf in leafs:
-            job_classes[leaf] = self.get_class_from(leaf)
-            import ipdb; ipdb.set_trace()
-            job_classes[leaf].etl(sc, sc_sql, args, loaded_inputs)
+            print '### leaf', leaf
+            job_class = self.get_class_from(leaf)
+            job_obj = job_class()
+            # import ipdb; ipdb.set_trace()
+            job_obj.set_attributes(sc, sc_sql, args)
+            # import ipdb; ipdb.set_trace()
+            # if job_obj.job_yml.get('')
+            loaded_inputs = {}
+            for in_name, in_properties in job_obj.job_yml['inputs'].iteritems():
+                print '## in_name, in_properties', in_name, in_properties
+                if in_properties.get('from'):
+                    print '## got in'
+                    loaded_inputs[in_name] = df[in_properties['from']]
+            print '## loaded_inputs', loaded_inputs
+            df[leaf] = job_obj.etl(sc, sc_sql, args, loaded_inputs)
+            # job_classes[leaf] = job_class
 
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
 
     def get_leafs_recursive(self, tree, leafs):
         """Recursive function to extract all leafs in order out of tree.
