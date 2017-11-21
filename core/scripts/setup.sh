@@ -21,3 +21,4 @@ zip -r scripts.zip .
 # Install requirements for Python script
 # sudo python2.7 -m pip install referer_parser
 sudo pip install boto3
+sudo pip install networkx

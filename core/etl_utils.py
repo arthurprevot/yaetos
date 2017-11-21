@@ -22,7 +22,7 @@ import StringIO
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-GIT_REPO = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'
+GIT_REPO = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: parametrize
 
 
 class ETL_Base(object):
@@ -31,7 +31,7 @@ class ETL_Base(object):
         app_name = self.get_job_name()
         job_file = self.get_job_file()
         commandliner = CommandLiner()
-        commandliner.commandline_launch(app_name, job_file, args, callback=self.etl)
+        commandliner.commandline_launch(app_name, job_file, args, etl_func=self.etl, flow_class=Flow)
 
     def etl(self, sc, sc_sql, args, loaded_inputs={}):
         start_time = time()
@@ -64,7 +64,7 @@ class ETL_Base(object):
     def get_job_name(self):
         # Isolated in function for overridability
         job_file = self.get_job_file()
-        # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." . 
+        # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
         # TODO change this hacky way to deal with it.
         return job_file.replace(GIT_REPO+'jobs/','').replace('jobs/','').replace('.py','')  # TODO make better with os.path functions.
 
@@ -290,19 +290,20 @@ class Path_Handler():
 
 
 class CommandLiner():
-    def commandline_launch(self, app_name, job_file, args, callback):
+    def commandline_launch(self, app_name, job_file, args, etl_func, flow_class):
         """
         This function is used to run the job locally or deploy it to aws and run it there.
         The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
         """
         # TODO: avoid having to specify funct input params that may not be used (app_name, job_file, callback)
+        self.args = args
         parser = self.define_commandline_args()
         cmd_args = parser.parse_args()
-        args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
+        self.args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
         if args['execution'] == 'run':
-            self.launch_run_mode(app_name, args, callback)
+            self.launch_run_mode(app_name, self.args, etl_func, flow_class)
         elif args['execution'] == 'deploy':
-            self.launch_deploy_mode(job_file, **args)
+            self.launch_deploy_mode(job_file, **self.args)
 
     @staticmethod
     def define_commandline_args():
@@ -311,16 +312,21 @@ class CommandLiner():
         parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
+        parser.add_argument("-d", "--dependencies", default=True, help="Run dependencies with this job")
         # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
         return parser
 
-    def launch_run_mode(self, app_name, args, callback):
+    def launch_run_mode(self, app_name, args, etl_func, flow_class):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
-        callback(sc, sc_sql, args)
+        if not self.args['dependencies']:
+            etl_func(sc, sc_sql, args)
+        else:
+            flow_class(sc, sc_sql, args, app_name)
+
 
     def launch_deploy_mode(self, job_file, aws_setup, **app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
