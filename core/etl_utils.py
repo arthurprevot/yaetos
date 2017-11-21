@@ -36,7 +36,7 @@ class ETL_Base(object):
     def etl(self, sc, sc_sql, args, loaded_inputs={}):
         start_time = time()
         self.set_attributes(sc, sc_sql, args)
-        print "Starting running job '{}' in spark app '{}'.".format(self.job_name, self.app_name)
+        print "-------\nStarting running job '{}' in spark app '{}'.".format(self.job_name, self.app_name)
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
@@ -190,7 +190,7 @@ class ETL_Base(object):
         self.path = path
 
     def save_metadata(self, elapsed):
-        fname = self.path + 'metadata.txt'
+        fname = self.path + '_metadata.txt'
         content = """
             -- app_name: %s
             -- job_name: %s
@@ -312,7 +312,7 @@ class CommandLiner():
         parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
-        parser.add_argument("-d", "--dependencies", default=True, help="Run dependencies with this job")
+        parser.add_argument("-d", "--dependencies", action='store_true', help="Run dependencies with this job")
         # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
         return parser
 
@@ -346,40 +346,38 @@ class Flow():
         storage = args['storage']
         df = self.create_connections_jobs(storage)
         DG = self.create_master_graph(df)  # from top to bottom
-        tree = self.create_tree(DG, 'upstream', job, include_dup=False, fname=None) # from bottom to top
+        tree = self.create_tree(DG, 'upstream', job, include_dup=False) # from bottom to top
         leafs = self.get_leafs_recursive(tree, leafs=[])
+        print 'Sequence of jobs to be run', leafs
 
         # load all job classes and run them
         df = {}
         for leaf in leafs:
-            print '### leaf', leaf
             job_class = self.get_class_from(leaf)
             job_obj = job_class()
             job_obj.set_attributes(sc, sc_sql, args)
             loaded_inputs = {}
             for in_name, in_properties in job_obj.job_yml['inputs'].iteritems():
-                print '## in_name, in_properties', in_name, in_properties
                 if in_properties.get('from'):
-                    print '## got in'
                     loaded_inputs[in_name] = df[in_properties['from']]
-            print '## loaded_inputs', loaded_inputs
+            print 'Already loaded inputs for jobs {}: {}'.format(leaf, loaded_inputs)
             df[leaf] = job_obj.etl(sc, sc_sql, args, loaded_inputs)
 
     def get_leafs_recursive(self, tree, leafs):
         """Recursive function to extract all leafs in order out of tree.
         Each pass, jobs are moved from "tree" to "leafs" variables until done.
         """
-        print '### get_leafs_recursive', tree.nodes(), leafs
         cur_leafs = [node for node in tree.nodes() if tree.in_degree(node)!=0 and tree.out_degree(node)==0]
         leafs += cur_leafs
 
         for leaf in cur_leafs:
             tree.remove_node(leaf)
 
-        if len(tree.nodes()) == 1:
-            return leafs + tree.nodes()
-        else:
+        if len(tree.nodes()) >= 2:
             self.get_leafs_recursive(tree, leafs)
+
+        return leafs + tree.nodes()
+
 
     @staticmethod
     def get_class_from(name):
@@ -430,7 +428,7 @@ class Flow():
             DG.add_node(target_dataset, item)
         return DG
 
-    def create_tree(self, DG, direction, root, include_dup=True, fname=None):
+    def create_tree(self, DG, direction, root, include_dup=True):
         tree = nx.DiGraph()
         tree = self.create_tree_recursive(DG, tree, direction, root, include_dup)
         return tree

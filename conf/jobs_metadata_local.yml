@@ -25,11 +25,34 @@ examples/ex3_incremental_job:  # focus on incremental loading and dropping
   frequency: 24h
   dependencies: [examples/ex3_incremental_prep_job]  # TODO: check to remove it since it is in input desc.
 
-examples/ex3_incremental_prep_job:  # shows computation of dependency as necessary for ex3_incremental_job (manual for now)
+examples/ex3_incremental_prep_job:  # shows computation of dependency as necessary for ex3_incremental_job
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log_small.csv", 'type':'csv'}
   output: {'path':'data/bogus_data/output_ex3_dep/{now}/', 'type':'csv'}
   frequency: 24h
+
+examples/ex4_dependency1_job:  # shows dependency
+  inputs:
+    some_events: {'path':"data/bogus_data/inputs/{latest}/events_log_small.csv", 'type':'csv'}
+  output: {'path':'data/bogus_data/output_ex4_dep1/{now}/', 'type':'csv'}
+
+examples/ex4_dependency2_job:  # shows dependency
+  inputs:
+    some_events: {'path':'data/bogus_data/output_ex4_dep1/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency1_job'}
+  output: {'path':'data/bogus_data/output_ex4_dep2/{now}/', 'type':'csv'}
+  dependencies: [examples/ex4_dependency1_job]  # TODO: check to remove it since it is in input desc.
+
+examples/ex4_dependency3_job:  # shows dependency
+  inputs:
+    some_events: {'path':'data/bogus_data/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job'}
+  output: {'path':'data/bogus_data/output_ex4_dep3/{now}/', 'type':'csv'}
+  dependencies: [examples/ex4_dependency2_job]  # TODO: check to remove it since it is in input desc.
+
+examples/ex4_dependency4_job:  # shows dependency
+  inputs:
+    some_events: {'path':'data/bogus_data/output_ex4_dep3/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency3_job'}
+  output: {'path':'data/bogus_data/output_ex4_dep4/{now}/', 'type':'csv'}
+  dependencies: [examples/ex4_dependency3_job]  # TODO: check to remove it since it is in input desc.
 
 examples/wordcount_frameworked_job:  # shows raw pyspark rdd ops in framework, same as wordcount_raw_job
   inputs:
