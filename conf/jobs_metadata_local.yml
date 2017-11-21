@@ -20,12 +20,12 @@ examples/ex2_frameworked_job:  # more complex version of ex1_frameworked_job
 
 examples/ex3_incremental_job:  # focus on incremental loading and dropping
   inputs:
-    processed_events: {'path':"data/bogus_data/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj', 'from':'examples/ex3_dependant_job'}
+    processed_events: {'path':"data/bogus_data/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj', 'from':'examples/ex3_incremental_prep_job'}
   output: {'path':'data/bogus_data/output_ex3_inc/incremental_build_v2/', 'type':'csv', 'inc_field': 'other_timestamp'}
   frequency: 24h
-  dependencies: [examples/ex3_dependant_job]  # TODO: check to remove it since it is in input desc.
+  dependencies: [examples/ex3_incremental_prep_job]  # TODO: check to remove it since it is in input desc.
 
-examples/ex3_dependant_job:  # shows computation of dependency as necessary for ex3_incremental_job (manual for now)
+examples/ex3_incremental_prep_job:  # shows computation of dependency as necessary for ex3_incremental_job (manual for now)
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log_small.csv", 'type':'csv'}
   output: {'path':'data/bogus_data/output_ex3_dep/{now}/', 'type':'csv'}
