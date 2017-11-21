@@ -44,7 +44,7 @@ examples/ex4_dependency2_job:  # shows dependency
 
 examples/ex4_dependency3_job:  # shows dependency
   inputs:
-    some_events: {'path':'data/bogus_data/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job'}
+    some_events: {'type':'csv', 'from':'examples/ex4_dependency2_job'}  # 'path' not needed when run as dependency 
   output: {'path':'data/bogus_data/output_ex4_dep3/{now}/', 'type':'csv'}
   dependencies: [examples/ex4_dependency2_job]  # TODO: check to remove it since it is in input desc.
 
