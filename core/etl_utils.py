@@ -143,7 +143,7 @@ class ETL_Base(object):
 
     def sql_register(self, app_args):
         for item in app_args.keys():
-            input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
+            input_is_tabular = hasattr(app_args[item], "rdd")  # assuming DataFrame will keep 'rdd' attribute
             if input_is_tabular:
                 app_args[item].createOrReplaceTempView(item)
 
