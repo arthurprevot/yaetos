@@ -1,10 +1,10 @@
-examples/ex1_full_sql_job:  # shows 100% sql job, easiest when sql is enough
+examples/ex1_full_sql_job.sql:  # shows 100% sql job, easiest when sql is enough
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'data/bogus_data/output_sql/{now}/', 'type':'csv'}
 
-examples/ex1_frameworked_job:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
+examples/ex1_frameworked_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}

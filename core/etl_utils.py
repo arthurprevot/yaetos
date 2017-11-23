@@ -6,6 +6,8 @@ Helper functions. Setup to run locally and on cluster.
 # - extract yml ops to separate class for reuse in Flow()
 # - setup command line args defaults to None so they can be overriden only if set in commandline and default would be in config file or jobs_metadata.yml
 # - make yml look more like command line info, with path of python script.
+# - fix sql job
+# - enable sql job as a dependency
 
 
 import sys
@@ -27,11 +29,11 @@ GIT_REPO = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: pa
 
 class ETL_Base(object):
 
-    def commandline_launch(self, **args):
-        app_name = self.get_job_name()
-        job_file = self.get_job_file()
-        commandliner = CommandLiner()
-        commandliner.commandline_launch(app_name, job_file, args, etl_func=self.etl, flow_class=Flow)
+    # def commandline_launch(self, **args):
+    #     app_name = self.get_job_name()
+    #     job_file = self.get_job_file()
+    #     commandliner = CommandLiner()
+    #     commandliner.commandline_launch(app_name, job_file, args, etl_func=self.etl)
 
     def etl(self, sc, sc_sql, args, loaded_inputs={}):
         start_time = time()
@@ -66,7 +68,7 @@ class ETL_Base(object):
         job_file = self.get_job_file()
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
         # TODO change this hacky way to deal with it.
-        return job_file.replace(GIT_REPO+'jobs/','').replace('jobs/','').replace('.py','')  # TODO make better with os.path functions.
+        return job_file.replace(GIT_REPO+'jobs/','').replace('jobs/','')# .replace('.py','')  # TODO make better with os.path functions.
 
     def get_job_file(self):
         return inspect.getsourcefile(self.__class__)
@@ -290,20 +292,39 @@ class Path_Handler():
 
 
 class CommandLiner():
-    def commandline_launch(self, app_name, job_file, args, etl_func, flow_class):
-        """
-        This function is used to run the job locally or deploy it to aws and run it there.
-        The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
-        """
-        # TODO: avoid having to specify funct input params that may not be used (app_name, job_file, callback)
+    def __init__(self, job_class_or_name, **args):
+        #TODO to add later to run class as standalone (not called by ETL_Base)
         self.args = args
         parser = self.define_commandline_args()
         cmd_args = parser.parse_args()
         self.args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
+
+        job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name)
+        # import ipdb; ipdb.set_trace()
+        job_class = get_job_class(job_class_or_name) if isinstance(job_class_or_name, basestring) else job_class_or_name
+        job_name = job_file.replace('jobs/','')
         if args['execution'] == 'run':
-            self.launch_run_mode(app_name, self.args, etl_func, flow_class)
+            # self.launch_run_mode(app_name, self.args, etl_func, flow_class)
+            # self.launch_run_mode2(job_class, job_name, self.args)
+            self.launch_run_mode2(job_class, self.args)
         elif args['execution'] == 'deploy':
             self.launch_deploy_mode(job_file, **self.args)
+
+    # # def commandline_launch(self, app_name, job_file, args, etl_func, flow_class):
+    # def commandline_launch(self, app_name, job_file, args, etl_func):
+    #     """
+    #     This function is used to run the job locally or deploy it to aws and run it there.
+    #     The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
+    #     """
+    #     # TODO: avoid having to specify funct input params that may not be used (app_name, job_file, callback)
+    #     self.args = args
+    #     parser = self.define_commandline_args()
+    #     cmd_args = parser.parse_args()
+    #     self.args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
+    #     if args['execution'] == 'run':
+    #         self.launch_run_mode(app_name, self.args, etl_func)
+    #     elif args['execution'] == 'deploy':
+    #         self.launch_deploy_mode(job_file, **self.args)
 
     @staticmethod
     def define_commandline_args():
@@ -316,23 +337,43 @@ class CommandLiner():
         # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
         return parser
 
-    def launch_run_mode(self, app_name, args, etl_func, flow_class):
+    # def launch_run_mode(self, app_name, args, etl_func):
+    #     # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
+    #     from pyspark import SparkContext
+    #     from pyspark.sql import SQLContext
+    #     sc = SparkContext(appName=app_name)
+    #     sc_sql = SQLContext(sc)
+    #     if not self.args['dependencies']:
+    #         etl_func(sc, sc_sql, args)
+    #     else:
+    #         Flow(sc, sc_sql, args, app_name)
+
+    def launch_run_mode2(self, job_class, args):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
+        app_name = get_job_file(job_class)
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         if not self.args['dependencies']:
-            etl_func(sc, sc_sql, args)
+            job_class.etl(sc, sc_sql, args)
         else:
-            flow_class(sc, sc_sql, args, app_name)
-
+            Flow(sc, sc_sql, args, app_name)
 
     def launch_deploy_mode(self, job_file, aws_setup, **app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()  # TODO: fix mismatch job vs app.
 
+
+def get_job_file(job_class):
+    return inspect.getsourcefile(job_class.__class__)
+
+def get_job_class(name):
+    name_import = name.replace('/','.').replace('.py','')
+    import_cmd = "from jobs.{} import Job".format(name_import)
+    exec(import_cmd)
+    return Job
 
 
 import networkx as nx
@@ -353,14 +394,14 @@ class Flow():
         # load all job classes and run them
         df = {}
         for leaf in leafs:
-            job_class = self.get_class_from(leaf)
+            job_class = self.get_class_from(leaf)  # TODO: support loading sql jobs.
             job_obj = job_class()
-            job_obj.set_attributes(sc, sc_sql, args)
+            job_obj.set_attributes(sc, sc_sql, args)  # TODO: check if call duplicated downstream
             loaded_inputs = {}
             for in_name, in_properties in job_obj.job_yml['inputs'].iteritems():
                 if in_properties.get('from'):
                     loaded_inputs[in_name] = df[in_properties['from']]
-            print 'Already loaded inputs for jobs {}: {}'.format(leaf, loaded_inputs)
+            # print 'Already loaded inputs for jobs {}: {}'.format(leaf, loaded_inputs) # TODO: keep print at job loading level but could pass name of prev job that dataset came from.
             df[leaf] = job_obj.etl(sc, sc_sql, args, loaded_inputs)
 
     def get_leafs_recursive(self, tree, leafs):
@@ -381,6 +422,7 @@ class Flow():
 
     @staticmethod
     def get_class_from(name):
+        # TODO: use get_job_class instead.
         name_import = name.replace('/','.')
         import_cmd = "from jobs.{} import Job".format(name_import)
         exec(import_cmd)
