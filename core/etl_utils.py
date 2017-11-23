@@ -293,38 +293,22 @@ class Path_Handler():
 
 class CommandLiner():
     def __init__(self, job_class_or_name, **args):
-        #TODO to add later to run class as standalone (not called by ETL_Base)
+        self.set_commandline_args(args)
+
+        job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name)
+        job_class = get_job_class(job_class_or_name) if isinstance(job_class_or_name, basestring) else job_class_or_name
+        job_name = job_file.replace('jobs/','')
+
+        if args['execution'] == 'run':
+            self.launch_run_mode(job_class, self.args)
+        elif args['execution'] == 'deploy':
+            self.launch_deploy_mode(job_file, **self.args)
+
+    def set_commandline_args(self, args):
         self.args = args
         parser = self.define_commandline_args()
         cmd_args = parser.parse_args()
         self.args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
-
-        job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name)
-        # import ipdb; ipdb.set_trace()
-        job_class = get_job_class(job_class_or_name) if isinstance(job_class_or_name, basestring) else job_class_or_name
-        job_name = job_file.replace('jobs/','')
-        if args['execution'] == 'run':
-            # self.launch_run_mode(app_name, self.args, etl_func, flow_class)
-            # self.launch_run_mode2(job_class, job_name, self.args)
-            self.launch_run_mode2(job_class, self.args)
-        elif args['execution'] == 'deploy':
-            self.launch_deploy_mode(job_file, **self.args)
-
-    # # def commandline_launch(self, app_name, job_file, args, etl_func, flow_class):
-    # def commandline_launch(self, app_name, job_file, args, etl_func):
-    #     """
-    #     This function is used to run the job locally or deploy it to aws and run it there.
-    #     The inputs should not be dependent on whether the job is run locally or deployed to cluster as it is used for both.
-    #     """
-    #     # TODO: avoid having to specify funct input params that may not be used (app_name, job_file, callback)
-    #     self.args = args
-    #     parser = self.define_commandline_args()
-    #     cmd_args = parser.parse_args()
-    #     self.args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
-    #     if args['execution'] == 'run':
-    #         self.launch_run_mode(app_name, self.args, etl_func)
-    #     elif args['execution'] == 'deploy':
-    #         self.launch_deploy_mode(job_file, **self.args)
 
     @staticmethod
     def define_commandline_args():
@@ -337,22 +321,11 @@ class CommandLiner():
         # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
         return parser
 
-    # def launch_run_mode(self, app_name, args, etl_func):
-    #     # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
-    #     from pyspark import SparkContext
-    #     from pyspark.sql import SQLContext
-    #     sc = SparkContext(appName=app_name)
-    #     sc_sql = SQLContext(sc)
-    #     if not self.args['dependencies']:
-    #         etl_func(sc, sc_sql, args)
-    #     else:
-    #         Flow(sc, sc_sql, args, app_name)
-
-    def launch_run_mode2(self, job_class, args):
+    def launch_run_mode(self, job_class, args):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        app_name = get_job_file(job_class)
+        app_name = self.get_job_file(job_class)  # TODO clarify job_class vs job_obj
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         if not self.args['dependencies']:
@@ -364,6 +337,10 @@ class CommandLiner():
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()  # TODO: fix mismatch job vs app.
+
+    @staticmethod
+    def get_job_file(job_class):
+        return get_job_file(job_class)
 
 
 def get_job_file(job_class):
@@ -394,7 +371,7 @@ class Flow():
         # load all job classes and run them
         df = {}
         for leaf in leafs:
-            job_class = self.get_class_from(leaf)  # TODO: support loading sql jobs.
+            job_class = self.get_job_class(leaf)  # TODO: support loading sql jobs.
             job_obj = job_class()
             job_obj.set_attributes(sc, sc_sql, args)  # TODO: check if call duplicated downstream
             loaded_inputs = {}
@@ -420,13 +397,13 @@ class Flow():
         return leafs + tree.nodes()
 
 
-    @staticmethod
-    def get_class_from(name):
-        # TODO: use get_job_class instead.
-        name_import = name.replace('/','.')
-        import_cmd = "from jobs.{} import Job".format(name_import)
-        exec(import_cmd)
-        return Job
+    # @staticmethod
+    # def get_class_from(name):
+    #     # TODO: use get_job_class instead.
+    #     name_import = name.replace('/','.')
+    #     import_cmd = "from jobs.{} import Job".format(name_import)
+    #     exec(import_cmd)
+    #     return Job
 
     def create_connections_path(self, storage):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base
