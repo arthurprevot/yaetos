@@ -38,13 +38,13 @@ examples/ex4_dependency1_job.py:  # shows dependency
 
 examples/ex4_dependency2_job.py:  # shows dependency
   inputs:
-    some_events: {'path':'data/bogus_data/output_ex4_dep1/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency1_job.py'}
+    some_events: {'from':'examples/ex4_dependency1_job.py'}
   output: {'path':'data/bogus_data/output_ex4_dep2/{now}/', 'type':'csv'}
   dependencies: [examples/ex4_dependency1_job.py]  # TODO: check to remove it since it is in input desc.
 
 examples/ex4_dependency3_job.sql:  # shows dependency
   inputs:
-    some_events: {'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
+    some_events: {'path':'data/bogus_data/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
   output: {'path':'data/bogus_data/output_ex4_dep3/{now}/', 'type':'csv'}
   dependencies: [examples/ex4_dependency2_job.py, examples/ex4_dependency1_job.py]  # TODO: check to remove it since it is in input desc.
 

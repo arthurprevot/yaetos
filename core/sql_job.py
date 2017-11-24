@@ -8,7 +8,7 @@ class SQL_Job(ETL_Base):
         self.sc = sc
         self.sc_sql = sc_sql
         self.app_name = sc.appName
-        self.job_name = self.get_job_name(args)  # differs from app_name when one spark app runs several jobs.
+        self.job_name = self.get_job_name(args)
         self.args = args
         self.set_job_yml()
         self.set_paths()
@@ -20,13 +20,12 @@ class SQL_Job(ETL_Base):
         df = self.query(sql)
         return df
 
-    # @staticmethod # TODO try later
-    def get_job_name(self, args):
-        return args['sql_file'].replace(GIT_REPO+'jobs/','').replace('jobs/','') #.replace('.sql','')  # TODO make better with os.path functions + remove hack
+    @staticmethod
+    def get_job_name(args):
+        return args['sql_file'].replace(GIT_REPO+'jobs/','').replace('jobs/','') # TODO make better with os.path functions + remove GIT_REPO hack
 
     @staticmethod
     def get_job_class(job_name):
-        from core.sql_job import SQL_Job  #TODO: remove
         return SQL_Job
 
     @staticmethod

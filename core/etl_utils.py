@@ -6,8 +6,6 @@ Helper functions. Setup to run locally and on cluster.
 # - extract yml ops to separate class for reuse in Flow()
 # - setup command line args defaults to None so they can be overriden only if set in commandline and default would be in config file or jobs_metadata.yml
 # - make yml look more like command line info, with path of python script.
-# - fix sql job
-# - enable sql job as a dependency
 
 
 import sys
@@ -29,12 +27,6 @@ GIT_REPO = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: pa
 
 class ETL_Base(object):
 
-    # def commandline_launch(self, **args):
-    #     app_name = self.get_job_name()
-    #     job_file = self.get_job_file()
-    #     commandliner = CommandLiner()
-    #     commandliner.commandline_launch(app_name, job_file, args, etl_func=self.etl)
-
     def etl(self, sc, sc_sql, args, loaded_inputs={}):
         start_time = time()
         self.set_attributes(sc, sc_sql, args)
@@ -52,7 +44,7 @@ class ETL_Base(object):
     def transform(self, **app_args):
         raise NotImplementedError
 
-    def set_attributes(self, sc, sc_sql, args):
+    def set_attributes(self, sc, sc_sql, args):  # TODO move to __init__
         self.sc = sc
         self.sc_sql = sc_sql
         self.app_name = sc.appName
@@ -165,7 +157,7 @@ class ETL_Base(object):
             return self.sc_sql.read.parquet(path)
         else:
             supported = ['txt', 'csv', 'parquet']  # TODO: register types differently without duplicating
-            raise "Unsupported file type '{}' for path '{}'. Supported types are: {}. ".format(path_type, path, supported)
+            raise Exception("Unsupported file type '{}' for path '{}'. Supported types are: {}. ".format(path_type, path, supported))
 
     def get_output_max_timestamp(self):
         path = self.OUTPUT['path']
@@ -303,7 +295,6 @@ class CommandLiner():
         self.set_commandline_args(args)
         if args['execution'] == 'run':
             Job = get_job_class(job_class_or_name) if isinstance(job_class_or_name, basestring) else job_class_or_name
-            # job_name = Job().get_job_name
             self.launch_run_mode(Job, self.args)
         elif args['execution'] == 'deploy':
             job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name())
@@ -344,35 +335,17 @@ class CommandLiner():
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()  # TODO: fix mismatch job vs app.
 
-#     @staticmethod
-#     def get_job_file(job):
-#         return get_job_file(job)
-#
-    # @staticmethod
-    # def get_job_class(name):
-    #     return get_job_class(name)
-#
-# def get_job_file(job):
-#     return inspect.getsourcefile(job.__class__)
-#
-# def get_job_class(name):
-#     name_import = name.replace('/','.').replace('.py','')
-#     import_cmd = "from jobs.{} import Job".format(name_import)
-#     exec(import_cmd)
-#     return Job
 
-
+# imports for Flow(), can't be put in script header or it creates a loop.
+from core.sql_job import SQL_Job
 import networkx as nx
 import random
 import pandas as pd
-from core.sql_job import SQL_Job
-
 
 
 class Flow():
     def __init__(self, sc, sc_sql, args, app_name):
         self.app_name = app_name
-        # import ipdb; ipdb.set_trace()
         storage = args['storage']
         df = self.create_connections_jobs(storage)
         DG = self.create_master_graph(df)  # from top to bottom
@@ -383,19 +356,19 @@ class Flow():
         # load all job classes and run them
         df = {}
         for job_name in leafs:
-            job_class = self.get_job_class(job_name)  # TODO: support loading sql jobs.
-            job_obj = job_class()
+            Job = self.get_job_class(job_name)
+            job = Job()
 
             if job_name.endswith('.sql'):
                 args['sql_file'] = 'jobs/' + job_name
 
-            job_obj.set_attributes(sc, sc_sql, args)  # TODO: check if call duplicated downstream
+            job.set_attributes(sc, sc_sql, args)  # TODO: ran downstream too. Update.
             loaded_inputs = {}
-            for in_name, in_properties in job_obj.job_yml['inputs'].iteritems():
+            for in_name, in_properties in job.job_yml['inputs'].iteritems():
                 if in_properties.get('from'):
                     loaded_inputs[in_name] = df[in_properties['from']]
             # print 'Already loaded inputs for jobs {}: {}'.format(leaf, loaded_inputs) # TODO: keep print at job loading level but could pass name of prev job that dataset came from.
-            df[job_name] = job_obj.etl(sc, sc_sql, args, loaded_inputs)
+            df[job_name] = job.etl(sc, sc_sql, args, loaded_inputs)
 
     def get_leafs_recursive(self, tree, leafs):
         """Recursive function to extract all leafs in order out of tree.
@@ -414,17 +387,12 @@ class Flow():
 
     @staticmethod
     def get_job_class(name):
-        # # TODO: use get_job_class instead.
-        # name_import = name.replace('/','.')
-        # import_cmd = "from jobs.{} import Job".format(name_import)
-        # exec(import_cmd)
-        # return Job
         if name.endswith('.py'):
             return ETL_Base.get_job_class(name)
         elif name.endswith('.sql'):
             return SQL_Job.get_job_class(name)
         else:
-            raise "Extension not recognized"  # TODO: fix raise doesn't support string.
+            raise Exception("Extension not recognized")
 
 
     def create_connections_path(self, storage):
