@@ -295,7 +295,7 @@ class CommandLiner():
     def __init__(self, job_class_or_name, **args):
         self.set_commandline_args(args)
 
-        job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name)
+        job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name())
         job_class = get_job_class(job_class_or_name) if isinstance(job_class_or_name, basestring) else job_class_or_name
         job_name = job_file.replace('jobs/','')
 
@@ -325,11 +325,11 @@ class CommandLiner():
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        app_name = self.get_job_file(job_class)  # TODO clarify job_class vs job_obj
+        app_name = self.get_job_file(job_class())
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         if not self.args['dependencies']:
-            job_class.etl(sc, sc_sql, args)
+            job_class().etl(sc, sc_sql, args)
         else:
             Flow(sc, sc_sql, args, app_name)
 

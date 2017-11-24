@@ -43,4 +43,4 @@ class SQLCommandLiner(CommandLiner):
 
 
 if __name__ == "__main__":
-    SQLCommandLiner(SQL_Job(), aws_setup='perso')  # aws_setup can be overriden in commandline if required
+    SQLCommandLiner(SQL_Job, aws_setup='perso')  # aws_setup can be overriden in commandline if required

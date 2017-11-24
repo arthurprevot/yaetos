@@ -16,4 +16,4 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    CommandLiner(Job(), aws_setup='perso')
+    CommandLiner(Job, aws_setup='perso')
