@@ -22,3 +22,4 @@ zip -r scripts.zip .
 # sudo python2.7 -m pip install referer_parser
 sudo pip install boto3
 sudo pip install networkx
+sudo pip install pandas
