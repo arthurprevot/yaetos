@@ -26,10 +26,25 @@ GIT_REPO = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: pa
 
 
 class ETL_Base(object):
+    def __init__(self, args):
+        # self.sc = sc
+        # self.sc_sql = sc_sql
+        # self.app_name = sc.appName
+        self.args = args
+        self.job_file = self.get_job_file()
+        self.job_name = self.get_job_name()  # differs from app_name when one spark app runs several jobs.
+        self.set_job_yml()
+        self.set_paths()
+        self.set_is_incremental()
+        self.set_frequency()
 
-    def etl(self, sc, sc_sql, args, loaded_inputs={}):
+    # def etl(self, sc, sc_sql, args, loaded_inputs={}):
+    def etl(self, sc, sc_sql, loaded_inputs={}):
+        self.sc = sc
+        self.sc_sql = sc_sql
+        self.app_name = sc.appName
         start_time = time()
-        self.set_attributes(sc, sc_sql, args)
+        # self.set_attributes(sc, sc_sql, args)
         print "-------\nStarting running job '{}' in spark app '{}'.".format(self.job_name, self.app_name)
 
         loaded_datasets = self.load_inputs(loaded_inputs)
@@ -44,23 +59,13 @@ class ETL_Base(object):
     def transform(self, **app_args):
         raise NotImplementedError
 
-    def set_attributes(self, sc, sc_sql, args):  # TODO move to __init__
-        self.sc = sc
-        self.sc_sql = sc_sql
-        self.app_name = sc.appName
-        self.job_name = self.get_job_name()  # differs from app_name when one spark app runs several jobs.
-        self.args = args
-        self.set_job_yml()
-        self.set_paths()
-        self.set_is_incremental()
-        self.set_frequency()
-
     def get_job_name(self):
         # Isolated in function for overridability
         job_file = self.get_job_file()
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
         # TODO change this hacky way to deal with it.
         return job_file.replace(GIT_REPO+'jobs/','').replace('jobs/','')# .replace('.py','')  # TODO make better with os.path functions.
+        # return job_file.replace('jobs/','')  # TODO make better with os.path functions.
 
     def get_job_file(self):
         return inspect.getsourcefile(self.__class__)
@@ -291,13 +296,14 @@ class Path_Handler():
 
 
 class CommandLiner():
-    def __init__(self, job_class_or_name, **args):
+    def __init__(self, job_class_or_name, **args):  # change to Job input only.
         self.set_commandline_args(args)
         if args['execution'] == 'run':
-            Job = get_job_class(job_class_or_name) if isinstance(job_class_or_name, basestring) else job_class_or_name
+            # Job = get_job_class(job_class_or_name) if isinstance(job_class_or_name, basestring) else job_class_or_name
+            Job = job_class_or_name
             self.launch_run_mode(Job, self.args)
         elif args['execution'] == 'deploy':
-            job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name())
+            job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name())  #TODO: fix, will break.
             self.launch_deploy_mode(job_file, **self.args)
 
     def set_commandline_args(self, args):
@@ -321,13 +327,16 @@ class CommandLiner():
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        app_name = Job().get_job_file()
+        # import ipdb; ipdb.set_trace()
+        job = Job(args)
+        # import ipdb; ipdb.set_trace()
+        app_name = job.job_name #get_job_file()
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         if not self.args['dependencies']:
-            Job().etl(sc, sc_sql, args)
+            job.etl(sc, sc_sql)
         else:
-            app_name = Job().get_job_name()
+            # app_name = job.get_job_name()
             Flow(sc, sc_sql, args, app_name)
 
     def launch_deploy_mode(self, job_file, aws_setup, **app_args):
@@ -356,19 +365,20 @@ class Flow():
         # load all job classes and run them
         df = {}
         for job_name in leafs:
-            Job = self.get_job_class(job_name)
-            job = Job()
-
             if job_name.endswith('.sql'):
                 args['sql_file'] = 'jobs/' + job_name
 
-            job.set_attributes(sc, sc_sql, args)  # TODO: ran downstream too. Update.
+            Job = self.get_job_class(job_name)
+            job = Job(args)
+
+            # job.set_attributes(sc, sc_sql, args)  # TODO: ran downstream too. Update.
             loaded_inputs = {}
             for in_name, in_properties in job.job_yml['inputs'].iteritems():
                 if in_properties.get('from'):
                     loaded_inputs[in_name] = df[in_properties['from']]
             # print 'Already loaded inputs for jobs {}: {}'.format(leaf, loaded_inputs) # TODO: keep print at job loading level but could pass name of prev job that dataset came from.
-            df[job_name] = job.etl(sc, sc_sql, args, loaded_inputs)
+            # df[job_name] = job.etl(sc, sc_sql, args, loaded_inputs)
+            df[job_name] = job.etl(sc, sc_sql, loaded_inputs)
 
     def get_leafs_recursive(self, tree, leafs):
         """Recursive function to extract all leafs in order out of tree.

@@ -4,12 +4,13 @@ from core.etl_utils import ETL_Base, CommandLiner, GIT_REPO
 class SQL_Job(ETL_Base):
     """To run/deploy sql jobs, using --sql_file arg."""
 
-    def set_attributes(self, sc, sc_sql, args):
-        self.sc = sc
-        self.sc_sql = sc_sql
-        self.app_name = sc.appName
-        self.job_name = self.get_job_name(args)
+    # def set_attributes(self, sc, sc_sql, args):
+    def __init__(self, args):
+        # self.sc = sc
+        # self.sc_sql = sc_sql
         self.args = args
+        self.job_file = self.get_job_file()
+        self.job_name = self.get_job_name(args['sql_file'])
         self.set_job_yml()
         self.set_paths()
         self.set_is_incremental()
@@ -21,8 +22,8 @@ class SQL_Job(ETL_Base):
         return df
 
     @staticmethod
-    def get_job_name(args):
-        return args['sql_file'].replace(GIT_REPO+'jobs/','').replace('jobs/','') # TODO make better with os.path functions + remove GIT_REPO hack
+    def get_job_name(sql_file):
+        return sql_file.replace(GIT_REPO+'jobs/','').replace('jobs/','') # TODO make better with os.path functions + remove GIT_REPO hack
 
     @staticmethod
     def get_job_class(job_name):
@@ -43,8 +44,8 @@ class SQLCommandLiner(CommandLiner):
         parser.add_argument("-s", "--sql_file", help="path of sql file to run")
         return parser
 
-    def get_job_file(self, job_class):
-        return self.args['sql_file']
+    # def get_job_file(self, job_class):
+    #     return self.args['sql_file']
 
 
 if __name__ == "__main__":
