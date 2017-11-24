@@ -4,14 +4,11 @@ from core.etl_utils import ETL_Base, CommandLiner, GIT_REPO
 class SQL_Job(ETL_Base):
     """To run/deploy sql jobs, using --sql_file arg."""
 
-    # def set_attributes(self, sc, sc_sql, args):
     def __init__(self, args):
-        # self.sc = sc
-        # self.sc_sql = sc_sql
         self.args = args
         self.job_file = self.get_job_file()
         self.job_name = self.get_job_name(args['sql_file'])
-        self.set_job_yml()
+        self.set_job_yml(self.job_name)
         self.set_paths()
         self.set_is_incremental()
         self.set_frequency()
