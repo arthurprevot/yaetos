@@ -27,9 +27,6 @@ GIT_REPO = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: pa
 
 class ETL_Base(object):
     def __init__(self, args={}):
-        # self.sc = sc
-        # self.sc_sql = sc_sql
-        # self.app_name = sc.appName
         self.args = args
         self.job_file = self.get_job_file()
         self.job_name = self.get_job_name()  # differs from app_name when one spark app runs several jobs.
@@ -38,13 +35,11 @@ class ETL_Base(object):
         self.set_is_incremental()
         self.set_frequency()
 
-    # def etl(self, sc, sc_sql, args, loaded_inputs={}):
     def etl(self, sc, sc_sql, loaded_inputs={}):
         self.sc = sc
         self.sc_sql = sc_sql
         self.app_name = sc.appName
         start_time = time()
-        # self.set_attributes(sc, sc_sql, args)
         print "-------\nStarting running job '{}' in spark app '{}'.".format(self.job_name, self.app_name)
 
         loaded_datasets = self.load_inputs(loaded_inputs)
@@ -64,8 +59,7 @@ class ETL_Base(object):
         job_file = self.get_job_file()
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
         # TODO change this hacky way to deal with it.
-        return job_file.replace(GIT_REPO+'jobs/','').replace('jobs/','')# .replace('.py','')  # TODO make better with os.path functions.
-        # return job_file.replace('jobs/','')  # TODO make better with os.path functions.
+        return job_file.replace(GIT_REPO+'jobs/','').replace('jobs/','')
 
     def get_job_file(self):
         return inspect.getsourcefile(self.__class__)
@@ -210,7 +204,7 @@ class ETL_Base(object):
         FS_Ops_Dispatcher().save_metadata(fname, content, self.args['storage'])
 
     def query(self, query_str):
-        print 'Query string:', query_str
+        print 'Query string:\n', query_str
         return self.sc_sql.sql(query_str)
 
     @staticmethod
@@ -296,7 +290,7 @@ class Path_Handler():
 
 
 class CommandLiner():
-    def __init__(self, Job, **args):  # change to Job input only.
+    def __init__(self, Job, **args):
         self.set_commandline_args(args)
         if args['execution'] == 'run':
             self.launch_run_mode(Job, self.args)
@@ -305,10 +299,11 @@ class CommandLiner():
             self.launch_deploy_mode(job_file, **self.args)
 
     def set_commandline_args(self, args):
+        """Command line arguments take precedence over function ones."""
         self.args = args
         parser = self.define_commandline_args()
         cmd_args = parser.parse_args()
-        self.args.update(cmd_args.__dict__)  # commandline arguments take precedence over function ones.
+        self.args.update(cmd_args.__dict__)
 
     @staticmethod
     def define_commandline_args():
@@ -352,8 +347,8 @@ class Flow():
         self.app_name = app_name
         storage = args['storage']
         df = self.create_connections_jobs(storage)
-        DG = self.create_master_graph(df)  # from top to bottom
-        tree = self.create_tree(DG, 'upstream', app_name, include_dup=False) # from bottom to top
+        graph = self.create_master_graph(df)  # from top to bottom
+        tree = self.create_tree(graph, 'upstream', app_name, include_dup=False) # from bottom to top
         leafs = self.get_leafs_recursive(tree, leafs=[])
         print 'Sequence of jobs to be run', leafs
 
@@ -396,21 +391,6 @@ class Flow():
             return SQL_Job.get_job_class(name)
         else:
             raise Exception("Extension not recognized")
-
-
-    def create_connections_path(self, storage):
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base
-        yml = ETL_Base.load_meta(meta_file)
-
-        connections = []
-        for job_name, job_meta in yml.iteritems():
-            output_path = Path_Handler(job_meta['output']['path']).get_base()
-            for input_name, input_meta in job_meta['inputs'].iteritems():
-                input_path = Path_Handler(input_meta['path']).get_base()
-                row = {'input_path': input_path, 'input_name': input_name, 'job_name':job_name, 'output_path': output_path, 'output_name':job_name+'_output'}
-                connections.append(row)
-
-        return pd.DataFrame(connections)
 
     def create_connections_jobs(self, storage):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base

@@ -20,7 +20,7 @@ class SQL_Job(ETL_Base):
 
     @staticmethod
     def get_job_name(sql_file):
-        return sql_file.replace(GIT_REPO+'jobs/','').replace('jobs/','') # TODO make better with os.path functions + remove GIT_REPO hack
+        return sql_file.replace(GIT_REPO+'jobs/','').replace('jobs/','')
 
     @staticmethod
     def get_job_class(job_name):
@@ -40,9 +40,6 @@ class SQLCommandLiner(CommandLiner):
         parser = CommandLiner.define_commandline_args()
         parser.add_argument("-s", "--sql_file", help="path of sql file to run")
         return parser
-
-    # def get_job_file(self, job_class):
-    #     return self.args['sql_file']
 
 
 if __name__ == "__main__":
