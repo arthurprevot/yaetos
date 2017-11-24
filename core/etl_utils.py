@@ -73,6 +73,13 @@ class ETL_Base(object):
     def get_job_file(self):
         return inspect.getsourcefile(self.__class__)
 
+    @staticmethod
+    def get_job_class(job_name):
+        name_import = job_name.replace('/','.').replace('.py','')
+        import_cmd = "from jobs.{} import Job".format(name_import)
+        exec(import_cmd)
+        return Job
+
     def set_job_yml(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
@@ -294,14 +301,12 @@ class Path_Handler():
 class CommandLiner():
     def __init__(self, job_class_or_name, **args):
         self.set_commandline_args(args)
-
-        job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name())
-        job_class = get_job_class(job_class_or_name) if isinstance(job_class_or_name, basestring) else job_class_or_name
-        job_name = job_file.replace('jobs/','')
-
         if args['execution'] == 'run':
-            self.launch_run_mode(job_class, self.args)
+            Job = get_job_class(job_class_or_name) if isinstance(job_class_or_name, basestring) else job_class_or_name
+            # job_name = Job().get_job_name
+            self.launch_run_mode(Job, self.args)
         elif args['execution'] == 'deploy':
+            job_file = job_class_or_name if isinstance(job_class_or_name, basestring) else get_job_file(job_class_or_name())
             self.launch_deploy_mode(job_file, **self.args)
 
     def set_commandline_args(self, args):
@@ -321,16 +326,17 @@ class CommandLiner():
         # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
         return parser
 
-    def launch_run_mode(self, job_class, args):
+    def launch_run_mode(self, Job, args):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
-        app_name = self.get_job_file(job_class())
+        app_name = Job().get_job_file()
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
         if not self.args['dependencies']:
-            job_class().etl(sc, sc_sql, args)
+            Job().etl(sc, sc_sql, args)
         else:
+            app_name = Job().get_job_name()
             Flow(sc, sc_sql, args, app_name)
 
     def launch_deploy_mode(self, job_file, aws_setup, **app_args):
@@ -338,48 +344,58 @@ class CommandLiner():
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()  # TODO: fix mismatch job vs app.
 
-    @staticmethod
-    def get_job_file(job_class):
-        return get_job_file(job_class)
-
-
-def get_job_file(job_class):
-    return inspect.getsourcefile(job_class.__class__)
-
-def get_job_class(name):
-    name_import = name.replace('/','.').replace('.py','')
-    import_cmd = "from jobs.{} import Job".format(name_import)
-    exec(import_cmd)
-    return Job
+#     @staticmethod
+#     def get_job_file(job):
+#         return get_job_file(job)
+#
+    # @staticmethod
+    # def get_job_class(name):
+    #     return get_job_class(name)
+#
+# def get_job_file(job):
+#     return inspect.getsourcefile(job.__class__)
+#
+# def get_job_class(name):
+#     name_import = name.replace('/','.').replace('.py','')
+#     import_cmd = "from jobs.{} import Job".format(name_import)
+#     exec(import_cmd)
+#     return Job
 
 
 import networkx as nx
 import random
 import pandas as pd
+from core.sql_job import SQL_Job
+
 
 
 class Flow():
-    def __init__(self, sc, sc_sql, args, job):
-        self.job = job
+    def __init__(self, sc, sc_sql, args, app_name):
+        self.app_name = app_name
+        # import ipdb; ipdb.set_trace()
         storage = args['storage']
         df = self.create_connections_jobs(storage)
         DG = self.create_master_graph(df)  # from top to bottom
-        tree = self.create_tree(DG, 'upstream', job, include_dup=False) # from bottom to top
+        tree = self.create_tree(DG, 'upstream', app_name, include_dup=False) # from bottom to top
         leafs = self.get_leafs_recursive(tree, leafs=[])
         print 'Sequence of jobs to be run', leafs
 
         # load all job classes and run them
         df = {}
-        for leaf in leafs:
-            job_class = self.get_job_class(leaf)  # TODO: support loading sql jobs.
+        for job_name in leafs:
+            job_class = self.get_job_class(job_name)  # TODO: support loading sql jobs.
             job_obj = job_class()
+
+            if job_name.endswith('.sql'):
+                args['sql_file'] = 'jobs/' + job_name
+
             job_obj.set_attributes(sc, sc_sql, args)  # TODO: check if call duplicated downstream
             loaded_inputs = {}
             for in_name, in_properties in job_obj.job_yml['inputs'].iteritems():
                 if in_properties.get('from'):
                     loaded_inputs[in_name] = df[in_properties['from']]
             # print 'Already loaded inputs for jobs {}: {}'.format(leaf, loaded_inputs) # TODO: keep print at job loading level but could pass name of prev job that dataset came from.
-            df[leaf] = job_obj.etl(sc, sc_sql, args, loaded_inputs)
+            df[job_name] = job_obj.etl(sc, sc_sql, args, loaded_inputs)
 
     def get_leafs_recursive(self, tree, leafs):
         """Recursive function to extract all leafs in order out of tree.
@@ -396,14 +412,20 @@ class Flow():
 
         return leafs + tree.nodes()
 
+    @staticmethod
+    def get_job_class(name):
+        # # TODO: use get_job_class instead.
+        # name_import = name.replace('/','.')
+        # import_cmd = "from jobs.{} import Job".format(name_import)
+        # exec(import_cmd)
+        # return Job
+        if name.endswith('.py'):
+            return ETL_Base.get_job_class(name)
+        elif name.endswith('.sql'):
+            return SQL_Job.get_job_class(name)
+        else:
+            raise "Extension not recognized"  # TODO: fix raise doesn't support string.
 
-    # @staticmethod
-    # def get_class_from(name):
-    #     # TODO: use get_job_class instead.
-    #     name_import = name.replace('/','.')
-    #     import_cmd = "from jobs.{} import Job".format(name_import)
-    #     exec(import_cmd)
-    #     return Job
 
     def create_connections_path(self, storage):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base

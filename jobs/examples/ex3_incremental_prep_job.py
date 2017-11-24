@@ -1,4 +1,4 @@
-from core.etl_utils import ETL_Base
+from core.etl_utils import ETL_Base, CommandLiner
 from pyspark.sql.functions import udf, array
 from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import col
@@ -27,4 +27,4 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    Job().commandline_launch(aws_setup='perso')
+    CommandLiner(Job, aws_setup='perso')

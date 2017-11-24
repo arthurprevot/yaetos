@@ -1,4 +1,4 @@
-from core.etl_utils import ETL_Base, CommandLiner, Flow, GIT_REPO
+from core.etl_utils import ETL_Base, CommandLiner, GIT_REPO
 
 
 class SQL_Job(ETL_Base):
@@ -20,8 +20,14 @@ class SQL_Job(ETL_Base):
         df = self.query(sql)
         return df
 
+    # @staticmethod # TODO try later
     def get_job_name(self, args):
         return args['sql_file'].replace(GIT_REPO+'jobs/','').replace('jobs/','') #.replace('.sql','')  # TODO make better with os.path functions + remove hack
+
+    @staticmethod
+    def get_job_class(job_name):
+        from core.sql_job import SQL_Job  #TODO: remove
+        return SQL_Job
 
     @staticmethod
     def read_sql_file(fname):
