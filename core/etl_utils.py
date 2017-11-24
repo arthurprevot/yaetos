@@ -22,14 +22,15 @@ import StringIO
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-GIT_REPO = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: parametrize
+LOCAL_ROOT = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: parametrize
+CLUSTER_ROOT = '/home/hadoop/app'  # TODO: parametrize
 
 
 class ETL_Base(object):
     def __init__(self, args={}):
         self.args = args
-        self.job_file = self.get_job_file()
-        self.job_name = self.get_job_name()  # differs from app_name when one spark app runs several jobs.
+        self.set_job_file()
+        self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
         self.set_job_yml(self.job_name)
         self.set_paths()
         self.set_is_incremental()
@@ -54,15 +55,13 @@ class ETL_Base(object):
     def transform(self, **app_args):
         raise NotImplementedError
 
-    def get_job_name(self):
-        # Isolated in function for overridability
-        job_file = self.get_job_file()
+    def set_job_file(self):
+        self.job_file = inspect.getsourcefile(self.__class__)
+
+    def set_job_name(self, job_file):
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
         # TODO change this hacky way to deal with it.
-        return job_file.replace(GIT_REPO+'jobs/','').replace('jobs/','')
-
-    def get_job_file(self):
-        return inspect.getsourcefile(self.__class__)
+        self.job_name = job_file.replace(LOCAL_ROOT+'jobs/','').replace(CLUSTER_ROOT+'jobs/','').replace('jobs/','')
 
     @staticmethod
     def get_job_class(job_name):
@@ -295,7 +294,7 @@ class CommandLiner():
         if args['execution'] == 'run':
             self.launch_run_mode(Job, self.args)
         elif args['execution'] == 'deploy':
-            job_file = Job().job_file
+            job_file = Job(self.args).job_file
             self.launch_deploy_mode(job_file, **self.args)
 
     def set_commandline_args(self, args):
@@ -332,7 +331,7 @@ class CommandLiner():
     def launch_deploy_mode(self, job_file, aws_setup, **app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
-        DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()  # TODO: fix mismatch job vs app.
+        DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()
 
 
 # imports for Flow(), can't be put in script header or it creates a loop.

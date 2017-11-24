@@ -1,13 +1,13 @@
-from core.etl_utils import ETL_Base, CommandLiner, GIT_REPO
+from core.etl_utils import ETL_Base, CommandLiner
 
 
 class SQL_Job(ETL_Base):
     """To run/deploy sql jobs, using --sql_file arg."""
 
-    def __init__(self, args):
+    def __init__(self, args={}):
         self.args = args
-        self.job_file = self.get_job_file()
-        self.job_name = self.get_job_name(args['sql_file'])
+        self.set_job_file()
+        self.set_job_name(args['sql_file'])
         self.set_job_yml(self.job_name)
         self.set_paths()
         self.set_is_incremental()
@@ -18,9 +18,9 @@ class SQL_Job(ETL_Base):
         df = self.query(sql)
         return df
 
-    @staticmethod
-    def get_job_name(sql_file):
-        return sql_file.replace(GIT_REPO+'jobs/','').replace('jobs/','')
+    # @staticmethod
+    # def get_job_name(sql_file):
+    #     return sql_file.replace(GIT_REPO+'jobs/','').replace('jobs/','')
 
     @staticmethod
     def get_job_class(job_name):
