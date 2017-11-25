@@ -6,7 +6,6 @@ Helper functions. Setup to run locally and on cluster.
 # - extract yml ops to separate class for reuse in Flow()
 # - setup command line args defaults to None so they can be overriden only if set in commandline and default would be in config file or jobs_metadata.yml
 # - make yml look more like command line info, with path of python script.
-# - fix lib dependency versions
 
 
 import sys
@@ -351,7 +350,7 @@ class Flow():
         storage = args['storage']
         df = self.create_connections_jobs(storage)
         graph = self.create_master_graph(df)  # from top to bottom
-        tree = self.create_tree(graph, 'upstream', app_name, include_dup=False) # from bottom to top
+        tree = self.create_tree_recursive(graph, nx.DiGraph(), 'upstream', app_name, include_dup=False) # from bottom to top
         leafs = self.get_leafs_recursive(tree, leafs=[])
         print 'Sequence of jobs to be run', leafs
 
@@ -368,23 +367,7 @@ class Flow():
             for in_name, in_properties in job.job_yml['inputs'].iteritems():
                 if in_properties.get('from'):
                     loaded_inputs[in_name] = df[in_properties['from']]
-            # print 'Already loaded inputs for jobs {}: {}'.format(leaf, loaded_inputs) # TODO: keep print at job loading level but could pass name of prev job that dataset came from.
             df[job_name] = job.etl(sc, sc_sql, loaded_inputs)
-
-    def get_leafs_recursive(self, tree, leafs):
-        """Recursive function to extract all leafs in order out of tree.
-        Each pass, jobs are moved from "tree" to "leafs" variables until done.
-        """
-        cur_leafs = [node for node in tree.nodes() if tree.in_degree(node)!=0 and tree.out_degree(node)==0]
-        leafs += cur_leafs
-
-        for leaf in cur_leafs:
-            tree.remove_node(leaf)
-
-        if len(tree.nodes()) >= 2:
-            self.get_leafs_recursive(tree, leafs)
-
-        return leafs + tree.nodes()
 
     @staticmethod
     def get_job_class(name):
@@ -423,11 +406,6 @@ class Flow():
             DG.add_node(target_dataset, item)
         return DG
 
-    def create_tree(self, DG, direction, root, include_dup=True):
-        tree = nx.DiGraph()
-        tree = self.create_tree_recursive(DG, tree, direction, root, include_dup)
-        return tree
-
     def create_tree_recursive(self, DG, tree, direction, ref_node, include_dup=True):
         """ Builds tree recursively. Uses graph data structure but enforces tree to simplify downstream."""
         if direction == 'upstream':
@@ -454,3 +432,18 @@ class Flow():
                 tree.add_edge(ref_node, child_id)
                 tree.add_node(child_id, child_attributes)
         return tree
+
+    def get_leafs_recursive(self, tree, leafs):
+        """Recursive function to extract all leafs in order out of tree.
+        Each pass, jobs are moved from "tree" to "leafs" variables until done.
+        """
+        cur_leafs = [node for node in tree.nodes() if tree.in_degree(node)!=0 and tree.out_degree(node)==0]
+        leafs += cur_leafs
+
+        for leaf in cur_leafs:
+            tree.remove_node(leaf)
+
+        if len(tree.nodes()) >= 2:
+            self.get_leafs_recursive(tree, leafs)
+
+        return leafs + tree.nodes()
