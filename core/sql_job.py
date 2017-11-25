@@ -1,4 +1,4 @@
-from core.etl_utils import ETL_Base, CommandLiner
+from core.etl_utils import ETL_Base, CommandLiner, CLUSTER_APP_FOLDER
 
 
 class SQL_Job(ETL_Base):
@@ -14,13 +14,10 @@ class SQL_Job(ETL_Base):
         self.set_frequency()
 
     def transform(self, **ignored):
-        sql = self.read_sql_file(self.args['sql_file'])
+        sql_file = CLUSTER_APP_FOLDER+self.args['sql_file'] if self.args['storage']=='s3' else self.args['sql_file']
+        sql = self.read_sql_file(sql_file)
         df = self.query(sql)
         return df
-
-    # @staticmethod
-    # def get_job_name(sql_file):
-    #     return sql_file.replace(GIT_REPO+'jobs/','').replace('jobs/','')
 
     @staticmethod
     def get_job_class(job_name):

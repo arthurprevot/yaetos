@@ -4,6 +4,10 @@ Code running on client side to push code to AWS and execute it there.
 Most of it from https://github.com/thomhopmans/themarketingtechnologist/tree/master/6_deploy_spark_cluster_on_aws
 """
 
+# TODO:
+# - use logger properly
+# - get setup properly updated when changed and resubmitted to existing cluster (see current stderr output).
+
 import logging
 import os
 import sys
@@ -42,7 +46,7 @@ class DeployPySparkScriptOnAws(object):
         self.app_args = app_args
 
     def run(self):
-        session = boto3.Session(profile_name=self.profile_name)  # Select AWS IAM profile
+        session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
 
         # S3 ops
         s3 = session.resource('s3')
@@ -79,7 +83,6 @@ class DeployPySparkScriptOnAws(object):
             ClusterStates=['STARTING','BOOTSTRAPPING','RUNNING','WAITING'],
             )
         clusters = [(ii+1, item['Id'],item['Name']) for ii, item in enumerate(response['Clusters'])]
-        # TODO: remove cluster that are meant to die after running their job from list, may be by checking they have boostrap ops with terminate_...sh
         return clusters
 
     def choose_cluster(self, clusters, cluster_id=None):
@@ -291,6 +294,7 @@ class DeployPySparkScriptOnAws(object):
                         "--execution=run",
                         "--storage=s3",
                         "--sql_file=%s"%(CLUSTER_APP_FOLDER+app_args['sql_file']) if app_args.get('sql_file') else "",  # TODO: better handling of app_args
+                        "--dependencies" if app_args.get('dependencies') else "",  # TODO: better handling of app_args
                         ]
                     }
                 }]
