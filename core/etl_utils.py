@@ -295,9 +295,9 @@ class Path_Handler():
 class CommandLiner():
     def __init__(self, Job, **args):
         self.set_commandline_args(args)
-        if args['execution'] == 'run':
+        if not args['deploy']:
             self.launch_run_mode(Job, self.args)
-        elif args['execution'] == 'deploy':
+        else:
             job_file = Job(self.args).job_file
             self.launch_deploy_mode(job_file, **self.args)
 
@@ -312,10 +312,10 @@ class CommandLiner():
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-e", "--execution", default='run', help="Choose 'run' (default) or 'deploy'.", choices=set(['deploy', 'run'])) # comes from cmd line since value is set when running on cluster
+        parser.add_argument("-d", "--deploy", action='store_true', help="Deploy the job to a cluster and run it there instead of running it now locally.") # comes from cmd line since value is set when running on cluster
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
-        parser.add_argument("-d", "--dependencies", action='store_true', help="Run dependencies with this job")
+        parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
         # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
         return parser
 

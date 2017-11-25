@@ -130,7 +130,7 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         # Create tar.gz file
-        t_file = tarfile.open(self.tmp + "script.tar.gz", 'w:gz')
+        t_file = tarfile.open(self.tmp + "scripts.tar.gz", 'w:gz')
 
         # Add files
         t_file.add('__init__.py')
@@ -167,8 +167,8 @@ class DeployPySparkScriptOnAws(object):
         s3.Object(self.s3_bucket_temp_files, self.job_name + '/terminate_idle_cluster.sh')\
           .put(Body=open(self.tmp+'terminate_idle_cluster.sh', 'rb'), ContentType='text/x-sh')
         # Compressed Python script files (tar.gz)
-        s3.Object(self.s3_bucket_temp_files, self.job_name + '/script.tar.gz')\
-          .put(Body=open(self.tmp+'script.tar.gz', 'rb'), ContentType='application/x-tar')
+        s3.Object(self.s3_bucket_temp_files, self.job_name + '/scripts.tar.gz')\
+          .put(Body=open(self.tmp+'scripts.tar.gz', 'rb'), ContentType='application/x-tar')
         logger.info("Uploaded files to key '{}' in bucket '{}'".format(self.job_name, self.s3_bucket_temp_files))
         return True
 
@@ -291,10 +291,9 @@ class DeployPySparkScriptOnAws(object):
                         "spark-submit",
                         "--py-files=%sscripts.zip"%CLUSTER_APP_FOLDER,
                         CLUSTER_APP_FOLDER+app_file,
-                        "--execution=run",
                         "--storage=s3",
                         "--sql_file=%s"%(CLUSTER_APP_FOLDER+app_args['sql_file']) if app_args.get('sql_file') else "",  # TODO: better handling of app_args
-                        "--dependencies" if app_args.get('dependencies') else "",  # TODO: better handling of app_args
+                        "--dependencies" if app_args.get('dependencies') else "",
                         ]
                     }
                 }]
