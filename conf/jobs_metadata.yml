@@ -1,4 +1,4 @@
-ex1_full_sql_job:
+examples/ex1_full_sql_job.sql:
   inputs:
     some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
@@ -7,7 +7,7 @@ ex1_full_sql_job:
   frequency: 24h
   email: 'some_group@scmspain.com'
 
-ex1_frameworked_job:
+examples/ex1_frameworked_job.py:
   inputs:
     some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
@@ -18,7 +18,7 @@ ex1_frameworked_job:
 
 # ex1_raw_job: # Job exists but doesn't rely on jobs_metadata entries
 
-ex2_frameworked_job:
+examples/ex2_frameworked_job.py:
   inputs:
     some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
@@ -27,7 +27,8 @@ ex2_frameworked_job:
   frequency: 24h
   email: 'some_group@scmspain.com'
 
-ex3_incremental_job:
+
+examples/ex3_incremental_job.py:
   inputs:
     processed_events: {'path':"s3://bucket-scratch/bogus_data/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj'}
   output: {'path':'s3://bucket-scratch/bogus_data/output_ex3_inc/incremental_build_v1/', 'type':'csv', 'inc_field': 'other_timestamp'}
@@ -35,7 +36,7 @@ ex3_incremental_job:
   frequency: 24h
   email: 'some_group@scmspain.com'
 
-ex3_dependant_job:
+examples/ex3_incremental_prep_job.py:
   inputs:
     some_events: {'path':"s3://bucket-scratch/bogus_data/inputs/events_log_small.csv", 'type':'csv'}
   output: {'path':'s3://bucket-scratch/bogus_data/output_ex3_dep/{now}/', 'type':'csv'}
@@ -43,7 +44,34 @@ ex3_dependant_job:
   frequency: 24h
   email: 'some_group@scmspain.com'
 
-wordcount_frameworked_job:
+
+examples/ex4_dependency1_job.py:  # shows dependency
+  inputs:
+    # some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log_small.csv", 'type':'csv'}
+    some_events: {'path':"s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz", 'type':'csv'}
+  output: {'path':'s3://bucket-scratch/bogus_data/output_ex4_dep1/{now}/', 'type':'csv'}
+
+examples/ex4_dependency2_job.py:  # shows dependency
+  inputs:
+    # some_events: {'from':'examples/ex4_dependency1_job.py'}
+    some_events: {'path':'s3://bucket-scratch/bogus_data/output_ex4_dep1/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency1_job.py'}
+  output: {'path':'s3://bucket-scratch/bogus_data/output_ex4_dep2/{now}/', 'type':'csv'}
+  dependencies: [examples/ex4_dependency1_job.py]  # TODO: check to remove it since it is in input desc.
+
+examples/ex4_dependency3_job.sql:  # shows dependency
+  inputs:
+    some_events: {'path':'s3://bucket-scratch/bogus_data/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
+  output: {'path':'s3://bucket-scratch/bogus_data/output_ex4_dep3/{now}/', 'type':'csv'}
+  dependencies: [examples/ex4_dependency2_job.py, examples/ex4_dependency1_job.py]  # TODO: check to remove it since it is in input desc.
+
+examples/ex4_dependency4_job.py:  # shows dependency
+  inputs:
+    some_events: {'path':'s3://bucket-scratch/bogus_data/output_ex4_dep3/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency3_job.sql'}
+  output: {'path':'s3://bucket-scratch/bogus_data/output_ex4_dep4/{now}/', 'type':'csv'}
+  dependencies: [examples/ex4_dependency3_job.sql]  # TODO: check to remove it since it is in input desc.
+
+
+examples/wordcount_frameworked_job.py:
   inputs:
     lines: {'path':"s3://bucket-scratch/wordcount_test/input/sample_text.txt", 'type':'txt'}
   output: {'path':'s3://bucket-scratch/wordcount_test/output/{now}/', 'type':'txt'}

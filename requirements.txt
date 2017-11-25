@@ -1,2 +1,5 @@
-pip install pyyaml
-pip install boto3
+pyyaml==3.11
+boto3==1.2.6
+networkx==1.11
+pandas==0.20.3
+pyspark==2.1.0.dev0

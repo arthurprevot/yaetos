@@ -1,9 +1,8 @@
-from core.etl_utils import etl_base
+from core.etl_utils import ETL_Base, CommandLiner
 
 
-class Job(etl_base):
+class Job(ETL_Base):
     def transform(self, processed_events):
-        # import ipdb; ipdb.set_trace()
         df = self.query("""
             SELECT timestamp_obj as other_timestamp, *
             FROM processed_events se
@@ -13,4 +12,4 @@ class Job(etl_base):
 
 
 if __name__ == "__main__":
-    Job().commandline_launch(aws_setup='perso')
+    CommandLiner(Job, aws_setup='perso')

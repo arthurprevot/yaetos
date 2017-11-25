@@ -1,8 +1,8 @@
 """Same as ex1_full_sql_job.sql but allows access to spark for more complex ops (not used here but in ex2_frameworked_job.py)."""
-from core.etl_utils import etl_base
+from core.etl_utils import ETL_Base, CommandLiner
 
 
-class Job(etl_base):
+class Job(ETL_Base):
     def transform(self, some_events, other_events):
         df = self.query("""
             SELECT se.session_id, count(*)
@@ -16,4 +16,4 @@ class Job(etl_base):
 
 
 if __name__ == "__main__":
-    Job().commandline_launch(aws_setup='perso')
+    CommandLiner(Job, aws_setup='perso')

@@ -1,10 +1,10 @@
-ex1_full_sql_job:  # shows 100% sql job, easiest when sql is enough
+examples/ex1_full_sql_job.sql:  # shows 100% sql job, easiest when sql is enough
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'data/bogus_data/output_sql/{now}/', 'type':'csv'}
 
-ex1_frameworked_job:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
+examples/ex1_frameworked_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
@@ -12,25 +12,49 @@ ex1_frameworked_job:  # shows frameworked pyspark ops, same as ex1_full_sql_job 
 
 # ex1_raw_job:  # shows raw pyspark ops, no helper functions to deal with boilerplate. Job exists but doesn't rely on jobs_metadata entries
 
-ex2_frameworked_job:  # more complex version of ex1_frameworked_job
+examples/ex2_frameworked_job.py:  # more complex version of ex1_frameworked_job
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/bogus_data/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'data/bogus_data/output_ex2/{now}/', 'type':'csv'}
 
-ex3_incremental_job:  # focus on incremental loading and dropping
+examples/ex3_incremental_job.py:  # focus on incremental loading and dropping
   inputs:
-    processed_events: {'path':"data/bogus_data/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj'}
+    processed_events: {'path':"data/bogus_data/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj', 'from':'examples/ex3_incremental_prep_job.py'}
   output: {'path':'data/bogus_data/output_ex3_inc/incremental_build_v2/', 'type':'csv', 'inc_field': 'other_timestamp'}
   frequency: 24h
+  dependencies: [examples/ex3_incremental_prep_job.py]  # TODO: check to remove it since it is in input desc.
 
-ex3_dependant_job:  # shows computation of dependency as necessary for ex3_incremental_job (manual for now)
+examples/ex3_incremental_prep_job.py:  # shows computation of dependency as necessary for ex3_incremental_job
   inputs:
     some_events: {'path':"data/bogus_data/inputs/{latest}/events_log_small.csv", 'type':'csv'}
   output: {'path':'data/bogus_data/output_ex3_dep/{now}/', 'type':'csv'}
   frequency: 24h
 
-wordcount_frameworked_job:  # shows raw pyspark rdd ops in framework, same as wordcount_raw_job
+examples/ex4_dependency1_job.py:  # shows dependency
+  inputs:
+    some_events: {'path':"data/bogus_data/inputs/{latest}/events_log_small.csv", 'type':'csv'}
+  output: {'path':'data/bogus_data/output_ex4_dep1/{now}/', 'type':'csv'}
+
+examples/ex4_dependency2_job.py:  # shows dependency
+  inputs:
+    some_events: {'from':'examples/ex4_dependency1_job.py'}
+  output: {'path':'data/bogus_data/output_ex4_dep2/{now}/', 'type':'csv'}
+  dependencies: [examples/ex4_dependency1_job.py]  # TODO: check to remove it since it is in input desc.
+
+examples/ex4_dependency3_job.sql:  # shows dependency
+  inputs:
+    some_events: {'path':'data/bogus_data/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
+  output: {'path':'data/bogus_data/output_ex4_dep3/{now}/', 'type':'csv'}
+  dependencies: [examples/ex4_dependency2_job.py, examples/ex4_dependency1_job.py]  # TODO: check to remove it since it is in input desc.
+
+examples/ex4_dependency4_job.py:  # shows dependency
+  inputs:
+    some_events: {'path':'data/bogus_data/output_ex4_dep3/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency3_job.sql'}
+  output: {'path':'data/bogus_data/output_ex4_dep4/{now}/', 'type':'csv'}
+  dependencies: [examples/ex4_dependency3_job.sql]  # TODO: check to remove it since it is in input desc.
+
+examples/wordcount_frameworked_job.py:  # shows raw pyspark rdd ops in framework, same as wordcount_raw_job
   inputs:
     lines: {'path':"data/wordcount/inputs/sample_text.txt", 'type':'txt'}
   output: {'path':'data/wordcount/output/{now}/', 'type':'txt'}
