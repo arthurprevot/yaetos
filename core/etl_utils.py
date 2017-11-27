@@ -3,9 +3,11 @@ Helper functions. Setup to run locally and on cluster.
 """
 # TODO:
 # - add logger
+# - add linter
 # - extract yml ops to separate class for reuse in Flow()
 # - setup command line args defaults to None so they can be overriden only if set in commandline and default would be in config file or jobs_metadata.yml
 # - make yml look more like command line info, with path of python script.
+# - finish _metadata.txt file content.
 
 
 import sys
@@ -17,13 +19,15 @@ import boto3
 import argparse
 from time import time
 import StringIO
+import networkx as nx
+import random
+import pandas as pd
 
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 LOCAL_ROOT = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: parametrize
-CLUSTER_ROOT = '/home/hadoop/app/'  # TODO: parametrize
 
 
 class ETL_Base(object):
@@ -62,7 +66,7 @@ class ETL_Base(object):
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
         # TODO change this hacky way to deal with it.
         self.job_name = job_file.replace(LOCAL_ROOT+'jobs/','') \
-            .replace(CLUSTER_ROOT+'jobs/','') \
+            .replace(CLUSTER_APP_FOLDER+'jobs/','') \
             .replace(CLUSTER_APP_FOLDER+'scripts.zip/jobs/','') \
             .replace('jobs/','')
 
@@ -278,7 +282,7 @@ class Path_Handler():
     def expand_now(self):
         path = self.path
         if '{now}' in path:
-            current_time = datetime.utcnow().strftime('%Y%m%d_%H%M%S_utc')
+            current_time = datetime.utcnow().strftime('date%Y%m%d_time%H%M%S_utc')
             path = path.format(now=current_time)
         return path
 
@@ -337,11 +341,8 @@ class CommandLiner():
         DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()
 
 
-# imports for Flow(), can't be put in script header or it creates a loop.
+# TODO: find better way. this import can't be put in script header or it creates a dep loop and fails.
 from core.sql_job import SQL_Job
-import networkx as nx
-import random
-import pandas as pd
 
 
 class Flow():
@@ -349,8 +350,8 @@ class Flow():
         self.app_name = app_name
         storage = args['storage']
         df = self.create_connections_jobs(storage)
-        graph = self.create_master_graph(df)  # from top to bottom
-        tree = self.create_tree_recursive(graph, nx.DiGraph(), 'upstream', app_name, include_dup=False) # from bottom to top
+        graph = self.create_master_graph(df)  # top to bottom
+        tree = self.create_tree_recursive(graph, nx.DiGraph(), 'upstream', app_name) # bottom to top
         leafs = self.get_leafs_recursive(tree, leafs=[])
         print 'Sequence of jobs to be run', leafs
 
@@ -406,7 +407,7 @@ class Flow():
             DG.add_node(target_dataset, item)
         return DG
 
-    def create_tree_recursive(self, DG, tree, direction, ref_node, include_dup=True):
+    def create_tree_recursive(self, DG, tree, direction, ref_node):
         """ Builds tree recursively. Uses graph data structure but enforces tree to simplify downstream."""
         if direction == 'upstream':
             nodes = DG.predecessors(ref_node)
@@ -421,16 +422,7 @@ class Flow():
             if not tree.has_node(item):
                 tree.add_edge(ref_node, item)
                 tree.add_node(item, DG.node[item])
-                self.create_tree_recursive(DG, tree, direction, item, include_dup)
-            elif include_dup:
-                ii = random.randint(1,1000001)  # TODO: find better (deterministic) way
-                suffix_name = '_dup'
-                suffix_id = '%s_%s'%(suffix_name, ii)
-                child_id = item + suffix_id
-                child_attributes = DG.node[item]
-                child_attributes['name'] = item + suffix_name
-                tree.add_edge(ref_node, child_id)
-                tree.add_node(child_id, child_attributes)
+                self.create_tree_recursive(DG, tree, direction, item)
         return tree
 
     def get_leafs_recursive(self, tree, leafs):
