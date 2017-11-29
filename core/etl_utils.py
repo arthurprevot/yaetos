@@ -341,10 +341,6 @@ class CommandLiner():
         DeployPySparkScriptOnAws(app_file=job_file, aws_setup=aws_setup, **app_args).run()
 
 
-# TODO: find better way. this import can't be put in script header or it creates a dep loop and fails.
-from core.sql_job import SQL_Job
-
-
 class Flow():
     def __init__(self, sc, sc_sql, args, app_name):
         self.app_name = app_name
@@ -375,6 +371,7 @@ class Flow():
         if name.endswith('.py'):
             return ETL_Base.get_job_class(name)
         elif name.endswith('.sql'):
+            from core.sql_job import SQL_Job  # can't be on top because of circular dependencies
             return SQL_Job.get_job_class(name)
         else:
             raise Exception("Extension not recognized")
