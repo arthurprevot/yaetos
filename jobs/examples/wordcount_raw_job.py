@@ -2,12 +2,14 @@ from __future__ import print_function
 import sys
 from operator import add
 from pyspark import SparkContext
+from core.etl_utils import Path_Handler
 
 
 # inputs = "s3://bucket-scratch/wordcount_test/input/sample_text.txt"  # cluster
 inputs = "data/wordcount/inputs/sample_text.txt"  # local
-# output = "s3://bucket-scratch/wordcount_test/output/v4/"  # cluster
-output = "data/wordcount/output/v2/"  # local
+# output = "s3://bucket-scratch/wordcount_test/output_raw/{now}/"  # cluster
+output = "data/wordcount/output_raw/{now}/"  # local
+output = Path_Handler(output).expand_now()
 
 
 # Start SparkContext

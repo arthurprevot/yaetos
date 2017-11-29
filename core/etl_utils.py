@@ -8,6 +8,7 @@ Helper functions. Setup to run locally and on cluster.
 # - setup command line args defaults to None so they can be overriden only if set in commandline and default would be in config file or jobs_metadata.yml
 # - make yml look more like command line info, with path of python script.
 # - finish _metadata.txt file content.
+# - make raw functions available to raw spark jobs.
 
 
 import sys
@@ -31,6 +32,8 @@ LOCAL_ROOT = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: 
 
 
 class ETL_Base(object):
+    tabular_types = ('csv', 'parquet')
+
     def __init__(self, args={}):
         self.args = args
         self.set_job_file()
@@ -123,7 +126,7 @@ class ETL_Base(object):
         # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
-            input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
+            input_is_tabular = self.INPUTS[item]['type'] in self.tabular_types
             inc = self.INPUTS[item].get('inc_field', None)
             if input_is_tabular and inc:
                 max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
@@ -132,7 +135,7 @@ class ETL_Base(object):
 
         # Filter
         for item in app_args.keys():
-            input_is_tabular = self.INPUTS[item]['type'] in ('csv', 'parquet')  # TODO: register as part of function
+            input_is_tabular = self.INPUTS[item]['type'] in self.tabular_types
             inc = self.INPUTS[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -150,6 +153,7 @@ class ETL_Base(object):
     def sql_register(self, app_args):
         for item in app_args.keys():
             input_is_tabular = hasattr(app_args[item], "rdd")  # assuming DataFrame will keep 'rdd' attribute
+            # ^ better than using self.INPUTS[item]['type'] in self.tabular_types since doesn't require 'type' being defined.
             if input_is_tabular:
                 app_args[item].createOrReplaceTempView(item)
 
