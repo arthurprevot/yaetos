@@ -1,4 +1,4 @@
-from core.etl_utils import ETL_Base, CommandLiner
+from core.etl_utils import ETL_Base, Commandliner
 from operator import add
 
 
@@ -11,4 +11,4 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    CommandLiner(Job, aws_setup='perso')
+    Commandliner(Job, aws_setup='perso')

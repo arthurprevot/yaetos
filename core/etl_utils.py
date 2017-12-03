@@ -9,6 +9,7 @@ Helper functions. Setup to run locally and on cluster.
 # - make yml look more like command line info, with path of python script.
 # - finish _metadata.txt file content.
 # - make raw functions available to raw spark jobs.
+# - refactor to have schedule input managed first and passed as args that can be overiden by commandline, so easier to change input output from commandline
 
 
 import sys
@@ -299,7 +300,7 @@ class Path_Handler():
             return self.path
 
 
-class CommandLiner():
+class Commandliner():
     def __init__(self, Job, **args):
         self.set_commandline_args(args)
         if not args['deploy']:
@@ -350,9 +351,9 @@ class Flow():
         self.app_name = app_name
         storage = args['storage']
         df = self.create_connections_jobs(storage)
-        graph = self.create_master_graph(df)  # top to bottom
-        tree = self.create_tree_recursive(graph, nx.DiGraph(), 'upstream', app_name) # bottom to top
-        leafs = self.get_leafs_recursive(tree, leafs=[])
+        graph = self.create_global_graph(df)  # top to bottom
+        tree = self.create_local_tree(graph, nx.DiGraph(), app_name) # bottom to top
+        leafs = self.get_leafs(tree, leafs=[]) # bottom to top
         print 'Sequence of jobs to be run', leafs
 
         # load all job classes and run them
@@ -393,7 +394,7 @@ class Flow():
 
         return pd.DataFrame(connections)
 
-    def create_master_graph(self, df):
+    def create_global_graph(self, df):
         """ Directed Graph from source to target. df must contain 'source_dataset' and 'target_dataset'.
         All other fields are attributed to target."""
         DG = nx.DiGraph()
@@ -408,25 +409,18 @@ class Flow():
             DG.add_node(target_dataset, item)
         return DG
 
-    def create_tree_recursive(self, DG, tree, direction, ref_node):
+    def create_local_tree(self, DG, tree, ref_node):
         """ Builds tree recursively. Uses graph data structure but enforces tree to simplify downstream."""
-        if direction == 'upstream':
-            nodes = DG.predecessors(ref_node)
-        elif direction == 'downstream':
-            nodes = DG.successors(ref_node)
-        else:
-            raise 'Invalid "direction" input.'
-
+        nodes = DG.predecessors(ref_node)
         tree.add_node(ref_node, DG.node[ref_node])
-
         for item in nodes:
             if not tree.has_node(item):
                 tree.add_edge(ref_node, item)
                 tree.add_node(item, DG.node[item])
-                self.create_tree_recursive(DG, tree, direction, item)
+                self.create_local_tree(DG, tree, item)
         return tree
 
-    def get_leafs_recursive(self, tree, leafs):
+    def get_leafs(self, tree, leafs):
         """Recursive function to extract all leafs in order out of tree.
         Each pass, jobs are moved from "tree" to "leafs" variables until done.
         """
@@ -437,6 +431,6 @@ class Flow():
             tree.remove_node(leaf)
 
         if len(tree.nodes()) >= 2:
-            self.get_leafs_recursive(tree, leafs)
+            self.get_leafs(tree, leafs)
 
         return leafs + tree.nodes()

@@ -1,4 +1,4 @@
-from core.etl_utils import ETL_Base, CommandLiner, CLUSTER_APP_FOLDER
+from core.etl_utils import ETL_Base, Commandliner, CLUSTER_APP_FOLDER
 
 
 class SQL_Job(ETL_Base):
@@ -31,13 +31,13 @@ class SQL_Job(ETL_Base):
         return sql
 
 
-class SQLCommandLiner(CommandLiner):
+class SQLCommandliner(Commandliner):
     @staticmethod
     def define_commandline_args():
-        parser = CommandLiner.define_commandline_args()
+        parser = Commandliner.define_commandline_args()
         parser.add_argument("-s", "--sql_file", help="path of sql file to run")
         return parser
 
 
 if __name__ == "__main__":
-    SQLCommandLiner(SQL_Job, aws_setup='perso')  # aws_setup can be overriden in commandline if required
+    SQLCommandliner(SQL_Job, aws_setup='perso')  # aws_setup can be overriden in commandline if required
