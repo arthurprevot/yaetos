@@ -1,5 +1,5 @@
 # setup dependencies
-syspip install -r requirements.txt
+pip install -r requirements.txt
 
 # create data locally
 mkdir -p data/
@@ -13,9 +13,15 @@ fi
 
 
 # create data on s3
-s3_bucket="s3://bucket-scratch"
-#aws s3 ...create s3 bucket if doesn't already exists
+bucket_name="bucket-scratch"
+
+if ! aws s3api head-bucket --bucket $bucket_name --profile $1 2>/dev/null; then
+  echo "S3 Bucket '$bucket_name' doesn't exist. Please create it in AWS and rerun this script."
+  exit 1
+fi
+
+s3_bucket="s3://$bucket_name"
 s3_folder="$s3_bucket/example_input"
 s3_dataset="$s3_folder/events_log.csv.gz"
-#aws s3 cp $local_dataset $s3_dataset --profile persoAP  # copy every time
+echo "Putting dataset ($local_dataset) in S3 ($s3_dataset) if not already done."
 aws s3 sync $local_folder $s3_folder --exclude '*' --include 'events_log.csv.gz' --profile $1
