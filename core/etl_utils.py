@@ -39,7 +39,7 @@ class ETL_Base(object):
         self.args = args
         self.set_job_file()
         self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
-        self.set_job_yml(self.job_name)
+        self.set_job_yml()
         self.set_paths()
         self.set_is_incremental()
         self.set_frequency()
@@ -81,7 +81,7 @@ class ETL_Base(object):
         exec(import_cmd)
         return Job
 
-    def set_job_yml(self, job_name):
+    def set_job_yml(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
         try:
@@ -252,6 +252,7 @@ class FS_Ops_Dispatcher():
 
     @staticmethod
     def listdir_cluster(path):
+        # TODO: better handle invalid path. Crashes with "TypeError: 'NoneType' object is not iterable" at last line.
         bucket_name = path.split('s3://')[1].split('/')[0]
         prefix = '/'.join(path.split('s3://')[1].split('/')[1:])
         client = boto3.client('s3')
@@ -324,7 +325,7 @@ class Commandliner():
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
-        # For later : --job_metadata_file, --machines, to be integrated only as a way to overide values from file.
+        # For later : --job_metadata_file, --machines, --inputs, --output, to be integrated only as a way to overide values from file.
         return parser
 
     def launch_run_mode(self, Job, args):

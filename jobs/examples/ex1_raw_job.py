@@ -10,12 +10,12 @@ from pyspark.sql import SQLContext
 from core.etl_utils import Path_Handler
 
 # inputs/output paths
-# input_some_events = "s3://bucket-scratch/bogus_data/inputs2/{latest}/events_log.csv.gz"  # cluster
-input_some_events = "data/bogus_data/inputs/2017-01-02/events_log.csv.gz"  # local
-# input_other_events = "s3://bucket-scratch/bogus_data/inputs2/events_log.csv.gz"  # cluster
-input_other_events = "data/bogus_data/inputs/2017-01-02/events_log.csv.gz"  # local
-# output = "s3://bucket-scratch/bogus_data_sql/output/{now}/"  # cluster
-output = "data/bogus_data/output_ex1_raw/{now}/"  # local
+# input_some_events = "s3://bucket-scratch/wiki_example/inputs2/{latest}/events_log.csv.gz"  # cluster
+input_some_events = "data/wiki_example/inputs/2017-01-02/events_log.csv.gz"  # local
+# input_other_events = "s3://bucket-scratch/wiki_example/inputs2/events_log.csv.gz"  # cluster
+input_other_events = "data/wiki_example/inputs/2017-01-02/events_log.csv.gz"  # local
+# output = "s3://bucket-scratch/wiki_example/output/{now}/"  # cluster
+output = "data/wiki_example/output_ex1_raw/{now}/"  # local
 output = Path_Handler(output).expand_now()
 
 

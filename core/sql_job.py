@@ -8,7 +8,7 @@ class SQL_Job(ETL_Base):
         self.args = args
         self.set_job_file()
         self.set_job_name(args['sql_file'])
-        self.set_job_yml(self.job_name)
+        self.set_job_yml()
         self.set_paths()
         self.set_is_incremental()
         self.set_frequency()
