@@ -26,6 +26,7 @@ examples/ex3_incremental_job.py:
   inputs:
     processed_events: {'path':"s3://sandbox-spark/wiki_example/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj'}
   output: {'path':'s3://sandbox-spark/wiki_example/output_ex3_inc/incremental_build_v1/', 'type':'csv', 'inc_field': 'other_timestamp'}
+  dependencies: [examples/ex3_incremental_prep_job.py]
   frequency: 24h
   email: 'some_group@scmspain.com'
 
