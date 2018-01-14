@@ -1,7 +1,9 @@
-# Manual steps:
-# - create sandbox bucket with name set below.
-bucket_name="sandbox-spark"
+# Setup example data for local and cluster runs.
 
+#--------------------------------------
+# Manual steps: create sandbox bucket and put it's name below if necessary
+bucket_name="sandbox-spark"
+#--------------------------------------
 
 # general setup
 . setup.sh
