@@ -51,6 +51,6 @@ If you have spark (tested with v2.1.0) installed, then you can just use it. If n
     docker build -t spark_container .
     docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v pyspark_aws_etl:/mnt/pyspark_aws_etl -v ~/.aws:/root/.aws -h spark spark_container
 
-It will bring inside the container bash terminal, from where you can run the jobs. You need to run `./setup.sh`, from your host machine and from within the docker container depending on how you prefer to run spark.
+It will bring inside the container bash terminal, from where you can run the jobs. You need to run `./setup.sh`, from your host machine or from within the docker container depending on how you prefer to run spark.
 
-If you want to run the example jobs, then you need to run `./setup_examples.sh`, from your host machine and from within the docker container. It will download some small input dataset to your computer and push it to amazon S3 storage. Note that it involves creating a bucket on your S3 account manually and setting its name at the top of `./setup_examples.sh`.
+If you want to run the example jobs, then you need to run `./setup_examples.sh`, again from your host machine or from within the docker container. It will download some small input dataset to your computer and push it to amazon S3 storage. Note that it involves creating a bucket on your S3 account manually and setting its name at the top of `./setup_examples.sh`.
