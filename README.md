@@ -43,7 +43,7 @@ You can specify dependencies in the job registry, for local jobs (`conf/jobs_met
 
 ## Installation instructions
 
-Copy the AWS config file `conf/config.cfg.example`, save it as `conf/config.cfg`, and fill in your AWS setup.
+Copy the AWS config file `conf/config.cfg.example`, save it as `conf/config.cfg`, and fill in your AWS setup. You should also have your `~/.aws` folder setup (by `aws` command line) with your corresponding AWS account information.
 
 If you have spark (tested with v2.1.0) installed, then you can just use it. If not, you can run the job from a docker container, which has spark and all python libraries already setup. A Dockerfile is included to create this container.
 
