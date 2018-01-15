@@ -3,8 +3,8 @@
 This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS) to run on datasets from S3. It is meant to scale to large datasets. The emphasis was on simplicity. An ETL job can consists of an SQL file only. All job input and output definitions are all in a human readable yaml file. For simple jobs, there is no need to do any programming (apart from SQL). For more complex job, you can use the full power of Spark.
 
 Some features:
- * Ability to develop locally for faster iteration time, and run on cluster only when ready
- * Support dependencies
+ * Ability to develop locally for faster iteration time, and run on cluster when ready
+ * Support dependencies across jobs
  * Support incremental loading and processing
  * When launch is cluster mode, the job can create a new cluster and run on it, or it can run on an existing cluster.
  * ETL code git control-able and unit-testable (although unit-testing not implemented currently)
@@ -16,7 +16,7 @@ Run the installation instructions (see lower) and run the [sql example](jobs/exa
 
     python core/sql_job.py  --sql_file=jobs/examples/ex1_full_sql_job.sql
 
-It will run locally, taking the inputs from [here](conf/jobs_metadata_local.yml#L1-L4), transform them using this [sql job](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run that same sql example on an AWS cluster, add a `-d` argument at the command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5). If you don't have a cluster available, it will create one and terminate it after the job is run.
+It will run locally, taking the inputs from [here](conf/jobs_metadata_local.yml#L1-L4), transform them using this [sql job](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run that same sql example on an AWS cluster, add a `-d` argument at the command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5). If you don't have a cluster available, it will create one and terminate it after the job is run. You will see the status on the job process in the "steps" tab of your AWS EMR web page.
 
 To run an ETL that showcases manipulation of a spark dataframes, more flexible than the sql example above, run [this frameworked pyspark example](jobs/examples/ex1_frameworked_job.py):
 
