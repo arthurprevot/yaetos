@@ -3,12 +3,12 @@
 This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS) to run on datasets from S3. It is meant to scale to large datasets. The emphasis was on simplicity. An ETL job can consists of an SQL file only. All job input and output definitions are all in a human readable yaml file. For simple jobs, there is no need to do any programming (apart from SQL). For more complex job, you can use the full power of Spark.
 
 Some features:
- * ability to develop locally for faster iteration time, and run on cluster only when ready
+ * Ability to develop locally for faster iteration time, and run on cluster only when ready
+ * Support dependencies
+ * Support incremental loading and processing
+ * When launch is cluster mode, the job can create a new cluster and run on it, or it can run on an existing cluster.
  * ETL code git control-able and unit-testable (although unit-testing not implemented currently)
- * can integrate with any python library or spark-ml to build machine learning applications
- * support dependencies
- * support incremental loading and processing
- * If running on AWS, the job can create a cluster and run on it, or it can run an existing cluster.
+ * Can integrate with any python library or spark-ml to build machine learning applications
 
 ## To try it
 
