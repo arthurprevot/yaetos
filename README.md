@@ -1,6 +1,6 @@
 # pyspark_aws_etl
 
-This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS) to run on datasets from S3. It is meant to scale to large datasets. The goal is to keep things simple. ETL code can be as basic as an SQL statement. All job input and output definitions are all in a human readable yaml file. For simple jobs, there is no need to do any programming (apart from SQL). For more complex job, you can use the full power of Spark.
+This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS) to run on datasets from S3. It is meant to scale to large datasets. The emphasis was on simplicity. An ETL job can consists of an SQL file only. All job input and output definitions are all in a human readable yaml file. For simple jobs, there is no need to do any programming (apart from SQL). For more complex job, you can use the full power of Spark.
 
 Some features:
  * ability to develop locally for faster iteration time, and run on cluster only when ready
@@ -39,17 +39,18 @@ To write a new ETL, create a new file in [this folder](jobs/) or any subfolders,
 
 And add the `-d` to deploy and run on AWS cluster.
 
-You can specify dependencies in the job registry, local (conf/jobs_metadata_local.yml) or on S3 (conf/jobs_metadata.yml).
+You can specify dependencies in the job registry, for local jobs (`conf/jobs_metadata_local.yml`) or on AWS cluster (`conf/jobs_metadata.yml`).
 
 ## Installation instructions
 
 Copy the AWS config file `conf/config.cfg.example`, save it as `conf/config.cfg`, and fill in your AWS setup.
+
 If you have spark (tested with v2.1.0) installed, then you can just use it. If not, you can run the job from a docker container, which has spark and all python libraries already setup. A Dockerfile is included to create this container.
 
     cd path_to_repo_folder
     docker build -t spark_container .
     docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v pyspark_aws_etl:/mnt/pyspark_aws_etl -v ~/.aws:/root/.aws -h spark spark_container
 
-You need to run `./setup.sh`, from your host machine and from within the docker container depending on how you prefer to run spark.
+It will bring inside the container bash terminal, from where you can run the jobs. You need to run `./setup.sh`, from your host machine and from within the docker container depending on how you prefer to run spark.
 
 If you want to run the example jobs, then you need to run `./setup_examples.sh`, from your host machine and from within the docker container. It will download some small input dataset to your computer and push it to amazon S3 storage. Note that it involves creating a bucket on your S3 account manually and setting its name at the top of `./setup_examples.sh`.
