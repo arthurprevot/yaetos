@@ -16,21 +16,21 @@ Run the installation instructions (see lower) and run the [sql example](jobs/exa
 
     python core/sql_job.py  --sql_file=jobs/examples/ex1_full_sql_job.sql
 
-It will run locally, taking the inputs from [here](conf/jobs_metadata_local.yml#L1-L4), transform them using this [sql job](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run that same sql example on an AWS cluster, add a `-d` argument at the command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5). If you don't have a cluster available, it will create one and terminate it after the job is run. You will see the status on the job process in the "steps" tab of your AWS EMR web page.
+It will run locally, taking the inputs from [this jobs_metadata_local.yml lines](conf/jobs_metadata_local.yml#L1-L4), transform them using this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run that same sql example on an AWS cluster, add a `-d` argument at the command line above. In that case, inputs and outputs will be taken from S3 at [these locations in jobs_metadata.yml](conf/jobs_metadata.yml#L1-L5). If you don't have a cluster available, it will create one and terminate it after the job is run. You will see the status on the job process in the "steps" tab of your AWS EMR web page.
 
-To run an ETL that showcases manipulation of a spark dataframes, more flexible than the sql example above, run [this frameworked pyspark example](jobs/examples/ex1_frameworked_job.py):
+To run an ETL that showcases manipulation of a spark dataframes, more flexible than the sql example above, run this frameworked pyspark example [ex1_frameworked_job.py](jobs/examples/ex1_frameworked_job.py) with this:
 
     python jobs/examples/ex1_frameworked_job.py
 
-To try an example with job dependencies, [try this](jobs/examples/ex4_dependency4_job.py):
+To try an example with job dependencies, you can run [ex4_dependency4_job.py](jobs/examples/ex4_dependency4_job.py) with this:
 
     python jobs/examples/ex4_dependency4_job.py -x
 
-It will run all 3 dependencies defined in [the job registry](conf/jobs_metadata_local.yml#L34-L55). There are other examples [here](jobs/examples/).
+It will run all 3 dependencies defined in [the jobs_metadata registry](conf/jobs_metadata_local.yml#L34-L55). There are other examples in [jobs/examples/](jobs/examples/).
 
 ## Dev Flow
 
-To write a new ETL, create a new file in [this folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [this file](conf/jobs_metadata.yml) to run the AWS cluster or in [this file](conf/jobs_metadata_local.yml) to run locally. To run the jobs, execute the command lines following the same patterns as above:
+To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run the AWS cluster or in [conf/jobs_metadata_local.yml](conf/jobs_metadata_local.yml) to run locally. To run the jobs, execute the command lines following the same patterns as above:
 
     python core/sql_job.py  --sql_file=jobs/examples/same_sql_file.sql
     # or
