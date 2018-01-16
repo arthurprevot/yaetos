@@ -1,6 +1,6 @@
 # pyspark_aws_etl
 
-This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS EMR cluster). The emphasis was on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. In the simplest form, an ETL job consists of an SQL file (no need to know any programming for these). In more complex cases, an ETL consist of a python, giving access to Spark dataframes, RDDs and any python library.
+This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis was on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. In the simplest form, an ETL job consists of an SQL file (no need to know any programming for these). In more complex cases, an ETL consist of a python, giving access to Spark dataframes, RDDs and any python library.
 
 Some features:
  * Running locally and on cluster
@@ -42,15 +42,17 @@ You can specify dependencies in the job registry, for local jobs or on AWS clust
 
 ## Installation instructions
 
-Copy the AWS config file `conf/config.cfg.example`, save it as `conf/config.cfg`, and fill in your AWS setup. You should also have your `~/.aws` folder setup (by `aws` command line) with your corresponding AWS account information.
+If you have spark installed, then you can just use it. Version tested is v2.1.0. If not, you can run the job from a docker container, which has spark and all python libraries already setup. A Dockerfile is included to create this container.
 
-If you have spark (tested with v2.1.0) installed, then you can just use it. If not, you can run the job from a docker container, which has spark and all python libraries already setup. A Dockerfile is included to create this container.
+    cd ~/path/to/repo/
+    docker build -t spark_container .  # '.' matters
+    docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v /absolute/path/to/pyspark_aws_etl:/mnt/pyspark_aws_etl -v ~/.aws:/root/.aws -h spark spark_container  # remove "-v ~/.aws:/root/.aws" if you don't intend sending jobs to AWS.
 
-    cd path_to_repo_folder
-    docker build -t spark_container . # '.' matters
-    docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v /absolute/path/to/pyspark_aws_etl:/mnt/pyspark_aws_etl -v ~/.aws:/root/.aws -h spark spark_container
+It will bring you inside the container's bash terminal, from where you will run the jobs. This docker container is setup to take the repository from your host, so you can write ETL jobs from your host machine and run them from within the container. 
 
-It will bring inside the container bash terminal, from where you can run the jobs. You need to run `./setup.sh`, from your host machine or from within the docker container depending on how you prefer to run spark.
+Then, you need to run `./setup.sh`, from your host machine or from within the docker container depending on how you prefer to run spark.
+
+To send jobs to AWS cluster, You also need to copy the config file `conf/config.cfg.example`, save it as `conf/config.cfg`, and fill in your AWS setup. You should also have your `~/.aws` folder setup (by `aws` command line) with the corresponding AWS account information and secret keys.
 
 If you want to run the example jobs, then you need to run `./setup_examples.sh`, again from your host machine or from within the docker container. It will download some small input dataset to your computer and push it to amazon S3 storage. Note that it involves creating a bucket on your S3 account manually and setting its name at the top of `./setup_examples.sh`.
 

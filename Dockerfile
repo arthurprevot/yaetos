@@ -2,10 +2,10 @@ FROM arthurpr/pyspark_aws_etl:latest
 USER root
 WORKDIR /mnt/pyspark_aws_etl
 
-# ENV PYSPARK_AWS_ETL_HOME `pwd`
-# ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
+ENV PYSPARK_AWS_ETL_HOME `pwd`
+ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
-# ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
+ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 
 # Expose ports for monitoring.
 # SparkContext web UI on 4040 -- only available for the duration of the application.
