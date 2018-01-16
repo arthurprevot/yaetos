@@ -47,8 +47,8 @@ Copy the AWS config file `conf/config.cfg.example`, save it as `conf/config.cfg`
 If you have spark (tested with v2.1.0) installed, then you can just use it. If not, you can run the job from a docker container, which has spark and all python libraries already setup. A Dockerfile is included to create this container.
 
     cd path_to_repo_folder
-    docker build -t spark_container .
-    docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v pyspark_aws_etl:/mnt/pyspark_aws_etl -v ~/.aws:/root/.aws -h spark spark_container
+    docker build -t spark_container . # '.' matters
+    docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v /absolute/path/to/pyspark_aws_etl:/mnt/pyspark_aws_etl -v ~/.aws:/root/.aws -h spark spark_container
 
 It will bring inside the container bash terminal, from where you can run the jobs. You need to run `./setup.sh`, from your host machine or from within the docker container depending on how you prefer to run spark.
 
