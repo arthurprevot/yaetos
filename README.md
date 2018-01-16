@@ -56,7 +56,7 @@ If you want to run the example jobs, then you need to run `./setup_examples.sh`,
 
 ## Potential improvements
 
- * add unit-testing
+ * addition of unit-testing
  * integration with scheduling tools (oozie)
  * automatic pulling/pushing data from s3 to local for local development
  * easier reconciliation
