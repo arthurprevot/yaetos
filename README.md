@@ -12,11 +12,11 @@ Some features:
 
 ## To try it
 
-Run the installation instructions (see lower) and run the [sql example](jobs/examples/ex1_full_sql_job.sql) provided with:
+Run the installation instructions (see lower) and run [this sql example](jobs/examples/ex1_full_sql_job.sql) with:
 
     python core/sql_job.py  --sql_file=jobs/examples/ex1_full_sql_job.sql
 
-It will run locally, taking the inputs from [this jobs_metadata_local.yml lines](conf/jobs_metadata_local.yml#L1-L4), transform them using this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run that same sql example on an AWS cluster, add a `-d` argument at the command line above. In that case, inputs and outputs will be taken from S3 at [these locations in jobs_metadata.yml](conf/jobs_metadata.yml#L1-L5). If you don't have a cluster available, it will create one and terminate it after the job is run. You will see the status on the job process in the "steps" tab of your AWS EMR web page.
+It will run locally, taking the inputs from a job registry file (`jobs_metadata_local.yml`) at [ these lines](conf/jobs_metadata_local.yml#L1-L4), transform them based on this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run that same sql example on an AWS cluster, add a `-d` argument at the command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5) from the jobs_metadata file. If you don't have a cluster available, it will create one and terminate it after the job is run. You will see the status on the job process in the "steps" tab of your AWS EMR web page.
 
 To run an ETL that showcases manipulation of a spark dataframes, more flexible than the sql example above, run this frameworked pyspark example [ex1_frameworked_job.py](jobs/examples/ex1_frameworked_job.py) with this:
 
@@ -38,7 +38,7 @@ To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any sub
 
 And add the `-d` to deploy and run on AWS cluster.
 
-You can specify dependencies in the job registry, for local jobs (`conf/jobs_metadata_local.yml`) or on AWS cluster (`conf/jobs_metadata.yml`).
+You can specify dependencies in the job registry, for local jobs or on AWS cluster.
 
 ## Installation instructions
 
