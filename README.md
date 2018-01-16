@@ -1,14 +1,14 @@
 # pyspark_aws_etl
 
-This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS) to run on datasets from S3. It is meant to scale to large datasets. The emphasis was on simplicity. An ETL job can consists of an SQL file only. All job input and output definitions are all in a human readable yaml file. For simple jobs, there is no need to do any programming (apart from SQL). For more complex job, you can use the full power of Spark.
+This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS EMR cluster). The emphasis was on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are all in a human readable yaml file. In the simplest form, an ETL job consists of an SQL file (no need to know any programming for these). In more complex cases, an ETL consist of a python, giving access to Spark dataframes or RDDs and to any python library.
 
 Some features:
- * Ability to develop locally for faster iteration time, and run on cluster when ready
+ * Running locally and on cluster
  * Support dependencies across jobs
  * Support incremental loading and processing
- * When launch is cluster mode, the job can create a new cluster and run on it, or it can run on an existing cluster.
+ * Create AWS cluster when needed or piggy back on an existing cluster.
  * ETL code git control-able and unit-testable (although unit-testing not implemented currently)
- * Can integrate with any python library or spark-ml to build machine learning applications
+ * Can integrate with any python library or spark-ml to build machine learning applications or other.
 
 ## To try it
 
