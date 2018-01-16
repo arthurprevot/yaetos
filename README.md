@@ -22,7 +22,6 @@ To run an ETL that showcases manipulation of a spark dataframes, more flexible t
 
     python jobs/examples/ex1_frameworked_job.py
 
-
 To try an example with job dependencies, [try this](jobs/examples/ex4_dependency4_job.py):
 
     python jobs/examples/ex4_dependency4_job.py -x
@@ -54,3 +53,14 @@ If you have spark (tested with v2.1.0) installed, then you can just use it. If n
 It will bring inside the container bash terminal, from where you can run the jobs. You need to run `./setup.sh`, from your host machine or from within the docker container depending on how you prefer to run spark.
 
 If you want to run the example jobs, then you need to run `./setup_examples.sh`, again from your host machine or from within the docker container. It will download some small input dataset to your computer and push it to amazon S3 storage. Note that it involves creating a bucket on your S3 account manually and setting its name at the top of `./setup_examples.sh`.
+
+## Potential improvements
+
+ * add unit-testing
+ * integration with scheduling tools (oozie)
+ * automatic pulling/pushing data from s3 to local for local development
+ * easier reconciliation
+ * more testing with large datasets and complex dependencies
+ * ...
+
+Lots of room for improvement. Contribution welcome.
