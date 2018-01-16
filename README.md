@@ -63,4 +63,4 @@ If you want to run the example jobs, then you need to run `./setup_examples.sh`,
  * more testing with large datasets and complex dependencies
  * ...
 
-Lots of room for improvement. Contribution welcome.
+Lots of room for improvement. Contributions welcome.
