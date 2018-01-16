@@ -28,7 +28,7 @@ To try an example with job dependencies, you can run [ex4_dependency4_job.py](jo
 
 It will run all 3 dependencies defined in [the jobs_metadata registry](conf/jobs_metadata_local.yml#L34-L55). There are other examples in [jobs/examples/](jobs/examples/).
 
-## Dev Flow
+## Development Flow
 
 To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run the AWS cluster or in [conf/jobs_metadata_local.yml](conf/jobs_metadata_local.yml) to run locally. To run the jobs, execute the command lines following the same patterns as above:
 
@@ -48,7 +48,7 @@ If you have spark installed, then you can just use it. Version tested is v2.1.0.
     docker build -t spark_container .  # '.' matters
     docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v /absolute/path/to/pyspark_aws_etl:/mnt/pyspark_aws_etl -v ~/.aws:/root/.aws -h spark spark_container  # remove "-v ~/.aws:/root/.aws" if you don't intend sending jobs to AWS.
 
-It will bring you inside the container's bash terminal, from where you will run the jobs. This docker container is setup to take the repository from your host, so you can write ETL jobs from your host machine and run them from within the container. 
+It will bring you inside the container's bash terminal, from where you will run the jobs. This docker container is setup to take the repository from your host, so you can write ETL jobs from your host machine and run them from within the container.
 
 Then, you need to run `./setup.sh`, from your host machine or from within the docker container depending on how you prefer to run spark.
 
