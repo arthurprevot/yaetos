@@ -70,10 +70,11 @@ class ETL_Base(object):
     def set_job_name(self, job_file):
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
         # TODO change this hacky way to deal with it.
-        self.job_name = job_file.replace(LOCAL_APP_FOLDER+'jobs/','') \
-            .replace('jobs/','') \
+        self.job_name = job_file \
             .replace(CLUSTER_APP_FOLDER+'jobs/','') \
-            .replace(CLUSTER_APP_FOLDER+'scripts.zip/jobs/','')
+            .replace(CLUSTER_APP_FOLDER+'scripts.zip/jobs/','') \
+            .replace(LOCAL_APP_FOLDER+'jobs/','') \
+            .replace('jobs/','')  # has to be last
 
     @staticmethod
     def get_job_class(job_name):
