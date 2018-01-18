@@ -24,12 +24,13 @@ import StringIO
 import networkx as nx
 import random
 import pandas as pd
+import os
 
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-LOCAL_ROOT = '/Users/aprevot/Documents/Box Sync/code/pyspark_aws_etl/'  # TODO: parametrize
+LOCAL_APP_FOLDER = os.environ['PYSPARK_AWS_ETL_HOME'] + '/'
 
 
 class ETL_Base(object):
@@ -69,10 +70,10 @@ class ETL_Base(object):
     def set_job_name(self, job_file):
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
         # TODO change this hacky way to deal with it.
-        self.job_name = job_file.replace(LOCAL_ROOT+'jobs/','') \
+        self.job_name = job_file.replace(LOCAL_APP_FOLDER+'jobs/','') \
+            .replace('jobs/','') \
             .replace(CLUSTER_APP_FOLDER+'jobs/','') \
-            .replace(CLUSTER_APP_FOLDER+'scripts.zip/jobs/','') \
-            .replace('jobs/','')
+            .replace(CLUSTER_APP_FOLDER+'scripts.zip/jobs/','')
 
     @staticmethod
     def get_job_class(job_name):

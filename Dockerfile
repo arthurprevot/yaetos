@@ -2,7 +2,7 @@ FROM arthurpr/pyspark_aws_etl:latest
 USER root
 WORKDIR /mnt/pyspark_aws_etl
 
-ENV PYSPARK_AWS_ETL_HOME `pwd`
+ENV PYSPARK_AWS_ETL_HOME /mnt/pyspark_aws_etl
 ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
