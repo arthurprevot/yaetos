@@ -1,4 +1,5 @@
 FROM arthurpr/pyspark_aws_etl:latest
+# use arthurpr/pyspark_aws_etl:oracle
 USER root
 WORKDIR /mnt/pyspark_aws_etl
 
@@ -6,6 +7,32 @@ ENV PYSPARK_AWS_ETL_HOME /mnt/pyspark_aws_etl
 ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
+
+
+# Install oracle
+RUN apt-get install libaio1 -y
+ENV PKG_URL https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+ENV INSTALLER miniconda.sh
+RUN set -ex \
+    && curl -kfSL $PKG_URL -o $INSTALLER \
+    && chmod 755 $INSTALLER \
+    && ./$INSTALLER -b -p /opt/conda \
+    && rm $INSTALLER
+
+# didn't find a way to install oracle-instantclient from apt-get
+# so getting it from conda. Need to only put conda in PATH (/usr/local/bin/)
+# to avoid python from conda taking over original python.
+RUN ln -s /opt/conda/bin/conda /usr/local/bin/conda
+RUN conda install -y oracle-instantclient
+
+RUN pip install cx_Oracle
+ENV ORACLE_HOME=/opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0
+ENV LD_LIBRARY_PATH=/opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib
+
+RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib/libclntsh.so /usr/lib/
+RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib/libnnz11.so /usr/lib/
+RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib/libociei.so /usr/lib
+
 
 # Expose ports for monitoring.
 # SparkContext web UI on 4040 -- only available for the duration of the application.
