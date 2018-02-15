@@ -54,7 +54,7 @@ Then, you need to run `./setup.sh`, from your host machine or from within the do
 
 To send jobs to AWS cluster, You also need to copy the config file `conf/config.cfg.example`, save it as `conf/config.cfg`, and fill in your AWS setup. You should also have your `~/.aws` folder setup (by `aws` command line) with the corresponding AWS account information and secret keys.
 
-If you want to run the example jobs, then you need to run `./setup_examples.sh`, again from your host machine or from within the docker container. It will download some small input dataset to your computer and push it to amazon S3 storage. Note that it involves creating a bucket on your S3 account manually and setting its name at the top of `./setup_examples.sh`.
+If you want to run the example jobs, then you need to run `scripts/setup_examples.sh`, again from your host machine or from within the docker container. It will download some small input dataset to your computer and push it to amazon S3 storage. Note that it involves creating a bucket on your S3 account manually and setting its name at the top of `scripts/setup_examples.sh`.
 
 ## Potential improvements
 
