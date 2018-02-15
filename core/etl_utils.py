@@ -40,7 +40,7 @@ class ETL_Base(object):
         self.args = args
         self.set_job_file()
         self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
-        self.set_job_yml()
+        self.set_job_yml(args.get('meta_file'))
         self.set_paths()
         self.set_is_incremental()
         self.set_frequency()
@@ -83,8 +83,9 @@ class ETL_Base(object):
         exec(import_cmd)
         return Job
 
-    def set_job_yml(self):
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
+    def set_job_yml(self, meta_file=None):
+        if meta_file is None:
+            meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
         try:
             self.job_yml = yml[self.job_name]

@@ -1,5 +1,4 @@
-FROM arthurpr/pyspark_aws_etl:latest
-# use arthurpr/pyspark_aws_etl:oracle
+FROM arthurpr/pyspark_aws_etl:latest  # also available arthurpr/pyspark_aws_etl:oracle to skip oracle install steps below.
 USER root
 WORKDIR /mnt/pyspark_aws_etl
 
