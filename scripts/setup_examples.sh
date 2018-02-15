@@ -5,8 +5,7 @@
 bucket_name="sandbox-spark"
 #--------------------------------------
 
-# general setup
-. setup.sh
+cd ..
 
 # copy data locally, will be used for local sample tests
 local_folder="data/wiki_example/inputs/2017-01-01"
