@@ -30,7 +30,8 @@ import os
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-LOCAL_APP_FOLDER = os.environ['PYSPARK_AWS_ETL_HOME'] + '/'
+# print "### os.environ['PYSPARK_AWS_ETL_HOME']", os.environ.get('PYSPARK_AWS_ETL_HOME', '')
+LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') #+ '/'
 
 
 class ETL_Base(object):
@@ -38,6 +39,8 @@ class ETL_Base(object):
 
     def __init__(self, args={}):
         self.args = args
+
+    def set_job_params(self):
         self.set_job_file()
         self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
         self.set_job_yml()
@@ -46,6 +49,8 @@ class ETL_Base(object):
         self.set_frequency()
 
     def etl(self, sc, sc_sql, loaded_inputs={}):
+        """ Main function that creates spark context, load inputs, run transform, save output."""
+        self.set_job_params()
         self.sc = sc
         self.sc_sql = sc_sql
         self.app_name = sc.appName
@@ -65,7 +70,7 @@ class ETL_Base(object):
         raise NotImplementedError
 
     def set_job_file(self):
-        self.job_file = inspect.getsourcefile(self.__class__)
+        self.job_file = self.args.get('job_file', inspect.getsourcefile(self.__class__))  # getsourcefile works when run from final job file.
 
     def set_job_name(self, job_file):
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
@@ -324,6 +329,7 @@ class Commandliner():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--deploy", action='store_true', help="Deploy the job to a cluster and run it there instead of running it now locally.") # comes from cmd line since value is set when running on cluster
+        # parser.add_argument("-j", "--job_params_file", action='store_true', help="Grab job params from the schedule file or not. If not, need to specify every param. Default TBD")  # for later. TODO: set TBD
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
@@ -335,6 +341,7 @@ class Commandliner():
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
         job = Job(args)
+        job.set_job_params()
         app_name = job.job_name
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
