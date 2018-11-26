@@ -35,57 +35,74 @@ LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') #+ '/'
 
 
 class ETL_Base(object):
-    tabular_types = ('csv', 'parquet')
+    tabular_types = ('csv', 'parquet', 'df')
 
     def __init__(self, args={}):
         self.args = args
 
-    def set_job_params(self):
-        """ Setting the params from yml or from args coming from commandline."""
+    def set_job_params(self, loaded_inputs={}):
+        """ Setting the params from yml or from commandline args if available."""
         self.set_job_file()
         self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
 
-        print '####', self.args['job_params_file']
-        if self.args['job_params_file']:
+
+        job_params_file = self.args.get('job_params_file')
+        # print '#### self.args.get(job_params_file)', self.args.get('job_params_file')
+
+        if job_params_file:
             self.set_job_yml()
 
         # Inputs
         inputs_in_args = len([item for item in self.args.keys() if item.startswith('input_')]) >= 1
         if inputs_in_args:
-            self.INPUTS = {key.replace('input_', ''):{'path':val,'type':'csv'} for key, val in self.args.iteritems() if key.startswith('input_')}  # TODO: finder way without specifying wrong input (like csv).
-        else:
+            self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in self.args.iteritems() if key.startswith('input_')}
+        elif job_params_file:
             self.INPUTS = self.job_yml['inputs']
+        elif loaded_inputs:
+            self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.iteritems()}
+        else:
+            raise Error("No input given")
 
         # Outputs
         output_in_args = len([item for item in self.args.keys() if item == 'output']) >= 1
         if output_in_args:
             self.OUTPUT = self.args['output']
-        else:
+        elif job_params_file:
             self.OUTPUT = self.job_yml['output']
 
         # Frequency
-        self.frequency = self.args.get('frequency', None)
-        if not self.frequency:
+        if self.args.get('frequency'):
+            self.frequency = self.args.get('frequency')
+        elif job_params_file:
             self.frequency = self.job_yml.get('frequency', None)
+        else:
+            self.frequency = None
 
         self.set_is_incremental()
 
     def etl(self, sc, sc_sql, loaded_inputs={}):
-        """ Main function that creates spark context, load inputs, run transform, save output."""
-        self.set_job_params()
-        self.sc = sc
-        self.sc_sql = sc_sql
-        self.app_name = sc.appName
+        """ Main function that loads inputs, run transform, save output."""
         start_time = time()
-        print "-------\nStarting running job '{}' in spark app '{}'.".format(self.job_name, self.app_name)
 
-        loaded_datasets = self.load_inputs(loaded_inputs)
-        output = self.transform(**loaded_datasets)
+        output = self.etl_no_io(sc, sc_sql, loaded_inputs)
         self.save(output)
 
         end_time = time()
         elapsed = end_time - start_time
         self.save_metadata(elapsed)
+        return output
+
+    def etl_no_io(self, sc, sc_sql, loaded_inputs={}):
+        """ Funcion to load inputs (including from live vars) and run transform. No output to disk.
+        Having this code isolated is useful for cases with no I/O possible, like testing."""
+        self.set_job_params(loaded_inputs)
+        self.sc = sc
+        self.sc_sql = sc_sql
+        self.app_name = sc.appName
+        print "-------\nStarting running job '{}' in spark app '{}'.".format(self.job_name, self.app_name)
+
+        loaded_datasets = self.load_inputs(loaded_inputs)
+        output = self.transform(**loaded_datasets)
         return output
 
     def transform(self, **app_args):
@@ -113,31 +130,18 @@ class ETL_Base(object):
     def set_job_yml(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
+        print 'Loaded job param file: ', meta_file
         try:
             self.job_yml = yml[self.job_name]
         except KeyError:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(self.job_name, meta_file))
 
-    # def set_paths_from_yml(self):
-    #     self.INPUTS = self.job_yml['inputs']
-    #     self.OUTPUT = self.job_yml['output']
-    #
-    # def set_paths_from_args(self):
-    #     self.INPUTS = [item for item in self.args.keys() if item.startswith('input-')]
-    #     self.OUTPUT = self.args['output']
-
     def set_is_incremental(self):
         self.is_incremental = any([self.INPUTS[item].get('inc_field', None) is not None for item in self.INPUTS.keys()])
 
-    # def set_frequency_from_yml(self):
-    #     self.frequency = self.job_yml.get('frequency', None)
-    #
-    # def set_frequency_from_args(self):
-    #     self.frequency = self.args.get('frequency', None)
-
     def load_inputs(self, loaded_inputs):
         app_args = {}
-        print '###, self.INPUTS', self.INPUTS
+        # print '###, self.INPUTS', self.INPUTS
         for item in self.INPUTS.keys():
 
             # Load from memory if available
@@ -371,7 +375,8 @@ class Commandliner():
         from pyspark import SparkContext
         from pyspark.sql import SQLContext
         job = Job(args)
-        job.set_job_params()
+        job.set_job_file()
+        job.set_job_name(job.job_file)
         app_name = job.job_name
         sc = SparkContext(appName=app_name)
         sc_sql = SQLContext(sc)
