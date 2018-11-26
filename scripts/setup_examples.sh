@@ -5,6 +5,8 @@
 bucket_name="sandbox-spark"
 #--------------------------------------
 
+# General setup
+# . setup.sh # TODO check if needs to be uncommented.
 cd ..
 
 # copy data locally, will be used for local sample tests
