@@ -73,7 +73,7 @@ class ETL_Base(object):
         self.set_job_file()
         self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
 
-        if self.args.get('job_params_file'):
+        if self.args.get('force_job_params_from_yml'):
             self.set_job_yml()
 
         self.set_inputs(loaded_inputs)
@@ -94,7 +94,10 @@ class ETL_Base(object):
             .replace('jobs/','')  # has to be last
 
     def set_job_yml(self):
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
+        meta_file = self.args.get('job_params_file')
+        if meta_file is None:
+            meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
+
         yml = self.load_meta(meta_file)
         print 'Loaded job param file: ', meta_file
         try:
@@ -107,7 +110,7 @@ class ETL_Base(object):
         inputs_in_args = len([item for item in self.args.keys() if item.startswith('input_')]) >= 1
         if inputs_in_args:
             self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in self.args.iteritems() if key.startswith('input_')}
-        elif self.args.get('job_params_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
+        elif self.args.get('force_job_params_from_yml'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
             self.INPUTS = self.job_yml['inputs']
         elif loaded_inputs:
             self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.iteritems()}
@@ -119,7 +122,7 @@ class ETL_Base(object):
         output_in_args = len([item for item in self.args.keys() if item == 'output']) >= 1
         if output_in_args:
             self.OUTPUT = self.args['output']
-        elif self.args.get('job_params_file'):
+        elif self.args.get('force_job_params_from_yml'):
             self.OUTPUT = self.job_yml['output']
         else:
             raise Error("No output given")
@@ -128,7 +131,7 @@ class ETL_Base(object):
         # Code order is important below and should be consistent with other similar functions
         if self.args.get('frequency'):
             self.frequency = self.args.get('frequency')
-        elif self.args.get('job_params_file'):
+        elif self.args.get('force_job_params_from_yml'):
             self.frequency = self.job_yml.get('frequency', None)
         else:
             self.frequency = None
@@ -367,7 +370,8 @@ class Commandliner():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--deploy", action='store_true', help="Deploy the job to a cluster and run it there instead of running it now locally.") # comes from cmd line since value is set when running on cluster
-        parser.add_argument("-j", "--job_params_file", action='store_false', help="Grab job params from the schedule file or not. If not, need to specify every param. Default TBD")  # for later. TODO: set TBD
+        parser.add_argument("-f", "--force_job_params_from_yml", action='store_false', help="Grab job params from the schedule file or not. If not, need to specify every param")
+        parser.add_argument("-j", "--job_params_file", action='store_false', help="Identify file to use. If none, uses files provided with repo (conf/job_metadata_file.yml)")
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
