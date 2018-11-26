@@ -1,6 +1,6 @@
 # pyspark_aws_etl
 
-This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis was on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. In the simplest form, an ETL job consists of an SQL file (no need to know any programming for these). In more complex cases, an ETL consist of a python, giving access to Spark dataframes, RDDs and any python library.
+This is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis was on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. In the simplest form, an ETL job can consist of only an SQL file (no need to know any programming for these). In more complex cases, an ETL consist of a python file, giving access to Spark dataframes, RDDs and any python library.
 
 Some features:
  * Running locally and on cluster
@@ -43,11 +43,10 @@ You can specify dependencies in the job registry, for local jobs or on AWS clust
 Jobs can be unit-tested using `py.test`. For a given job, create a corresponding job in `tests/jobs/` folder and add tests that relate to the specific business logic in this job. See [tests/jobs/ex1_frameworked_job_test.py](tests/jobs/ex1_frameworked_job_test.py)for an example.
 
 ## Unit-testing
-... is done using py.test. Run them using:
+... is done using `py.test`. Run them with:
 
     py.test tests/*  # for all tests
     py.test tests/jobs/examples/ex1_frameworked_job.py  # for tests for a specific file
-
 
 ## Installation instructions
 
