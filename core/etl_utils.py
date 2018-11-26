@@ -10,7 +10,6 @@ Helper functions. Setup to run locally and on cluster.
 # - finish _metadata.txt file content.
 # - make raw functions available to raw spark jobs.
 # - refactor to have schedule input managed first and passed as args that can be overiden by commandline, so easier to change input output from commandline
-# - allow running job with passed inputs from memory easily, without relying on job_param_file and without having to specify input path at all, for test purposes (and better separation of concern.)
 
 
 import sys
@@ -44,10 +43,7 @@ class ETL_Base(object):
         """ Setting the params from yml or from commandline args if available."""
         self.set_job_file()
         self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
-
-
         job_params_file = self.args.get('job_params_file')
-        # print '#### self.args.get(job_params_file)', self.args.get('job_params_file')
 
         if job_params_file:
             self.set_job_yml()
@@ -141,7 +137,6 @@ class ETL_Base(object):
 
     def load_inputs(self, loaded_inputs):
         app_args = {}
-        # print '###, self.INPUTS', self.INPUTS
         for item in self.INPUTS.keys():
 
             # Load from memory if available
