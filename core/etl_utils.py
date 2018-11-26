@@ -371,7 +371,7 @@ class Commandliner():
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--deploy", action='store_true', help="Deploy the job to a cluster and run it there instead of running it now locally.") # comes from cmd line since value is set when running on cluster
         parser.add_argument("-f", "--force_job_params_from_yml", action='store_false', help="Grab job params from the schedule file or not. If not, need to specify every param")
-        parser.add_argument("-j", "--job_params_file", action='store_false', help="Identify file to use. If none, uses files provided with repo (conf/job_metadata_file.yml)")
+        parser.add_argument("-j", "--job_params_file", default=None, help="Identify file to use. If none, uses files provided with repo (conf/job_metadata_file.yml)")
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
