@@ -9,7 +9,7 @@ ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 
 
-# Install oracle
+#---- Install oracle ------
 RUN apt-get install libaio1 -y
 ENV PKG_URL https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
 ENV INSTALLER miniconda.sh
@@ -32,6 +32,7 @@ ENV LD_LIBRARY_PATH=/opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib
 RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib/libclntsh.so /usr/lib/
 RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib/libnnz11.so /usr/lib/
 RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib/libociei.so /usr/lib
+#---- End Installation oracle ------
 
 
 # Expose ports for monitoring.
