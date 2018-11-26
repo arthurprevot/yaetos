@@ -7,7 +7,7 @@ Some features:
  * Support dependencies across jobs
  * Support incremental loading and processing
  * Create AWS cluster when needed or piggy back on an existing cluster.
- * ETL code git control-able and unit-testable (although unit-testing not implemented currently)
+ * ETL code git control-able and unit-testable
  * Can integrate with any python library or spark-ml to build machine learning applications or other.
 
 ## To try it
@@ -36,9 +36,18 @@ To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any sub
     # or
     python jobs/examples/ex1_frameworked_job.py
 
-And add the `-d` to deploy and run on AWS cluster.
+And add the `-d` to deploy and run on an AWS cluster.
 
 You can specify dependencies in the job registry, for local jobs or on AWS cluster.
+
+Jobs can be unit-tested using `py.test`. For a given job, create a corresponding job in `tests/jobs/` folder and add tests that relate to the specific business logic in this job. See [tests/jobs/ex1_frameworked_job_test.py](tests/jobs/ex1_frameworked_job_test.py)for an example.
+
+## Unit-testing
+... is done using py.test. Run them using:
+
+    py.test tests/*  # for all tests
+    py.test tests/jobs/examples/ex1_frameworked_job.py  # for tests for a specific file
+
 
 ## Installation instructions
 
@@ -58,8 +67,8 @@ If you want to run the example jobs, then you need to run `./setup_examples.sh`,
 
 ## Potential improvements
 
- * addition of unit-testing
- * integration with scheduling tools (oozie)
+ * more unit-testing
+ * integration with scheduling tools (oozie...)
  * automatic pulling/pushing data from s3 to local (sampled) for local development
  * easier reconciliation
  * more testing with large datasets and complex dependencies
