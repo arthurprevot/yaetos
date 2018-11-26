@@ -1,0 +1,6 @@
+*.pyc
+tmp/
+data/
+extra/
+metastore_db/
+derby.log

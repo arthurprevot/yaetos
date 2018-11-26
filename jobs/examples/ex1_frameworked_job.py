@@ -5,7 +5,7 @@ from core.etl_utils import ETL_Base, Commandliner
 class Job(ETL_Base):
     def transform(self, some_events, other_events):
         df = self.query("""
-            SELECT se.session_id, count(*)
+            SELECT se.session_id, count(*) as count_events
             FROM some_events se
             JOIN other_events oe on se.session_id=oe.session_id
             WHERE se.action='searchResultPage' and se.n_results>0
