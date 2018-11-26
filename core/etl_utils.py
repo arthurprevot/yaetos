@@ -45,36 +45,39 @@ class ETL_Base(object):
         self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
         job_params_file = self.args.get('job_params_file')
 
-        if job_params_file:
+        if self.args.get('job_params_file'):
             self.set_job_yml()
 
-        # Inputs
+        self.set_inputs()
+        self.set_output()
+        self.set_frequency()
+        self.set_is_incremental()
+
+    def set_inputs(self):
         inputs_in_args = len([item for item in self.args.keys() if item.startswith('input_')]) >= 1
         if inputs_in_args:
             self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in self.args.iteritems() if key.startswith('input_')}
-        elif job_params_file:
+        elif self.args.get('job_params_file'):
             self.INPUTS = self.job_yml['inputs']
         elif loaded_inputs:
             self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.iteritems()}
         else:
             raise Error("No input given")
 
-        # Outputs
+    def set_output(self):
         output_in_args = len([item for item in self.args.keys() if item == 'output']) >= 1
         if output_in_args:
             self.OUTPUT = self.args['output']
-        elif job_params_file:
+        elif self.args.get('job_params_file'):
             self.OUTPUT = self.job_yml['output']
 
-        # Frequency
+    def set_frequency(self):
         if self.args.get('frequency'):
             self.frequency = self.args.get('frequency')
-        elif job_params_file:
+        elif self.args.get('job_params_file'):
             self.frequency = self.job_yml.get('frequency', None)
         else:
             self.frequency = None
-
-        self.set_is_incremental()
 
     def etl(self, sc, sc_sql, loaded_inputs={}):
         """ Main function that loads inputs, run transform, save output."""
