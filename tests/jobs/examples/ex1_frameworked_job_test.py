@@ -1,10 +1,7 @@
 import pytest
 from jobs.examples.ex1_frameworked_job import Job
-
-
 from pyspark import SparkContext
-from pyspark.sql import SQLContext
-from pyspark.sql import SparkSession, Row
+from pyspark.sql import SQLContext, SparkSession, Row
 sc = SparkContext(appName='test')
 sc_sql = SQLContext(sc)
 spark = SparkSession.builder.appName('test').getOrCreate()
