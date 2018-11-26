@@ -27,3 +27,6 @@ zip -r scripts.zip .
 sudo pip install boto3==1.2.6
 sudo pip install networkx==1.11
 sudo pip install pandas==0.20.3
+
+
+# export PYSPARK_AWS_ETL_HOME=`pwd`
