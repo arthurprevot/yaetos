@@ -111,10 +111,11 @@ class ETL_Base(object):
         self.set_is_incremental()
 
     def set_inputs(self, loaded_inputs):
+        # Code order is important below and should be consistent with other similar functions below
         inputs_in_args = len([item for item in self.args.keys() if item.startswith('input_')]) >= 1
         if inputs_in_args:
             self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in self.args.iteritems() if key.startswith('input_')}
-        elif self.args.get('job_params_file'):
+        elif self.args.get('job_params_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
             self.INPUTS = self.job_yml['inputs']
         elif loaded_inputs:
             self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.iteritems()}
@@ -122,13 +123,17 @@ class ETL_Base(object):
             raise Error("No input given")
 
     def set_output(self):
+        # Code order is important below and should be consistent with other similar functions
         output_in_args = len([item for item in self.args.keys() if item == 'output']) >= 1
         if output_in_args:
             self.OUTPUT = self.args['output']
         elif self.args.get('job_params_file'):
             self.OUTPUT = self.job_yml['output']
+        else:
+            raise Error("No output given")
 
     def set_frequency(self):
+        # Code order is important below and should be consistent with other similar functions
         if self.args.get('frequency'):
             self.frequency = self.args.get('frequency')
         elif self.args.get('job_params_file'):
