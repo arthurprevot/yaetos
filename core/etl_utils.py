@@ -10,6 +10,7 @@ Helper functions. Setup to run locally and on cluster.
 # - finish _metadata.txt file content.
 # - make raw functions available to raw spark jobs.
 # - refactor to have schedule input managed first and passed as args that can be overiden by commandline, so easier to change input output from commandline
+# - allow running job with passed inputs from memory easily, without relying on job_param_file and without having to specify input path at all, for test purposes (and better separation of concern.)
 
 
 import sys
@@ -30,7 +31,6 @@ import os
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-# print "### os.environ['PYSPARK_AWS_ETL_HOME']", os.environ.get('PYSPARK_AWS_ETL_HOME', '')
 LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') #+ '/'
 
 
@@ -41,12 +41,34 @@ class ETL_Base(object):
         self.args = args
 
     def set_job_params(self):
+        """ Setting the params from yml or from args coming from commandline."""
         self.set_job_file()
         self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
-        self.set_job_yml()
-        self.set_paths()
+
+        print '####', self.args['job_params_file']
+        if self.args['job_params_file']:
+            self.set_job_yml()
+
+        # Inputs
+        inputs_in_args = len([item for item in self.args.keys() if item.startswith('input_')]) >= 1
+        if inputs_in_args:
+            self.INPUTS = {key.replace('input_', ''):{'path':val,'type':'csv'} for key, val in self.args.iteritems() if key.startswith('input_')}  # TODO: finder way without specifying wrong input (like csv).
+        else:
+            self.INPUTS = self.job_yml['inputs']
+
+        # Outputs
+        output_in_args = len([item for item in self.args.keys() if item == 'output']) >= 1
+        if output_in_args:
+            self.OUTPUT = self.args['output']
+        else:
+            self.OUTPUT = self.job_yml['output']
+
+        # Frequency
+        self.frequency = self.args.get('frequency', None)
+        if not self.frequency:
+            self.frequency = self.job_yml.get('frequency', None)
+
         self.set_is_incremental()
-        self.set_frequency()
 
     def etl(self, sc, sc_sql, loaded_inputs={}):
         """ Main function that creates spark context, load inputs, run transform, save output."""
@@ -96,18 +118,26 @@ class ETL_Base(object):
         except KeyError:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(self.job_name, meta_file))
 
-    def set_paths(self):
-        self.INPUTS = self.job_yml['inputs']
-        self.OUTPUT = self.job_yml['output']
+    # def set_paths_from_yml(self):
+    #     self.INPUTS = self.job_yml['inputs']
+    #     self.OUTPUT = self.job_yml['output']
+    #
+    # def set_paths_from_args(self):
+    #     self.INPUTS = [item for item in self.args.keys() if item.startswith('input-')]
+    #     self.OUTPUT = self.args['output']
 
     def set_is_incremental(self):
         self.is_incremental = any([self.INPUTS[item].get('inc_field', None) is not None for item in self.INPUTS.keys()])
 
-    def set_frequency(self):
-        self.frequency = self.job_yml.get('frequency', None)
+    # def set_frequency_from_yml(self):
+    #     self.frequency = self.job_yml.get('frequency', None)
+    #
+    # def set_frequency_from_args(self):
+    #     self.frequency = self.args.get('frequency', None)
 
     def load_inputs(self, loaded_inputs):
         app_args = {}
+        print '###, self.INPUTS', self.INPUTS
         for item in self.INPUTS.keys():
 
             # Load from memory if available
@@ -329,7 +359,7 @@ class Commandliner():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--deploy", action='store_true', help="Deploy the job to a cluster and run it there instead of running it now locally.") # comes from cmd line since value is set when running on cluster
-        # parser.add_argument("-j", "--job_params_file", action='store_true', help="Grab job params from the schedule file or not. If not, need to specify every param. Default TBD")  # for later. TODO: set TBD
+        parser.add_argument("-j", "--job_params_file", action='store_false', help="Grab job params from the schedule file or not. If not, need to specify every param. Default TBD")  # for later. TODO: set TBD
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
