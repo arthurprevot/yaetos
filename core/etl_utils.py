@@ -68,6 +68,19 @@ class ETL_Base(object):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
+    def set_job_params(self, loaded_inputs={}):
+        """ Setting the params from yml or from commandline args if available."""
+        self.set_job_file()
+        self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
+
+        if self.args.get('job_params_file'):
+            self.set_job_yml()
+
+        self.set_inputs(loaded_inputs)
+        self.set_output()
+        self.set_frequency()
+        self.set_is_incremental()
+
     def set_job_file(self):
         self.job_file = self.args.get('job_file', inspect.getsourcefile(self.__class__))  # getsourcefile works when run from final job file.
 
@@ -80,13 +93,6 @@ class ETL_Base(object):
             .replace(LOCAL_APP_FOLDER+'jobs/','') \
             .replace('jobs/','')  # has to be last
 
-    @staticmethod
-    def get_job_class(job_name):
-        name_import = job_name.replace('/','.').replace('.py','')
-        import_cmd = "from jobs.{} import Job".format(name_import)
-        exec(import_cmd)
-        return Job
-
     def set_job_yml(self):
         meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = self.load_meta(meta_file)
@@ -95,20 +101,6 @@ class ETL_Base(object):
             self.job_yml = yml[self.job_name]
         except KeyError:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(self.job_name, meta_file))
-
-    def set_job_params(self, loaded_inputs={}):
-        """ Setting the params from yml or from commandline args if available."""
-        self.set_job_file()
-        self.set_job_name(self.job_file)  # differs from app_name when one spark app runs several jobs.
-        job_params_file = self.args.get('job_params_file')
-
-        if self.args.get('job_params_file'):
-            self.set_job_yml()
-
-        self.set_inputs(loaded_inputs)
-        self.set_output()
-        self.set_frequency()
-        self.set_is_incremental()
 
     def set_inputs(self, loaded_inputs):
         # Code order is important below and should be consistent with other similar functions below
@@ -143,6 +135,14 @@ class ETL_Base(object):
 
     def set_is_incremental(self):
         self.is_incremental = any([self.INPUTS[item].get('inc_field', None) is not None for item in self.INPUTS.keys()])
+
+    @staticmethod
+    def get_job_class(job_name):
+        """ Used by other classes to import job."""
+        name_import = job_name.replace('/','.').replace('.py','')
+        import_cmd = "from jobs.{} import Job".format(name_import)
+        exec(import_cmd)
+        return Job
 
     def load_inputs(self, loaded_inputs):
         app_args = {}
