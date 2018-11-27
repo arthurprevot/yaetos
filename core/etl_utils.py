@@ -50,7 +50,6 @@ class ETL_Base(object):
         elapsed = end_time - start_time
         self.save_metadata(elapsed)
 
-        # import ipdb; ipdb.set_trace()
         if self.copy_params:
             self.copy_to_oracle(output, self.OUTPUT_TYPES)
         return output
@@ -142,11 +141,9 @@ class ETL_Base(object):
 
     def set_copy(self):
         # Code order is important below and should be consistent with other similar functions
-        print "#### self.job_yml.get('copy_to_oracle', None)", self.job_yml.get('copy_to_oracle', None)
         if 'copy_to' in self.args.keys():
-            self.copy_params = self.args.get('copy_to_oracle')  # check format works.
+            self.copy_params = self.args.get('copy_to_oracle')
         elif self.args.get('force_job_params_from_yml'):
-            print "#{#{#{#{}}}} self.set_copy in if"
             self.copy_params = self.job_yml.get('copy_to_oracle', None)
         else:
             self.copy_params = None
