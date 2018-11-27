@@ -54,6 +54,13 @@ examples/ex4_dependency4_job.py:  # shows dependency
   output: {'path':'data/wiki_example/output_ex4_dep4/{now}/', 'type':'csv'}
   dependencies: [examples/ex4_dependency3_job.sql]  # TODO: check to remove it since it is in input desc.
 
+examples/ex5_copy_to_oracle_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
+  inputs:
+    some_events: {'path':"data/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    other_events: {'path':"data/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+  output: {'path':'data/wiki_example/output_ex5_copy_to_oracle/{now}/', 'type':'csv'}
+  copy_to_oracle: {'oracle_mktg_comprasweb_ij': 'test_ex5_pyspark_job'}
+
 examples/wordcount_frameworked_job.py:  # shows raw pyspark rdd ops in framework, same as wordcount_raw_job
   inputs:
     lines: {'path':"data/wordcount_example/input/sample_text.txt", 'type':'txt'}
