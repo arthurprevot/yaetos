@@ -49,6 +49,10 @@ class ETL_Base(object):
         end_time = time()
         elapsed = end_time - start_time
         self.save_metadata(elapsed)
+
+        # import ipdb; ipdb.set_trace()
+        if self.copy_params:
+            self.copy_to_oracle(output, self.OUTPUT_TYPES)
         return output
 
     def etl_no_io(self, sc, sc_sql, loaded_inputs={}):
@@ -80,6 +84,7 @@ class ETL_Base(object):
         self.set_output()
         self.set_frequency()
         self.set_is_incremental()
+        self.set_copy()
 
     def set_job_file(self):
         self.job_file = self.args.get('job_file', inspect.getsourcefile(self.__class__))  # getsourcefile works when run from final job file.
@@ -119,8 +124,7 @@ class ETL_Base(object):
 
     def set_output(self):
         # Code order is important below and should be consistent with other similar functions
-        output_in_args = len([item for item in self.args.keys() if item == 'output']) >= 1
-        if output_in_args:
+        if 'output' in self.args.keys():
             self.OUTPUT = self.args['output']
         elif self.args.get('force_job_params_from_yml'):
             self.OUTPUT = self.job_yml['output']
@@ -135,6 +139,17 @@ class ETL_Base(object):
             self.frequency = self.job_yml.get('frequency', None)
         else:
             self.frequency = None
+
+    def set_copy(self):
+        # Code order is important below and should be consistent with other similar functions
+        print "#### self.job_yml.get('copy_to_oracle', None)", self.job_yml.get('copy_to_oracle', None)
+        if 'copy_to' in self.args.keys():
+            self.copy_params = self.args.get('copy_to_oracle')  # check format works.
+        elif self.args.get('force_job_params_from_yml'):
+            print "#{#{#{#{}}}} self.set_copy in if"
+            self.copy_params = self.job_yml.get('copy_to_oracle', None)
+        else:
+            self.copy_params = None
 
     def set_is_incremental(self):
         self.is_incremental = any([self.INPUTS[item].get('inc_field', None) is not None for item in self.INPUTS.keys()])
@@ -272,6 +287,13 @@ class ETL_Base(object):
             yml = yaml.load(stream)
         return yml
 
+    def copy_to_oracle(self, output, types):
+        from oracle import create_table  # loaded only because of hard dependencies
+        df = output.toPandas()
+        connection_profile = self.copy_params.keys()[0]
+        name_tb = self.copy_params.values()[0]
+        create_table(df, connection_profile, name_tb, types)
+
 
 class FS_Ops_Dispatcher():
     def save_metadata(self, fname, content, storage):
@@ -375,7 +397,8 @@ class Commandliner():
         parser.add_argument("-l", "--storage", default='local', help="Choose 'local' (default) or 's3'.", choices=set(['local', 's3'])) # comes from cmd line since value is set when running on cluster
         parser.add_argument("-a", "--aws_setup", default='perso', help="Choose aws setup from conf/config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
-        # For later : --job_metadata_file, --machines, --inputs, --output, to be integrated only as a way to overide values from file.
+        # parser.add_argument("-o", "--output", default=None, help="location of output")
+        # For later : --machines, --inputs, to be integrated only as a way to overide values from file.
         return parser
 
     def launch_run_mode(self, Job, args):
