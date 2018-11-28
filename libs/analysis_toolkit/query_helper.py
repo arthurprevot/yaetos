@@ -113,10 +113,10 @@ def ask_user(is_identical, fname_pykl):
 def query_selector(db_type):
     # only import dependencies when needed as they involve installations of external tools/libs.
     if db_type == 'oracle':
-        from query_oracle import query as query_oracle
+        from libs.python_db_connectors.query_oracle import query as query_oracle
         return query_oracle
     elif db_type == 'hive':
-        from query_hive import query as query_hive
+        from libs.python_db_connectors.query_hive import query as query_hive
         return query_hive
     elif db_type == 'pandasql':
         from query_pandasql import query_pandasql
