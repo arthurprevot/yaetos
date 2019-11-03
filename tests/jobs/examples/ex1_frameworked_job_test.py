@@ -1,22 +1,17 @@
 import pytest
 from jobs.examples.ex1_frameworked_job import Job
-from pyspark import SparkContext
-from pyspark.sql import SQLContext, SparkSession, Row
-sc = SparkContext(appName='test')
-sc_sql = SQLContext(sc)
-spark = SparkSession.builder.appName('test').getOrCreate()
 
 
 class Test_Job(object):
-    def test_transform(self):
-        some_events = spark.read.json(sc.parallelize([
+    def test_transform(self, sc, sc_sql, ss):
+        some_events = ss.read.json(sc.parallelize([
             {'session_id': 1234, 'action': 'searchResultPage', 'n_results': 1},
             {'session_id': 1234, 'action': 'searchResultPage', 'n_results': 1},
             {'session_id': 1235, 'action': 'searchResultPage', 'n_results': 1},
             {'session_id': 1236, 'action': 'other',            'n_results': 1},
             ]))
 
-        other_events = spark.read.json(sc.parallelize([
+        other_events = ss.read.json(sc.parallelize([
             {'session_id': 1234, 'other': 1},
             {'session_id': 1235, 'other': 1},
             {'session_id': 1236, 'other': 1},
@@ -27,5 +22,5 @@ class Test_Job(object):
             {'session_id': 1235, 'count_events': 1},
             ]
 
-        actual = Job().etl_no_io(sc, sc_sql, loaded_inputs={'some_events': some_events, 'other_events':other_events}).toPandas().to_dict(orient='records')
+        actual = Job(args={'mode_no_io':True}).etl_no_io(sc, sc_sql, loaded_inputs={'some_events': some_events, 'other_events':other_events}).toPandas().to_dict(orient='records')
         assert actual == expected
