@@ -18,7 +18,7 @@ Run the installation instructions (see lower) and run [this sql example](jobs/ex
 
     python core/sql_job.py  --sql_file=jobs/examples/ex1_full_sql_job.sql
 
-It will run locally, taking the inputs from a job registry file (`jobs_metadata_local.yml`) at [ these lines](conf/jobs_metadata_local.yml#L1-L4), transform them based on this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run that same sql example on an AWS cluster, add a `-d` argument at the command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5) from the jobs_metadata file. If you don't have a cluster available, it will create one and terminate it after the job is run. You will see the status on the job process in the "steps" tab of your AWS EMR web page.
+It will run locally, taking the inputs from a job registry file (`jobs_metadata_local.yml`) at [these lines](conf/jobs_metadata_local.yml#L1-L4), transform them based on this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run that same sql example on an AWS cluster, add a `-d` argument at the command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5) from the jobs_metadata file. If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
 
 To run an ETL that showcases manipulation of a spark dataframes, more flexible than the sql example above, run this frameworked pyspark example [ex1_frameworked_job.py](jobs/examples/ex1_frameworked_job.py) with this:
 
@@ -52,15 +52,15 @@ Jobs can be unit-tested using `py.test`. For a given job, create a corresponding
 
 ## Installation instructions
 
-If you have spark installed, then you can just use it. Version tested is v2.1.0. If not, you can run the job from a docker container, which has spark and all python libraries already setup. A Dockerfile is included to create this container.
+To avoid installing dependencies on your machine manually, you can run the job from a docker container, with spark and python libraries already setup. A Dockerfile is included to create this container.
 
     cd ~/path/to/repo/
     docker build -t spark_container .  # '.' matters
     docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v /absolute/path/to/pyspark_aws_etl:/mnt/pyspark_aws_etl -v ~/.aws:/root/.aws -h spark spark_container  # remove "-v ~/.aws:/root/.aws" if you don't intend sending jobs to AWS.
 
-It will bring you inside the container's bash terminal, from where you will run the jobs. This docker container is setup to take the repository from your host, so you can write ETL jobs from your host machine and run them from within the container.
+It will bring you inside the container's bash terminal, from where you can run the jobs. This docker container is setup to take the repository from your host, so you can write ETL jobs from your host machine and run them from within the container.
 
-Then, you need to run `./setup.sh`, from your host machine or from within the docker container depending on how you prefer to run spark.
+Then, you need to run `scripts/setup.sh`, from your host machine or from within the docker container depending on how you prefer to run spark.
 
 To send jobs to AWS cluster, You also need to copy the config file `conf/config.cfg.example`, save it as `conf/config.cfg`, and fill in your AWS setup. You should also have your `~/.aws` folder setup (by `aws` command line) with the corresponding AWS account information and secret keys.
 

@@ -23,15 +23,16 @@ RUN set -ex \
 # so getting it from conda. Need to only put conda in PATH (/usr/local/bin/)
 # to avoid python from conda taking over original python.
 RUN ln -s /opt/conda/bin/conda /usr/local/bin/conda
-RUN conda install -y oracle-instantclient
+RUN conda install -y -c trent oracle-instantclient=11.2.0.4.0
+# full version is 11.2.0.4.0-1 but fails when adding the "-1". was "-c anaconda" until 24 oct 2019 and was pulling v11.2.0.4.0-0
 
-RUN pip install cx_Oracle
-ENV ORACLE_HOME=/opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0
-ENV LD_LIBRARY_PATH=/opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib
+RUN pip install cx_Oracle==7.2.3
+ENV ORACLE_HOME=/opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1
+ENV LD_LIBRARY_PATH=/opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1/lib
 
-RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib/libclntsh.so /usr/lib/
-RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib/libnnz11.so /usr/lib/
-RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-0/lib/libociei.so /usr/lib
+RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1/lib/libclntsh.so /usr/lib/
+RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1/lib/libnnz11.so /usr/lib/
+RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1/lib/libociei.so /usr/lib/
 #---- End Installation oracle ------
 
 
