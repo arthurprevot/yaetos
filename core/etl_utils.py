@@ -28,15 +28,15 @@ import os
 import boto3
 import argparse
 from time import time
-import StringIO
+from io import StringIO
 import networkx as nx
 import random
 import pandas as pd
 import os
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 import numpy as np
 from sklearn.externals import joblib
-import logger as log
+import core.logger as log
 import gc
 
 
@@ -483,17 +483,17 @@ class FS_Ops_Dispatcher():
         fh = open(fname, 'w')
         fh.write(content)
         fh.close()
-        print "Created file locally: ", fname
+        logger.info("Created file locally: {}".format(fname))
 
     @staticmethod
     def save_metadata_cluster(fname, content):
         fname_parts = fname.split('s3://')[1].split('/')
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
-        fake_handle = StringIO.StringIO(content)
+        fake_handle = StringIO(content)
         s3c = boto3.client('s3')
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
-        print "Created file in S3: ", fname
+        logger.info("Created file S3: {}".format(fname))
 
     # --- save_file set of functions ----
     def save_file(self, fname, content, storage):
@@ -505,7 +505,7 @@ class FS_Ops_Dispatcher():
         if not os.path.exists(folder):
             os.makedirs(folder)
         joblib.dump(content, fname)
-        print "Saved content to new file locally: ", fname
+        logger.info("Saved content to new file locally: {}".format(fname))
 
     def save_file_cluster(self, fname, content):
         fname_parts = fname.split('s3://')[1].split('/')
@@ -517,7 +517,7 @@ class FS_Ops_Dispatcher():
         self.save_file_local(local_path, content)
         fh = open(local_path, 'rb')
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fh)
-        print "Pushed local file to S3, from '{}' to '{}' ".format(local_path, fname)
+        logger.info("Pushed local file to S3, from '{}' to '{}' ".format(local_path, fname))
 
     # --- load_file set of functions ----
     def load_file(self, fname, storage):
@@ -535,7 +535,7 @@ class FS_Ops_Dispatcher():
         local_path = CLUSTER_APP_FOLDER+'tmp/s3_'+fname_parts[-1]
         s3c = boto3.client('s3')
         s3c.download_file(bucket_name, bucket_fname, local_path)
-        print "Copied file from S3 '{}' to local '{}'".format(fname, local_path)
+        logger.info("Copied file from S3 '{}' to local '{}'".format(fname, local_path))
         model = joblib.load(local_path)
         return model
 
@@ -585,7 +585,7 @@ class Cred_Ops_Dispatcher():
         logger.debug('get_secret_value response: '+str(response))
         content = response['SecretString']
 
-        fake_handle = StringIO.StringIO(content)
+        fake_handle = StringIO(content)
         config = ConfigParser()
         config.readfp(fake_handle)
         return config
