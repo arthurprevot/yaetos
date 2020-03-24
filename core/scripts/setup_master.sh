@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to configure master node on EMR cluster.
+# Script to configure master node on EMR cluster. (as an emr "step", not boostrap)
 
 
 # Parse arguments

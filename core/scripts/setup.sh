@@ -1,4 +1,6 @@
 #!/bin/bash
+# not used anymore. TODO: delete
+
 
 # TODO: - aws s3 command below fails (Import error at from botocore.utils import is_json_value_header) for second deploy in the same cluster, probably due to sudo "pip install boto3==1.2.6" below.
 
