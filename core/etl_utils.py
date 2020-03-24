@@ -33,7 +33,15 @@ import networkx as nx
 import random
 import pandas as pd
 import os
-from configparser import ConfigParser
+import sys
+print('#### sys v')
+print(sys.version_info)
+import sys
+if sys.version_info[0] == 3:
+    from configparser import ConfigParser
+else:
+    from ConfigParser import ConfigParser
+
 import numpy as np
 from sklearn.externals import joblib
 import core.logger as log
