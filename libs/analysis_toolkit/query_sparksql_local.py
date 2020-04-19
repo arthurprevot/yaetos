@@ -9,7 +9,7 @@ def query_sparksql_local(query_str, fnames_in=None, dfs_in=None, **kwargs):
     run_sql = sc_sql.sql
 
     if fnames_in:
-        for name, fname in fnames_in.iteritems():
+        for name, fname in fnames_in.items():
             reader = sc_sql.read.option("header", "true")
             if kwargs.get('delimiter'):
                 reader = reader.option("delimiter", kwargs['delimiter'])
