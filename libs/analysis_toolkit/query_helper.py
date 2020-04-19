@@ -106,7 +106,7 @@ def ask_user(is_identical, fname_pykl):
     print('[1] Overwrite it')
     print("[2] Save as different name")
     print("[3] Don't save")
-    answer = raw_input('Your choice ? ')
+    answer = input('Your choice ? ')
     options = {1: 'overwrite', 2: 'new_name', 3: 'ignore'}
     return options[int(answer)]
 
