@@ -34,9 +34,6 @@ import random
 import pandas as pd
 import os
 import sys
-print('#### sys v')
-print(sys.version_info)
-import sys
 if sys.version_info[0] == 3:
     from configparser import ConfigParser
 else:

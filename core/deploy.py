@@ -248,9 +248,9 @@ class DeployPySparkScriptOnAws(object):
                     'InstanceCount': self.emr_core_instances,
                     }],
                 'Ec2KeyName': self.ec2_key_name,
-                'KeepJobFlowAliveWhenNoSteps': self.app_args.get('leave_on'),
+                'KeepJobFlowAliveWhenNoSteps': self.app_args.get('leave_on', False),
                 'Ec2SubnetId': self.ec2_subnet_id,
-                'AdditionalMasterSecurityGroups': [self.extra_security_gp],
+                # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
             },
             Applications=[{'Name': 'Hadoop'}, {'Name': 'Spark'}],
             JobFlowRole='EMR_EC2_DefaultRole',
@@ -488,12 +488,12 @@ if __name__ == "__main__":
     # Use as standalone to push random python script to cluster.
     # TODO: fails to create a new cluster but works to add a step to an existing cluster.
     print('command line: ', ' '.join(sys.argv))
-    job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'
+    job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'  # TODO: move to 'jobs/examples/ex1_raw_job_cluster.py'
     class bag(object):
         pass
 
     yml = bag()
     yml.job_name = job_name
-    yml.py_job = 'jobs/'+job_name # will add /home/hadoop/app/
-    app_args = {'mode':'EMR'}
+    yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
+    app_args = {'mode':'EMR', 'leave_on': True}
     DeployPySparkScriptOnAws(yml=yml, aws_setup='dev', **app_args).run()
