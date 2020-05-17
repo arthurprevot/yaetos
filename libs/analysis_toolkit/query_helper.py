@@ -120,6 +120,9 @@ def query_selector(db_type):
     if db_type == 'oracle':
         from libs.python_db_connectors.query_oracle import query as query_oracle
         return query_oracle
+    if db_type == 'mysql':
+        from libs.python_db_connectors.query_mysql import query as query_mysql
+        return query_mysql
     elif db_type == 'hive':
         from libs.python_db_connectors.query_hive import query as query_hive
         return query_hive
