@@ -143,6 +143,42 @@ def write_file(fname, content):
     fh.write(content)
     fh.close()
 
+def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_deltas=True):
+    print('Length df1', len(df1), df1[pks1].nunique())
+    print('Length df2', len(df2), df2[pks2].nunique())
+
+    if strip :
+        df1 = df1[pks1+compare1]
+        df2 = df2[pks2+compare2]
+    df_joined = pd.merge(left=df1, right=df2, how='outer', left_on=pks1, right_on=pks2, indicator = True, suffixes=('_1', '_2'))
+    print('Length df_joined', len(df_joined))
+    df_joined['_no_deltas'] = True # init
+
+    def check_delta(row):
+        if np.isnan(row[item1]) and np.isnan(row[item2]):
+            return 0
+        elif np.isnan(row[item1]) or np.isnan(row[item2]):
+            return 100
+        elif float(row[item1]) == 0 and float(row[item2]) == 0:
+            return 0
+        elif float(row[item1]) == 0 or float(row[item2]) == 0:
+            return 100
+        else:
+            return np.abs(np.divide((row[item1]-row[item2]), float(row[item1])))
+
+    threshold = 0.01
+    np.seterr(divide='ignore')  # to handle the division by 0 in divide().
+    for ii in range(len(compare1)):
+        item1 = compare1[ii]
+        item2 = compare2[ii]
+        df_joined['_delta_'+item1] = df_joined.apply(lambda row: (row[item1] if not np.isnan(row[item1]) else 0.0)-(row[item2] if not np.isnan(row[item2]) else 0.0), axis=1)
+        df_joined['_delta_'+item1+'_%'] = df_joined.apply(check_delta, axis=1)
+        df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas']==True and row['_delta_'+item1+'_%']<threshold, axis=1)
+    np.seterr(divide='raise')
+    if filter_deltas:
+        df_joined = df_joined[df_joined.apply(lambda row : row['_no_deltas']==False, axis=1)].reset_index()
+    return df_joined
+
 
 if __name__ == "__main__":
     df = query_and_cache('SELECT * \nFROM all_tables', name='testAP', folder='tempo/', db='name_of_your_db')
