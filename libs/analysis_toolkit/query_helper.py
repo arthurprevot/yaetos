@@ -123,6 +123,9 @@ def query_selector(db_type):
     elif db_type == 'hive':
         from libs.python_db_connectors.query_hive import query as query_hive
         return query_hive
+    elif db_type == 'salesforce':
+        from libs.python_db_connectors.query_salesforce import query as query_sf
+        return query_sf
     elif db_type == 'pandasql':
         from query_pandasql import query_pandasql
         return query_pandasql

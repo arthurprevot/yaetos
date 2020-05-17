@@ -4,3 +4,6 @@ data/
 extra/
 metastore_db/
 derby.log
+conf/aws_config.cfg
+conf/connections.cfg
+libs/python_db_connectors/credentials.cfg
