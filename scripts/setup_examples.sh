@@ -1,15 +1,13 @@
-# Setup example data for local and cluster runs.
+#!/bin/bash
+# Setup example data for local and cluster runs. Needs to be run from repo root.
 
-#--------------------------------------
+# --------------------------------------
 # Manual steps: create sandbox bucket and put it's name below if necessary
 bucket_name="sandbox-spark"
-#--------------------------------------
+# --------------------------------------
 
 # General setup
 # . setup.sh # TODO check if needs to be uncommented.
-
-# set path, implies running from repo/scripts/
-cd ..
 
 # copy data locally, will be used for local sample tests
 local_folder="data/wiki_example/inputs/2017-01-01"
@@ -36,7 +34,7 @@ cp $local_dataset $local_latest_dataset
 
 if ! aws s3api head-bucket --bucket $bucket_name --profile $1 2>/dev/null; then
   echo "S3 Bucket '$bucket_name' doesn't exist. Please create it in AWS and rerun this script."
-  exit 1
+  return
 fi
 s3_bucket="s3://$bucket_name"
 s3_folder="$s3_bucket/yaetos/wiki_example/inputs/2017-01-01"

@@ -19,10 +19,10 @@ import botocore
 from botocore.exceptions import ClientError
 import uuid
 import json
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 from shutil import copyfile
-import etl_utils as eu
-import logger as log
+import core.etl_utils as eu
+import core.logger as log
 
 
 class DeployPySparkScriptOnAws(object):
@@ -49,8 +49,8 @@ class DeployPySparkScriptOnAws(object):
         self.extra_security_gp = config.get(aws_setup, 'extra_security_gp')
         self.emr_core_instances = int(config.get(aws_setup, 'emr_core_instances'))
         self.app_args = app_args
-        self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.4xlarge')  #'m5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
-        self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.4xlarge')
+        self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  #'m5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
+        self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
         self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
         self.job_name = self.generate_job_name()  # format: some_job.some_user.20181204.153429
@@ -79,12 +79,12 @@ class DeployPySparkScriptOnAws(object):
         cluster = self.choose_cluster(clusters)
         new_cluster = cluster['id'] is None
         if new_cluster:
-            print "Starting new cluster"
+            print("Starting new cluster")
             self.start_spark_cluster(c)
-            print "cluster name: %s, and id: %s"%(self.job_name, self.cluster_id)
+            print("cluster name: %s, and id: %s"%(self.job_name, self.cluster_id))
             self.step_run_setup_scripts(c)
         else:
-            print "Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id'])
+            print("Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id']))
             self.cluster_id = cluster['id']
             self.step_run_setup_scripts(c)
 
@@ -113,19 +113,19 @@ class DeployPySparkScriptOnAws(object):
 
     def choose_cluster(self, clusters, cluster_id=None):
         if len(clusters) == 0:
-            print 'No cluster found, will create a new one'
+            print('No cluster found, will create a new one')
             return {'id': None,
                     'name': None}
 
         if cluster_id is not None:
-            print 'Cluster_id set by user to ', cluster_id
+            print('Cluster_id set by user to {}'.format(cluster_id))
             return {'id': cluster_id,
                     'name': None}
 
         clusters.append((len(clusters)+1, None, 'Create a new cluster'))
-        print 'Clusters found for AWS account "%s":'%(self.aws_setup)
-        print '\n'.join(['[%s] %s'%(item[0], item[2]) for item in clusters])
-        answer = raw_input('Your choice ? ')
+        print('Clusters found for AWS account "%s":'%(self.aws_setup))
+        print('\n'.join(['[%s] %s'%(item[0], item[2]) for item in clusters]))
+        answer = input('Your choice ? ')
         return {'id':clusters[int(answer)-1][1],
                 'name':clusters[int(answer)-1][2]}
 
@@ -248,9 +248,9 @@ class DeployPySparkScriptOnAws(object):
                     'InstanceCount': self.emr_core_instances,
                     }],
                 'Ec2KeyName': self.ec2_key_name,
-                'KeepJobFlowAliveWhenNoSteps': self.app_args.get('leave_on'),
+                'KeepJobFlowAliveWhenNoSteps': self.app_args.get('leave_on', False),
                 'Ec2SubnetId': self.ec2_subnet_id,
-                'AdditionalMasterSecurityGroups': [self.extra_security_gp],
+                # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
             },
             Applications=[{'Name': 'Hadoop'}, {'Name': 'Spark'}],
             JobFlowRole='EMR_EC2_DefaultRole',
@@ -278,14 +278,14 @@ class DeployPySparkScriptOnAws(object):
         :param c:
         :return:
         """
-        print 'Waiting for job to finish on cluster'
+        print('Waiting for job to finish on cluster')
         stop = False
         while stop is False:
             description = c.describe_cluster(ClusterId=self.cluster_id)
             state = description['Cluster']['Status']['State']
             if state == 'TERMINATED' or state == 'TERMINATED_WITH_ERRORS':
                 stop = True
-                print 'Job is finished'
+                print('Job is finished')
             logger.info('Cluster state:' + state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
 
@@ -467,7 +467,7 @@ class DeployPySparkScriptOnAws(object):
         )
         logger.debug('delete_secret response: '+str(response))
         logger.info('Deleted aws secret, secret_id:'+eu.AWS_SECRET_ID)
-        print 'delete_secret response: ', response
+        print('delete_secret response: {}'.format(response))
 
 
 def terminate(error_message=None):
@@ -487,13 +487,13 @@ logger = log.setup_logging('Deploy')
 if __name__ == "__main__":
     # Use as standalone to push random python script to cluster.
     # TODO: fails to create a new cluster but works to add a step to an existing cluster.
-    print 'command line: ', ' '.join(sys.argv)
-    job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'
+    print('command line: ', ' '.join(sys.argv))
+    job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'  # TODO: move to 'jobs/examples/ex1_raw_job_cluster.py'
     class bag(object):
         pass
 
     yml = bag()
     yml.job_name = job_name
-    yml.py_job = 'jobs/'+job_name # will add /home/hadoop/app/
-    app_args = {'mode':'EMR'}
+    yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
+    app_args = {'mode':'EMR', 'leave_on': True}
     DeployPySparkScriptOnAws(yml=yml, aws_setup='dev', **app_args).run()

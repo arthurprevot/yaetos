@@ -33,7 +33,12 @@ import networkx as nx
 import random
 import pandas as pd
 import os
-from configparser import ConfigParser
+import sys
+if sys.version_info[0] == 3:  # TODO: clean later. For now, still need back compatibility with python 2.7.
+    from configparser import ConfigParser
+else:
+    from ConfigParser import ConfigParser
+
 import numpy as np
 from sklearn.externals import joblib
 import core.logger as log
