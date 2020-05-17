@@ -53,5 +53,5 @@ def query(query_str, **connect_args):
         return df
 
 if __name__ == "__main__":
-    df = query('SELECT * FROM all_tables', db='name_of_connection_from_credentials.cfg')
+    df = query('SELECT * FROM all_tables', db='name_of_connection_from_credentials_file')
     print(df)

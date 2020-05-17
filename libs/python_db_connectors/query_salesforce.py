@@ -21,5 +21,5 @@ def query(query_str, creds_section):
     return df
 
 if __name__ == "__main__":
-    df = query('SELECT Account.Name FROM Account', creds_section='salesforce_aprevot')
+    df = query('SELECT Account.Name FROM Account', creds_section='name_of_connection_from_credentials_file')
     print(df)
