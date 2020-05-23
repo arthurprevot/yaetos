@@ -5,7 +5,7 @@ from time import time
 import hashlib
 
 
-def query_and_cache(query_str, name, folder, to_csv_args, dbargs, db_type='oracle', force_rerun=False, show=False):
+def query_and_cache(query_str, name, folder, to_csv_args={}, dbargs={}, db_type='oracle', force_rerun=False, show=False):
     (name, fname_base, fname_csv, fname_pykl, fname_sql) = filename_expansion(name, folder)
     if not os.path.isfile(fname_pykl) or force_rerun:
         print("Running query: ", name, '\n', query_str)
@@ -22,7 +22,7 @@ def query_and_cache(query_str, name, folder, to_csv_args, dbargs, db_type='oracl
         print("Loaded from file: ", fname_pykl)
     return df
 
-def process_and_cache(name, folder, func, to_csv_args, force_rerun=False, show=False, **func_args):
+def process_and_cache(name, folder, func, to_csv_args={}, force_rerun=False, show=False, **func_args):
     # code here mostly duplicated from query_and_cache, TODO: get better way
     (name, fname_base, fname_csv, fname_pykl, fname_sql) = filename_expansion(name, folder)
     if not os.path.isfile(fname_pykl) or force_rerun:

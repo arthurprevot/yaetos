@@ -2,7 +2,6 @@ import pandas as pd
 from configparser import ConfigParser
 import os
 from sqlalchemy import create_engine
-# requires pymysql installed.
 
 def connect(db):
     config = ConfigParser()
@@ -16,7 +15,8 @@ def connect(db):
         'service':  config.get(db, 'service')
     }
 
-    connection_str = "mysql+pymysql://{user}:{password}@{host}/{service}".format(**params)
+    connection_str = "redshift+psycopg2://{user}:{password}@{host}:{port}/{service}".format(**params)
+    # print("connection_str", connection_str)
     conn = create_engine(connection_str, encoding='UTF8')
     return conn
 
