@@ -65,11 +65,9 @@ def drop_if_needed(df, name, folder, to_csv_args, db_type='n/a', elapsed='n/a', 
 def diff_dfs(df1, df2):
     print('Looking into diffs between previous and new dataset.')
     try:
-        hash1 = hashlib.md5(df1.to_msgpack()).hexdigest()  # crashes when dfs contains unpickeable type.
-        hash2 = hashlib.md5(df2.to_msgpack()).hexdigest()  # same
-        # hash1 = pd.util.hash_pandas_object(df1)  # could add index=False
-        # hash2 = pd.util.hash_pandas_object(df2)
-        is_identical = hash1[0] == hash2[0]
+        hash1 = hashlib.sha256(pd.util.hash_pandas_object(df1, index=True).values).hexdigest()
+        hash2 = hashlib.sha256(pd.util.hash_pandas_object(df2, index=True).values).hexdigest()
+        is_identical = hash1 == hash2
     except:
         print("Diff computation failed so assuming files are not similar.")
         return False
@@ -171,7 +169,7 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
     for ii in range(len(compare1)):
         item1 = compare1[ii]
         item2 = compare2[ii]
-        df_joined['_delta_'+item1] = df_joined.apply(lambda row: (row[item1] if not np.isnan(row[item1]) else 0.0)-(row[item2] if not np.isnan(row[item2]) else 0.0), axis=1)
+        df_joined['_delta_'+item1] = df_joined.apply(lambda row: (row[item1] if not np.isnan(row[item1]) else 0.0)-(row[item2] if not np.isnan(row[item2]) else 0.0), axis=1) # need to deal with case where df1 and df2 have same col name and merge adds suffix _1 and _2
         df_joined['_delta_'+item1+'_%'] = df_joined.apply(check_delta, axis=1)
         df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas']==True and row['_delta_'+item1+'_%']<threshold, axis=1)
     np.seterr(divide='raise')
