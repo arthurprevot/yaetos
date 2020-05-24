@@ -34,5 +34,5 @@ def query(query_str, **kwarg):
     return df
 
 if __name__ == "__main__":
-    df = query("SHOW TABLES")
+    df = query("SHOW TABLES", db='name_of_connection_from_credentials_file')
     print(df)

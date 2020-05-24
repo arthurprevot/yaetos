@@ -5,7 +5,7 @@ from time import time
 import hashlib
 
 
-def query_and_cache(query_str, name, folder, to_csv_args, dbargs, db_type='oracle', force_rerun=False, show=False):
+def query_and_cache(query_str, name, folder, to_csv_args={}, dbargs={}, db_type='oracle', force_rerun=False, show=False):
     (name, fname_base, fname_csv, fname_pykl, fname_sql) = filename_expansion(name, folder)
     if not os.path.isfile(fname_pykl) or force_rerun:
         print("Running query: ", name, '\n', query_str)
@@ -22,7 +22,7 @@ def query_and_cache(query_str, name, folder, to_csv_args, dbargs, db_type='oracl
         print("Loaded from file: ", fname_pykl)
     return df
 
-def process_and_cache(name, folder, func, to_csv_args, force_rerun=False, show=False, **func_args):
+def process_and_cache(name, folder, func, to_csv_args={}, force_rerun=False, show=False, **func_args):
     # code here mostly duplicated from query_and_cache, TODO: get better way
     (name, fname_base, fname_csv, fname_pykl, fname_sql) = filename_expansion(name, folder)
     if not os.path.isfile(fname_pykl) or force_rerun:
@@ -65,11 +65,9 @@ def drop_if_needed(df, name, folder, to_csv_args, db_type='n/a', elapsed='n/a', 
 def diff_dfs(df1, df2):
     print('Looking into diffs between previous and new dataset.')
     try:
-        hash1 = hashlib.md5(df1.to_msgpack()).hexdigest()  # crashes when dfs contains unpickeable type.
-        hash2 = hashlib.md5(df2.to_msgpack()).hexdigest()  # same
-        # hash1 = pd.util.hash_pandas_object(df1)  # could add index=False
-        # hash2 = pd.util.hash_pandas_object(df2)
-        is_identical = hash1[0] == hash2[0]
+        hash1 = hashlib.sha256(pd.util.hash_pandas_object(df1, index=True).values).hexdigest()
+        hash2 = hashlib.sha256(pd.util.hash_pandas_object(df2, index=True).values).hexdigest()
+        is_identical = hash1 == hash2
     except:
         print("Diff computation failed so assuming files are not similar.")
         return False
@@ -120,9 +118,18 @@ def query_selector(db_type):
     if db_type == 'oracle':
         from libs.python_db_connectors.query_oracle import query as query_oracle
         return query_oracle
+    elif db_type == 'mysql':
+        from libs.python_db_connectors.query_mysql import query as query_mysql
+        return query_mysql
+    elif db_type == 'redshift':
+        from libs.python_db_connectors.query_redshift import query as query_redshift
+        return query_redshift
     elif db_type == 'hive':
         from libs.python_db_connectors.query_hive import query as query_hive
         return query_hive
+    elif db_type == 'salesforce':
+        from libs.python_db_connectors.query_salesforce import query as query_sf
+        return query_sf
     elif db_type == 'pandasql':
         from query_pandasql import query_pandasql
         return query_pandasql
@@ -136,6 +143,42 @@ def write_file(fname, content):
     fh = open(fname, 'w')
     fh.write(content)
     fh.close()
+
+def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_deltas=True):
+    print('Length df1', len(df1), df1[pks1].nunique())
+    print('Length df2', len(df2), df2[pks2].nunique())
+
+    if strip :
+        df1 = df1[pks1+compare1]
+        df2 = df2[pks2+compare2]
+    df_joined = pd.merge(left=df1, right=df2, how='outer', left_on=pks1, right_on=pks2, indicator = True, suffixes=('_1', '_2'))
+    print('Length df_joined', len(df_joined))
+    df_joined['_no_deltas'] = True # init
+
+    def check_delta(row):
+        if np.isnan(row[item1]) and np.isnan(row[item2]):
+            return 0
+        elif np.isnan(row[item1]) or np.isnan(row[item2]):
+            return 100
+        elif float(row[item1]) == 0 and float(row[item2]) == 0:
+            return 0
+        elif float(row[item1]) == 0 or float(row[item2]) == 0:
+            return 100
+        else:
+            return np.abs(np.divide((row[item1]-row[item2]), float(row[item1])))
+
+    threshold = 0.01
+    np.seterr(divide='ignore')  # to handle the division by 0 in divide().
+    for ii in range(len(compare1)):
+        item1 = compare1[ii]
+        item2 = compare2[ii]
+        df_joined['_delta_'+item1] = df_joined.apply(lambda row: (row[item1] if not np.isnan(row[item1]) else 0.0)-(row[item2] if not np.isnan(row[item2]) else 0.0), axis=1) # need to deal with case where df1 and df2 have same col name and merge adds suffix _1 and _2
+        df_joined['_delta_'+item1+'_%'] = df_joined.apply(check_delta, axis=1)
+        df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas']==True and row['_delta_'+item1+'_%']<threshold, axis=1)
+    np.seterr(divide='raise')
+    if filter_deltas:
+        df_joined = df_joined[df_joined.apply(lambda row : row['_no_deltas']==False, axis=1)].reset_index()
+    return df_joined
 
 
 if __name__ == "__main__":
