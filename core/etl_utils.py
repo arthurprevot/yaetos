@@ -364,8 +364,11 @@ class Job_Yml_Parser():
             # To deal with cases like job_file = '/mnt/tmp/spark-48e465ad-cca8-4216-a77f-ce069d04766f/userFiles-b1dad8aa-76ea-4adf-97da-dc9273666263/scripts.zip/jobs/infojobs/churn_prediction/users_inscriptions_daily.py' that appeared in new emr version.
             self.job_name = job_file[job_file.find('/scripts.zip/jobs/')+len('/scripts.zip/jobs/'):]
         else:
-            # self.job_name = job_file
-            raise Exception('job_file has unexpection format. Should contain "jobs/". It is: {}.'.format(job_file))
+            # To deal with case when job is defined outside of this repo, i.e. isn't located in 'jobs/' folder.
+            self.job_name = job_file
+        # else:
+        #     # self.job_name = job_file
+        #     raise Exception('job_file has unexpection format. Should contain "jobs/". It is: {}.'.format(job_file))
         logger.info("job_name: '{}', from job_file: '{}'".format(self.job_name, job_file))
 
     def set_job_file_from_name(self, job_name):
@@ -373,7 +376,7 @@ class Job_Yml_Parser():
         logger.info("job_name: '{}', and corresponding job_file: '{}'".format(job_name, self.job_file))
 
     def set_job_yml(self):
-        meta_file = self.args.get('job_params_file')
+        meta_file = self.args.get('job_param_file')
         if meta_file is None:
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
 
