@@ -16,7 +16,7 @@ Helper functions. Setup to run locally and on cluster.
 # - way to run all jobs from 1 cmd line.
 # - rename mode=EMR and EMR_Scheduled modes to deploy="EMR" and "EMR_Scheduled" and None, and use new "mode" arg so app knows in which mode it currently is.
 # - make boxed_dependencies the default, as more conservative.
-# - better integration of oracle based on spark instead of sqlalchemy.
+# - better integration of redshift based on spark instead of sqlalchemy.
 # - add ability to sent a comment about the job through the commandline, like "debug run with condition x", "scheduled run"...
 
 
@@ -108,8 +108,8 @@ class ETL_Base(object):
         elapsed = end_time - start_time
         self.save_metadata(elapsed)
 
-        if self.oracle_copy_params:
-            self.copy_to_oracle(output, self.OUTPUT_TYPES)
+        if self.redshift_copy_params:
+            self.copy_to_redshift(output, self.OUTPUT_TYPES)
         if self.copy_to_kafka:
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
@@ -153,7 +153,7 @@ class ETL_Base(object):
         self.INPUTS = job_yml_parser.INPUTS
         self.OUTPUT = job_yml_parser.OUTPUT
         self.frequency = job_yml_parser.frequency
-        self.oracle_copy_params = job_yml_parser.oracle_copy_params
+        self.redshift_copy_params = job_yml_parser.redshift_copy_params
         self.copy_to_kafka = job_yml_parser.copy_to_kafka
         self.db_creds = job_yml_parser.db_creds
         self.is_incremental = job_yml_parser.is_incremental
@@ -298,16 +298,34 @@ class ETL_Base(object):
 
     def query(self, query_str):
         logger.info('Query string:\n' + query_str)
-        return self.sc_sql.sql(query_str)
+        df =  self.sc_sql.sql(query_str)
+        df.cache()
+        print('Sample output {}'.format(df.show()))
+        return df
 
-    def copy_to_oracle(self, output, types):
+    def copy_to_redshift(self, output, types):
         # dependencies here to avoid loading heavy libraries when not needed (optional feature).
-        from core.oracle import create_table
+        from core.redshift import create_table
         from core.db_utils import cast_col
         df = output.toPandas()
         df = cast_col(df, types)
-        connection_profile = self.oracle_copy_params['creds']
-        schema, name_tb= self.oracle_copy_params['table'].split('.')
+        connection_profile = self.redshift_copy_params['creds']
+        schema, name_tb= self.redshift_copy_params['table'].split('.')
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'])
+        user = creds.get(connection_profile, 'user')
+        assert schema == user
+        create_table(df, connection_profile, name_tb, types, creds, self.is_incremental)
+        del(df)
+
+    def copy_to_redshift(self, output, types):
+        # dependencies here to avoid loading heavy libraries when not needed (optional feature).
+        # TBF
+        from core.redshift import create_table
+        from core.db_utils import cast_col
+        df = output.toPandas()
+        df = cast_col(df, types)
+        connection_profile = self.redshift_copy_params['creds']
+        schema, name_tb= self.redshift_copy_params['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'])
         user = creds.get(connection_profile, 'user')
         assert schema == user
@@ -350,7 +368,7 @@ class Job_Yml_Parser():
         self.set_start_date()
         self.set_is_incremental()
         self.set_db_creds()
-        self.set_copy_to_oracle()
+        self.set_copy_to_redshift()
         self.set_copy_to_kafka()
 
     def set_job_name_from_file(self, job_file):
@@ -440,13 +458,13 @@ class Job_Yml_Parser():
         else:
             self.start_date = None
 
-    def set_copy_to_oracle(self):
-        if self.args.get('copy_to_oracle'):
-            self.oracle_copy_params = self.args.get('copy_to_oracle')
+    def set_copy_to_redshift(self):
+        if self.args.get('copy_to_redshift'):
+            self.redshift_copy_params = self.args.get('copy_to_redshift')
         elif self.args.get('job_param_file'):
-            self.oracle_copy_params = self.job_yml.get('copy_to_oracle')
+            self.redshift_copy_params = self.job_yml.get('copy_to_redshift')
         else:
-            self.oracle_copy_params = None
+            self.redshift_copy_params = None
 
     def set_copy_to_kafka(self):
         if self.args.get('copy_to_kafka'):
@@ -459,9 +477,9 @@ class Job_Yml_Parser():
     def set_db_creds(self):
         if self.args.get('db_creds'):
             self.db_creds = self.args['db_creds']
-        elif self.args.get('job_param_file') and self.job_yml.get('from_oracle'):
-            self.db_creds = self.job_yml['from_oracle'].get('creds')
-        elif self.args.get('job_param_file') and not self.job_yml.get('from_oracle'):
+        elif self.args.get('job_param_file') and self.job_yml.get('from_redshift'):
+            self.db_creds = self.job_yml['from_redshift'].get('creds')
+        elif self.args.get('job_param_file') and not self.job_yml.get('from_redshift'):
             self.db_creds = None
         else:
             self.db_creds = None
@@ -694,7 +712,7 @@ class Commandliner():
     def create_contexts(self, app_name):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         # from pyspark import SparkContext
-        # For later: os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars extra/ojdbc6.jar'  # or s3://data-sch-deploy-dev/db_connectors/java/oracle/ojdbc6.jar
+        # For later: os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars extra/ojdbc6.jar'  # or s3://data-sch-deploy-dev/db_connectors/java/redshift/ojdbc6.jar
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
 

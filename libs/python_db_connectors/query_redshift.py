@@ -16,7 +16,6 @@ def connect(db):
     }
 
     connection_str = "redshift+psycopg2://{user}:{password}@{host}:{port}/{service}".format(**params)
-    # print("connection_str", connection_str)
     conn = create_engine(connection_str, encoding='UTF8')
     return conn
 
