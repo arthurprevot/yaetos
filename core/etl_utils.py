@@ -47,9 +47,12 @@ import gc
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
+AWS_CONFIG_FILE = 'conf/aws_config.cfg'
+CONNECTION_FILE = 'conf/connections.cfg'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
 LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') #+ '/'
 AWS_SECRET_ID = '/yaetos/connections'
+JOB_FOLDER = 'jobs/'
 
 
 class ETL_Base(object):
@@ -376,9 +379,10 @@ class Job_Yml_Parser():
         logger.info("job_name: '{}', and corresponding job_file: '{}'".format(job_name, self.job_file))
 
     def set_job_yml(self):
-        meta_file = self.args.get('job_param_file')
-        if meta_file is None:
-            meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
+        # meta_file = self.args.get('job_param_file')
+        # if meta_file is None:
+        #     meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
+        meta_file = CLUSTER_APP_FOLDER+self.args['job_param_file'] if self.args['storage']=='s3' else self.args['job_param_file']  # TODO: handle case with JOBS_METADATA_LOCAL_FILE instead of JOBS_METADATA_FILE
 
         yml = self.load_meta(meta_file)
         logger.info('Loaded job param file: ' + meta_file)
@@ -660,7 +664,10 @@ class Commandliner():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
         parser.add_argument("-m", "--mode", default='local', choices=set(['local', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
-        parser.add_argument("-j", "--job_param_file", default='repo', help="Identify file to use. If 'repo', uses files provided with repo (conf/job_metadata.yml and conf/job_metadata_local.yml). If None, then no file set and all params to be passed as args.")
+        parser.add_argument("-j", "--job_param_file", default=JOBS_METADATA_FILE, help="Identify file to use. If None, then no file set and all params to be passed as args.")  # incorrect desc
+        parser.add_argument("--aws_config_file", default=AWS_CONFIG_FILE, help="Identify file to use. Default to repo one.")
+        parser.add_argument("--connection_file", default=CONNECTION_FILE, help="Identify file to use. Default to repo one.")
+        parser.add_argument("--jobs_folder", default=JOB_FOLDER, help="Identify the folder where job code is. Necessary if job code is outside the repo, i.e. if this is used as an external library. By default, uses the repo 'jobs/' folder.")
         parser.add_argument("-s", "--storage", default='local', choices=set(['local', 's3']), help="Choose 'local' (default) or 's3'.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
         parser.add_argument("-c", "--rerun_criteria", default='both', choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
@@ -751,7 +758,8 @@ class Flow():
         return Job
 
     def create_connections_jobs(self, storage):
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base
+        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base, TODO: use self.args.['job_param_file'], check below
+        # meta_file = CLUSTER_APP_FOLDER+self.args.['job_param_file'] if self.args['storage']=='s3' else self.args.['job_param_file']
         yml = Job_Yml_Parser.load_meta(meta_file)
 
         connections = []
