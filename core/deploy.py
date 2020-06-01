@@ -187,11 +187,30 @@ class DeployPySparkScriptOnAws(object):
         # ./jobs files and folders
         # t_file.add(self.app_args['jobs_folder'], arcname=eu.JOB_FOLDER, filter=lambda obj: obj if obj.name.endswith('.py') or obj.name.endswith('.sql') else None) #('jobs/')
         # t_file.add(self.app_args['jobs_folder'], arcname=eu.JOB_FOLDER, filter=lambda obj: obj if obj.name.endswith('.py') or obj.name.endswith('.sql') else None) #('jobs/')
-        files = os.listdir(self.app_args['jobs_folder'])  # TODO: make it recursive
-        for f in files:
-            t_file.add(self.app_args['jobs_folder'] + f, arcname=eu.JOB_FOLDER + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+        # files = os.listdir(self.app_args['jobs_folder'])  # TODO: make it recursive
+        from os import walk
+        print('----', self.app_args['jobs_folder'])
+        files = []
+        for (dirpath, dirnames, filenames) in walk(self.app_args['jobs_folder']):
+            # files.extend(filenames)
+            for file in filenames:
+                if file.endswith(".py") or file.endswith(".sql"):
+                    # dirroot = dirpath[len(self.app_args['jobs_folder']):]
+                    path = os.path.join(dirpath, file)
+                    path_tar = os.path.join(eu.JOB_FOLDER, dirpath[len(self.app_args['jobs_folder']):], file)
+                    print('----walk',path, path_tar)
+                    files.append((path,path_tar))
+            # break
+        # if self.app_args['jobs_folder'] == eu.JOB_FOLDER:
+        #     for f in files:
+        #         # t_file.add(f, arcname=eu.JOB_FOLDER + f)
+        #         t_file.add(f)
+        # else:
+        #     for f in files:
+        #         t_file.add(f, arcname=eu.JOB_FOLDER + f)
+        for f, f_arc in files:
+            t_file.add(f, arcname=f_arc)
 
-        # import ipdb; ipdb.set_trace()
 
         # List all files in tar.gz
         for f in t_file.getnames():
@@ -345,7 +364,7 @@ class DeployPySparkScriptOnAws(object):
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-            eu.CLUSTER_APP_FOLDER+app_file,
+            eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
             "--mode=local",
             "--storage=s3",
             "--dependencies" if app_args.get('dependencies') else "",
