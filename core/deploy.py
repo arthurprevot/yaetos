@@ -185,33 +185,16 @@ class DeployPySparkScriptOnAws(object):
             t_file.add(base+'libs/python_db_connectors/' + f, arcname='libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./jobs files and folders
-        # t_file.add(self.app_args['jobs_folder'], arcname=eu.JOB_FOLDER, filter=lambda obj: obj if obj.name.endswith('.py') or obj.name.endswith('.sql') else None) #('jobs/')
-        # t_file.add(self.app_args['jobs_folder'], arcname=eu.JOB_FOLDER, filter=lambda obj: obj if obj.name.endswith('.py') or obj.name.endswith('.sql') else None) #('jobs/')
-        # files = os.listdir(self.app_args['jobs_folder'])  # TODO: make it recursive
-        # from os import walk
-        # print('----', self.app_args['jobs_folder'])
         files = []
         for (dirpath, dirnames, filenames) in os.walk(self.app_args['jobs_folder']):
-            # files.extend(filenames)
             for file in filenames:
                 if file.endswith(".py") or file.endswith(".sql"):
-                    # dirroot = dirpath[len(self.app_args['jobs_folder']):]
                     path = os.path.join(dirpath, file)
                     dir_tar = dirpath[len(self.app_args['jobs_folder']):]
                     path_tar = os.path.join(eu.JOB_FOLDER, dir_tar, file)
-                    # print('----walk',path, path_tar)
                     files.append((path,path_tar))
-            # break
-        # if self.app_args['jobs_folder'] == eu.JOB_FOLDER:
-        #     for f in files:
-        #         # t_file.add(f, arcname=eu.JOB_FOLDER + f)
-        #         t_file.add(f)
-        # else:
-        #     for f in files:
-        #         t_file.add(f, arcname=eu.JOB_FOLDER + f)
         for f, f_arc in files:
             t_file.add(f, arcname=f_arc)
-
 
         # List all files in tar.gz
         for f in t_file.getnames():
