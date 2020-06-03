@@ -13,6 +13,9 @@ sudo pip install scikit-learn==0.20.0  # TODO: remove when using req file
 sudo pip install statsmodels==0.9.0  # TODO: remove when using req file
 sudo pip install kafka-python==1.4.7
 sudo pip install jsonschema==3.0.2
+sudo pip install soql==1.0.2
+sudo pip install simple-salesforce==1.0.0
+
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
 echo "Copy S3 to EMR master"
