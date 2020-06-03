@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import types as db_types
 from pyspark.sql import types as spk_types
 from datetime import datetime
-import logger as log
+import core.logger as log
 
 
 def cast_rec(rec, output_types):
@@ -35,15 +35,18 @@ def cast_value(value, required_type, field_name):
                 return None
             else:
                 return required_type.python_type(value)
+        # elif isinstance(required_type, type(db_types.VARCHAR())):
+        #     if isinstance(value, unicode):
+        #         return value
+        #     elif isinstance(value, str) :
+        #         # return unicode(value, encoding='utf-8')
+        #         return str(value)
+        #     elif pd.isnull(value):
+        #         return None
+        #     else:
+        #         required_type.python_type(value)
         elif isinstance(required_type, type(db_types.VARCHAR())):
-            if isinstance(value, unicode):
-                return value
-            elif isinstance(value, str) :
-                return unicode(value, encoding='utf-8')
-            elif pd.isnull(value):
-                return None
-            else:
-                required_type.python_type(value)
+            return None if pd.isnull(value) else str(value)
         elif isinstance(required_type, type(db_types.INT())):
             return None if pd.isnull(value) else int(float(value))
         elif isinstance(required_type, type(db_types.BIGINT())):
@@ -52,7 +55,7 @@ def cast_value(value, required_type, field_name):
             return None if pd.isnull(value) else float(value)
         else:
             return required_type.python_type(value)
-    except Exception, e:
+    except Exception as e:
         logger.error(u"cast_value issue: {}, {}, {}, {}, {}.".format(field_name, value, type(value), required_type, str(e)))
         return None
 
@@ -83,7 +86,7 @@ def get_spark_type(field, required_type):
 
 def get_spark_types(output_types):
     spark_types = []
-    for field, required_type in output_types.iteritems():
+    for field, required_type in output_types.items():
         spark_type = get_spark_type(field, required_type)
         spark_types.append(spark_type)
 
