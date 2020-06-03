@@ -35,16 +35,6 @@ def cast_value(value, required_type, field_name):
                 return None
             else:
                 return required_type.python_type(value)
-        # elif isinstance(required_type, type(db_types.VARCHAR())):
-        #     if isinstance(value, unicode):
-        #         return value
-        #     elif isinstance(value, str) :
-        #         # return unicode(value, encoding='utf-8')
-        #         return str(value)
-        #     elif pd.isnull(value):
-        #         return None
-        #     else:
-        #         required_type.python_type(value)
         elif isinstance(required_type, type(db_types.VARCHAR())):
             return None if pd.isnull(value) else str(value)
         elif isinstance(required_type, type(db_types.INT())):
