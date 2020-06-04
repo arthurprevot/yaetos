@@ -38,4 +38,6 @@ zip -r scripts.zip .
 # export PYSPARK_AWS_ETL_HOME=`pwd` # TODO: enable later to be avoid hardcoded path in etl_utils.py
 # . setup_oracle.sh  # uncomment if needed.
 
+python --version # ->2.7.18 on emr-5.26.0, 2.7.16 on emr-6.0.0
+python3 --version # ->3.6.10 on emr-5.26.0, 3.7.4 on emr-6.0.0
 echo "Done with setup_master.sh"
