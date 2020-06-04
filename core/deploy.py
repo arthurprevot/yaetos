@@ -240,7 +240,8 @@ class DeployPySparkScriptOnAws(object):
         :param c: EMR client
         :return:
         """
-        emr_version = "emr-5.26.0" # emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
+        #emr_version = "emr-5.26.0" # emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
+        emr_version = "emr-6.0.0" # emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
         response = c.run_job_flow(
             Name=self.job_name,
             LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),

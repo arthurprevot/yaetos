@@ -34,7 +34,7 @@ import random
 import pandas as pd
 import os
 import sys
-if sys.version_info[0] == 3:  # TODO: clean later. For now, still need back compatibility with python 2.7.
+if sys.version_info[0] == 3:  # TODO: clean later. For now, still need back compatibility with python 2.7 when running from EMR.
     from configparser import ConfigParser
 else:
     from ConfigParser import ConfigParser

@@ -8,14 +8,13 @@ s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
 
 # Update awscli here as required by "aws s3 cp ..."
 # TODO: pip install -r requirements.txt, cleaner but may make EMR longer to boot.
-sudo pip install awscli==1.16.67 # depends on botocore from 1.12.57
-sudo pip install scikit-learn==0.20.0  # TODO: remove when using req file
-sudo pip install statsmodels==0.9.0  # TODO: remove when using req file
-sudo pip install kafka-python==1.4.7
-sudo pip install jsonschema==3.0.2
-sudo pip install soql==1.0.2
-sudo pip install simple-salesforce==1.0.0
-
+sudo pip3 install awscli==1.16.67 # depends on botocore from 1.12.57
+sudo pip3 install scikit-learn==0.20.0  # TODO: remove when using req file
+sudo pip3 install statsmodels==0.9.0  # TODO: remove when using req file
+sudo pip3 install kafka-python==1.4.7
+sudo pip3 install jsonschema==3.0.2
+sudo pip3 install soql==1.0.2
+sudo pip3 install simple-salesforce==1.0.0
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
 echo "Copy S3 to EMR master"
