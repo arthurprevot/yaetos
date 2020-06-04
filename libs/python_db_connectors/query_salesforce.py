@@ -4,15 +4,20 @@ from configparser import ConfigParser
 import os
 
 
-def connect(creds_section):
+def connect(creds_section, creds_or_file='conf/connections.cfg'):
     config = ConfigParser()
-    config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'credentials.cfg'))
+    if isinstance(creds_or_file, str):
+        # config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), creds_or_file))
+        config.read(creds_or_file)
+    else:
+        config = creds_or_file
+
     user = config.get(creds_section, 'user')
     pwd = config.get(creds_section, 'password')
     return Salesforce(username=user, password=pwd, security_token='')
 
-def query(query_str, creds_section):
-    sf = connect(creds_section)
+def query(query_str, **connect_args):
+    sf = connect(**connect_args)
     resp = sf.query_all(query_str)
     rows = resp['records']
     for row in rows:
