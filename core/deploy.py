@@ -240,8 +240,7 @@ class DeployPySparkScriptOnAws(object):
         :param c: EMR client
         :return:
         """
-        #emr_version = "emr-5.26.0" # emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
-        emr_version = "emr-6.0.0" # emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
+        emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
         response = c.run_job_flow(
             Name=self.job_name,
             LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),
@@ -264,6 +263,22 @@ class DeployPySparkScriptOnAws(object):
                 # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
             },
             Applications=[{'Name': 'Hadoop'}, {'Name': 'Spark'}],
+            Configurations=[
+            #     {
+            #         'Classification': 'spark-env',
+            #         'Configurations': {'... recursive ...'},
+            #         'Properties': {
+            #             'string': 'string'
+            #         }
+            #     }
+                { # Section to force python3 since emr-5.x uses python2 by default.
+                "Classification": "spark-env",
+                "Configurations": [{
+                    "Classification": "export",
+                    "Properties": {"PYSPARK_PYTHON": "/usr/bin/python3"}
+                    }]
+                },
+            ],
             JobFlowRole='EMR_EC2_DefaultRole',
             ServiceRole='EMR_DefaultRole',
             VisibleToAllUsers=True,
@@ -370,8 +385,8 @@ class DeployPySparkScriptOnAws(object):
 
         pipe_id = self.create_date_pipeline(client)
 
-        definition_file = 'core/definition.json'  # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
-        definition = json.load(open(definition_file, 'r'))
+        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet. TODO: check when it does
 
         pipelineObjects = trans.definition_to_api_objects(definition)
         parameterObjects = trans.definition_to_api_parameters(definition)
