@@ -21,14 +21,36 @@
       "masterInstanceType": "#{myMasterInstanceType}",
       "releaseLabel": "#{myEMRReleaseLabel}",
       "terminateAfter": "50 Minutes",
-      "applications": "spark"
+      "applications": "spark",
+      "configuration": {"ref": "spark-env" }
+    },
+    {
+      "name": "spark-env",
+      "id": "spark-env",
+      "type": "EmrConfiguration",
+      "classification": "spark-env",
+      "configuration": {"ref": "export" }
+    },
+    {
+      "name": "export",
+      "id": "export",
+      "type": "EmrConfiguration",
+      "classification": "export",
+      "property": {"ref": "pyspark_python" }
+    },
+    {
+      "name": "pyspark_python",
+      "id": "pyspark_python",
+      "type": "Property",
+      "key": "PYSPARK_PYTHON",
+      "value": "/usr/bin/python3"
     },
     {
       "name": "DefaultYaetos",
       "id": "Default",
       "failureAndRerunMode": "CASCADE",
-      "resourceRole": "YaetosDataPipelineResourceRole",
-      "role": "YaetosDataPipelineRole",
+      "resourceRole": "DataPipelineDefaultResourceRole",
+      "role": "DataPipelineDefaultRole",
       "pipelineLogUri": "#{myPipelineLogUri}",
       "scheduleType": "#{myScheduleType}",
       "schedule": {"ref": "DefaultSchedule"}
@@ -96,7 +118,7 @@
     {
       "id": "myCoreInstanceType",
       "type": "String",
-      "default": "m5.4xlarge",
+      "default": "m5.xlarge",
       "helpText": "Core instances run Hadoop tasks and store data using the Hadoop Distributed File System (HDFS).",
       "description": "Core node instance type"
     },
@@ -137,16 +159,16 @@
     {
       "id": "myMasterInstanceType",
       "type": "String",
-      "default": "m3.xlarge",
+      "default": "m5.xlarge",
       "helpText": "The Master instance assigns Hadoop tasks to core and task nodes, and monitors their status.",
       "description": "Master node instance type"
     }
   ],
   "values": {
-    "myEMRReleaseLabel": "emr-5.8.0",
-    "myMasterInstanceType": "m3.xlarge",
+    "myEMRReleaseLabel": "emr-5.26.0",
+    "myMasterInstanceType": "m5.xlarge",
     "myBootstrapAction": [
-      "s3://data-bi-dwh-dev/yaetos/logs/ex1_frameworked_job.arthur.prevot.20190122.121327/package/setup_nodes.sh"
+      "s3://some_bucket/some_script.sh"
     ],
     "myEmrStep": [
       "some_setup_command",
@@ -154,7 +176,7 @@
     ],
     "mySubnet":"some_value",
     "myCoreInstanceCount": "1",
-    "myCoreInstanceType": "m3.xlarge",
+    "myCoreInstanceType": "m5.xlarge",
     "myPipelineLogUri": "some_bucket",
     "myEC2KeyPair": "some_key_pair",
     "myScheduleType": "ONDEMAND",

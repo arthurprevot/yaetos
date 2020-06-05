@@ -264,13 +264,6 @@ class DeployPySparkScriptOnAws(object):
             },
             Applications=[{'Name': 'Hadoop'}, {'Name': 'Spark'}],
             Configurations=[
-            #     {
-            #         'Classification': 'spark-env',
-            #         'Configurations': {'... recursive ...'},
-            #         'Properties': {
-            #             'string': 'string'
-            #         }
-            #     }
                 { # Section to force python3 since emr-5.x uses python2 by default.
                 "Classification": "spark-env",
                 "Configurations": [{
@@ -385,8 +378,8 @@ class DeployPySparkScriptOnAws(object):
 
         pipe_id = self.create_date_pipeline(client)
 
-        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
-        definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet. TODO: check when it does
+        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
 
         pipelineObjects = trans.definition_to_api_objects(definition)
         parameterObjects = trans.definition_to_api_parameters(definition)
