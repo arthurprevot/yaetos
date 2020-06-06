@@ -369,9 +369,6 @@ class Job_Yml_Parser():
         else:
             # To deal with case when job is defined outside of this repo, i.e. isn't located in 'jobs/' folder.
             self.job_name = job_file
-        # else:
-        #     # self.job_name = job_file
-        #     raise Exception('job_file has unexpection format. Should contain "jobs/". It is: {}.'.format(job_file))
         logger.info("job_name: '{}', from job_file: '{}'".format(self.job_name, job_file))
 
     def set_job_file_from_name(self, job_name):

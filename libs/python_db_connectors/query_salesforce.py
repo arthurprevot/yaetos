@@ -7,7 +7,6 @@ import os
 def connect(creds_section, creds_or_file='conf/connections.cfg'):
     config = ConfigParser()
     if isinstance(creds_or_file, str):
-        # config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), creds_or_file))
         config.read(creds_or_file)
     else:
         config = creds_or_file

@@ -35,7 +35,7 @@ class DeployPySparkScriptOnAws(object):
     def __init__(self, yml, aws_setup='dev', **app_args):
 
         config = ConfigParser()
-        config.read(app_args['aws_config_file'])  #('conf/aws_config.cfg')
+        config.read(app_args['aws_config_file'])
 
         self.app_file = yml.py_job  # remove all refs to app_file to be consistent.
         self.yml = yml
@@ -163,7 +163,7 @@ class DeployPySparkScriptOnAws(object):
         # Add files
         t_file.add(base+'__init__.py', arcname='__init__.py')
         t_file.add(base+'conf/__init__.py', arcname='conf/__init__.py')
-        t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)  # (eu.JOBS_METADATA_FILE)
+        t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
 
         # ./core files
         files = os.listdir(base+'core/')
@@ -171,7 +171,7 @@ class DeployPySparkScriptOnAws(object):
             t_file.add(base+'core/' + f, arcname='core/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./libs files
-        # TODO: get better way to walk down tree
+        # TODO: get better way to walk down tree (reuse walk from below)
         files = os.listdir(base+'libs/')
         for f in files:
             t_file.add(base+'libs/' + f, arcname='libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
@@ -185,6 +185,7 @@ class DeployPySparkScriptOnAws(object):
             t_file.add(base+'libs/python_db_connectors/' + f, arcname='libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./jobs files and folders
+        # TODO: extract code below in external function.
         files = []
         for (dirpath, dirnames, filenames) in os.walk(self.app_args['jobs_folder']):
             for file in filenames:
@@ -378,7 +379,7 @@ class DeployPySparkScriptOnAws(object):
 
         pipe_id = self.create_date_pipeline(client)
 
-        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
 
         pipelineObjects = trans.definition_to_api_objects(definition)
