@@ -376,10 +376,9 @@ class Job_Yml_Parser():
         logger.info("job_name: '{}', and corresponding job_file: '{}'".format(job_name, self.job_file))
 
     def set_job_yml(self):
-        # meta_file = self.args.get('job_param_file')
-        # if meta_file is None:
-        #     meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
-        meta_file = CLUSTER_APP_FOLDER+self.args['job_param_file'] if self.args['storage']=='s3' else self.args['job_param_file']  # TODO: handle case with JOBS_METADATA_LOCAL_FILE instead of JOBS_METADATA_FILE
+        meta_file = self.args.get('job_param_file')
+        if meta_file is None:
+            meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
 
         yml = self.load_meta(meta_file)
         logger.info('Loaded job param file: ' + meta_file)
@@ -661,7 +660,7 @@ class Commandliner():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
         parser.add_argument("-m", "--mode", default='local', choices=set(['local', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
-        parser.add_argument("-j", "--job_param_file", default=JOBS_METADATA_FILE, help="Identify file to use. If None, then no file set and all params to be passed as args.")  # incorrect desc
+        parser.add_argument("-j", "--job_param_file", default=None, help="Identify file to use. If None, then default file locations are used.")
         parser.add_argument("--aws_config_file", default=AWS_CONFIG_FILE, help="Identify file to use. Default to repo one.")
         parser.add_argument("--connection_file", default=CONNECTION_FILE, help="Identify file to use. Default to repo one.")
         parser.add_argument("--jobs_folder", default=JOB_FOLDER, help="Identify the folder where job code is. Necessary if job code is outside the repo, i.e. if this is used as an external library. By default, uses the repo 'jobs/' folder.")
