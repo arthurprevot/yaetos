@@ -151,6 +151,8 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
     if strip :
         df1 = df1[pks1+compare1]
         df2 = df2[pks2+compare2]
+
+    # Join datasets
     df_joined = pd.merge(left=df1, right=df2, how='outer', left_on=pks1, right_on=pks2, indicator = True, suffixes=('_1', '_2'))
     print('Length df_joined', len(df_joined))
     df_joined['_no_deltas'] = True # init
@@ -167,6 +169,7 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
         else:
             return np.abs(np.divide((row[item1]-row[item2]), float(row[item1])))
 
+    # Check deltas
     threshold = 0.01
     np.seterr(divide='ignore')  # to handle the division by 0 in divide().
     for ii in range(len(compare1)):
@@ -178,6 +181,7 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
     np.seterr(divide='raise')
     if filter_deltas:
         df_joined = df_joined[df_joined.apply(lambda row : row['_no_deltas']==False, axis=1)].reset_index()
+    df_joined.sort_values(by=['_merge']+pks1, inplace=True)
     return df_joined
 
 

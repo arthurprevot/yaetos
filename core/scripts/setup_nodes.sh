@@ -2,7 +2,8 @@
 # Script to configure all nodes on EMR cluster. (Setup as part of a boostrap operation in AWS)
 
 # TODO: reuse "requirement.txt" libs but just the part that need to run on the cluster side
-sudo pip install boto3==1.9.57
-sudo pip install networkx==1.11
-sudo pip install pandas==0.20.3
-sudo pip install sqlalchemy==1.1.13
+# Installs below are specific to python version, which is specific to EMR version. TODO: make it independant. Will be fixed when using to emr-6.x since python3 will be default and it will support pip3.
+sudo pip-3.6 install boto3==1.9.57
+sudo pip-3.6 install networkx==1.11
+sudo pip-3.6 install pandas==1.0.4
+sudo pip-3.6 install sqlalchemy==1.1.13

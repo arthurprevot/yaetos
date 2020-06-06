@@ -29,13 +29,13 @@ class DeployPySparkScriptOnAws(object):
     """
     Programmatically deploy a local PySpark script on an AWS cluster
     """
-    scripts = 'core/scripts/'
-    tmp = 'tmp/files_to_ship/'
+    SCRIPTS = 'core/scripts/' # TODO: move to etl_utils.py
+    TMP = 'tmp/files_to_ship/'
 
     def __init__(self, yml, aws_setup='dev', **app_args):
 
         config = ConfigParser()
-        config.read('conf/aws_config.cfg')
+        config.read(app_args['aws_config_file'])
 
         self.app_file = yml.py_job  # remove all refs to app_file to be consistent.
         self.yml = yml
@@ -71,7 +71,7 @@ class DeployPySparkScriptOnAws(object):
     def run_direct(self):
         """Useful to run job on cluster without bothering with aws data pipeline. Also useful to add steps to existing cluster."""
         self.s3_ops(self.session)
-        self.push_secrets(creds_or_file='conf/connections.cfg')  # TODO: fix privileges to get creds in dev env
+        self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
         # EMR ops
         c = self.session.client('emr')
@@ -156,35 +156,46 @@ class DeployPySparkScriptOnAws(object):
         """
         :return:
         """
+        base = eu.LOCAL_APP_FOLDER
         # Create tar.gz file
-        t_file = tarfile.open(self.tmp + "scripts.tar.gz", 'w:gz')
+        t_file = tarfile.open(self.TMP + "scripts.tar.gz", 'w:gz')
 
         # Add files
-        t_file.add('__init__.py')
-        t_file.add('conf/__init__.py')
-        t_file.add(eu.JOBS_METADATA_FILE)
+        t_file.add(base+'__init__.py', arcname='__init__.py')
+        t_file.add(base+'conf/__init__.py', arcname='conf/__init__.py')
+        t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
 
         # ./core files
-        files = os.listdir('core/')
+        files = os.listdir(base+'core/')
         for f in files:
-            t_file.add('core/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(base+'core/' + f, arcname='core/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./libs files
-        # TODO: get better way to walk down tree
-        files = os.listdir('libs/')
+        # TODO: get better way to walk down tree (reuse walk from below)
+        files = os.listdir(base+'libs/')
         for f in files:
-            t_file.add('libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(base+'libs/' + f, arcname='libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir('libs/analysis_toolkit/')
+        files = os.listdir(base+'libs/analysis_toolkit/')
         for f in files:
-            t_file.add('libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(base+'libs/analysis_toolkit/' + f, arcname='libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir('libs/python_db_connectors/')
+        files = os.listdir(base+'libs/python_db_connectors/')
         for f in files:
-            t_file.add('libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(base+'libs/python_db_connectors/' + f, arcname='libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./jobs files and folders
-        t_file.add('jobs/')
+        # TODO: extract code below in external function.
+        files = []
+        for (dirpath, dirnames, filenames) in os.walk(self.app_args['jobs_folder']):
+            for file in filenames:
+                if file.endswith(".py") or file.endswith(".sql"):
+                    path = os.path.join(dirpath, file)
+                    dir_tar = dirpath[len(self.app_args['jobs_folder']):]
+                    path_tar = os.path.join(eu.JOB_FOLDER, dir_tar, file)
+                    files.append((path,path_tar))
+        for f, f_arc in files:
+            t_file.add(f, arcname=f_arc)
 
         # List all files in tar.gz
         for f in t_file.getnames():
@@ -193,7 +204,7 @@ class DeployPySparkScriptOnAws(object):
 
     def move_bash_to_local_temp(self):
         for item in ['setup_master.sh', 'setup_nodes.sh', 'terminate_idle_cluster.sh']:
-            copyfile(self.scripts+item, self.tmp+item)
+            copyfile(eu.LOCAL_APP_FOLDER+self.SCRIPTS+item, self.TMP+item)
 
     def upload_temp_files(self, s3):
         """
@@ -203,13 +214,13 @@ class DeployPySparkScriptOnAws(object):
         """
         # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1 below.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
-          .put(Body=open(self.tmp+'setup_master.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(self.TMP+'setup_master.sh', 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_nodes.sh')\
-          .put(Body=open(self.tmp+'setup_nodes.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(self.TMP+'setup_nodes.sh', 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/terminate_idle_cluster.sh')\
-          .put(Body=open(self.tmp+'terminate_idle_cluster.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(self.TMP+'terminate_idle_cluster.sh', 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/scripts.tar.gz')\
-          .put(Body=open(self.tmp+'scripts.tar.gz', 'rb'), ContentType='application/x-tar')
+          .put(Body=open(self.TMP+'scripts.tar.gz', 'rb'), ContentType='application/x-tar')
         logger.info("Uploaded job files (scripts.tar.gz, setup_master.sh, setup_nodes.sh, terminate_idle_cluster.sh) to bucket path '{}/{}'".format(self.s3_bucket_logs, self.package_path))
         return True
 
@@ -230,7 +241,7 @@ class DeployPySparkScriptOnAws(object):
         :param c: EMR client
         :return:
         """
-        emr_version = "emr-5.26.0" # emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
+        emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
         response = c.run_job_flow(
             Name=self.job_name,
             LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),
@@ -253,6 +264,15 @@ class DeployPySparkScriptOnAws(object):
                 # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
             },
             Applications=[{'Name': 'Hadoop'}, {'Name': 'Spark'}],
+            Configurations=[
+                { # Section to force python3 since emr-5.x uses python2 by default.
+                "Classification": "spark-env",
+                "Configurations": [{
+                    "Classification": "export",
+                    "Properties": {"PYSPARK_PYTHON": "/usr/bin/python3"}
+                    }]
+                },
+            ],
             JobFlowRole='EMR_EC2_DefaultRole',
             ServiceRole='EMR_DefaultRole',
             VisibleToAllUsers=True,
@@ -338,7 +358,7 @@ class DeployPySparkScriptOnAws(object):
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-            eu.CLUSTER_APP_FOLDER+app_file,
+            eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
             "--mode=local",
             "--storage=s3",
             "--dependencies" if app_args.get('dependencies') else "",
@@ -351,7 +371,7 @@ class DeployPySparkScriptOnAws(object):
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
-        self.push_secrets(creds_or_file='conf/connections.cfg')  # TODO: fix privileges to get creds in dev env
+        self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
         # DataPipeline ops
         import awscli.customizations.datapipeline.translator as trans
@@ -359,8 +379,8 @@ class DeployPySparkScriptOnAws(object):
 
         pipe_id = self.create_date_pipeline(client)
 
-        definition_file = 'core/definition.json'  # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
-        definition = json.load(open(definition_file, 'r'))
+        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
 
         pipelineObjects = trans.definition_to_api_objects(definition)
         parameterObjects = trans.definition_to_api_parameters(definition)
@@ -433,12 +453,13 @@ class DeployPySparkScriptOnAws(object):
         logger.info('parameterValues after changes: '+str(parameterValues))
         return parameterValues
 
-    def push_secrets(self, creds_or_file='conf/connections.cfg'):
+    def push_secrets(self, creds_or_file):
         session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
         client = session.client('secretsmanager')
 
         file = open(creds_or_file, "r")
         content = file.read()
+        file.close()
 
         try:
             response = client.create_secret(
@@ -495,5 +516,5 @@ if __name__ == "__main__":
     yml = bag()
     yml.job_name = job_name
     yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
-    app_args = {'mode':'EMR', 'leave_on': True}
+    app_args = {'mode':'EMR', 'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE}
     DeployPySparkScriptOnAws(yml=yml, aws_setup='dev', **app_args).run()

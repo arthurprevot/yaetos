@@ -7,12 +7,14 @@ s3_bucket="$1"
 s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
 
 # Update awscli here as required by "aws s3 cp ..."
-# TODO: pip install -r requirements.txt, cleaner but may make EMR longer to boot.
-sudo pip install awscli==1.16.67 # depends on botocore from 1.12.57
-sudo pip install scikit-learn==0.20.0  # TODO: remove when using req file
-sudo pip install statsmodels==0.9.0  # TODO: remove when using req file
-sudo pip install kafka-python==1.4.7
-sudo pip install jsonschema==3.0.2
+# TODO: pip install -r requirements.txt # see related note in setup_nodes.sh
+sudo pip-3.6 install awscli==1.16.67 # depends on botocore from 1.12.57
+sudo pip-3.6 install scikit-learn==0.20.0  # TODO: remove when using req file
+sudo pip-3.6 install statsmodels==0.9.0  # TODO: remove when using req file
+sudo pip-3.6 install kafka-python==1.4.7
+sudo pip-3.6 install jsonschema==3.0.2
+sudo pip-3.6 install soql==1.0.2
+sudo pip-3.6 install simple-salesforce==1.0.0
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
 echo "Copy S3 to EMR master"
@@ -36,4 +38,6 @@ zip -r scripts.zip .
 # export PYSPARK_AWS_ETL_HOME=`pwd` # TODO: enable later to be avoid hardcoded path in etl_utils.py
 # . setup_oracle.sh  # uncomment if needed.
 
+python --version # ->2.7.18 on emr-5.26.0, 2.7.16 on emr-6.0.0
+python3 --version # ->3.6.10 on emr-5.26.0, 3.7.4 on emr-6.0.0
 echo "Done with setup_master.sh"
