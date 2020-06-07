@@ -1,4 +1,4 @@
-"""Helper functions for oracle."""
+"""Helper functions for redshift."""
 
 from libs.python_db_connectors.query_redshift import connect
 import core.logger as log
@@ -7,7 +7,7 @@ import numpy as np
 
 def create_table(df, connection_profile, name_tb, schema, types, creds_or_file, is_incremental):
     """
-    Creates table in oracle, full drop or incremental drop.
+    Creates table in redshift, full drop or incremental drop.
     types should be of sqlalchemy type. Ex: types.Date(), types.Integer()
     """
     if_exist = 'replace' if not is_incremental else 'append'
