@@ -3,9 +3,12 @@ from configparser import ConfigParser
 import os
 from sqlalchemy import create_engine
 
-def connect(db):
+def connect(db, creds_or_file='conf/connections.cfg'):
     config = ConfigParser()
-    config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'credentials.cfg'))
+    if isinstance(creds_or_file, str):
+        config.read(creds_or_file)
+    else:
+        config = creds_or_file
 
     params = {
         'user':     config.get(db, 'user'),
@@ -16,7 +19,6 @@ def connect(db):
     }
 
     connection_str = "redshift+psycopg2://{user}:{password}@{host}:{port}/{service}".format(**params)
-    # print("connection_str", connection_str)
     conn = create_engine(connection_str, encoding='UTF8')
     return conn
 
