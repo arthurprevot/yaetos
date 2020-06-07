@@ -312,24 +312,7 @@ class ETL_Base(object):
         connection_profile = self.redshift_copy_params['creds']
         schema, name_tb= self.redshift_copy_params['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'])
-        user = creds.get(connection_profile, 'user')
-        assert schema == user
-        create_table(df, connection_profile, name_tb, types, creds, self.is_incremental)
-        del(df)
-
-    def copy_to_redshift(self, output, types):
-        # dependencies here to avoid loading heavy libraries when not needed (optional feature).
-        # TBF
-        from core.redshift import create_table
-        from core.db_utils import cast_col
-        df = output.toPandas()
-        df = cast_col(df, types)
-        connection_profile = self.redshift_copy_params['creds']
-        schema, name_tb= self.redshift_copy_params['table'].split('.')
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'])
-        user = creds.get(connection_profile, 'user')
-        assert schema == user
-        create_table(df, connection_profile, name_tb, types, creds, self.is_incremental)
+        create_table(df, connection_profile, name_tb, schema, types, creds, self.is_incremental)
         del(df)
 
     def push_to_kafka(self, output, types):
