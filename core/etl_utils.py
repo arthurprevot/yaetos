@@ -138,7 +138,6 @@ class ETL_Base(object):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
-    # def set_job_params(self, loaded_inputs={}, job_file=None):
     def set_job_params(self, loaded_inputs={}):
         # TODO: redo without without the mapping.
         # self.job_file = self.set_job_file(job_file)  # file where code is, could be .py or .sql. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
@@ -581,8 +580,8 @@ class FS_Ops_Dispatcher():
 
 
 class Cred_Ops_Dispatcher():
-    def retrieve_secrets(self, storage):
-        creds = self.retrieve_secrets_cluster() if storage=='s3' else self.retrieve_secrets_local()
+    def retrieve_secrets(self, storage, creds='conf/connections.cfg'):
+        creds = self.retrieve_secrets_cluster() if storage=='s3' else self.retrieve_secrets_local(creds)
         return creds
 
     @staticmethod
@@ -600,9 +599,9 @@ class Cred_Ops_Dispatcher():
         return config
 
     @staticmethod
-    def retrieve_secrets_local(creds_or_file='conf/connections.cfg'):
+    def retrieve_secrets_local(creds):
         config = ConfigParser()
-        config.read(creds_or_file)
+        config.read(creds)
         return config
 
 
