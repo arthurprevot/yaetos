@@ -13,8 +13,12 @@ sudo pip-3.6 install scikit-learn==0.20.0  # TODO: remove when using req file
 sudo pip-3.6 install statsmodels==0.9.0  # TODO: remove when using req file
 sudo pip-3.6 install kafka-python==1.4.7
 sudo pip-3.6 install jsonschema==3.0.2
+# DB and API libs
 sudo pip-3.6 install soql==1.0.2
 sudo pip-3.6 install simple-salesforce==1.0.0
+sudo pip-3.6 install pymysql==0.9.3 # 0.9.3
+sudo pip-3.6 install psycopg2-binary==2.8.5  # 2.8.5, necesary for sqlalchemy-redshift, psycopg2==2.8.5 fails installing.
+sudo pip-3.6 install sqlalchemy-redshift==0.7.7
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
 echo "Copy S3 to EMR master"
