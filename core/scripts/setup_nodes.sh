@@ -6,4 +6,4 @@
 sudo pip-3.6 install boto3==1.9.57
 sudo pip-3.6 install networkx==1.11
 sudo pip-3.6 install pandas==1.0.4
-sudo pip-3.6 install sqlalchemy==1.3.15  # don't use 1.3.17 since not compatible with sqlalchemy-redshift. See if it is still a pb at https://github.com/sqlalchemy-redshift/sqlalchemy-redshift/issues/195
+sudo pip-3.6 install sqlalchemy==1.3.15  # don't use 1.3.17 since not compatible with sqlalchemy-redshift (0.7.7). See if it is still a pb at https://github.com/sqlalchemy-redshift/sqlalchemy-redshift/issues/195

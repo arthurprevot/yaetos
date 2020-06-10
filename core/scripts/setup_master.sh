@@ -14,10 +14,10 @@ sudo pip-3.6 install statsmodels==0.9.0  # TODO: remove when using req file
 sudo pip-3.6 install kafka-python==1.4.7
 sudo pip-3.6 install jsonschema==3.0.2
 # DB and API libs
-sudo pip-3.6 install soql==1.0.2
+sudo pip-3.6 install soql==1.0.2  # Necessary for simple-salesforce
 sudo pip-3.6 install simple-salesforce==1.0.0
-sudo pip-3.6 install pymysql==0.9.3 # 0.9.3
-sudo pip-3.6 install psycopg2-binary==2.8.5  # 2.8.5, necesary for sqlalchemy-redshift, psycopg2==2.8.5 fails installing.
+sudo pip-3.6 install pymysql==0.9.3
+sudo pip-3.6 install psycopg2-binary==2.8.5  # necesary for sqlalchemy-redshift, psycopg2==2.8.5 fails installing.
 sudo pip-3.6 install sqlalchemy-redshift==0.7.7
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
@@ -33,8 +33,8 @@ cd /home/hadoop/
 mkdir -p app
 tar zxvf "/home/hadoop/scripts.tar.gz" -C /home/hadoop/app/
 
-# python can add a zip in path, so create one.
-# TODO: remove dirty shortcut. Get zip file from the start instead of tar first.
+# Creating a zip to be used as package by pyspark
+# TODO: could get zip file from the start instead of tar, untar and zip.
 echo "Zipping job files"
 cd /home/hadoop/app
 zip -r scripts.zip .
