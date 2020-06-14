@@ -4,7 +4,7 @@ Some code to be run in worker nodes, so can't rely on libraries only on master (
 import pandas as pd
 from sqlalchemy import types as db_types
 from pyspark.sql import types as spk_types
-from datetime import datetime
+from datetime import datetime, date
 import core.logger as log
 
 
@@ -18,16 +18,18 @@ def cast_value(value, required_type, field_name):
     # TODO: make it less ugly.. or avoid using pandas to not require this.
     try:
         if isinstance(required_type, type(db_types.DATE())):
-            if isinstance(value, basestring):
+            if isinstance(value, str):
                 return datetime.strptime(value, "%Y-%m-%d")  # assuming iso format
-            elif isinstance(value, pd.Timestamp):
+            elif isinstance(value, pd.Timestamp):  # == datetime
                 return value.to_pydatetime().date()
+            elif isinstance(value, date):
+                return value
             elif pd.isnull(value):
                 return None
             else:
                 return required_type.python_type(value)
         if isinstance(required_type, type(db_types.DATETIME())):
-            if isinstance(value, basestring):
+            if isinstance(value, str):
                 return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")  # assuming iso format
             elif isinstance(value, pd.Timestamp):
                 return value.to_pydatetime()
@@ -93,6 +95,7 @@ def pdf_to_sdf(df, output_types, sc, sc_sql):  # TODO: check suspicion that this
     recs = df.to_dict(orient='records')
     partitions = len(recs)/1000
     partitions = partitions if partitions >= 1 else None
+    # Push to spark. For easier testing of downstream casting (i.e. outside of spark): tmp = [cast_rec(row, output_types) for row in recs]
     rdd = sc.parallelize(recs, numSlices=partitions) \
             .map(lambda row: cast_rec(row, output_types))
 
