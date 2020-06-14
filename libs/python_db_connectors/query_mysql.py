@@ -4,9 +4,12 @@ import os
 from sqlalchemy import create_engine
 # requires pymysql installed.
 
-def connect(db):
+def connect(db, creds_or_file='conf/connections.cfg'):
     config = ConfigParser()
-    config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'credentials.cfg'))
+    if isinstance(creds_or_file, str):
+        config.read(creds_or_file)
+    else:
+        config = creds_or_file
 
     params = {
         'user':     config.get(db, 'user'),
