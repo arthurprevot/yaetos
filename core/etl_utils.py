@@ -106,7 +106,7 @@ class ETL_Base(object):
         self.save(output, self.start_dt)
         end_time = time()
         elapsed = end_time - start_time
-        self.save_metadata(elapsed)
+        # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
         if self.redshift_copy_params:
             self.copy_to_redshift(output, self.OUTPUT_TYPES)
@@ -602,6 +602,7 @@ class Cred_Ops_Dispatcher():
     @staticmethod
     def retrieve_secrets_local(creds):
         config = ConfigParser()
+        assert os.path.isfile(creds)
         config.read(creds)
         return config
 

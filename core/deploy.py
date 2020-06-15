@@ -34,8 +34,12 @@ class DeployPySparkScriptOnAws(object):
 
     def __init__(self, yml, deploy_args, app_args):
 
+        logger.info("etl deploy_args: {}".format(deploy_args))
+        logger.info("etl app_args: {}".format(app_args))
         aws_setup = deploy_args['aws_setup']
         config = ConfigParser()
+        # import ipdb; ipdb.set_trace()
+        assert os.path.isfile(deploy_args['aws_config_file'])
         config.read(deploy_args['aws_config_file'])
 
         # import ipdb; ipdb.set_trace()
