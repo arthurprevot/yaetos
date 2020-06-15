@@ -686,10 +686,10 @@ class Commandliner():
         else:
             Flow(sc, sc_sql, args, app_name)
 
-    def launch_deploy_mode(self, yml, aws_setup, **app_args):
+    def launch_deploy_mode(self, yml, deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
-        DeployPySparkScriptOnAws(yml=yml, aws_setup=aws_setup, **app_args).run()
+        DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
 
     def create_contexts(self, app_name):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.

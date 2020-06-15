@@ -32,11 +32,13 @@ class DeployPySparkScriptOnAws(object):
     SCRIPTS = 'core/scripts/' # TODO: move to etl_utils.py
     TMP = 'tmp/files_to_ship/'
 
-    def __init__(self, yml, aws_setup='dev', **app_args):
+    def __init__(self, yml, deploy_args, app_args):
 
+        aws_setup = deploy_args['aws_setup']
         config = ConfigParser()
-        config.read(app_args['aws_config_file'])
+        config.read(deploy_args['aws_config_file'])
 
+        # import ipdb; ipdb.set_trace()
         self.app_file = yml.py_job  # remove all refs to app_file to be consistent.
         self.yml = yml
         self.aws_setup = aws_setup
@@ -49,6 +51,7 @@ class DeployPySparkScriptOnAws(object):
         self.extra_security_gp = config.get(aws_setup, 'extra_security_gp')
         self.emr_core_instances = int(config.get(aws_setup, 'emr_core_instances'))
         self.app_args = app_args
+        self.deploy_args = deploy_args
         self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  #'m5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
@@ -92,7 +95,7 @@ class DeployPySparkScriptOnAws(object):
         self.step_spark_submit(c, self.app_file, self.app_args)
 
         # Clean
-        if new_cluster and not self.app_args.get('leave_on') and self.app_args.get('clean_post_run'):  # TODO: add clean_post_run in input options.
+        if new_cluster and not self.deploy_args.get('leave_on') and self.app_args.get('clean_post_run'):  # TODO: add clean_post_run in input options.
             logger.info("New cluster setup to be deleted after job finishes.")
             self.describe_status_until_terminated(c)
             self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
@@ -259,7 +262,7 @@ class DeployPySparkScriptOnAws(object):
                     'InstanceCount': self.emr_core_instances,
                     }],
                 'Ec2KeyName': self.ec2_key_name,
-                'KeepJobFlowAliveWhenNoSteps': self.app_args.get('leave_on', False),
+                'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
                 'Ec2SubnetId': self.ec2_subnet_id,
                 # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
             },
@@ -516,5 +519,6 @@ if __name__ == "__main__":
     yml = bag()
     yml.job_name = job_name
     yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
-    app_args = {'mode':'EMR', 'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE}
-    DeployPySparkScriptOnAws(yml=yml, aws_setup='dev', **app_args).run()
+    deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
+    app_args = {'mode':'EMR'}
+    DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
