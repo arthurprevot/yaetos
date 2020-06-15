@@ -644,7 +644,12 @@ class Commandliner():
             job_file = job.set_job_file()
             yml = Job_Yml_Parser(self.args)
             yml.set_job_params(job_file=job_file)
-            self.launch_deploy_mode(yml, **self.args)
+            # import ipdb; ipdb.set_trace()
+            deploy_args = {'aws_config_file': self.args.get('aws_config_file'),
+                           'aws_setup': self.args.get('aws_setup'),
+                           'leave_on': self.args.get('leave_on'),
+                           }
+            self.launch_deploy_mode(yml, deploy_args, app_args=self.args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
 
     def set_commandline_args(self, args):
         """Command line arguments take precedence over function ones."""
