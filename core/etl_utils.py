@@ -120,7 +120,8 @@ class ETL_Base(object):
     def etl_no_io(self, sc, sc_sql, loaded_inputs={}):
         """ Function to load inputs (including from live vars) and run transform. No output to disk.
         Having this code isolated is useful for cases with no I/O possible, like testing."""
-        if self.args.get('mode_no_io'):
+        logger.info("etl args: {}".format(self.args))
+        if self.args.get('mode_no_io'):  # TODO: check if condition can be skipped
             self.set_job_params(loaded_inputs)
         self.sc = sc
         self.sc_sql = sc_sql
@@ -660,10 +661,7 @@ class Commandliner():
         cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
         unknown_args = dict([item[2:].split('=') for item in unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
 
-        #load defaults,
-            # overwrite if args passed by yml
-            # overwrite if args passed in job commandliner(),
-            # overwrite if args passed in cmdline.
+        #load defaults, overwrite by yml, overwrite job commandliner(), overwrite by cmdline args if any.
         self.args = defaults
         # import ipdb; ipdb.set_trace()
         self.args.update(args)  # same
@@ -675,18 +673,18 @@ class Commandliner():
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest', None]), help="Choose where to run the job.")
+        parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")
         parser.add_argument("--connection_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("--jobs_folder", help="Identify the folder where job code is. Necessary if job code is outside the repo, i.e. if this is used as an external library. By default, uses the repo 'jobs/' folder.")
-        parser.add_argument("-s", "--storage", choices=set([None, 'local', 's3']), help="Choose 'local' (default) or 's3'.")
-        parser.add_argument("-x", "--dependencies", help="Run the job dependencies and then the job itself")
-        parser.add_argument("-c", "--rerun_criteria", choices=set([None, 'last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
-        parser.add_argument("-b", "--boxed_dependencies", help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).")
+        parser.add_argument("-s", "--storage", choices=set(['local', 's3']), help="Choose 'local' (default) or 's3'.")
+        parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
+        parser.add_argument("-c", "--rerun_criteria", choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
+        parser.add_argument("-b", "--boxed_dependencies", action='store_true', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).")
         # Deploy specific
         parser.add_argument("--aws_config_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
-        parser.add_argument("-o", "--leave_on", help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster in mode 'EMR'.")
+        parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster in mode 'EMR'.")
         # parser.add_argument("-o", "--output", default=None, help="output path")
         # For later : --machines, --inputs, to be integrated only as a way to overide values from file.
         defaults = {
@@ -695,12 +693,12 @@ class Commandliner():
                     'connection_file': CONNECTION_FILE,
                     'jobs_folder': JOB_FOLDER,
                     'storage': 'local',
-                    'dependencies': False,
+                    # 'dependencies': False, # only set from commandline
                     'rerun_criteria': 'both',
-                    'boxed_dependencies': False,
+                    # 'boxed_dependencies': False,  # only set from commandline
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
-                    'leave_on': False,
+                    # 'leave_on': False, # only set from commandline
                     }
         return parser, defaults
 

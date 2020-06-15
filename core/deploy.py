@@ -352,7 +352,7 @@ class DeployPySparkScriptOnAws(object):
                     }
                 }]
             )
-        logger.info("Added step 'spark-submit' with argument '{}', and command line '{}'".format(app_args, cmd_runner_args))
+        logger.info("Added step 'spark-submit' with command line '{}'".format(cmd_runner_args))
         time.sleep(1)  # Prevent ThrottlingException
 
     def get_spark_submit_args(self, app_file, app_args):
@@ -364,11 +364,12 @@ class DeployPySparkScriptOnAws(object):
             eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
             "--mode=local",
             "--storage=s3",
+            '--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE),
             "--dependencies" if app_args.get('dependencies') else "",
             "--boxed_dependencies" if app_args.get('boxed_dependencies') else "",
             "--rerun_criteria={}".format(app_args.get('rerun_criteria')),
             "--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file']) if app_args.get('sql_file') else "",
-            ] # TODO: better handling of app_args, would involve being able to diferenciate between deploy and execution args
+            ]
         cmd_runner_args = [item for item in cmd_runner_args if item]
         return cmd_runner_args
 
@@ -470,14 +471,14 @@ class DeployPySparkScriptOnAws(object):
                 SecretString=content,
             )
             logger.debug('create_secret response: '+str(response))
-            logger.info('Created aws secret, with connection.cfg content, under secret_id:'+eu.AWS_SECRET_ID)
+            logger.info('Created aws secret, from {}, under secret_id:{}'.format(creds_or_file, eu.AWS_SECRET_ID))
         except client.exceptions.ResourceExistsException:
             response = client.put_secret_value(
                 SecretId=eu.AWS_SECRET_ID,
                 SecretString=content,
             )
             logger.debug('put_secret_value response: '+str(response))
-            logger.info('Updated aws secret, with connection.cfg content, under secret_id:'+eu.AWS_SECRET_ID)
+            logger.info('Updated aws secret, from {}, under secret_id:{}'.format(creds_or_file, eu.AWS_SECRET_ID))
 
     def delete_secrets(self):
         """ To be used manually for now to free AWS resources. """
