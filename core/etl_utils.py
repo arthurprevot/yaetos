@@ -645,9 +645,9 @@ class Commandliner():
             yml = Job_Yml_Parser(self.args)
             yml.set_job_params(job_file=job_file)
             # import ipdb; ipdb.set_trace()
-            deploy_args = {'aws_config_file': self.args.get('aws_config_file'),
-                           'aws_setup': self.args.get('aws_setup'),
-                           'leave_on': self.args.get('leave_on'),
+            deploy_args = {'aws_config_file': self.args.pop('aws_config_file'),
+                           'aws_setup': self.args.pop('aws_setup'),
+                           'leave_on': self.args.pop('leave_on'),
                            }
             self.launch_deploy_mode(yml, deploy_args, app_args=self.args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
 
