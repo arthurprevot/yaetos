@@ -310,7 +310,7 @@ class ETL_Base(object):
         df = cast_col(df, types)
         connection_profile = self.redshift_copy_params['creds']
         schema, name_tb= self.redshift_copy_params['table'].split('.')
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'])
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
         create_table(df, connection_profile, name_tb, schema, types, creds, self.is_incremental)
         del(df)
 
