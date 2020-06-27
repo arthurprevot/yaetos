@@ -43,6 +43,7 @@ examples/ex4_dependency2_job.py:  # shows dependency
   dependencies: [examples/ex4_dependency1_job.py]  # TODO: check to remove it since it is in input desc.
 
 examples/ex4_dependency3_job.sql:  # shows dependency
+  py_job: 'core/sql_job.py'
   inputs:
     some_events: {'path':'data/wiki_example/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
   output: {'path':'data/wiki_example/output_ex4_dep3/{now}/', 'type':'csv'}
