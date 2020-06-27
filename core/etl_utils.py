@@ -3,7 +3,6 @@ Helper functions. Setup to run locally and on cluster.
 """
 # TODO:
 # - add linter
-# - setup command line args defaults to None so they can be overriden only if set in commandline and default would be in aws_config file or jobs_metadata.yml
 # - make yml look more like command line info, with path of python script.
 # - finish _metadata.txt file content.
 # - make raw functions available to raw spark jobs.
@@ -34,15 +33,13 @@ import random
 import pandas as pd
 import os
 import sys
-if sys.version_info[0] == 3:  # TODO: clean later. For now, still need back compatibility with python 2.7 when running from EMR.
-    from configparser import ConfigParser
-else:
-    from ConfigParser import ConfigParser
-
+from configparser import ConfigParser
 import numpy as np
 from sklearn.externals import joblib
 import core.logger as log
 import gc
+
+# sys.path.append('/Users/aprevot/myTHNDocs/code_thn/datapipelines')
 
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
@@ -392,11 +389,11 @@ class Job_Yml_Parser():
     def set_inputs(self, loaded_inputs):
         inputs_in_args = len([item for item in self.args.keys() if item.startswith('input_')]) >= 1
         if inputs_in_args:
-            self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in self.args.iteritems() if key.startswith('input_')}
+            self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in self.args.items() if key.startswith('input_')}
         elif self.args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
             self.INPUTS = self.job_yml.get('inputs') or {}
         elif loaded_inputs:
-            self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.iteritems()}
+            self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
         else:
             logger.info("No input given, through commandline nor yml file.")
             self.INPUTS = {}
@@ -763,7 +760,7 @@ class Flow():
             if not args['boxed_dependencies']:
                 if job_yml_parser.job_yml.get('inputs', 'no input') == 'no input':
                     raise Exception("Pb with loading job_yml or finding 'inputs' parameter in it. You can work around it by using 'boxed_dependencies' argument.")
-                for in_name, in_properties in job_yml_parser.job_yml['inputs'].iteritems():
+                for in_name, in_properties in job_yml_parser.job_yml['inputs'].items():
                     if in_properties.get('from'):
                         loaded_inputs[in_name] = df[in_properties['from']]
             df[job_name] = job.etl(sc, sc_sql, loaded_inputs) # at this point df[job_name] is unpersisted.
@@ -787,7 +784,7 @@ class Flow():
         yml = Job_Yml_Parser.load_meta(meta_file)
 
         connections = []
-        for job_name, job_meta in yml.iteritems():
+        for job_name, job_meta in yml.items():
             dependencies = job_meta.get('dependencies') or []
             for dependency in dependencies:
                 row = {'source_job': dependency, 'destination_job': job_name}
