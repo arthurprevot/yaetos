@@ -1,4 +1,5 @@
 examples/ex1_full_sql_job.sql:  # shows 100% sql job, easiest when sql is enough
+  py_job: 'core/sql_job.py'
   inputs:
     some_events: {'path':"data/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
