@@ -64,6 +64,8 @@ def cast_col(df, output_types):
 def get_spark_type(field, required_type):
     if isinstance(required_type, type(db_types.DATE())):
         return spk_types.StructField(field,  spk_types.DateType(), True)
+    elif isinstance(required_type, type(db_types.DATETIME())):
+        return spk_types.StructField(field,  spk_types.TimestampType(), True)
     elif isinstance(required_type, type(db_types.VARCHAR())):
         return spk_types.StructField(field,  spk_types.StringType(), True)
     elif isinstance(required_type, type(db_types.INT())):
