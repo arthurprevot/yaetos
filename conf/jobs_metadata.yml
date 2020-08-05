@@ -19,7 +19,8 @@ examples/ex2_frameworked_job.py:
     some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'s3://sandbox-spark/wiki_example/output_ex2/{now}/', 'type':'csv'}
-  frequency: 24h
+  frequency: 1 day
+  start_date: "{today}T07:00:00"
   email: 'some_email@address.com'
 
 examples/ex3_incremental_job.py:
