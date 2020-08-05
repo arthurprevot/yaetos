@@ -94,7 +94,11 @@ class ETL_Base(object):
         start_time = time()
         self.start_dt = datetime.utcnow() # attached to self so available within dev expose "transform()" func.
         output = self.etl_no_io(sc, sc_sql, loaded_inputs)
-        self.output_empty = output.count() == 0
+        print('Output sample:')
+        output.show()
+        count = output.count()
+        print('Output count: {}'.format(count))
+        self.output_empty = count == 0
         if self.output_empty and self.is_incremental:
             logger.info("-------End job '{}', increment with empty output--------".format(self.job_name))
             # TODO: look at saving output empty table instead of skipping output.
@@ -297,7 +301,6 @@ class ETL_Base(object):
         logger.info('Query string:\n' + query_str)
         df =  self.sc_sql.sql(query_str)
         df.cache()
-        print('Sample output {}'.format(df.show()))
         return df
 
     def copy_to_redshift(self, output, types):
