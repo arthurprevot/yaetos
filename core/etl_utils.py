@@ -435,9 +435,10 @@ class Job_Yml_Parser():
 
     def set_start_date(self):
         if self.args.get('start_date'):
-            self.start_date = self.args['start_date']
+            self.start_date = self.args['start_date']  # will likely be loaded as string.
         elif self.args.get('job_param_file'):
-            self.start_date = self.job_yml.get('start_date').strftime('%Y-%m-%dT%H:%M:%S') if self.job_yml.get('start_date') else None
+            self.start_date = self.job_yml.get('start_date') #.strftime('%Y-%m-%dT%H:%M:%S') if self.job_yml.get('start_date') else None
+            # self.start_date = self.job_yml.get('start_date').format(today=datetime.today().strftime('%Y-%m-%d')).strftime('%Y-%m-%dT%H:%M:%S') if self.job_yml.get('start_date') else None
         else:
             self.start_date = None
 

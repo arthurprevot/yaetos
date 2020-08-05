@@ -427,7 +427,14 @@ class DeployPySparkScriptOnAws(object):
         # Change key pair
         myScheduleType = {'EMR_Scheduled': 'cron', 'EMR_DataPipeTest': 'ONDEMAND'}[self.app_args.get('mode')]
         myPeriod = self.yml.frequency or '1 Day'
-        myStartDateTime = self.yml.start_date or datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+        if self.yml.start_date and isinstance(self.yml.start_date, datetime):
+            myStartDateTime = self.yml.start_date.strftime('%Y-%m-%dT%H:%M:%S')
+        elif self.yml.start_date and isinstance(self.yml.start_date, str):
+            myStartDateTime = self.yml.start_date.format(today=datetime.today().strftime('%Y-%m-%d'))
+        else :
+            myStartDateTime = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+        # self.start_date = self.job_yml.get('start_date').format(today=datetime.today().strftime('%Y-%m-%d')).strftime('%Y-%m-%dT%H:%M:%S') if self.job_yml.get('start_date') else None
+        # myStartDateTime = self.yml.start_date or datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')  # check to replace by utcnow by placeholder value to make it more explicit it is useless.
         # TODO: self.yml.start_date is taken from jobs_metadata_local.yml, instead of jobs_metadata.yml. Fix it
         bootstrap = 's3://{}/setup_nodes.sh'.format(self.package_path_with_bucket)
 
