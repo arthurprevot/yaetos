@@ -18,6 +18,9 @@ examples/ex2_frameworked_job.py:  # more complex version of ex1_frameworked_job
     some_events: {'path':"data/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     other_events: {'path':"data/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
   output: {'path':'data/wiki_example/output_ex2/{now}/', 'type':'csv'}
+  frequency: 1 day
+  start_date: "{today}T07:00:00"
+  email: 'some_email@address.com'
 
 examples/ex3_incremental_job.py:  # focus on incremental loading and dropping
   inputs:
