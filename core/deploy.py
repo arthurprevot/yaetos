@@ -32,10 +32,14 @@ class DeployPySparkScriptOnAws(object):
     SCRIPTS = 'core/scripts/' # TODO: move to etl_utils.py
     TMP = 'tmp/files_to_ship/'
 
-    def __init__(self, yml, aws_setup='dev', **app_args):
+    def __init__(self, yml, deploy_args, app_args):
 
+        logger.info("etl deploy_args: {}".format(deploy_args))
+        logger.info("etl app_args: {}".format(app_args))
+        aws_setup = deploy_args['aws_setup']
         config = ConfigParser()
-        config.read(app_args['aws_config_file'])
+        assert os.path.isfile(deploy_args['aws_config_file'])
+        config.read(deploy_args['aws_config_file'])
 
         self.app_file = yml.py_job  # remove all refs to app_file to be consistent.
         self.yml = yml
@@ -49,6 +53,7 @@ class DeployPySparkScriptOnAws(object):
         self.extra_security_gp = config.get(aws_setup, 'extra_security_gp')
         self.emr_core_instances = int(config.get(aws_setup, 'emr_core_instances'))
         self.app_args = app_args
+        self.deploy_args = deploy_args
         self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  #'m5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
@@ -92,7 +97,7 @@ class DeployPySparkScriptOnAws(object):
         self.step_spark_submit(c, self.app_file, self.app_args)
 
         # Clean
-        if new_cluster and not self.app_args.get('leave_on') and self.app_args.get('clean_post_run'):  # TODO: add clean_post_run in input options.
+        if new_cluster and not self.deploy_args.get('leave_on') and self.app_args.get('clean_post_run'):  # TODO: add clean_post_run in input options.
             logger.info("New cluster setup to be deleted after job finishes.")
             self.describe_status_until_terminated(c)
             self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
@@ -161,8 +166,6 @@ class DeployPySparkScriptOnAws(object):
         t_file = tarfile.open(self.TMP + "scripts.tar.gz", 'w:gz')
 
         # Add files
-        t_file.add(base+'__init__.py', arcname='__init__.py')
-        t_file.add(base+'conf/__init__.py', arcname='conf/__init__.py')
         t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
 
         # ./core files
@@ -259,7 +262,7 @@ class DeployPySparkScriptOnAws(object):
                     'InstanceCount': self.emr_core_instances,
                     }],
                 'Ec2KeyName': self.ec2_key_name,
-                'KeepJobFlowAliveWhenNoSteps': self.app_args.get('leave_on', False),
+                'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
                 'Ec2SubnetId': self.ec2_subnet_id,
                 # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
             },
@@ -349,7 +352,7 @@ class DeployPySparkScriptOnAws(object):
                     }
                 }]
             )
-        logger.info("Added step 'spark-submit' with argument '{}', and command line '{}'".format(app_args, cmd_runner_args))
+        logger.info("Added step 'spark-submit' with command line '{}'".format(cmd_runner_args))
         time.sleep(1)  # Prevent ThrottlingException
 
     def get_spark_submit_args(self, app_file, app_args):
@@ -361,11 +364,12 @@ class DeployPySparkScriptOnAws(object):
             eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
             "--mode=local",
             "--storage=s3",
+            '--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE),
             "--dependencies" if app_args.get('dependencies') else "",
             "--boxed_dependencies" if app_args.get('boxed_dependencies') else "",
             "--rerun_criteria={}".format(app_args.get('rerun_criteria')),
             "--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file']) if app_args.get('sql_file') else "",
-            ] # TODO: better handling of app_args, would involve being able to diferenciate between deploy and execution args
+            ]
         cmd_runner_args = [item for item in cmd_runner_args if item]
         return cmd_runner_args
 
@@ -419,7 +423,12 @@ class DeployPySparkScriptOnAws(object):
         # Change key pair
         myScheduleType = {'EMR_Scheduled': 'cron', 'EMR_DataPipeTest': 'ONDEMAND'}[self.app_args.get('mode')]
         myPeriod = self.yml.frequency or '1 Day'
-        myStartDateTime = self.yml.start_date or datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+        if self.yml.start_date and isinstance(self.yml.start_date, datetime):
+            myStartDateTime = self.yml.start_date.strftime('%Y-%m-%dT%H:%M:%S')
+        elif self.yml.start_date and isinstance(self.yml.start_date, str):
+            myStartDateTime = self.yml.start_date.format(today=datetime.today().strftime('%Y-%m-%d'))
+        else :
+            myStartDateTime = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
         # TODO: self.yml.start_date is taken from jobs_metadata_local.yml, instead of jobs_metadata.yml. Fix it
         bootstrap = 's3://{}/setup_nodes.sh'.format(self.package_path_with_bucket)
 
@@ -467,14 +476,14 @@ class DeployPySparkScriptOnAws(object):
                 SecretString=content,
             )
             logger.debug('create_secret response: '+str(response))
-            logger.info('Created aws secret, with connection.cfg content, under secret_id:'+eu.AWS_SECRET_ID)
+            logger.info('Created aws secret, from {}, under secret_id:{}'.format(creds_or_file, eu.AWS_SECRET_ID))
         except client.exceptions.ResourceExistsException:
             response = client.put_secret_value(
                 SecretId=eu.AWS_SECRET_ID,
                 SecretString=content,
             )
             logger.debug('put_secret_value response: '+str(response))
-            logger.info('Updated aws secret, with connection.cfg content, under secret_id:'+eu.AWS_SECRET_ID)
+            logger.info('Updated aws secret, from {}, under secret_id:{}'.format(creds_or_file, eu.AWS_SECRET_ID))
 
     def delete_secrets(self):
         """ To be used manually for now to free AWS resources. """
@@ -516,5 +525,6 @@ if __name__ == "__main__":
     yml = bag()
     yml.job_name = job_name
     yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
-    app_args = {'mode':'EMR', 'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE}
-    DeployPySparkScriptOnAws(yml=yml, aws_setup='dev', **app_args).run()
+    deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
+    app_args = {'mode':'EMR'}
+    DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()

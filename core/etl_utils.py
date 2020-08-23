@@ -3,7 +3,6 @@ Helper functions. Setup to run locally and on cluster.
 """
 # TODO:
 # - add linter
-# - setup command line args defaults to None so they can be overriden only if set in commandline and default would be in aws_config file or jobs_metadata.yml
 # - make yml look more like command line info, with path of python script.
 # - finish _metadata.txt file content.
 # - make raw functions available to raw spark jobs.
@@ -34,11 +33,7 @@ import random
 import pandas as pd
 import os
 import sys
-if sys.version_info[0] == 3:  # TODO: clean later. For now, still need back compatibility with python 2.7 when running from EMR.
-    from configparser import ConfigParser
-else:
-    from ConfigParser import ConfigParser
-
+from configparser import ConfigParser
 import numpy as np
 from sklearn.externals import joblib
 import core.logger as log
@@ -97,7 +92,11 @@ class ETL_Base(object):
         start_time = time()
         self.start_dt = datetime.utcnow() # attached to self so available within dev expose "transform()" func.
         output = self.etl_no_io(sc, sc_sql, loaded_inputs)
-        self.output_empty = output.count() == 0
+        logger.info('Output sample:')
+        output.show()
+        count = output.count()
+        logger.info('Output count: {}'.format(count))
+        self.output_empty = count == 0
         if self.output_empty and self.is_incremental:
             logger.info("-------End job '{}', increment with empty output--------".format(self.job_name))
             # TODO: look at saving output empty table instead of skipping output.
@@ -106,7 +105,7 @@ class ETL_Base(object):
         self.save(output, self.start_dt)
         end_time = time()
         elapsed = end_time - start_time
-        self.save_metadata(elapsed)
+        # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
         if self.redshift_copy_params:
             self.copy_to_redshift(output, self.OUTPUT_TYPES)
@@ -120,7 +119,8 @@ class ETL_Base(object):
     def etl_no_io(self, sc, sc_sql, loaded_inputs={}):
         """ Function to load inputs (including from live vars) and run transform. No output to disk.
         Having this code isolated is useful for cases with no I/O possible, like testing."""
-        if self.args.get('mode_no_io'):
+        logger.info("etl args: {}".format(self.args))
+        if self.args.get('mode_no_io'):  # TODO: check if condition can be skipped
             self.set_job_params(loaded_inputs)
         self.sc = sc
         self.sc_sql = sc_sql
@@ -299,7 +299,6 @@ class ETL_Base(object):
         logger.info('Query string:\n' + query_str)
         df =  self.sc_sql.sql(query_str)
         df.cache()
-        print('Sample output {}'.format(df.show()))
         return df
 
     def copy_to_redshift(self, output, types):
@@ -310,7 +309,7 @@ class ETL_Base(object):
         df = cast_col(df, types)
         connection_profile = self.redshift_copy_params['creds']
         schema, name_tb= self.redshift_copy_params['table'].split('.')
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'])
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
         create_table(df, connection_profile, name_tb, schema, types, creds, self.is_incremental)
         del(df)
 
@@ -391,11 +390,11 @@ class Job_Yml_Parser():
     def set_inputs(self, loaded_inputs):
         inputs_in_args = len([item for item in self.args.keys() if item.startswith('input_')]) >= 1
         if inputs_in_args:
-            self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in self.args.iteritems() if key.startswith('input_')}
+            self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in self.args.items() if key.startswith('input_')}
         elif self.args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
             self.INPUTS = self.job_yml.get('inputs') or {}
         elif loaded_inputs:
-            self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.iteritems()}
+            self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
         else:
             logger.info("No input given, through commandline nor yml file.")
             self.INPUTS = {}
@@ -434,9 +433,9 @@ class Job_Yml_Parser():
 
     def set_start_date(self):
         if self.args.get('start_date'):
-            self.start_date = self.args['start_date']
+            self.start_date = self.args['start_date']  # will likely be loaded as string.
         elif self.args.get('job_param_file'):
-            self.start_date = self.job_yml.get('start_date').strftime('%Y-%m-%dT%H:%M:%S') if self.job_yml.get('start_date') else None
+            self.start_date = self.job_yml.get('start_date')
         else:
             self.start_date = None
 
@@ -601,6 +600,7 @@ class Cred_Ops_Dispatcher():
     @staticmethod
     def retrieve_secrets_local(creds):
         config = ConfigParser()
+        assert os.path.isfile(creds)
         config.read(creds)
         return config
 
@@ -637,43 +637,64 @@ class Path_Handler():
 class Commandliner():
     def __init__(self, Job, **args):
         self.set_commandline_args(args)
-        if args['mode'] == 'local':
+        if self.args['mode'] == 'local':
             self.launch_run_mode(Job, self.args)
         else:
             job = Job(self.args)
             job_file = job.set_job_file()
             yml = Job_Yml_Parser(self.args)
             yml.set_job_params(job_file=job_file)
-            self.launch_deploy_mode(yml, **self.args)
+            deploy_args = {'aws_config_file': self.args.pop('aws_config_file'),
+                           'aws_setup': self.args.pop('aws_setup'),
+                           'leave_on': self.args.pop('leave_on'),
+                           }
+            self.launch_deploy_mode(yml, deploy_args, app_args=self.args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
 
     def set_commandline_args(self, args):
         """Command line arguments take precedence over function ones."""
-        self.args = args
-        parser = self.define_commandline_args()
+        parser, defaults = self.define_commandline_args()
         cmd_args, unknown_args = parser.parse_known_args()
+        cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
         unknown_args = dict([item[2:].split('=') for item in unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
-        self.args.update(cmd_args.__dict__)  # cmd_args overwrite upstream (function defined) args
+
+        #load defaults, overwrite by yml, overwrite job commandliner(), overwrite by cmdline args if any.
+        self.args = defaults
+        self.args.update(args)  # same
+        self.args.update(cmd_args)  # cmd_args (if set) overwrite upstream (function defined) args
         self.args.update(unknown_args)  # same
 
     @staticmethod
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-m", "--mode", default='local', choices=set(['local', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
-        parser.add_argument("-j", "--job_param_file", default='repo', help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")
-        parser.add_argument("--aws_config_file", default=AWS_CONFIG_FILE, help="Identify file to use. Default to repo one.")
-        parser.add_argument("--connection_file", default=CONNECTION_FILE, help="Identify file to use. Default to repo one.")
-        parser.add_argument("--jobs_folder", default=JOB_FOLDER, help="Identify the folder where job code is. Necessary if job code is outside the repo, i.e. if this is used as an external library. By default, uses the repo 'jobs/' folder.")
-        parser.add_argument("-s", "--storage", default='local', choices=set(['local', 's3']), help="Choose 'local' (default) or 's3'.")
+        parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
+        parser.add_argument("-j", "--job_param_file", help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")
+        parser.add_argument("--connection_file", help="Identify file to use. Default to repo one.")
+        parser.add_argument("--jobs_folder", help="Identify the folder where job code is. Necessary if job code is outside the repo, i.e. if this is used as an external library. By default, uses the repo 'jobs/' folder.")
+        parser.add_argument("-s", "--storage", choices=set(['local', 's3']), help="Choose 'local' (default) or 's3'.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
-        parser.add_argument("-c", "--rerun_criteria", default='both', choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
+        parser.add_argument("-c", "--rerun_criteria", choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
         parser.add_argument("-b", "--boxed_dependencies", action='store_true', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).")
         # Deploy specific
-        parser.add_argument("-a", "--aws_setup", default='dev', help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
+        parser.add_argument("--aws_config_file", help="Identify file to use. Default to repo one.")
+        parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster in mode 'EMR'.")
         # parser.add_argument("-o", "--output", default=None, help="output path")
         # For later : --machines, --inputs, to be integrated only as a way to overide values from file.
-        return parser
+        defaults = {
+                    'mode': 'local',
+                    'job_param_file': 'repo',
+                    'connection_file': CONNECTION_FILE,
+                    'jobs_folder': JOB_FOLDER,
+                    'storage': 'local',
+                    # 'dependencies': False, # only set from commandline
+                    'rerun_criteria': 'both',
+                    # 'boxed_dependencies': False,  # only set from commandline
+                    'aws_config_file': AWS_CONFIG_FILE,
+                    'aws_setup': 'dev',
+                    # 'leave_on': False, # only set from commandline
+                    }
+        return parser, defaults
 
     def launch_run_mode(self, Job, args):
         job = Job(args)
@@ -686,10 +707,10 @@ class Commandliner():
         else:
             Flow(sc, sc_sql, args, app_name)
 
-    def launch_deploy_mode(self, yml, aws_setup, **app_args):
+    def launch_deploy_mode(self, yml, deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
-        DeployPySparkScriptOnAws(yml=yml, aws_setup=aws_setup, **app_args).run()
+        DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
 
     def create_contexts(self, app_name):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
@@ -712,7 +733,7 @@ class Flow():
     def __init__(self, sc, sc_sql, args, app_name):
         self.app_name = app_name
         storage = args['storage']
-        df = self.create_connections_jobs(storage)
+        df = self.create_connections_jobs(storage, args)
         logger.debug('Flow app_name : {}, connection_table: {}'.format(app_name, df))
         graph = self.create_global_graph(df)  # top to bottom
         tree = self.create_local_tree(graph, nx.DiGraph(), app_name) # bottom to top
@@ -735,7 +756,7 @@ class Flow():
             if not args['boxed_dependencies']:
                 if job_yml_parser.job_yml.get('inputs', 'no input') == 'no input':
                     raise Exception("Pb with loading job_yml or finding 'inputs' parameter in it. You can work around it by using 'boxed_dependencies' argument.")
-                for in_name, in_properties in job_yml_parser.job_yml['inputs'].iteritems():
+                for in_name, in_properties in job_yml_parser.job_yml['inputs'].items():
                     if in_properties.get('from'):
                         loaded_inputs[in_name] = df[in_properties['from']]
             df[job_name] = job.etl(sc, sc_sql, loaded_inputs) # at this point df[job_name] is unpersisted.
@@ -750,16 +771,18 @@ class Flow():
     def get_job_class(py_job):
         name_import = py_job.replace('/','.').replace('.py','')
         import_cmd = "from {} import Job".format(name_import)
-        exec(import_cmd)
-        return Job
+        namespace = {}
+        exec(import_cmd, namespace)
+        return namespace['Job']
 
-    def create_connections_jobs(self, storage):
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base, TODO: use self.args.['job_param_file'], check below
-        # meta_file = CLUSTER_APP_FOLDER+self.args.['job_param_file'] if self.args['storage']=='s3' else self.args.['job_param_file']
+    def create_connections_jobs(self, storage, args):
+        meta_file = args.get('job_param_file')
+        if meta_file is 'repo':
+            meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = Job_Yml_Parser.load_meta(meta_file)
 
         connections = []
-        for job_name, job_meta in yml.iteritems():
+        for job_name, job_meta in yml.items():
             dependencies = job_meta.get('dependencies') or []
             for dependency in dependencies:
                 row = {'source_job': dependency, 'destination_job': job_name}
@@ -778,18 +801,18 @@ class Flow():
             item.update({'name':target_dataset})
 
             DG.add_edge(source_dataset, target_dataset)
-            DG.add_node(source_dataset, {'name':source_dataset})
-            DG.add_node(target_dataset, item)
+            DG.add_node(source_dataset, name=source_dataset) # (source_dataset, **{'name':source_dataset})
+            DG.add_node(target_dataset, **item)
         return DG
 
     def create_local_tree(self, DG, tree, ref_node):
         """ Builds tree recursively. Uses graph data structure but enforces tree to simplify downstream."""
         nodes = DG.predecessors(ref_node)
-        tree.add_node(ref_node, DG.node[ref_node])
+        tree.add_node(ref_node, name=DG.nodes[ref_node])
         for item in nodes:
             if not tree.has_node(item):
                 tree.add_edge(ref_node, item)
-                tree.add_node(item, DG.node[item])
+                tree.add_node(item, name=DG.nodes[item])
                 self.create_local_tree(DG, tree, item)
         return tree
 
@@ -805,8 +828,7 @@ class Flow():
 
         if len(tree.nodes()) >= 2:
             self.get_leafs(tree, leafs)
-
-        return leafs + tree.nodes()
+        return leafs + list(tree.nodes())
 
 
 logger = log.setup_logging('Job')
