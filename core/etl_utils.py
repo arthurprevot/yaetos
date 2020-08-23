@@ -741,7 +741,7 @@ class Flow():
     def __init__(self, sc, sc_sql, args, app_name):
         self.app_name = app_name
         storage = args['storage']
-        df = self.create_connections_jobs(storage)
+        df = self.create_connections_jobs(storage, args)
         logger.debug('Flow app_name : {}, connection_table: {}'.format(app_name, df))
         graph = self.create_global_graph(df)  # top to bottom
         tree = self.create_local_tree(graph, nx.DiGraph(), app_name) # bottom to top
@@ -778,13 +778,22 @@ class Flow():
     @staticmethod
     def get_job_class(py_job):
         name_import = py_job.replace('/','.').replace('.py','')
+        print('name_import', name_import)
         import_cmd = "from {} import Job".format(name_import)
-        exec(import_cmd)
-        return Job
+        namespace = {}
+        # import ipdb; ipdb.set_trace()
+        exec(import_cmd, namespace)
+        # import ipdb; ipdb.set_trace()
+        return namespace['Job']
 
-    def create_connections_jobs(self, storage):
-        meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base, TODO: use self.args.['job_param_file'], check below
-        # meta_file = CLUSTER_APP_FOLDER+self.args.['job_param_file'] if self.args['storage']=='s3' else self.args.['job_param_file']
+    def create_connections_jobs(self, storage, args):
+        # meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base, TODO: use self.args.['job_param_file'], check below
+        # meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else self.args.['job_param_file']
+        meta_file = args.get('job_param_file')
+        if meta_file is 'repo':
+            meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
+        # print('####', meta_file)
+        # import ipdb; ipdb.set_trace()
         yml = Job_Yml_Parser.load_meta(meta_file)
 
         connections = []
@@ -807,18 +816,22 @@ class Flow():
             item.update({'name':target_dataset})
 
             DG.add_edge(source_dataset, target_dataset)
-            DG.add_node(source_dataset, {'name':source_dataset})
-            DG.add_node(target_dataset, item)
+            # import ipdb; ipdb.set_trace()
+            DG.add_node(source_dataset, name=source_dataset) # (source_dataset, **{'name':source_dataset})
+            DG.add_node(target_dataset, **item)
         return DG
 
     def create_local_tree(self, DG, tree, ref_node):
         """ Builds tree recursively. Uses graph data structure but enforces tree to simplify downstream."""
+        # import ipdb; ipdb.set_trace()
         nodes = DG.predecessors(ref_node)
-        tree.add_node(ref_node, DG.node[ref_node])
+        # import ipdb; ipdb.set_trace()
+        print('#---- DG.nodes: ', DG.nodes, ', nx.__version__: ', nx.__version__)
+        tree.add_node(ref_node, name=DG.nodes[ref_node])
         for item in nodes:
             if not tree.has_node(item):
                 tree.add_edge(ref_node, item)
-                tree.add_node(item, DG.node[item])
+                tree.add_node(item, name=DG.nodes[item])
                 self.create_local_tree(DG, tree, item)
         return tree
 
@@ -834,8 +847,9 @@ class Flow():
 
         if len(tree.nodes()) >= 2:
             self.get_leafs(tree, leafs)
-
-        return leafs + tree.nodes()
+        # print('####', list(tree.nodes()))
+        # import ipdb; ipdb.set_trace()
+        return leafs + list(tree.nodes())
 
 
 logger = log.setup_logging('Job')
