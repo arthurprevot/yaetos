@@ -38,11 +38,9 @@ class DeployPySparkScriptOnAws(object):
         logger.info("etl app_args: {}".format(app_args))
         aws_setup = deploy_args['aws_setup']
         config = ConfigParser()
-        # import ipdb; ipdb.set_trace()
         assert os.path.isfile(deploy_args['aws_config_file'])
         config.read(deploy_args['aws_config_file'])
 
-        # import ipdb; ipdb.set_trace()
         self.app_file = yml.py_job  # remove all refs to app_file to be consistent.
         self.yml = yml
         self.aws_setup = aws_setup
@@ -168,8 +166,6 @@ class DeployPySparkScriptOnAws(object):
         t_file = tarfile.open(self.TMP + "scripts.tar.gz", 'w:gz')
 
         # Add files
-        # t_file.add(base+'__init__.py', arcname='__init__.py')
-        # t_file.add(base+'conf/__init__.py', arcname='conf/__init__.py')
         t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
 
         # ./core files
@@ -433,8 +429,6 @@ class DeployPySparkScriptOnAws(object):
             myStartDateTime = self.yml.start_date.format(today=datetime.today().strftime('%Y-%m-%d'))
         else :
             myStartDateTime = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
-        # self.start_date = self.job_yml.get('start_date').format(today=datetime.today().strftime('%Y-%m-%d')).strftime('%Y-%m-%dT%H:%M:%S') if self.job_yml.get('start_date') else None
-        # myStartDateTime = self.yml.start_date or datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')  # check to replace by utcnow by placeholder value to make it more explicit it is useless.
         # TODO: self.yml.start_date is taken from jobs_metadata_local.yml, instead of jobs_metadata.yml. Fix it
         bootstrap = 's3://{}/setup_nodes.sh'.format(self.package_path_with_bucket)
 

@@ -39,8 +39,6 @@ from sklearn.externals import joblib
 import core.logger as log
 import gc
 
-# sys.path.append('/Users/aprevot/myTHNDocs/code_thn/datapipelines')
-
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
@@ -437,8 +435,7 @@ class Job_Yml_Parser():
         if self.args.get('start_date'):
             self.start_date = self.args['start_date']  # will likely be loaded as string.
         elif self.args.get('job_param_file'):
-            self.start_date = self.job_yml.get('start_date') #.strftime('%Y-%m-%dT%H:%M:%S') if self.job_yml.get('start_date') else None
-            # self.start_date = self.job_yml.get('start_date').format(today=datetime.today().strftime('%Y-%m-%d')).strftime('%Y-%m-%dT%H:%M:%S') if self.job_yml.get('start_date') else None
+            self.start_date = self.job_yml.get('start_date')
         else:
             self.start_date = None
 
@@ -655,7 +652,6 @@ class Commandliner():
 
     def set_commandline_args(self, args):
         """Command line arguments take precedence over function ones."""
-        # self.args = args
         parser, defaults = self.define_commandline_args()
         cmd_args, unknown_args = parser.parse_known_args()
         cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
@@ -780,8 +776,6 @@ class Flow():
         return namespace['Job']
 
     def create_connections_jobs(self, storage, args):
-        # meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if storage=='s3' else JOBS_METADATA_LOCAL_FILE # TODO: don't repeat from etl_base, TODO: use self.args.['job_param_file'], check below
-        # meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else self.args.['job_param_file']
         meta_file = args.get('job_param_file')
         if meta_file is 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
