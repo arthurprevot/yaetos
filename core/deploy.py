@@ -168,8 +168,8 @@ class DeployPySparkScriptOnAws(object):
         t_file = tarfile.open(self.TMP + "scripts.tar.gz", 'w:gz')
 
         # Add files
-        t_file.add(base+'__init__.py', arcname='__init__.py')
-        t_file.add(base+'conf/__init__.py', arcname='conf/__init__.py')
+        # t_file.add(base+'__init__.py', arcname='__init__.py')
+        # t_file.add(base+'conf/__init__.py', arcname='conf/__init__.py')
         t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
 
         # ./core files
