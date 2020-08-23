@@ -94,10 +94,10 @@ class ETL_Base(object):
         start_time = time()
         self.start_dt = datetime.utcnow() # attached to self so available within dev expose "transform()" func.
         output = self.etl_no_io(sc, sc_sql, loaded_inputs)
-        print('Output sample:')
+        logger.info('Output sample:')
         output.show()
         count = output.count()
-        print('Output count: {}'.format(count))
+        logger.info('Output count: {}'.format(count))
         self.output_empty = count == 0
         if self.output_empty and self.is_incremental:
             logger.info("-------End job '{}', increment with empty output--------".format(self.job_name))
@@ -647,7 +647,6 @@ class Commandliner():
             job_file = job.set_job_file()
             yml = Job_Yml_Parser(self.args)
             yml.set_job_params(job_file=job_file)
-            # import ipdb; ipdb.set_trace()
             deploy_args = {'aws_config_file': self.args.pop('aws_config_file'),
                            'aws_setup': self.args.pop('aws_setup'),
                            'leave_on': self.args.pop('leave_on'),
@@ -659,17 +658,14 @@ class Commandliner():
         # self.args = args
         parser, defaults = self.define_commandline_args()
         cmd_args, unknown_args = parser.parse_known_args()
-        # import ipdb; ipdb.set_trace()
         cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
         unknown_args = dict([item[2:].split('=') for item in unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
 
         #load defaults, overwrite by yml, overwrite job commandliner(), overwrite by cmdline args if any.
         self.args = defaults
-        # import ipdb; ipdb.set_trace()
         self.args.update(args)  # same
         self.args.update(cmd_args)  # cmd_args (if set) overwrite upstream (function defined) args
         self.args.update(unknown_args)  # same
-        # import ipdb; ipdb.set_trace()
 
     @staticmethod
     def define_commandline_args():
@@ -778,12 +774,9 @@ class Flow():
     @staticmethod
     def get_job_class(py_job):
         name_import = py_job.replace('/','.').replace('.py','')
-        print('name_import', name_import)
         import_cmd = "from {} import Job".format(name_import)
         namespace = {}
-        # import ipdb; ipdb.set_trace()
         exec(import_cmd, namespace)
-        # import ipdb; ipdb.set_trace()
         return namespace['Job']
 
     def create_connections_jobs(self, storage, args):
@@ -792,8 +785,6 @@ class Flow():
         meta_file = args.get('job_param_file')
         if meta_file is 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
-        # print('####', meta_file)
-        # import ipdb; ipdb.set_trace()
         yml = Job_Yml_Parser.load_meta(meta_file)
 
         connections = []
@@ -816,17 +807,13 @@ class Flow():
             item.update({'name':target_dataset})
 
             DG.add_edge(source_dataset, target_dataset)
-            # import ipdb; ipdb.set_trace()
             DG.add_node(source_dataset, name=source_dataset) # (source_dataset, **{'name':source_dataset})
             DG.add_node(target_dataset, **item)
         return DG
 
     def create_local_tree(self, DG, tree, ref_node):
         """ Builds tree recursively. Uses graph data structure but enforces tree to simplify downstream."""
-        # import ipdb; ipdb.set_trace()
         nodes = DG.predecessors(ref_node)
-        # import ipdb; ipdb.set_trace()
-        print('#---- DG.nodes: ', DG.nodes, ', nx.__version__: ', nx.__version__)
         tree.add_node(ref_node, name=DG.nodes[ref_node])
         for item in nodes:
             if not tree.has_node(item):
@@ -847,8 +834,6 @@ class Flow():
 
         if len(tree.nodes()) >= 2:
             self.get_leafs(tree, leafs)
-        # print('####', list(tree.nodes()))
-        # import ipdb; ipdb.set_trace()
         return leafs + list(tree.nodes())
 
 
