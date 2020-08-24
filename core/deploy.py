@@ -527,6 +527,68 @@ class DeployPySparkScriptOnAws(object):
         print('delete_secret response: {}'.format(response))
 
 
+def deploy_all_scheduled():
+    # class bag(object):
+    #     pass
+
+    def get_yml(args):
+        meta_file = args.get('job_param_file', 'repo')
+        if meta_file is 'repo':
+            meta_file = eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE if args['storage']=='s3' else eu.JOBS_METADATA_LOCAL_FILE
+        yml = eu.Job_Yml_Parser.load_meta(meta_file)
+        logger.info('Loaded job param file: ' + meta_file)
+        return yml
+
+    def get_bool(prompt):
+        while True:
+            try:
+               return {"":True, "y":True,"n":False}[input(prompt).lower()]
+            except KeyError:
+               print("Invalid input please enter y or n!")
+
+    def validate_job(job):
+        # clusters.append((len(clusters)+1, None, 'Create a new cluster'))
+        # print('Want to schedule": {} '.format(job))
+        # answer = input('Want to schedule "{}" ? '.format(job))
+        answer = get_bool('Want to schedule "{}" [Y/n]? '.format(job))
+        # import ipdb; ipdb.set_trace()
+        return answer
+
+    # TODO: reuse etl_utils.py Commandliner/set_commandline_args() to have cleaner interface and proper default values.
+    deploy_args = {'leave_on': False,
+                   'aws_config_file':eu.AWS_CONFIG_FILE, # TODO: make set-able
+                   'aws_setup':'dev'}
+    app_args = {'mode':'EMR_Scheduled',
+                'job_param_file': 'conf/jobs_metadata.yml', # TODO: make set-able
+                'boxed_dependencies': True,
+                'dependencies': True,
+                'storage': 'local',
+                'jobs_folder': eu.JOB_FOLDER,  # TODO: make set-able
+                'connection_file': eu.CONNECTION_FILE, # TODO: make set-able
+                }
+
+    yml = get_yml(app_args)
+    # import ipdb; ipdb.set_trace()
+    # pipelines = list(yml.keys())[:2]
+    pipelines = yml.keys()
+    for pipeline in pipelines:
+        # yml = bag()
+        job_yml = eu.Job_Yml_Parser(app_args)
+        job_yml.set_job_params(job_name=pipeline)
+        if not job_yml.frequency:
+            continue
+
+        run = validate_job(pipeline)
+        if not run:
+            continue
+
+        # job_yml = yml[pipeline]
+        # job_yml.job_name = pipeline
+        # job_yml.py_job = pipeline # will add /home/hadoop/app/  # TODO: handle all cases where job_name diff from py_job.
+        # import ipdb; ipdb.set_trace()
+        DeployPySparkScriptOnAws(job_yml, deploy_args, app_args).run()
+
+
 def terminate(error_message=None):
     """
     Method to exit the Python script. It will log the given message and then exit().
@@ -549,14 +611,16 @@ if __name__ == "__main__":
     class bag(object):
         pass
 
-    yml = bag()
-    yml.job_name = job_name
-    yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
+    job_yml = bag()
+    job_yml.job_name = job_name
+    job_yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
     deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
     app_args = {'mode':'EMR'}
-    # DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
+    # DeployPySparkScriptOnAws(job_yml, deploy_args, app_args).run()
 
-    deployed = DeployPySparkScriptOnAws(yml, deploy_args, app_args)
+    deployed = DeployPySparkScriptOnAws(job_yml, deploy_args, app_args)
     client = deployed.session.client('datapipeline')
-    pipelines = deployed.list_date_pipeline(client)
+    pipelines = deployed.list_data_pipeline(client)
     print('#--- pipelines: ', pipelines)
+
+    deploy_all_scheduled()
