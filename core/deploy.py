@@ -552,7 +552,6 @@ def deploy_all_scheduled():
                    'aws_config_file':eu.AWS_CONFIG_FILE, # TODO: make set-able
                    'aws_setup':'dev'}
     app_args = {'mode':'EMR_Scheduled',
-                'job_param_file': '/Users/aprevot/myTHNDocs/code_thn/datapipelines/conf/jobs_metadata.yml', # TODO: make set-able
                 'job_param_file': 'conf/jobs_metadata.yml', # TODO: make set-able
                 'boxed_dependencies': True,
                 'dependencies': True,
