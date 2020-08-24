@@ -528,8 +528,6 @@ class DeployPySparkScriptOnAws(object):
 
 
 def deploy_all_scheduled():
-    # class bag(object):
-    #     pass
 
     def get_yml(args):
         meta_file = args.get('job_param_file', 'repo')
@@ -547,18 +545,14 @@ def deploy_all_scheduled():
                print("Invalid input please enter y or n!")
 
     def validate_job(job):
-        # clusters.append((len(clusters)+1, None, 'Create a new cluster'))
-        # print('Want to schedule": {} '.format(job))
-        # answer = input('Want to schedule "{}" ? '.format(job))
-        answer = get_bool('Want to schedule "{}" [Y/n]? '.format(job))
-        # import ipdb; ipdb.set_trace()
-        return answer
+        return get_bool('Want to schedule "{}" [Y/n]? '.format(job))
 
     # TODO: reuse etl_utils.py Commandliner/set_commandline_args() to have cleaner interface and proper default values.
     deploy_args = {'leave_on': False,
                    'aws_config_file':eu.AWS_CONFIG_FILE, # TODO: make set-able
                    'aws_setup':'dev'}
     app_args = {'mode':'EMR_Scheduled',
+                'job_param_file': '/Users/aprevot/myTHNDocs/code_thn/datapipelines/conf/jobs_metadata.yml', # TODO: make set-able
                 'job_param_file': 'conf/jobs_metadata.yml', # TODO: make set-able
                 'boxed_dependencies': True,
                 'dependencies': True,
@@ -568,11 +562,8 @@ def deploy_all_scheduled():
                 }
 
     yml = get_yml(app_args)
-    # import ipdb; ipdb.set_trace()
-    # pipelines = list(yml.keys())[:2]
     pipelines = yml.keys()
     for pipeline in pipelines:
-        # yml = bag()
         job_yml = eu.Job_Yml_Parser(app_args)
         job_yml.set_job_params(job_name=pipeline)
         if not job_yml.frequency:
@@ -582,10 +573,6 @@ def deploy_all_scheduled():
         if not run:
             continue
 
-        # job_yml = yml[pipeline]
-        # job_yml.job_name = pipeline
-        # job_yml.py_job = pipeline # will add /home/hadoop/app/  # TODO: handle all cases where job_name diff from py_job.
-        # import ipdb; ipdb.set_trace()
         DeployPySparkScriptOnAws(job_yml, deploy_args, app_args).run()
 
 
@@ -604,23 +591,25 @@ logger = log.setup_logging('Deploy')
 
 
 if __name__ == "__main__":
+    # Deploying 1 job manually.
     # Use as standalone to push random python script to cluster.
     # TODO: fails to create a new cluster but works to add a step to an existing cluster.
     print('command line: ', ' '.join(sys.argv))
     job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'  # TODO: move to 'jobs/examples/ex1_raw_job_cluster.py'
     class bag(object):
         pass
-
     job_yml = bag()
     job_yml.job_name = job_name
     job_yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
     deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
     app_args = {'mode':'EMR'}
-    # DeployPySparkScriptOnAws(job_yml, deploy_args, app_args).run()
+    DeployPySparkScriptOnAws(job_yml, deploy_args, app_args).run()
 
-    deployed = DeployPySparkScriptOnAws(job_yml, deploy_args, app_args)
-    client = deployed.session.client('datapipeline')
-    pipelines = deployed.list_data_pipeline(client)
+    # Show list of all jobs running.
+    deployer = DeployPySparkScriptOnAws(job_yml, deploy_args, app_args)
+    client = deployer.session.client('datapipeline')
+    pipelines = deployer.list_data_pipeline(client)
     print('#--- pipelines: ', pipelines)
 
+    # (Re)deploy schedule jobs
     deploy_all_scheduled()
