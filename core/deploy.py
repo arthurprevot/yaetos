@@ -388,7 +388,6 @@ class DeployPySparkScriptOnAws(object):
         pipe_id = self.create_data_pipeline(client)
         parameterValues = self.define_data_pipeline(client, pipe_id)
         self.activate_data_pipeline(client, pipe_id, parameterValues)
-        # self.deactivate_older_pipeline(client, self.job_name)
 
     def create_data_pipeline(self, client):
         unique_id = uuid.uuid1()
@@ -440,14 +439,11 @@ class DeployPySparkScriptOnAws(object):
 
     def deactivate_similar_pipelines(self, client, pipeline_id):
         pipelines = self.list_data_pipeline(client)
-        # print('#--- pipelines:', pipelines)
         for item in pipelines:
-            # item.update({'job_name': self.get_job_name(item['name'])})
             job_name = self.get_job_name(item['name'])
             if job_name == self.yml.job_name:
                 response = client.deactivate_pipeline(pipelineId=item['id'], cancelActive=True)
-                logger.info('Deactivated pipeline ' + item)
-                # import ipdb; ipdb.set_trace()
+                logger.info('Deactivated pipeline {}, {}, {}'.format(job_name, item['name'], item['id']))
 
     def update_params(self, parameterValues):
         # TODO: check if easier/simpler to change values at the source json instead of a processed one.
