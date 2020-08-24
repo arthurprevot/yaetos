@@ -41,10 +41,10 @@ class DeployPySparkScriptOnAws(object):
         assert os.path.isfile(deploy_args['aws_config_file'])
         config.read(deploy_args['aws_config_file'])
 
-        self.app_file = yml.py_job  # remove all refs to app_file to be consistent.
+        self.app_file = yml.py_job  # TODO: remove all refs to app_file to be consistent.
         self.yml = yml
         self.aws_setup = aws_setup
-        self.app_name = self.yml.job_name.replace('.','_').split('/')[-1]  # TODO: integrate in yml obj and use it here.
+        # self.app_name = self.yml.job_name.replace('.','_dot_').split('/')[-1]  # TODO: integrate in yml obj and use it here.
         self.ec2_key_name  = config.get(aws_setup, 'ec2_key_name')
         self.s3_region     = config.get(aws_setup, 's3_region')
         self.user          = config.get(aws_setup, 'user')
@@ -58,7 +58,7 @@ class DeployPySparkScriptOnAws(object):
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
         self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
-        self.job_name = self.generate_job_name()  # format: some_job.some_user.20181204.153429
+        self.job_name = self.generate_pipeline_name(self.yml.job_name, self.user)  #TODO: rename job_name to pipeline_name format: some_job.some_user.20181204.153429
         self.job_log_path = 'yaetos/logs/{}'.format(self.job_name)  # format: yaetos/logs/some_job.some_user.20181204.153429
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
         self.package_path  = self.job_log_path+'/package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
@@ -134,11 +134,16 @@ class DeployPySparkScriptOnAws(object):
         return {'id':clusters[int(answer)-1][1],
                 'name':clusters[int(answer)-1][2]}
 
-    def generate_job_name(self):
-        return "yaetos_{}_{}_{}".format(
-            self.app_name,
-            self.user.replace('.','_'),
+    @staticmethod
+    def generate_pipeline_name(job_name, user):
+        return "yaetos__{}__{}".format(
+            job_name.replace('.','_d_').replace('/','_s_'),
+            # user.replace('.','_'),
             datetime.now().strftime("%Y%m%dT%H%M%S"))
+
+    @staticmethod
+    def get_job_name(pipeline_name):
+        return pipeline_name.split('__')[1].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
 
     def temp_bucket_exists(self, s3):
         """
@@ -377,11 +382,26 @@ class DeployPySparkScriptOnAws(object):
         self.s3_ops(self.session)
         self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
-        # DataPipeline ops
-        import awscli.customizations.datapipeline.translator as trans
+        # AWSDataPipeline ops
         client = self.session.client('datapipeline')
+        self.deactivate_similar_pipelines(client, self.job_name)
+        pipe_id = self.create_data_pipeline(client)
+        parameterValues = self.define_data_pipeline(client, pipe_id)
+        self.activate_data_pipeline(client, pipe_id, parameterValues)
+        # self.deactivate_older_pipeline(client, self.job_name)
 
-        pipe_id = self.create_date_pipeline(client)
+    def create_data_pipeline(self, client):
+        unique_id = uuid.uuid1()
+        create = client.create_pipeline(name=self.job_name, uniqueId=str(unique_id))
+        logger.debug('Pipeline created :' + str(create))
+
+        pipe_id = create['pipelineId']  # format: 'df-0624751J5O10SBRYJJF'
+        logger.info('Created pipeline with id ' + pipe_id)
+        logger.debug('Pipeline description :' + str(client.describe_pipelines(pipelineIds=[pipe_id])))
+        return pipe_id
+
+    def define_data_pipeline(self, client, pipe_id):
+        import awscli.customizations.datapipeline.translator as trans
 
         definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
@@ -399,7 +419,9 @@ class DeployPySparkScriptOnAws(object):
             parameterValues=parameterValues
         )
         logger.info('put_pipeline_definition response: '+str(response))
+        return parameterValues
 
+    def activate_data_pipeline(self, client, pipe_id, parameterValues):
         response = client.activate_pipeline(
             pipelineId=pipe_id,
             parameterValues=parameterValues,  # optional. If set, need to specify all params as per json.
@@ -408,15 +430,24 @@ class DeployPySparkScriptOnAws(object):
         logger.info('activate_pipeline response: '+str(response))
         logger.info('Activated pipeline ' + pipe_id)
 
-    def create_date_pipeline(self, client):
-        unique_id = uuid.uuid1()
-        create = client.create_pipeline(name=self.job_name, uniqueId=str(unique_id))
-        logger.debug('Pipeline created :' + str(create))
+    def list_data_pipeline(self, client):
+        out = client.list_pipelines(marker='')
+        pipelines = out['pipelineIdList']
+        while out['hasMoreResults'] == True:
+            out = client.list_pipelines(marker=out['marker'])
+            pipelines += out['pipelineIdList']
+        return pipelines
 
-        pipe_id = create['pipelineId']  # format: 'df-0624751J5O10SBRYJJF'
-        logger.info('Created pipeline with id ' + pipe_id)
-        logger.debug('Pipeline description :' + str(client.describe_pipelines(pipelineIds=[pipe_id])))
-        return pipe_id
+    def deactivate_similar_pipelines(self, client, pipeline_id):
+        pipelines = self.list_data_pipeline(client)
+        # print('#--- pipelines:', pipelines)
+        for item in pipelines:
+            # item.update({'job_name': self.get_job_name(item['name'])})
+            job_name = self.get_job_name(item['name'])
+            if job_name == self.yml.job_name:
+                response = client.deactivate_pipeline(pipelineId=item['id'], cancelActive=True)
+                logger.info('Deactivated pipeline ' + item)
+                # import ipdb; ipdb.set_trace()
 
     def update_params(self, parameterValues):
         # TODO: check if easier/simpler to change values at the source json instead of a processed one.
@@ -527,4 +558,9 @@ if __name__ == "__main__":
     yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
     deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
     app_args = {'mode':'EMR'}
-    DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
+    # DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
+
+    deployed = DeployPySparkScriptOnAws(yml, deploy_args, app_args)
+    client = deployed.session.client('datapipeline')
+    pipelines = deployed.list_date_pipeline(client)
+    print('#--- pipelines: ', pipelines)
