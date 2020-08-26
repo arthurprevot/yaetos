@@ -58,11 +58,12 @@ class DeployPySparkScriptOnAws(object):
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
         self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
+        self.metadata_folder = 'pipelines_metadata'
         self.job_name = self.generate_pipeline_name(self.yml.job_name, self.user)  #TODO: rename job_name to pipeline_name format: some_job.some_user.20181204.153429
-        self.job_log_path = 'yaetos/logs/{}'.format(self.job_name)  # format: yaetos/logs/some_job.some_user.20181204.153429
+        self.job_log_path = '{}/jobs_code/{}'.format(self.metadata_folder, self.job_name)  # format: yaetos/logs/some_job.some_user.20181204.153429
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
-        self.package_path  = self.job_log_path+'/package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
-        self.package_path_with_bucket  = self.job_log_path_with_bucket+'/package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
+        self.package_path  = self.job_log_path+'/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
+        self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
         self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
 
     def run(self):
@@ -252,7 +253,7 @@ class DeployPySparkScriptOnAws(object):
         emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
         response = c.run_job_flow(
             Name=self.job_name,
-            LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),
+            LogUri="s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder),
             ReleaseLabel=emr_version,
             Instances={
                 'InstanceGroups': [{
@@ -465,7 +466,7 @@ class DeployPySparkScriptOnAws(object):
             elif 'mySubnet' in item.values():
                 parameterValues[ii] = {'id': u'mySubnet', 'stringValue': self.ec2_subnet_id}
             elif 'myPipelineLogUri' in item.values():
-                parameterValues[ii] = {'id': u'myPipelineLogUri', 'stringValue': "s3://"+self.s3_bucket_logs}
+                parameterValues[ii] = {'id': u'myPipelineLogUri', 'stringValue': "s3://{}/{}/scheduled_run_logs/".format(self.s3_bucket_logs, self.metadata_folder)}
             elif 'myScheduleType' in item.values():
                 parameterValues[ii] = {'id': u'myScheduleType', 'stringValue': myScheduleType}
             elif 'myPeriod' in item.values():
