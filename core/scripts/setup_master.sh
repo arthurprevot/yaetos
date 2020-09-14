@@ -19,6 +19,7 @@ sudo pip-3.6 install simple-salesforce==1.0.0
 sudo pip-3.6 install pymysql==0.9.3
 sudo pip-3.6 install psycopg2-binary==2.8.5  # necesary for sqlalchemy-redshift, psycopg2==2.8.5 fails installing.
 sudo pip-3.6 install sqlalchemy-redshift==0.7.7
+sudo pip-3.6 install stripe==2.50.0
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
 echo "Copy S3 to EMR master"
