@@ -20,7 +20,7 @@
       "keyPair": "#{myEC2KeyPair}",
       "masterInstanceType": "#{myMasterInstanceType}",
       "releaseLabel": "#{myEMRReleaseLabel}",
-      "terminateAfter": "50 Minutes",
+      "terminateAfter": "300 Minutes",
       "applications": "spark",
       "configuration": {"ref": "spark-env" }
     },

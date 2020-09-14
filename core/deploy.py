@@ -41,10 +41,9 @@ class DeployPySparkScriptOnAws(object):
         assert os.path.isfile(deploy_args['aws_config_file'])
         config.read(deploy_args['aws_config_file'])
 
-        self.app_file = yml.py_job  # remove all refs to app_file to be consistent.
+        self.app_file = yml.py_job  # TODO: remove all refs to app_file to be consistent.
         self.yml = yml
         self.aws_setup = aws_setup
-        self.app_name = self.yml.job_name.replace('.','_').split('/')[-1]  # TODO: integrate in yml obj and use it here.
         self.ec2_key_name  = config.get(aws_setup, 'ec2_key_name')
         self.s3_region     = config.get(aws_setup, 's3_region')
         self.user          = config.get(aws_setup, 'user')
@@ -58,11 +57,12 @@ class DeployPySparkScriptOnAws(object):
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
         self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
-        self.job_name = self.generate_job_name()  # format: some_job.some_user.20181204.153429
-        self.job_log_path = 'yaetos/logs/{}'.format(self.job_name)  # format: yaetos/logs/some_job.some_user.20181204.153429
+        self.metadata_folder = 'pipelines_metadata'
+        self.job_name = self.generate_pipeline_name(self.yml.job_name, self.user)  #TODO: rename job_name to pipeline_name format: some_job.some_user.20181204.153429
+        self.job_log_path = '{}/jobs_code/{}'.format(self.metadata_folder, self.job_name)  # format: yaetos/logs/some_job.some_user.20181204.153429
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
-        self.package_path  = self.job_log_path+'/package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
-        self.package_path_with_bucket  = self.job_log_path_with_bucket+'/package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
+        self.package_path  = self.job_log_path+'/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
+        self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
         self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
 
     def run(self):
@@ -134,11 +134,16 @@ class DeployPySparkScriptOnAws(object):
         return {'id':clusters[int(answer)-1][1],
                 'name':clusters[int(answer)-1][2]}
 
-    def generate_job_name(self):
-        return "yaetos_{}_{}_{}".format(
-            self.app_name,
-            self.user.replace('.','_'),
+    @staticmethod
+    def generate_pipeline_name(job_name, user):
+        return "yaetos__{}__{}".format(
+            job_name.replace('.','_d_').replace('/','_s_'),
+            # user.replace('.','_'),
             datetime.now().strftime("%Y%m%dT%H%M%S"))
+
+    @staticmethod
+    def get_job_name(pipeline_name):
+        return pipeline_name.split('__')[1].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
 
     def temp_bucket_exists(self, s3):
         """
@@ -247,7 +252,7 @@ class DeployPySparkScriptOnAws(object):
         emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
         response = c.run_job_flow(
             Name=self.job_name,
-            LogUri="s3://{}/elasticmapreduce/".format(self.s3_bucket_logs),
+            LogUri="s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder),
             ReleaseLabel=emr_version,
             Instances={
                 'InstanceGroups': [{
@@ -377,11 +382,25 @@ class DeployPySparkScriptOnAws(object):
         self.s3_ops(self.session)
         self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
-        # DataPipeline ops
-        import awscli.customizations.datapipeline.translator as trans
+        # AWSDataPipeline ops
         client = self.session.client('datapipeline')
+        self.deactivate_similar_pipelines(client, self.job_name)
+        pipe_id = self.create_data_pipeline(client)
+        parameterValues = self.define_data_pipeline(client, pipe_id)
+        self.activate_data_pipeline(client, pipe_id, parameterValues)
 
-        pipe_id = self.create_date_pipeline(client)
+    def create_data_pipeline(self, client):
+        unique_id = uuid.uuid1()
+        create = client.create_pipeline(name=self.job_name, uniqueId=str(unique_id))
+        logger.debug('Pipeline created :' + str(create))
+
+        pipe_id = create['pipelineId']  # format: 'df-0624751J5O10SBRYJJF'
+        logger.info('Created pipeline with id ' + pipe_id)
+        logger.debug('Pipeline description :' + str(client.describe_pipelines(pipelineIds=[pipe_id])))
+        return pipe_id
+
+    def define_data_pipeline(self, client, pipe_id):
+        import awscli.customizations.datapipeline.translator as trans
 
         definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
@@ -399,7 +418,9 @@ class DeployPySparkScriptOnAws(object):
             parameterValues=parameterValues
         )
         logger.info('put_pipeline_definition response: '+str(response))
+        return parameterValues
 
+    def activate_data_pipeline(self, client, pipe_id, parameterValues):
         response = client.activate_pipeline(
             pipelineId=pipe_id,
             parameterValues=parameterValues,  # optional. If set, need to specify all params as per json.
@@ -408,15 +429,21 @@ class DeployPySparkScriptOnAws(object):
         logger.info('activate_pipeline response: '+str(response))
         logger.info('Activated pipeline ' + pipe_id)
 
-    def create_date_pipeline(self, client):
-        unique_id = uuid.uuid1()
-        create = client.create_pipeline(name=self.job_name, uniqueId=str(unique_id))
-        logger.debug('Pipeline created :' + str(create))
+    def list_data_pipeline(self, client):
+        out = client.list_pipelines(marker='')
+        pipelines = out['pipelineIdList']
+        while out['hasMoreResults'] == True:
+            out = client.list_pipelines(marker=out['marker'])
+            pipelines += out['pipelineIdList']
+        return pipelines
 
-        pipe_id = create['pipelineId']  # format: 'df-0624751J5O10SBRYJJF'
-        logger.info('Created pipeline with id ' + pipe_id)
-        logger.debug('Pipeline description :' + str(client.describe_pipelines(pipelineIds=[pipe_id])))
-        return pipe_id
+    def deactivate_similar_pipelines(self, client, pipeline_id):
+        pipelines = self.list_data_pipeline(client)
+        for item in pipelines:
+            job_name = self.get_job_name(item['name'])
+            if job_name == self.yml.job_name:
+                response = client.deactivate_pipeline(pipelineId=item['id'], cancelActive=True)
+                logger.info('Deactivated pipeline {}, {}, {}'.format(job_name, item['name'], item['id']))
 
     def update_params(self, parameterValues):
         # TODO: check if easier/simpler to change values at the source json instead of a processed one.
@@ -438,7 +465,7 @@ class DeployPySparkScriptOnAws(object):
             elif 'mySubnet' in item.values():
                 parameterValues[ii] = {'id': u'mySubnet', 'stringValue': self.ec2_subnet_id}
             elif 'myPipelineLogUri' in item.values():
-                parameterValues[ii] = {'id': u'myPipelineLogUri', 'stringValue': "s3://"+self.s3_bucket_logs}
+                parameterValues[ii] = {'id': u'myPipelineLogUri', 'stringValue': "s3://{}/{}/scheduled_run_logs/".format(self.s3_bucket_logs, self.metadata_folder)}
             elif 'myScheduleType' in item.values():
                 parameterValues[ii] = {'id': u'myScheduleType', 'stringValue': myScheduleType}
             elif 'myPeriod' in item.values():
@@ -500,6 +527,56 @@ class DeployPySparkScriptOnAws(object):
         print('delete_secret response: {}'.format(response))
 
 
+def deploy_all_scheduled():
+    ### Experimental ! Has lead to errors like: /usr/bin/python3: can't open file '/home/hadoop/app/jobs/frontroom/hotel_staff_usage_job.py': [Errno 2] No such file or directory
+    ### pb I don't get when deploying normally, from job files.
+    ### TODO: also need to remove "dependency" run for the ones with no dependencies.
+    def get_yml(args):
+        meta_file = args.get('job_param_file', 'repo')
+        if meta_file is 'repo':
+            meta_file = eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE if args['storage']=='s3' else eu.JOBS_METADATA_LOCAL_FILE
+        yml = eu.Job_Yml_Parser.load_meta(meta_file)
+        logger.info('Loaded job param file: ' + meta_file)
+        return yml
+
+    def get_bool(prompt):
+        while True:
+            try:
+               return {"":True, "y":True,"n":False}[input(prompt).lower()]
+            except KeyError:
+               print("Invalid input please enter y or n!")
+
+    def validate_job(job):
+        return get_bool('Want to schedule "{}" [Y/n]? '.format(job))
+
+    # TODO: reuse etl_utils.py Commandliner/set_commandline_args() to have cleaner interface and proper default values.
+    deploy_args = {'leave_on': False,
+                   'aws_config_file':eu.AWS_CONFIG_FILE, # TODO: make set-able
+                   'aws_setup':'dev'}
+    app_args = {'mode':'EMR_Scheduled',
+                'job_param_file': 'conf/jobs_metadata.yml', # TODO: make set-able. Set to external repo for testing.
+                'boxed_dependencies': True,
+                'dependencies': True,
+                'storage': 'local',
+                'jobs_folder': eu.JOB_FOLDER,  # TODO: make set-able
+                'connection_file': eu.CONNECTION_FILE, # TODO: make set-able
+                }
+
+    yml = get_yml(app_args)
+    pipelines = yml.keys()
+    for pipeline in pipelines:
+        job_yml = eu.Job_Yml_Parser(app_args)
+        job_yml.set_job_params(job_name=pipeline)
+        if not job_yml.frequency:
+            continue
+
+        run = validate_job(pipeline)
+        if not run:
+            continue
+
+        DeployPySparkScriptOnAws(job_yml, deploy_args, app_args).run()
+
+
 def terminate(error_message=None):
     """
     Method to exit the Python script. It will log the given message and then exit().
@@ -515,16 +592,25 @@ logger = log.setup_logging('Deploy')
 
 
 if __name__ == "__main__":
+    # Deploying 1 job manually.
     # Use as standalone to push random python script to cluster.
     # TODO: fails to create a new cluster but works to add a step to an existing cluster.
     print('command line: ', ' '.join(sys.argv))
     job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'  # TODO: move to 'jobs/examples/ex1_raw_job_cluster.py'
     class bag(object):
         pass
-
-    yml = bag()
-    yml.job_name = job_name
-    yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
+    job_yml = bag()
+    job_yml.job_name = job_name
+    job_yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
     deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
     app_args = {'mode':'EMR'}
-    DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
+    DeployPySparkScriptOnAws(job_yml, deploy_args, app_args).run()
+
+    # Show list of all jobs running.
+    deployer = DeployPySparkScriptOnAws(job_yml, deploy_args, app_args)
+    client = deployer.session.client('datapipeline')
+    pipelines = deployer.list_data_pipeline(client)
+    print('#--- pipelines: ', pipelines)
+
+    # (Re)deploy schedule jobs
+    #deploy_all_scheduled() # needs more testing.
