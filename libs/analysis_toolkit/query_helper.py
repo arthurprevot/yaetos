@@ -145,6 +145,7 @@ def write_file(fname, content):
     fh.close()
 
 def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_deltas=True):
+    """Note: Doesn't support both dfs having same column names (or at least the ones that need to be compared.)"""
     print('Length df1', len(df1), df1[pks1].nunique())
     print('Length df2', len(df2), df2[pks2].nunique())
 
@@ -167,7 +168,7 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
         elif float(row[item1]) == 0 or float(row[item2]) == 0:
             return 100
         else:
-            return np.abs(np.divide((row[item1]-row[item2]), float(row[item1])))
+            return np.abs(np.divide((row[item1]-row[item2]), float(row[item1])))*100
 
     # Check deltas
     threshold = 0.01
@@ -175,6 +176,7 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
     for ii in range(len(compare1)):
         item1 = compare1[ii]
         item2 = compare2[ii]
+        assert item1!=item2
         df_joined['_delta_'+item1] = df_joined.apply(lambda row: (row[item1] if not np.isnan(row[item1]) else 0.0)-(row[item2] if not np.isnan(row[item2]) else 0.0), axis=1) # need to deal with case where df1 and df2 have same col name and merge adds suffix _1 and _2
         df_joined['_delta_'+item1+'_%'] = df_joined.apply(check_delta, axis=1)
         df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas']==True and row['_delta_'+item1+'_%']<threshold, axis=1)
