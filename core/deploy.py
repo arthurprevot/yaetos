@@ -44,7 +44,6 @@ class DeployPySparkScriptOnAws(object):
         self.app_file = yml.py_job  # TODO: remove all refs to app_file to be consistent.
         self.yml = yml
         self.aws_setup = aws_setup
-        # self.app_name = self.yml.job_name.replace('.','_dot_').split('/')[-1]  # TODO: integrate in yml obj and use it here.
         self.ec2_key_name  = config.get(aws_setup, 'ec2_key_name')
         self.s3_region     = config.get(aws_setup, 's3_region')
         self.user          = config.get(aws_setup, 'user')
@@ -529,7 +528,9 @@ class DeployPySparkScriptOnAws(object):
 
 
 def deploy_all_scheduled():
-
+    ### Experimental ! Has lead to errors like: /usr/bin/python3: can't open file '/home/hadoop/app/jobs/frontroom/hotel_staff_usage_job.py': [Errno 2] No such file or directory
+    ### pb I don't get when deploying normally, from job files.
+    ### TODO: also need to remove "dependency" run for the ones with no dependencies.
     def get_yml(args):
         meta_file = args.get('job_param_file', 'repo')
         if meta_file is 'repo':
@@ -553,7 +554,7 @@ def deploy_all_scheduled():
                    'aws_config_file':eu.AWS_CONFIG_FILE, # TODO: make set-able
                    'aws_setup':'dev'}
     app_args = {'mode':'EMR_Scheduled',
-                'job_param_file': 'conf/jobs_metadata.yml', # TODO: make set-able
+                'job_param_file': 'conf/jobs_metadata.yml', # TODO: make set-able. Set to external repo for testing.
                 'boxed_dependencies': True,
                 'dependencies': True,
                 'storage': 'local',
@@ -612,4 +613,4 @@ if __name__ == "__main__":
     print('#--- pipelines: ', pipelines)
 
     # (Re)deploy schedule jobs
-    deploy_all_scheduled()
+    #deploy_all_scheduled() # needs more testing.
