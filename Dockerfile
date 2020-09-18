@@ -1,6 +1,7 @@
-FROM arthurpr/pyspark_aws_etl:latest
+FROM jupyter/pyspark-notebook
+# FROM arthurpr/pyspark_aws_etl:latest
 # FROM arthurpr/pyspark_aws_etl:oracle # also available to skip oracle install steps below.
-USER root
+#USER root
 WORKDIR /mnt/pyspark_aws_etl
 
 ENV PYSPARK_AWS_ETL_HOME /mnt/pyspark_aws_etl
@@ -8,32 +9,6 @@ ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 
-
-#---- Install oracle ------
-RUN apt-get install libaio1 -y
-ENV PKG_URL https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-ENV INSTALLER miniconda.sh
-RUN set -ex \
-    && curl -kfSL $PKG_URL -o $INSTALLER \
-    && chmod 755 $INSTALLER \
-    && ./$INSTALLER -b -p /opt/conda \
-    && rm $INSTALLER
-
-# didn't find a way to install oracle-instantclient from apt-get
-# so getting it from conda. Need to only put conda in PATH (/usr/local/bin/)
-# to avoid python from conda taking over original python.
-RUN ln -s /opt/conda/bin/conda /usr/local/bin/conda
-RUN conda install -y -c trent oracle-instantclient=11.2.0.4.0
-# full version is 11.2.0.4.0-1 but fails when adding the "-1". was "-c anaconda" until 24 oct 2019 and was pulling v11.2.0.4.0-0
-
-RUN pip install cx_Oracle==7.2.3
-ENV ORACLE_HOME=/opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1
-ENV LD_LIBRARY_PATH=/opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1/lib
-
-RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1/lib/libclntsh.so /usr/lib/
-RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1/lib/libnnz11.so /usr/lib/
-RUN ln -s /opt/conda/pkgs/oracle-instantclient-11.2.0.4.0-1/lib/libociei.so /usr/lib/
-#---- End Installation oracle ------
 
 
 # Expose ports for monitoring.
