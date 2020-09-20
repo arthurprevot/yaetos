@@ -1,6 +1,7 @@
 FROM jupyter/pyspark-notebook
 # FROM arthurpr/pyspark_aws_etl:latest
 # FROM arthurpr/pyspark_aws_etl:oracle # also available to skip oracle install steps below.
+USER root
 
 COPY requirements.txt /tmp/requirements.txt
 WORKDIR /tmp/
@@ -8,6 +9,7 @@ RUN pip3 install -r requirements.txt
 
 WORKDIR /mnt/pyspark_aws_etl
 
+RUN mkdir -p tmp/files_to_ship/
 ENV PYSPARK_AWS_ETL_HOME /mnt/pyspark_aws_etl/
 ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
