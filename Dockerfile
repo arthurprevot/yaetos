@@ -1,13 +1,10 @@
 FROM jupyter/pyspark-notebook
 # FROM arthurpr/pyspark_aws_etl:latest
 # FROM arthurpr/pyspark_aws_etl:oracle # also available to skip oracle install steps below.
-#USER root
 
-
-COPY requirements.txt /opt/app/requirements.txt
-WORKDIR /opt/app/
+COPY requirements.txt /tmp/requirements.txt
+WORKDIR /tmp/
 RUN pip3 install -r requirements.txt
-#COPY . /opt/app
 
 WORKDIR /mnt/pyspark_aws_etl
 
@@ -15,10 +12,6 @@ ENV PYSPARK_AWS_ETL_HOME /mnt/pyspark_aws_etl/
 ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
-
-#RUN source $PYSPARK_AWS_ETL_HOME/scripts/setup.sh
-#RUN source scripts/setup.sh
-#RUN pip3 install -r requirements.txt
 
 # Expose ports for monitoring.
 # SparkContext web UI on 4040 -- only available for the duration of the application.
