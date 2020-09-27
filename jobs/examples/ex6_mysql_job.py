@@ -5,12 +5,10 @@ from sqlalchemy import types
 
 
 class Job(Mysql_Job):
-
     OUTPUT_TYPES = {
         'some_field1': types.INT(),
         'some_field2': types.INT(),
-        'some_field3': types.VARCHAR(100),
-        }
+        'some_field3': types.VARCHAR(100)}
 
     def transform(self):
         return self.query_mysql("""SELECT * FROM some_table """)
