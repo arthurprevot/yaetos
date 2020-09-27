@@ -96,6 +96,7 @@ class ETL_Base(object):
         output.show()
         count = output.count()
         logger.info('Output count: {}'.format(count))
+        logger.info("Output data types: {}".format([(fd.name, fd.dataType) for fd in output.schema.fields]))
         self.output_empty = count == 0
         if self.output_empty and self.is_incremental:
             logger.info("-------End job '{}', increment with empty output--------".format(self.job_name))
