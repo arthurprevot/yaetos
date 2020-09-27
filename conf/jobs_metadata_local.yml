@@ -73,6 +73,10 @@ examples/ex5_copy_to_redshift_job.py:  # shows frameworked pyspark ops, same as 
   output: {'path':'data/wiki_example/output_ex5_copy_to_oracle/{now}/', 'type':'csv'}
   copy_to_redshift: {'creds': 'redshift', 'table': 'sandbox.test_ex5_pyspark_job'}
 
+examples/ex6_mysql_job.py:  # requires mysql instance running
+  api_inputs: {'api_creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
+  output: {'path':'data/mysql_example/output_ex6_mysql/{now}/', 'type':'csv'}
+
 examples/wordcount_frameworked_job.py:  # shows raw pyspark rdd ops in framework, same as wordcount_raw_job
   inputs:
     lines: {'path':"data/wordcount_example/input/sample_text.txt", 'type':'txt'}
