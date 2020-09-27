@@ -4,8 +4,6 @@ from libs.python_db_connectors.query_mysql import query as query_mysql
 import core.logger as log
 logger = log.setup_logging('Job')
 
-from sqlalchemy import types
-
 
 class Mysql_Job(ETL_Base):
 
