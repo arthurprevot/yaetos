@@ -45,7 +45,8 @@ JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 AWS_CONFIG_FILE = 'conf/aws_config.cfg'
 CONNECTION_FILE = 'conf/connections.cfg'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') #+ '/'
+LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_HOME set to end with '/'
+LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
 
@@ -361,6 +362,8 @@ class Job_Yml_Parser():
             self.job_name = job_file[len(CLUSTER_APP_FOLDER+'scripts.zip/jobs/'):]
         elif job_file.startswith(LOCAL_APP_FOLDER+'jobs/'):
             self.job_name = job_file[len(LOCAL_APP_FOLDER+'jobs/'):]
+        elif job_file.startswith(LOCAL_JOB_REPO_FOLDER+'jobs/'):  # when run from external repo.
+            self.job_name = job_file[len(LOCAL_JOB_REPO_FOLDER+'jobs/'):]
         elif job_file.startswith('jobs/'):
             self.job_name = job_file[len('jobs/'):]
         elif job_file.__contains__('/scripts.zip/jobs/'):
