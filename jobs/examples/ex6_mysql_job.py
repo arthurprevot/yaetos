@@ -13,11 +13,7 @@ class Job(Mysql_Job):
         }
 
     def transform(self):
-        query_str = """
-            select *
-            FROM some_table
-            """
-        return self.query_mysql(query_str)
+        return self.query_mysql("""SELECT * FROM some_table """)
 
 
 if __name__ == "__main__":
