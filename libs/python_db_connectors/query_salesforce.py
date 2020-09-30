@@ -14,7 +14,8 @@ def connect(creds_section, creds_or_file='conf/connections.cfg'):
 
     user = config.get(creds_section, 'user')
     pwd = config.get(creds_section, 'password')
-    return Salesforce(username=user, password=pwd, security_token='')
+    token = config.get(creds_section, 'token')
+    return Salesforce(username=user, password=pwd, security_token=token)
 
 def query(query_str, **connect_args):
     sf = connect(**connect_args)

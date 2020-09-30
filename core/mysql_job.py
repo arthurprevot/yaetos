@@ -14,6 +14,7 @@ class Mysql_Job(ETL_Base):
         logger.info('Query string:\n' + query_str)
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
         creds_section = self.job_yml['api_inputs']['api_creds']
+        logger.info('The query is using the credential section:' + creds_section)
         pdf = query_mysql(query_str, db=creds_section, creds_or_file=creds)
         sdf = pdf_to_sdf(pdf, self.OUTPUT_TYPES, self.sc, self.sc_sql)
         return sdf

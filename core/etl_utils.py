@@ -266,6 +266,11 @@ class ETL_Base(object):
 
     def save(self, output, now_dt):
         path = Path_Handler(self.OUTPUT['path']).expand_now(now_dt)
+        self.path = path
+
+        if self.OUTPUT['type'] == 'None':
+            logger.info('Did not write output to disk')
+            return None
 
         if self.is_incremental:
             current_time = now_dt.strftime('%Y%m%d_%H%M%S_utc')  # no use of now_dt to make it updated for each inc.
@@ -279,9 +284,10 @@ class ETL_Base(object):
             output.write.parquet(path)
         elif self.OUTPUT['type'] == 'csv':
             output.write.option("header", "true").csv(path)
+        else:
+            raise Exception("Need to specify supported output type, either txt, parquet or csv.")
 
         logger.info('Wrote output to ' + path)
-        self.path = path
 
     def save_metadata(self, elapsed):
         fname = self.path + '_metadata.txt'
