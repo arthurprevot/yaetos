@@ -18,8 +18,7 @@ ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 
 ENV PYSPARK_AWS_ETL_JOBS_HOME /mnt/external_pipelines/
-# export PYSPARK_AWS_ETL_JOBS_HOME='put the path to your external repo here'
-
+# or replace "/mnt/external_pipelines/" by the name of your external repo to make it match.
 
 # Expose ports for monitoring.
 # SparkContext web UI on 4040 -- only available for the duration of the application.
