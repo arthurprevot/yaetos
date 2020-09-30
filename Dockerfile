@@ -17,6 +17,10 @@ ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 
+ENV PYSPARK_AWS_ETL_JOBS_HOME /mnt/external_pipelines/
+# export PYSPARK_AWS_ETL_JOBS_HOME='put the path to your external repo here'
+
+
 # Expose ports for monitoring.
 # SparkContext web UI on 4040 -- only available for the duration of the application.
 # Spark master’s web UI on 8080.

@@ -10,3 +10,4 @@ pip3 install -r requirements.txt
 export PYSPARK_AWS_ETL_HOME=`pwd`'/'
 export PYTHONPATH=$PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 export PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
+export PYSPARK_AWS_ETL_JOBS_HOME='put the path to your external repo here'

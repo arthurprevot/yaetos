@@ -1,5 +1,6 @@
 # For docker env. TODO: use it for AWS setup too, would involve splitting it in 2 req files (master and slave sides).
 #pyyaml==5.1.2
+#awscli==1.16.67
 boto3==1.9.57
 #botocore==1.8.7
 networkx==2.4
@@ -11,4 +12,10 @@ statsmodels==0.9.0
 kafka-python==1.4.7
 jsonschema==3.0.2
 flake8==3.7.9
+stripe==2.50.0
+soql==1.0.2
+simple-salesforce==1.0.0
+pymysql==0.9.3
+psycopg2-binary==2.8.5
+sqlalchemy-redshift==0.7.7
 stripe==2.50.0
