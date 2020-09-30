@@ -11,7 +11,7 @@ RUN pip3 install -r requirements.txt
 
 WORKDIR /mnt/pyspark_aws_etl
 
-RUN mkdir -p tmp/files_to_ship/
+# RUN mkdir -p tmp/files_to_ship/  # skipped, causes problems with permissions, whether run from root or jovyan user. Will need to be run manually once.
 ENV PYSPARK_AWS_ETL_HOME /mnt/pyspark_aws_etl/
 ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
