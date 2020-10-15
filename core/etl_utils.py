@@ -185,6 +185,7 @@ class ETL_Base(object):
 
             # Load from disk
             path = self.INPUTS[item]['path']
+            logger.info("Input '{}' to be loaded from files '{}'.".format(item, path))
             path = Path_Handler(path).expand_later(self.args['storage'])
             app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
             logger.info("Input '{}' loaded from files '{}'.".format(item, path))

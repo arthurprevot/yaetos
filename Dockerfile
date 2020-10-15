@@ -19,6 +19,7 @@ ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 
 ENV PYSPARK_AWS_ETL_JOBS_HOME /mnt/external_pipelines/
 # or replace "/mnt/external_pipelines/" by the name of your external repo to make it match.
+# TODO: fix external shared folders that can't be access from mac with current version of docker, although it works from ubuntu.
 
 # Expose ports for monitoring.
 # SparkContext web UI on 4040 -- only available for the duration of the application.
