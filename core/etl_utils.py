@@ -107,6 +107,7 @@ class ETL_Base(object):
         self.save(output, self.start_dt)
         end_time = time()
         elapsed = end_time - start_time
+        logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
         if self.redshift_copy_params:
