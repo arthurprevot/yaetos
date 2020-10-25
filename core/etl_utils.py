@@ -266,8 +266,9 @@ class ETL_Base(object):
     def get_max_timestamp(self, df):
         return df.agg({self.OUTPUT['inc_field']: "max"}).collect()[0][0]
 
-    def save(self, output, now_dt):
-        path = Path_Handler(self.OUTPUT['path']).expand_now(now_dt)
+    def save(self, output, now_dt, path=None):
+        if path is None:
+            path = Path_Handler(self.OUTPUT['path']).expand_now(now_dt)
         self.path = path
 
         if self.OUTPUT['type'] == 'None':
