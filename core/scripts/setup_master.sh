@@ -13,6 +13,7 @@ sudo pip-3.6 install scikit-learn==0.20.0  # TODO: remove when using req file
 sudo pip-3.6 install statsmodels==0.9.0  # TODO: remove when using req file
 sudo pip-3.6 install kafka-python==1.4.7
 sudo pip-3.6 install jsonschema==3.0.2
+sudo pip-3.6 install koalas==1.3.0
 # DB and API libs
 sudo pip-3.6 install soql==1.0.2  # Necessary for simple-salesforce
 sudo pip-3.6 install simple-salesforce==1.10.1
