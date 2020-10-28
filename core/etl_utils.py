@@ -379,7 +379,7 @@ class Job_Yml_Parser():
             # To deal with cases like job_file = '/mnt/tmp/spark-48e465ad-cca8-4216-a77f-ce069d04766f/userFiles-b1dad8aa-76ea-4adf-97da-dc9273666263/scripts.zip/jobs/infojobs/churn_prediction/users_inscriptions_daily.py' that appeared in new emr version.
             self.job_name = job_file[job_file.find('/scripts.zip/jobs/')+len('/scripts.zip/jobs/'):]
         else:
-            # To deal with case when job is defined outside of this repo, i.e. isn't located in 'jobs/' folder.
+            # To deal with case when job is defined outside of this repo (and not in jobs/ folder in external folder), i.e. isn't located in 'jobs/' folder. In this case, job name in metadata file should include full path (inc job base path).
             self.job_name = job_file
         logger.info("job_name: '{}', from job_file: '{}'".format(self.job_name, job_file))
 
@@ -389,7 +389,7 @@ class Job_Yml_Parser():
 
     def set_job_yml(self):
         meta_file = self.args.get('job_param_file')
-        if meta_file is 'repo':
+        if meta_file == 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
 
         yml = self.load_meta(meta_file)
@@ -785,12 +785,17 @@ class Flow():
         name_import = py_job.replace('/','.').replace('.py','')
         import_cmd = "from {} import Job".format(name_import)
         namespace = {}
+        logger.info('### ------- import_cmd: {}'.format(import_cmd))
+        #import jobs
+        logger.info('### ------- sys.modules jobs*: {}'.format([item for item in sys.modules.keys() if item.startswith('jobs') or item.__contains__('external')]))
+        logger.info('### ------- sys.path jobs*: {}'.format([item for item in sys.path if item.__contains__('jobs') or item.__contains__('external')]))
+        #import ipdb; ipdb.set_trace()
         exec(import_cmd, namespace)
         return namespace['Job']
 
     def create_connections_jobs(self, storage, args):
         meta_file = args.get('job_param_file')
-        if meta_file is 'repo':
+        if meta_file == 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = Job_Yml_Parser.load_meta(meta_file)
 
