@@ -107,6 +107,7 @@ class ETL_Base(object):
         self.save(output, self.start_dt)
         end_time = time()
         elapsed = end_time - start_time
+        logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
         if self.redshift_copy_params:
@@ -185,6 +186,7 @@ class ETL_Base(object):
 
             # Load from disk
             path = self.INPUTS[item]['path']
+            logger.info("Input '{}' to be loaded from files '{}'.".format(item, path))
             path = Path_Handler(path).expand_later(self.args['storage'])
             app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
             logger.info("Input '{}' loaded from files '{}'.".format(item, path))
@@ -264,8 +266,9 @@ class ETL_Base(object):
     def get_max_timestamp(self, df):
         return df.agg({self.OUTPUT['inc_field']: "max"}).collect()[0][0]
 
-    def save(self, output, now_dt):
-        path = Path_Handler(self.OUTPUT['path']).expand_now(now_dt)
+    def save(self, output, now_dt, path=None):
+        if path is None:
+            path = Path_Handler(self.OUTPUT['path']).expand_now(now_dt)
         self.path = path
 
         if self.OUTPUT['type'] == 'None':
@@ -376,7 +379,7 @@ class Job_Yml_Parser():
             # To deal with cases like job_file = '/mnt/tmp/spark-48e465ad-cca8-4216-a77f-ce069d04766f/userFiles-b1dad8aa-76ea-4adf-97da-dc9273666263/scripts.zip/jobs/infojobs/churn_prediction/users_inscriptions_daily.py' that appeared in new emr version.
             self.job_name = job_file[job_file.find('/scripts.zip/jobs/')+len('/scripts.zip/jobs/'):]
         else:
-            # To deal with case when job is defined outside of this repo, i.e. isn't located in 'jobs/' folder.
+            # To deal with case when job is defined outside of this repo (and not in jobs/ folder in external folder), i.e. isn't located in 'jobs/' folder. In this case, job name in metadata file should include full path (inc job base path).
             self.job_name = job_file
         logger.info("job_name: '{}', from job_file: '{}'".format(self.job_name, job_file))
 
@@ -386,7 +389,7 @@ class Job_Yml_Parser():
 
     def set_job_yml(self):
         meta_file = self.args.get('job_param_file')
-        if meta_file is 'repo':
+        if meta_file == 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if self.args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
 
         yml = self.load_meta(meta_file)
@@ -787,7 +790,7 @@ class Flow():
 
     def create_connections_jobs(self, storage, args):
         meta_file = args.get('job_param_file')
-        if meta_file is 'repo':
+        if meta_file == 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = Job_Yml_Parser.load_meta(meta_file)
 

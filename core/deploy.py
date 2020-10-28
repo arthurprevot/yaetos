@@ -50,7 +50,7 @@ class DeployPySparkScriptOnAws(object):
         self.profile_name  = config.get(aws_setup, 'profile_name')
         self.ec2_subnet_id = config.get(aws_setup, 'ec2_subnet_id')
         self.extra_security_gp = config.get(aws_setup, 'extra_security_gp')
-        self.emr_core_instances = int(config.get(aws_setup, 'emr_core_instances'))
+        self.emr_core_instances = int(app_args.get('emr_core_instances', 1))  # TODO: make this update EMR_Scheduled mode too.
         self.app_args = app_args
         self.deploy_args = deploy_args
         self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  #'m5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)

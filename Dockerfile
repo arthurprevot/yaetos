@@ -5,6 +5,8 @@ FROM jupyter/pyspark-notebook
 # USER root
 
 # Pip installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements.txt doesn't change)
+RUN conda remove PyYAML --yes --offline
+# command above only necessary when using "jupyter/pyspark-notebook" image base, which uses conda as package manager and pip cannot uninstall version.
 COPY requirements.txt /tmp/requirements.txt
 WORKDIR /tmp/
 RUN pip3 install -r requirements.txt
@@ -18,7 +20,9 @@ ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 
 ENV PYSPARK_AWS_ETL_JOBS_HOME /mnt/external_pipelines/
+ENV PYTHONPATH $PYSPARK_AWS_ETL_JOBS_HOME:$PYTHONPATH
 # or replace "/mnt/external_pipelines/" by the name of your external repo to make it match.
+# TODO: fix external shared folders that can't be access from mac with current version of docker, but works from ubuntu.
 
 # Expose ports for monitoring.
 # SparkContext web UI on 4040 -- only available for the duration of the application.

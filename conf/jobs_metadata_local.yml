@@ -83,6 +83,13 @@ examples/ex7_frameworked_job.py:  # shows job with no output (still requiring ta
     other_events: {'path':"data/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
   output: {'path':'n/a', 'type':'None'}
 
+examples/ex8_koalas_job.py:
+  inputs:
+    some_events: {'path':"data/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    other_events: {'path':"data/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+  output: {'path':'data/wiki_example/output_ex8_koalas/{now}/', 'type':'csv'}
+
+
 examples/wordcount_frameworked_job.py:  # shows raw pyspark rdd ops in framework, same as wordcount_raw_job
   inputs:
     lines: {'path':"data/wordcount_example/input/sample_text.txt", 'type':'txt'}
