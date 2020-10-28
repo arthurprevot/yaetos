@@ -1,4 +1,4 @@
-"""To show koalas API"""
+"""To show koalas API. Same process as SQL code in ex2_frameworked_job.py"""
 from core.etl_utils import ETL_Base, Commandliner
 import pandas as pd
 import numpy as np
