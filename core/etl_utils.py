@@ -785,11 +785,6 @@ class Flow():
         name_import = py_job.replace('/','.').replace('.py','')
         import_cmd = "from {} import Job".format(name_import)
         namespace = {}
-        logger.info('### ------- import_cmd: {}'.format(import_cmd))
-        #import jobs
-        logger.info('### ------- sys.modules jobs*: {}'.format([item for item in sys.modules.keys() if item.startswith('jobs') or item.__contains__('external')]))
-        logger.info('### ------- sys.path jobs*: {}'.format([item for item in sys.path if item.__contains__('jobs') or item.__contains__('external')]))
-        #import ipdb; ipdb.set_trace()
         exec(import_cmd, namespace)
         return namespace['Job']
 
