@@ -236,6 +236,7 @@ class ETL_Base(object):
                 app_args[item].createOrReplaceTempView(item)
 
     def load_data(self, path, path_type):
+        logger.info("Path to be loaded: {}".format(path))
         if path_type == 'txt':
             return self.sc.textFile(path)
         elif path_type == 'csv':
@@ -692,6 +693,7 @@ class Commandliner():
         parser.add_argument("--aws_config_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster in mode 'EMR'.")
+        parser.add_argument("-p", "--push_secrets", action='store_true', help="Pushing secrets to cluster. Only relevant if choosing to deploy to a cluster.")
         # parser.add_argument("-o", "--output", default=None, help="output path")
         # For later : --machines, --inputs, to be integrated only as a way to overide values from file.
         defaults = {
