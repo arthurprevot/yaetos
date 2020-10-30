@@ -281,6 +281,10 @@ class DeployPySparkScriptOnAws(object):
                     "Properties": {"PYSPARK_PYTHON": "/usr/bin/python3"}
                     }]
                 },
+                # { # Section to add jars (redshift...)
+                # "Classification": "spark-defaults",
+                # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"],
+                # }
             ],
             JobFlowRole='EMR_EC2_DefaultRole',
             ServiceRole='EMR_DefaultRole',
