@@ -11,6 +11,7 @@ class Mysql_Job(ETL_Base):
         """ Requires OUTPUT_TYPES to be specified in class.
         and mysql connection to be put in yml file in line like "api_inputs: {'api_creds': 'mysql_creds_section'}"
         output spark df."""
+        query_str = query_str.replace('%', '%%')  # replace necessary for pymysql parser
         logger.info('Query string:\n' + query_str)
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
         creds_section = self.job_yml['api_inputs']['api_creds']
