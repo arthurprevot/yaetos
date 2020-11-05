@@ -168,8 +168,9 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         base = eu.LOCAL_APP_FOLDER
+        output_path = self.TMP + "scripts.tar.gz"
         # Create tar.gz file
-        t_file = tarfile.open(self.TMP + "scripts.tar.gz", 'w:gz')
+        t_file = tarfile.open(output_path, 'w:gz')
 
         # Add files
         t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
@@ -210,6 +211,7 @@ class DeployPySparkScriptOnAws(object):
         for f in t_file.getnames():
             logger.debug("Added %s to tar-file" % f)
         t_file.close()
+        logger.info("Added all files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
         for item in ['setup_master.sh', 'setup_nodes.sh', 'terminate_idle_cluster.sh']:
@@ -620,3 +622,12 @@ if __name__ == "__main__":
 
     # (Re)deploy schedule jobs
     #deploy_all_scheduled() # needs more testing.
+
+    # Package code locally
+    deploy_args = {'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
+    app_args = {'job_param_file':'conf/jobs_metadata_local.yml',
+                'jobs_folder':'jobs',
+                }
+    deployer = DeployPySparkScriptOnAws(job_yml, deploy_args, app_args)  # TODO: should remove need for some of these inputs as they are not required by tar_python_scripts()
+    pipelines = deployer.tar_python_scripts()
+    print('#--- Finished packaging ---')
