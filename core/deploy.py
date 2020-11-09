@@ -625,7 +625,7 @@ if __name__ == "__main__":
     # (Re)deploy schedule jobs
     #deploy_all_scheduled() # TODO: needs more testing.
 
-    # Package code locally
+    # Package code locally, not needed to run the job locally though.
     deploy_args = {'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
     app_args = {'job_param_file':'conf/jobs_metadata_local.yml',
                 'jobs_folder':'jobs',
