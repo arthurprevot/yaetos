@@ -283,7 +283,7 @@ class DeployPySparkScriptOnAws(object):
                     "Properties": {"PYSPARK_PYTHON": "/usr/bin/python3"}
                     }]
                 },
-                # { # Section to add jars (redshift...)
+                # { # Section to add jars (redshift...), not used for now, since passed in spark-submit args.
                 # "Classification": "spark-defaults",
                 # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"],
                 # }

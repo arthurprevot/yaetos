@@ -12,4 +12,4 @@ spark-submit \
   --jars https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar \
   $job
 
-# TODO: check way to get arguments (ex: --storage=s3 --job_param_file=conf/jobs_metadata.yml) recognised
+# TODO: check way to get arguments (ex: --storage=s3 --job_param_file=conf/jobs_metadata.yml) recognized
