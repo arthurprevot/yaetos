@@ -579,7 +579,13 @@ class FS_Ops_Dispatcher():
     @staticmethod
     def listdir_cluster(path):
         # TODO: better handle invalid path. Crashes with "TypeError: 'NoneType' object is not iterable" at last line.
-        fname_parts = path.split('s3a://')[1].split('/')  # was s3:// before
+        if path.startswith('s3://'):
+            s3_root = 's3://'
+        elif path.startswith('s3a://'):
+            s3_root = 's3a://'  # necessary when pulling S3 to local automatically from spark.
+        else:
+            raise ValueError('Problem with path. Running on cluster, it should start with "s3://" or "s3a://". Path is: {}'.format(path))
+        fname_parts = path.split(s3_root)[1].split('/')
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
         client = boto3.client('s3')
