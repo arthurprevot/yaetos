@@ -49,6 +49,7 @@ LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_
 LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
+REDSHIFT_S3_TMP_DIR = "s3a://sandbox-arthur/yaetos/tmp_spark/"  # user setting. TODO: set from job_metadata.yml
 
 
 class ETL_Base(object):
@@ -111,7 +112,7 @@ class ETL_Base(object):
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
         if self.redshift_copy_params:
-            self.copy_to_redshift(output, self.OUTPUT_TYPES)
+            self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
         if self.copy_to_kafka:
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
@@ -313,9 +314,9 @@ class ETL_Base(object):
         df.cache()
         return df
 
-    def copy_to_redshift(self, output, types):
-        # dependencies here to avoid loading heavy libraries when not needed (optional feature).
-        from core.redshift import create_table
+    def copy_to_redshift_using_pandas(self, output, types):
+        # dependencies put here below to avoid loading heavy libraries when not needed (optional feature).
+        from core.redshift_pandas import create_table
         from core.db_utils import cast_col
         df = output.toPandas()
         df = cast_col(df, types)
@@ -324,6 +325,14 @@ class ETL_Base(object):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
         create_table(df, connection_profile, name_tb, schema, types, creds, self.is_incremental)
         del(df)
+
+    def copy_to_redshift_using_spark(self, sdf):
+        # dependencies put here below to avoid loading heavy libraries when not needed (optional feature).
+        from core.redshift_spark import create_table
+        connection_profile = self.redshift_copy_params['creds']
+        schema, name_tb= self.redshift_copy_params['table'].split('.')
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
+        create_table(sdf, connection_profile, name_tb, schema, creds, self.is_incremental, REDSHIFT_S3_TMP_DIR)
 
     def push_to_kafka(self, output, types):
         """ Needs to be overriden by each specific job."""
@@ -571,7 +580,13 @@ class FS_Ops_Dispatcher():
     @staticmethod
     def listdir_cluster(path):
         # TODO: better handle invalid path. Crashes with "TypeError: 'NoneType' object is not iterable" at last line.
-        fname_parts = path.split('s3://')[1].split('/')
+        if path.startswith('s3://'):
+            s3_root = 's3://'
+        elif path.startswith('s3a://'):
+            s3_root = 's3a://'  # necessary when pulling S3 to local automatically from spark.
+        else:
+            raise ValueError('Problem with path. Running on cluster, it should start with "s3://" or "s3a://". Path is: {}'.format(path))
+        fname_parts = path.split(s3_root)[1].split('/')
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
         client = boto3.client('s3')
@@ -739,6 +754,12 @@ class Commandliner():
             .getOrCreate()
             # .config('spark.yarn.executor.memoryOverhead', '7096') \  # to introduce before getOrCreate if needed. Manual for now.
         sc = spark.sparkContext
+
+        ## Extra spark config can be put here, what would typically be in spark-defaults.conf
+        # sc.setLogLevel("ERROR")
+        # sc._jsc.hadoopConfiguration().set("fs.s3.awsAccessKeyId", 'placeholder')
+        # sc._jsc.hadoopConfiguration().set("fs.s3.awsSecretAccessKey", 'placeholder')
+
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
         return sc, sc_sql

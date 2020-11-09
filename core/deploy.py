@@ -168,8 +168,9 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         base = eu.LOCAL_APP_FOLDER
+        output_path = self.TMP + "scripts.tar.gz"
         # Create tar.gz file
-        t_file = tarfile.open(self.TMP + "scripts.tar.gz", 'w:gz')
+        t_file = tarfile.open(output_path, 'w:gz')
 
         # Add files
         t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
@@ -210,6 +211,7 @@ class DeployPySparkScriptOnAws(object):
         for f in t_file.getnames():
             logger.debug("Added %s to tar-file" % f)
         t_file.close()
+        logger.info("Added all files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
         for item in ['setup_master.sh', 'setup_nodes.sh', 'terminate_idle_cluster.sh']:
@@ -281,6 +283,10 @@ class DeployPySparkScriptOnAws(object):
                     "Properties": {"PYSPARK_PYTHON": "/usr/bin/python3"}
                     }]
                 },
+                # { # Section to add jars (redshift...), not used for now, since passed in spark-submit args.
+                # "Classification": "spark-defaults",
+                # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"],
+                # }
             ],
             JobFlowRole='EMR_EC2_DefaultRole',
             ServiceRole='EMR_DefaultRole',
@@ -367,6 +373,8 @@ class DeployPySparkScriptOnAws(object):
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
+            "--packages=com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0",  # necessary for reading/writing to redshift using spark connector.
+            "--jars=https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar",  # necessary for reading/writing to redshift using spark connector.
             eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
             "--mode=local",
             "--storage=s3",
@@ -479,7 +487,7 @@ class DeployPySparkScriptOnAws(object):
 
         # Change steps to include proper path
         setup_command =  's3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://{s3_tmp_path}/setup_master.sh,s3://{s3_tmp_path}'.format(s3_tmp_path=self.package_path_with_bucket) # s3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/setup_master.sh,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/
-        spark_submit_command = 'command-runner.jar,' + ','.join(self.get_spark_submit_args(self.app_file, self.app_args))   # command-runner.jar,spark-submit,--py-files,/home/hadoop/app/scripts.zip,/home/hadoop/app/jobs/examples/ex1_frameworked_job.py,--storage=s3
+        spark_submit_command = 'command-runner.jar,' + ','.join([item.replace(',', '\\\,') for item in self.get_spark_submit_args(self.app_file, self.app_args)])   # command-runner.jar,spark-submit,--py-files,/home/hadoop/app/scripts.zip,--packages=com.amazonaws:aws-java-sdk-pom:1.11.760\\\\,org.apache.hadoop:hadoop-aws:2.7.0,/home/hadoop/app/jobs/examples/ex1_frameworked_job.py,--storage=s3  # instructions about \\\ part: https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emractivity.html
 
         commands  = [setup_command, spark_submit_command]
         mm = 0
@@ -615,4 +623,13 @@ if __name__ == "__main__":
     print('#--- pipelines: ', pipelines)
 
     # (Re)deploy schedule jobs
-    #deploy_all_scheduled() # needs more testing.
+    #deploy_all_scheduled() # TODO: needs more testing.
+
+    # Package code locally, not needed to run the job locally though.
+    deploy_args = {'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
+    app_args = {'job_param_file':'conf/jobs_metadata_local.yml',
+                'jobs_folder':'jobs',
+                }
+    deployer = DeployPySparkScriptOnAws(job_yml, deploy_args, app_args)  # TODO: should remove need for some of these inputs as they are not required by tar_python_scripts()
+    pipelines = deployer.tar_python_scripts()
+    print('#--- Finished packaging ---')

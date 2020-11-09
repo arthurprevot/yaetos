@@ -7,7 +7,7 @@ import numpy as np
 
 def create_table(df, connection_profile, name_tb, schema, types, creds_or_file, is_incremental):
     """
-    Creates table in redshift, full drop or incremental drop.
+    Creates table in redshift, full drop or incremental drop. Functional but very very slow.
     types should be of sqlalchemy type. Ex: types.Date(), types.Integer()
     """
     if_exist = 'replace' if not is_incremental else 'append'
