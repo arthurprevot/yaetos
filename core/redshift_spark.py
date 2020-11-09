@@ -9,7 +9,6 @@ def create_table(df, connection_profile, name_tb, schema, creds_or_file, is_incr
     Creates table in redshift, full drop or incremental drop, using spark connector. Implies pushing data to S3 first.
     """
     load_type = 'overwrite' if not is_incremental else 'append'
-    s3_tmp_dir = "s3a://sandbox-arthur/yaetos/tmp_spark/"
     db = creds_or_file[connection_profile]
     url = 'jdbc:redshift://{host}:{port}/{service}'.format(host=db['host'], port=db['port'], service=db['service'])
     dbtable = '{}.{}'.format(schema, name_tb)

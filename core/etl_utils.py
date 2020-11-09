@@ -49,6 +49,7 @@ LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_
 LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
+REDSHIFT_S3_TMP_DIR = "s3a://sandbox-arthur/yaetos/tmp_spark/"  # user setting. TODO: set from job_metadata.yml
 
 
 class ETL_Base(object):
@@ -331,7 +332,7 @@ class ETL_Base(object):
         connection_profile = self.redshift_copy_params['creds']
         schema, name_tb= self.redshift_copy_params['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
-        create_table(sdf, connection_profile, name_tb, schema, creds, self.is_incremental)
+        create_table(sdf, connection_profile, name_tb, schema, creds, self.is_incremental, REDSHIFT_S3_TMP_DIR)
 
     def push_to_kafka(self, output, types):
         """ Needs to be overriden by each specific job."""
