@@ -373,6 +373,8 @@ class DeployPySparkScriptOnAws(object):
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
+            "--packages=com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0",  # necessary for reading/writing to redshift using spark connector.
+            "--jars=https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar",  # necessary for reading/writing to redshift using spark connector.
             eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
             "--mode=local",
             "--storage=s3",
@@ -621,7 +623,7 @@ if __name__ == "__main__":
     print('#--- pipelines: ', pipelines)
 
     # (Re)deploy schedule jobs
-    #deploy_all_scheduled() # needs more testing.
+    #deploy_all_scheduled() # TODO: needs more testing.
 
     # Package code locally
     deploy_args = {'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
