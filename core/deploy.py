@@ -487,7 +487,7 @@ class DeployPySparkScriptOnAws(object):
 
         # Change steps to include proper path
         setup_command =  's3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://{s3_tmp_path}/setup_master.sh,s3://{s3_tmp_path}'.format(s3_tmp_path=self.package_path_with_bucket) # s3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/setup_master.sh,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/
-        spark_submit_command = 'command-runner.jar,' + ','.join(self.get_spark_submit_args(self.app_file, self.app_args))   # command-runner.jar,spark-submit,--py-files,/home/hadoop/app/scripts.zip,/home/hadoop/app/jobs/examples/ex1_frameworked_job.py,--storage=s3
+        spark_submit_command = 'command-runner.jar,' + ','.join([item.replace(',', '\\\,') for item in self.get_spark_submit_args(self.app_file, self.app_args)])   # command-runner.jar,spark-submit,--py-files,/home/hadoop/app/scripts.zip,/home/hadoop/app/jobs/examples/ex1_frameworked_job.py,--storage=s3
 
         commands  = [setup_command, spark_submit_command]
         mm = 0
