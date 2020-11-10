@@ -252,7 +252,7 @@ class DeployPySparkScriptOnAws(object):
         :param c: EMR client
         :return:
         """
-        emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
+        emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
         response = c.run_job_flow(
             Name=self.job_name,
             LogUri="s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder),
