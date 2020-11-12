@@ -1,4 +1,5 @@
-"""Job to show code to read/write data to redshift. Typical not needed since data is read/written to redshift from framework, as defined in job_metadata.yml.
+"""Job to show code to read/write data to redshift using spark redshift connector, instead of using pandas/sqlalchemy.
+Typically not needed since data is read/written to redshift from framework, as defined in job_metadata.yml.
 Requires VPN to access redshift.
 """
 from core.etl_utils import ETL_Base, Commandliner, Cred_Ops_Dispatcher, REDSHIFT_S3_TMP_DIR
