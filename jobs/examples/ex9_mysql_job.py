@@ -1,6 +1,6 @@
 """Job to show code to read/write data to mysql using spark connector instead of using pandas/sqlalchemy.
 Typically not needed since data is read/written to mysql from framework, as defined in job_metadata.yml.
-Requires VPN to access mysql.
+May require VPN to access mysql.
 """
 from core.etl_utils import ETL_Base, Commandliner, Cred_Ops_Dispatcher
 import core.logger as log
