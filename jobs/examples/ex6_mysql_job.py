@@ -1,4 +1,5 @@
-"""Job to showcase use of mysql job base class. Requires access to a mysql instance and credentials setup in connection file."""
+"""Job to showcase use of mysql job base class. Using pandas/sqlalchemy connector.
+Requires access to a mysql instance and credentials setup in connection file."""
 from core.etl_utils import Commandliner
 from core.mysql_job import Mysql_Job
 from sqlalchemy import types
