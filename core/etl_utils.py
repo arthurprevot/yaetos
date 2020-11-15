@@ -53,7 +53,9 @@ REDSHIFT_S3_TMP_DIR = "s3a://sandbox-arthur/yaetos/tmp_spark/"  # user setting. 
 
 
 class ETL_Base(object):
-    tabular_types = ('csv', 'parquet', 'df')
+    TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql')
+    FILE_TYPES = ('csv', 'parquet', 'txt')
+    SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union({'other', 'None'})
 
     def __init__(self, args={}):
         self.args = args
@@ -186,11 +188,8 @@ class ETL_Base(object):
                 continue
 
             # Load from disk
-            path = self.INPUTS[item]['path']
-            logger.info("Input '{}' to be loaded from files '{}'.".format(item, path))
-            path = Path_Handler(path).expand_later(self.args['storage'])
-            app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
-            logger.info("Input '{}' loaded from files '{}'.".format(item, path))
+            app_args[item] = self.load_input(item)
+            logger.info("Input '{}' loaded.".format(item))
 
         if self.is_incremental:
             app_args = self.filter_incremental_inputs(app_args)
@@ -204,7 +203,7 @@ class ETL_Base(object):
         # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
-            input_is_tabular = self.INPUTS[item]['type'] in self.tabular_types
+            input_is_tabular = self.INPUTS[item]['type'] in self.TABULAR_TYPES
             inc = self.INPUTS[item].get('inc_field', None)
             if input_is_tabular and inc:
                 max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
@@ -213,7 +212,7 @@ class ETL_Base(object):
 
         # Filter
         for item in app_args.keys():
-            input_is_tabular = self.INPUTS[item]['type'] in self.tabular_types
+            input_is_tabular = self.INPUTS[item]['type'] in self.TABULAR_TYPES
             inc = self.INPUTS[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -232,31 +231,54 @@ class ETL_Base(object):
     def sql_register(self, app_args):
         for item in app_args.keys():
             input_is_tabular = hasattr(app_args[item], "rdd")  # assuming DataFrame will keep 'rdd' attribute
-            # ^ better than using self.INPUTS[item]['type'] in self.tabular_types since doesn't require 'type' being defined.
+            # ^ better than using self.INPUTS[item]['type'] in self.TABULAR_TYPES since doesn't require 'type' being defined.
             if input_is_tabular:
                 app_args[item].createOrReplaceTempView(item)
 
-    def load_data(self, path, path_type):
-        logger.info("Path to be loaded: {}".format(path))
-        if path_type == 'txt':
+    def load_input(self, input_name):
+        input_type = self.INPUTS[input_name]['type']
+        if input_type in self.FILE_TYPES:
+            path = self.INPUTS[input_name]['path']
+            logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
+            path = Path_Handler(path).expand_later(self.args['storage'])
+
+        if input_type == 'txt':
             return self.sc.textFile(path)
-        elif path_type == 'csv':
+
+        # Tabular types
+        if input_type == 'csv':
             sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
-            logger.info("Input data types: {}".format([(fd.name, fd.dataType) for fd in sdf.schema.fields]))
-            return sdf
-        elif path_type == 'parquet':
+        elif input_type == 'parquet':
             sdf = self.sc_sql.read.parquet(path)
-            logger.info("Input data types: {}".format([(fd.name, fd.dataType) for fd in sdf.schema.fields]))
-            return sdf
+        elif input_type == 'mysql':
+            sdf = self.load_mysql(input_name)
         else:
-            supported = ['txt', 'csv', 'parquet']  # TODO: register types differently without duplicating
-            raise Exception("Unsupported file type '{}' for path '{}'. Supported types are: {}. ".format(path_type, path, supported))
+            raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.INPUTS[input_name].get('path'), self.SUPPORTED_TYPES))
+
+        logger.info("Input data types: {}".format([(fd.name, fd.dataType) for fd in sdf.schema.fields]))
+        return sdf
+
+    def load_mysql(self, input_name):
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
+        creds_section = self.INPUTS[input_name]['creds']
+        db = creds[creds_section]
+        url = 'jdbc:mysql://{host}:{port}/{service}'.format(host=db['host'], port=db['port'], service=db['service'])
+        dbtable = self.INPUTS[input_name]['db_table']
+        logger.info('Pulling table "{}" from mysql'.format(dbtable))
+        return self.sc_sql.read \
+            .format('jdbc') \
+            .option('driver', "com.mysql.jdbc.Driver") \
+            .option("url", url) \
+            .option("user", db['user']) \
+            .option("password", db['password']) \
+            .option("dbtable", dbtable)\
+            .load()
 
     def get_previous_output_max_timestamp(self):
         path = self.OUTPUT['path']
         path += '*' # to go into subfolders
         try:
-            df = self.load_data(path, self.OUTPUT['type'])
+            df = self.load_input(path, self.OUTPUT['type'])
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
             return None

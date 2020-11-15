@@ -79,6 +79,11 @@ examples/ex9_redshift_job.py:
   output: {'path':'s3://sandbox-spark/wiki_example/output_ex9_redshift/{now}/', 'type':'csv'}
   copy_to_redshift: {'creds': 'redshift', 'table': 'sandbox.test_ex9_redshift'}
 
+examples/ex9_mysql_direct_job.py:
+  inputs:
+    some_events: {'type':'mysql', 'db_table': 'some_schema.some_table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
+  output: {'path':'s3://sandbox-spark/wiki_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
+
 
 examples/wordcount_frameworked_job.py:
   inputs:
