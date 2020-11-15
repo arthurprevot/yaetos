@@ -368,13 +368,15 @@ class DeployPySparkScriptOnAws(object):
         time.sleep(1)  # Prevent ThrottlingException
 
     def get_spark_submit_args(self, app_file, app_args):
+        packages = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
+        jars = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
         cmd_runner_args = [
             "spark-submit",
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-            "--packages=com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0",  # necessary for reading/writing to redshift using spark connector.
-            "--jars=https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar",  # necessary for reading/writing to redshift using spark connector.
+            "--packages={}".format(packages),
+            "--jars={}".format(jars),
             eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
             "--mode=local",
             "--storage=s3",
