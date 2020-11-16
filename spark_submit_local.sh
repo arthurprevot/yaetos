@@ -1,7 +1,7 @@
 # To run jobs locally with spark-submit instead of running the python directly
 # usage: ./spark_submit_local.sh jobs/examples/ex9_redshift_job.py
-# pros: adds extra libraries to allow access to S3 data from local and push data to redshift with spark connector (vpn required).
-# cons: can't put debug checkpoints (ipdb) in the middle of the code to debut it + less intuitive than running python file directly + ignores script arguments so they should be forced inside script.
+# Provided for testing purposed since it is the common way to launch spark apps. Problem: this doesn't support ipdb debugger and doesn't support adding python arguments (they need to be added inside jobs).
+# Better alternative to run jobs in local with this framework is to use the standard python launcher "python some_job.py". It will integrate the required packages to spark too, and supports ipdb.
 
 job=$1
 export AWS_ACCESS_KEY_ID=`aws configure get default.aws_access_key_id`
