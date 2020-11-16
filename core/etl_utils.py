@@ -50,6 +50,9 @@ LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
 REDSHIFT_S3_TMP_DIR = "s3a://sandbox-arthur/yaetos/tmp_spark/"  # user setting. TODO: set from job_metadata.yml
+PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
+PACKAGES_EMR = 'com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
+JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
 
 
 class ETL_Base(object):
@@ -688,7 +691,7 @@ class Path_Handler():
 class Commandliner():
     def __init__(self, Job, **args):
         self.set_commandline_args(args)
-        if self.args['mode'] == 'local':
+        if self.args['mode'] in ('local', 'localEMR'):
             self.launch_run_mode(Job, self.args)
         else:
             job = Job(self.args)
@@ -718,7 +721,7 @@ class Commandliner():
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
+        parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")
         parser.add_argument("--connection_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("--jobs_folder", help="Identify the folder where job code is. Necessary if job code is outside the repo, i.e. if this is used as an external library. By default, uses the repo 'jobs/' folder.")
@@ -753,7 +756,7 @@ class Commandliner():
         job.set_job_params() # just need the job.job_name from there.
         app_name = job.job_name
 
-        sc, sc_sql = self.create_contexts(app_name) # TODO: add args to configure spark app when args can feed through.
+        sc, sc_sql = self.create_contexts(app_name, args['mode']) # TODO: add args to configure spark app when args can feed through.
         if not self.args['dependencies']:
             job.etl(sc, sc_sql)
         else:
@@ -764,23 +767,34 @@ class Commandliner():
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
 
-    def create_contexts(self, app_name):
+    def create_contexts(self, app_name, mode):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
-        # from pyspark import SparkContext
-        # For later: os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars extra/ojdbc6.jar'  # or s3://some_path/ojdbc6.jar
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
+        from pyspark import SparkConf
+
+        if mode == 'local':
+            conf = SparkConf() \
+                .set("spark.jars.packages", PACKAGES_LOCAL) \
+                .set("spark.jars", JARS)
+        else:
+            conf = SparkConf()
 
         spark = SparkSession.builder \
             .appName(app_name) \
+            .config(conf=conf) \
             .getOrCreate()
-            # .config('spark.yarn.executor.memoryOverhead', '7096') \  # to introduce before getOrCreate if needed. Manual for now.
         sc = spark.sparkContext
 
-        ## Extra spark config can be put here, what would typically be in spark-defaults.conf
-        # sc.setLogLevel("ERROR")
+        ## Other ways to change spark config from python, instead of using spark-defaults.conf or adding jars in spark-submit
+        # os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars extra/ojdbc6.jar'  # or s3://some_path/ojdbc6.jar
+        # sc._jsc.addJAR(/path/to.jar)
+        # sc.addFile("filename") # to add a file in every nodes.
+        ## Hadoop configuration
         # sc._jsc.hadoopConfiguration().set("fs.s3.awsAccessKeyId", 'placeholder')
         # sc._jsc.hadoopConfiguration().set("fs.s3.awsSecretAccessKey", 'placeholder')
+        ## Other
+        # sc.setLogLevel("ERROR")
 
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
