@@ -604,7 +604,7 @@ class FS_Ops_Dispatcher():
         return os.listdir(path)
 
     @staticmethod
-    def listdir_cluster(path):
+    def listdir_cluster(path):  # TODO: rename to listdir_s3, same for similar functions from FS_Ops_Dispatcher
         # TODO: better handle invalid path. Crashes with "TypeError: 'NoneType' object is not iterable" at last line.
         if path.startswith('s3://'):
             s3_root = 's3://'
