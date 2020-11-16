@@ -171,7 +171,6 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
             return np.abs(np.divide((row[item1]-row[item2]), float(row[item1])))*100
 
     # Check deltas
-    # threshold = 0.01
     np.seterr(divide='ignore')  # to handle the division by 0 in divide().
     for ii in range(len(compare1)):
         item1 = compare1[ii]

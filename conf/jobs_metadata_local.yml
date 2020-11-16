@@ -99,7 +99,7 @@ examples/ex9_mysql_job.py:
   db_inputs: {'creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
   output: {'path':'data/wiki_example/output_ex9_mysql/{now}/', 'type':'csv'}
 
-examples/ex9_mysql_direct_job.py:
+examples/ex9_mysql_framework_load_job.py:
   inputs:
     some_events: {'type':'mysql', 'db_table': 'some.table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
   output: {'path':'data/wiki_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
