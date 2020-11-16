@@ -242,6 +242,7 @@ class ETL_Base(object):
         input_type = self.INPUTS[input_name]['type']
         if input_type in self.FILE_TYPES:
             path = self.INPUTS[input_name]['path']
+            path = path.replace('s3://', 's3a://') if self.args['mode'] == 'local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
             path = Path_Handler(path).expand_later(self.args['storage'])
 
