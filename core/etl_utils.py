@@ -774,6 +774,12 @@ class Commandliner():
         from pyspark import SparkConf
 
         if mode == 'local':
+            # S3 access
+            session = boto3.Session()
+            credentials = session.get_credentials()
+            os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
+            os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+            # JARs
             conf = SparkConf() \
                 .set("spark.jars.packages", PACKAGES_LOCAL) \
                 .set("spark.jars", JARS)
@@ -791,8 +797,11 @@ class Commandliner():
         # sc._jsc.addJAR(/path/to.jar)
         # sc.addFile("filename") # to add a file in every nodes.
         ## Hadoop configuration
-        # sc._jsc.hadoopConfiguration().set("fs.s3.awsAccessKeyId", 'placeholder')
-        # sc._jsc.hadoopConfiguration().set("fs.s3.awsSecretAccessKey", 'placeholder')
+        # sc._jsc.hadoopConfiguration().set("fs.s3.awsAccessKeyId", credentials.access_key)  # doesn't work.
+        # sc._jsc.hadoopConfiguration().set("fs.s3.awsSecretAccessKey", credentials.secret_key)  # doesn't work.
+        # or use env variable
+        # export AWS_ACCESS_KEY_ID=`aws configure get default.aws_access_key_id`
+        # export AWS_SECRET_ACCESS_KEY=`aws configure get default.aws_secret_access_key`
         ## Other
         # sc.setLogLevel("ERROR")
 
