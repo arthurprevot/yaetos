@@ -66,7 +66,6 @@ examples/ex4_dependency4_job.py:
 examples/ex7_frameworked_job.py:  # shows job with no output (still requiring table as output but not dumped to disk)
   inputs:
     some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-    other_events: {'path':"s3://sandbox-spark//wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
   output: {'path':'n/a', 'type':'None'}
 
 examples/ex8_koalas_job.py:

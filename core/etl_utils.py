@@ -607,7 +607,7 @@ class FS_Ops_Dispatcher():
         elif path.startswith('s3a://'):
             s3_root = 's3a://'  # necessary when pulling S3 to local automatically from spark.
         else:
-            raise ValueError('Problem with path. Running on cluster, it should start with "s3://" or "s3a://". Path is: {}'.format(path))
+            raise ValueError('Problem with path. Pulling from s3, it should start with "s3://" or "s3a://". Path is: {}'.format(path))
         fname_parts = path.split(s3_root)[1].split('/')
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
@@ -767,7 +767,7 @@ class Commandliner():
     def create_contexts(self, app_name):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         # from pyspark import SparkContext
-        # For later: os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars extra/ojdbc6.jar'  # or s3://data-sch-deploy-dev/db_connectors/java/redshift/ojdbc6.jar
+        # For later: os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars extra/ojdbc6.jar'  # or s3://some_path/ojdbc6.jar
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
 
