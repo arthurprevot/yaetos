@@ -730,6 +730,7 @@ class Commandliner():
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
         parser.add_argument("-c", "--rerun_criteria", choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
         parser.add_argument("-b", "--boxed_dependencies", action='store_true', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).")
+        parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful if running in --mode=local.")
         # Deploy specific
         parser.add_argument("--aws_config_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
@@ -746,9 +747,12 @@ class Commandliner():
                     # 'dependencies': False, # only set from commandline
                     'rerun_criteria': 'both',
                     # 'boxed_dependencies': False,  # only set from commandline
+                    'load_connectors': 'all',
+                    # Deploy specific below
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
                     # 'leave_on': False, # only set from commandline
+                    # 'push_secrets': False, # only set from commandline
                     }
         return parser, defaults
 
@@ -757,7 +761,7 @@ class Commandliner():
         job.set_job_params() # just need the job.job_name from there.
         app_name = job.job_name
 
-        sc, sc_sql = self.create_contexts(app_name, args['mode']) # TODO: add args to configure spark app when args can feed through.
+        sc, sc_sql = self.create_contexts(app_name, args['mode'], args['load_connectors'])
         if not self.args['dependencies']:
             job.etl(sc, sc_sql)
         else:
@@ -768,13 +772,13 @@ class Commandliner():
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
 
-    def create_contexts(self, app_name, mode):
+    def create_contexts(self, app_name, mode, load_connectors):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
 
-        if mode == 'local':
+        if mode == 'local' and load_connectors == 'all':
             # S3 access
             session = boto3.Session()
             credentials = session.get_credentials()
