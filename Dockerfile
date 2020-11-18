@@ -13,8 +13,6 @@ COPY requirements.txt /tmp/requirements.txt
 WORKDIR /tmp/
 RUN pip3 install -r requirements.txt
 
-RUN pip3 install py4j
-
 WORKDIR /mnt/pyspark_aws_etl
 
 # RUN mkdir -p tmp/files_to_ship/  # skipped, causes problems with permissions, whether run from root or jovyan user. Will need to be run manually once.
