@@ -15,7 +15,8 @@ def connect(creds_section, creds_or_file='conf/connections.cfg'):
     user = config.get(creds_section, 'user')
     pwd = config.get(creds_section, 'password')
     token = config.get(creds_section, 'token')
-    return Salesforce(username=user, password=pwd, security_token=token)
+    domain = None if config.get(creds_section, 'domain') == 'production' else config.get(creds_section, 'domain')
+    return Salesforce(username=user, password=pwd, security_token=token, domain=domain)
 
 def query(query_str, **connect_args):
     sf = connect(**connect_args)
