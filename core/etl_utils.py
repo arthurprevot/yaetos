@@ -50,10 +50,15 @@ LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
 REDSHIFT_S3_TMP_DIR = "s3a://sandbox-arthur/yaetos/tmp_spark/"  # user setting. TODO: set from job_metadata.yml
+PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
+PACKAGES_EMR = 'com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
+JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
 
 
 class ETL_Base(object):
-    tabular_types = ('csv', 'parquet', 'df')
+    TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql')
+    FILE_TYPES = ('csv', 'parquet', 'txt')
+    SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union({'other', 'None'})
 
     def __init__(self, args={}):
         self.args = args
@@ -186,11 +191,8 @@ class ETL_Base(object):
                 continue
 
             # Load from disk
-            path = self.INPUTS[item]['path']
-            logger.info("Input '{}' to be loaded from files '{}'.".format(item, path))
-            path = Path_Handler(path).expand_later(self.args['storage'])
-            app_args[item] = self.load_data(path, self.INPUTS[item]['type'])
-            logger.info("Input '{}' loaded from files '{}'.".format(item, path))
+            app_args[item] = self.load_input(item)
+            logger.info("Input '{}' loaded.".format(item))
 
         if self.is_incremental:
             app_args = self.filter_incremental_inputs(app_args)
@@ -204,7 +206,7 @@ class ETL_Base(object):
         # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
-            input_is_tabular = self.INPUTS[item]['type'] in self.tabular_types
+            input_is_tabular = self.INPUTS[item]['type'] in self.TABULAR_TYPES
             inc = self.INPUTS[item].get('inc_field', None)
             if input_is_tabular and inc:
                 max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
@@ -213,7 +215,7 @@ class ETL_Base(object):
 
         # Filter
         for item in app_args.keys():
-            input_is_tabular = self.INPUTS[item]['type'] in self.tabular_types
+            input_is_tabular = self.INPUTS[item]['type'] in self.TABULAR_TYPES
             inc = self.INPUTS[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -232,31 +234,55 @@ class ETL_Base(object):
     def sql_register(self, app_args):
         for item in app_args.keys():
             input_is_tabular = hasattr(app_args[item], "rdd")  # assuming DataFrame will keep 'rdd' attribute
-            # ^ better than using self.INPUTS[item]['type'] in self.tabular_types since doesn't require 'type' being defined.
+            # ^ better than using self.INPUTS[item]['type'] in self.TABULAR_TYPES since doesn't require 'type' being defined.
             if input_is_tabular:
                 app_args[item].createOrReplaceTempView(item)
 
-    def load_data(self, path, path_type):
-        logger.info("Path to be loaded: {}".format(path))
-        if path_type == 'txt':
+    def load_input(self, input_name):
+        input_type = self.INPUTS[input_name]['type']
+        if input_type in self.FILE_TYPES:
+            path = self.INPUTS[input_name]['path']
+            path = path.replace('s3://', 's3a://') if self.args['mode'] == 'local' else path
+            logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
+            path = Path_Handler(path).expand_later(self.args['storage'])
+
+        if input_type == 'txt':
             return self.sc.textFile(path)
-        elif path_type == 'csv':
+
+        # Tabular types
+        if input_type == 'csv':
             sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
-            logger.info("Input data types: {}".format([(fd.name, fd.dataType) for fd in sdf.schema.fields]))
-            return sdf
-        elif path_type == 'parquet':
+        elif input_type == 'parquet':
             sdf = self.sc_sql.read.parquet(path)
-            logger.info("Input data types: {}".format([(fd.name, fd.dataType) for fd in sdf.schema.fields]))
-            return sdf
+        elif input_type == 'mysql':
+            sdf = self.load_mysql(input_name)
         else:
-            supported = ['txt', 'csv', 'parquet']  # TODO: register types differently without duplicating
-            raise Exception("Unsupported file type '{}' for path '{}'. Supported types are: {}. ".format(path_type, path, supported))
+            raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.INPUTS[input_name].get('path'), self.SUPPORTED_TYPES))
+
+        logger.info("Input data types: {}".format([(fd.name, fd.dataType) for fd in sdf.schema.fields]))
+        return sdf
+
+    def load_mysql(self, input_name):
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
+        creds_section = self.INPUTS[input_name]['creds']
+        db = creds[creds_section]
+        url = 'jdbc:mysql://{host}:{port}/{service}'.format(host=db['host'], port=db['port'], service=db['service'])
+        dbtable = self.INPUTS[input_name]['db_table']
+        logger.info('Pulling table "{}" from mysql'.format(dbtable))
+        return self.sc_sql.read \
+            .format('jdbc') \
+            .option('driver', "com.mysql.jdbc.Driver") \
+            .option("url", url) \
+            .option("user", db['user']) \
+            .option("password", db['password']) \
+            .option("dbtable", dbtable)\
+            .load()
 
     def get_previous_output_max_timestamp(self):
         path = self.OUTPUT['path']
         path += '*' # to go into subfolders
         try:
-            df = self.load_data(path, self.OUTPUT['type'])
+            df = self.load_input(path, self.OUTPUT['type'])
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
             return None
@@ -578,14 +604,14 @@ class FS_Ops_Dispatcher():
         return os.listdir(path)
 
     @staticmethod
-    def listdir_cluster(path):
+    def listdir_cluster(path):  # TODO: rename to listdir_s3, same for similar functions from FS_Ops_Dispatcher
         # TODO: better handle invalid path. Crashes with "TypeError: 'NoneType' object is not iterable" at last line.
         if path.startswith('s3://'):
             s3_root = 's3://'
         elif path.startswith('s3a://'):
             s3_root = 's3a://'  # necessary when pulling S3 to local automatically from spark.
         else:
-            raise ValueError('Problem with path. Running on cluster, it should start with "s3://" or "s3a://". Path is: {}'.format(path))
+            raise ValueError('Problem with path. Pulling from s3, it should start with "s3://" or "s3a://". Path is: {}'.format(path))
         fname_parts = path.split(s3_root)[1].split('/')
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
@@ -666,7 +692,7 @@ class Path_Handler():
 class Commandliner():
     def __init__(self, Job, **args):
         self.set_commandline_args(args)
-        if self.args['mode'] == 'local':
+        if self.args['mode'] in ('local', 'localEMR'):
             self.launch_run_mode(Job, self.args)
         else:
             job = Job(self.args)
@@ -696,7 +722,7 @@ class Commandliner():
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
+        parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")
         parser.add_argument("--connection_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("--jobs_folder", help="Identify the folder where job code is. Necessary if job code is outside the repo, i.e. if this is used as an external library. By default, uses the repo 'jobs/' folder.")
@@ -704,6 +730,7 @@ class Commandliner():
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
         parser.add_argument("-c", "--rerun_criteria", choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
         parser.add_argument("-b", "--boxed_dependencies", action='store_true', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).")
+        parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful if running in --mode=local.")
         # Deploy specific
         parser.add_argument("--aws_config_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
@@ -720,9 +747,12 @@ class Commandliner():
                     # 'dependencies': False, # only set from commandline
                     'rerun_criteria': 'both',
                     # 'boxed_dependencies': False,  # only set from commandline
+                    'load_connectors': 'all',
+                    # Deploy specific below
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
                     # 'leave_on': False, # only set from commandline
+                    # 'push_secrets': False, # only set from commandline
                     }
         return parser, defaults
 
@@ -731,7 +761,7 @@ class Commandliner():
         job.set_job_params() # just need the job.job_name from there.
         app_name = job.job_name
 
-        sc, sc_sql = self.create_contexts(app_name) # TODO: add args to configure spark app when args can feed through.
+        sc, sc_sql = self.create_contexts(app_name, args['mode'], args['load_connectors'])
         if not self.args['dependencies']:
             job.etl(sc, sc_sql)
         else:
@@ -742,23 +772,43 @@ class Commandliner():
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
 
-    def create_contexts(self, app_name):
+    def create_contexts(self, app_name, mode, load_connectors):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
-        # from pyspark import SparkContext
-        # For later: os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars extra/ojdbc6.jar'  # or s3://data-sch-deploy-dev/db_connectors/java/redshift/ojdbc6.jar
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
+        from pyspark import SparkConf
+
+        if mode == 'local' and load_connectors == 'all':
+            # S3 access
+            session = boto3.Session()
+            credentials = session.get_credentials()
+            os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
+            os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+            # JARs
+            conf = SparkConf() \
+                .set("spark.jars.packages", PACKAGES_LOCAL) \
+                .set("spark.jars", JARS)
+        else:
+            conf = SparkConf()
 
         spark = SparkSession.builder \
             .appName(app_name) \
+            .config(conf=conf) \
             .getOrCreate()
-            # .config('spark.yarn.executor.memoryOverhead', '7096') \  # to introduce before getOrCreate if needed. Manual for now.
         sc = spark.sparkContext
 
-        ## Extra spark config can be put here, what would typically be in spark-defaults.conf
+        ## Other ways to change spark config from python, instead of using spark-defaults.conf or adding jars in spark-submit
+        # os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars extra/ojdbc6.jar'  # or s3://some_path/ojdbc6.jar
+        # sc._jsc.addJAR(/path/to.jar)
+        # sc.addFile("filename") # to add a file in every nodes.
+        ## Hadoop configuration
+        # sc._jsc.hadoopConfiguration().set("fs.s3.awsAccessKeyId", credentials.access_key)  # doesn't work.
+        # sc._jsc.hadoopConfiguration().set("fs.s3.awsSecretAccessKey", credentials.secret_key)  # doesn't work.
+        # or use env variable
+        # export AWS_ACCESS_KEY_ID=`aws configure get default.aws_access_key_id`
+        # export AWS_SECRET_ACCESS_KEY=`aws configure get default.aws_secret_access_key`
+        ## Other
         # sc.setLogLevel("ERROR")
-        # sc._jsc.hadoopConfiguration().set("fs.s3.awsAccessKeyId", 'placeholder')
-        # sc._jsc.hadoopConfiguration().set("fs.s3.awsSecretAccessKey", 'placeholder')
 
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))

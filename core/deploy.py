@@ -252,7 +252,7 @@ class DeployPySparkScriptOnAws(object):
         :param c: EMR client
         :return:
         """
-        emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
+        emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
         response = c.run_job_flow(
             Name=self.job_name,
             LogUri="s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder),
@@ -373,10 +373,10 @@ class DeployPySparkScriptOnAws(object):
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-            "--packages=com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0",  # necessary for reading/writing to redshift using spark connector.
-            "--jars=https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar",  # necessary for reading/writing to redshift using spark connector.
+            "--packages={}".format(eu.PACKAGES_EMR),
+            "--jars={}".format(eu.JARS),
             eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
-            "--mode=local",
+            "--mode=localEMR",
             "--storage=s3",
             '--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE),
             "--dependencies" if app_args.get('dependencies') else "",

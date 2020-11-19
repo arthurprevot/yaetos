@@ -1,3 +1,5 @@
+# may be out of sync with job_metadata_local.yml. Master ref is job_metadata_local.yml.
+
 examples/ex1_full_sql_job.sql:
   inputs:
     some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
@@ -61,10 +63,9 @@ examples/ex4_dependency4_job.py:
   output: {'path':'s3://sandbox-spark/wiki_example/output_ex4_dep4/{now}/', 'type':'csv'}
   dependencies: [examples/ex4_dependency3_job.sql]
 
-examples/ex7_frameworked_job.py:  # shows job with no output (still requiring table as output but no dumped to disk)
+examples/ex7_frameworked_job.py:  # shows job with no output (still requiring table as output but not dumped to disk)
   inputs:
     some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-    other_events: {'path':"s3://sandbox-spark//wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
   output: {'path':'n/a', 'type':'None'}
 
 examples/ex8_koalas_job.py:
@@ -77,7 +78,12 @@ examples/ex9_redshift_job.py:
   inputs:
     some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
   output: {'path':'s3://sandbox-spark/wiki_example/output_ex9_redshift/{now}/', 'type':'csv'}
-  copy_to_redshift: {'creds': 'redshift', 'table': 'sandbox.test_ex9_redshift'}
+  copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': 'sandbox.test_ex9_redshift'}
+
+examples/ex9_mysql_framework_load_job.py:
+  inputs:
+    some_events: {'type':'mysql', 'db_table': 'some_schema.some_table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
+  output: {'path':'s3://sandbox-spark/wiki_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
 
 
 examples/wordcount_frameworked_job.py:
