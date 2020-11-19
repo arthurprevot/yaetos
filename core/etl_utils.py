@@ -36,8 +36,9 @@ import sys
 from configparser import ConfigParser
 import numpy as np
 #from sklearn.externals import joblib  # TODO: re-enable later after fixing lib versions.
-import core.logger as log
 import gc
+import core.logger as log
+logger = log.setup_logging('Job')
 
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
@@ -341,7 +342,7 @@ class ETL_Base(object):
         return df
 
     def copy_to_redshift_using_pandas(self, output, types):
-        # dependencies put here below to avoid loading heavy libraries when not needed (optional feature).
+        # import put here below to avoid loading heavy libraries when not needed (optional feature).
         from core.redshift_pandas import create_table
         from core.db_utils import cast_col
         df = output.toPandas()
@@ -353,7 +354,7 @@ class ETL_Base(object):
         del(df)
 
     def copy_to_redshift_using_spark(self, sdf):
-        # dependencies put here below to avoid loading heavy libraries when not needed (optional feature).
+        # import put here below to avoid loading heavy libraries when not needed (optional feature).
         from core.redshift_spark import create_table
         connection_profile = self.redshift_copy_params['creds']
         schema, name_tb= self.redshift_copy_params['table'].split('.')
@@ -915,6 +916,3 @@ class Flow():
         if len(tree.nodes()) >= 2:
             self.get_leafs(tree, leafs)
         return leafs + list(tree.nodes())
-
-
-logger = log.setup_logging('Job')
