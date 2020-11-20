@@ -692,7 +692,15 @@ class Path_Handler():
 
 class Commandliner():
     def __init__(self, Job, **args):
-        self.set_commandline_args(args)
+        self.set_commandline_args(args)  # sets self.args TODO: make explicit
+        if Job is None:
+            assert self.args['job_name']
+            # import ipdb; ipdb.set_trace()
+            job_yml_parser = Job_Yml_Parser(self.args)
+            job_yml_parser.set_job_params(job_name=self.args['job_name'])
+            # args = job_yml_parser.update_args(args, job_yml_parser.job_file)
+            Job = Flow.get_job_class(job_yml_parser.py_job)
+
         if self.args['mode'] in ('local', 'localEMR'):
             self.launch_run_mode(Job, self.args)
         else:
@@ -725,6 +733,7 @@ class Commandliner():
         parser = argparse.ArgumentParser()
         parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")
+        parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
         parser.add_argument("--connection_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("--jobs_folder", help="Identify the folder where job code is. Necessary if job code is outside the repo, i.e. if this is used as an external library. By default, uses the repo 'jobs/' folder.")
         parser.add_argument("-s", "--storage", choices=set(['local', 's3']), help="Choose 'local' (default) or 's3'.")
@@ -742,6 +751,7 @@ class Commandliner():
         defaults = {
                     'mode': 'local',
                     'job_param_file': 'repo',
+                    'job_name': None,
                     'connection_file': CONNECTION_FILE,
                     'jobs_folder': JOB_FOLDER,
                     'storage': 'local',

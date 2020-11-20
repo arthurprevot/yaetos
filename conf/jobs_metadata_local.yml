@@ -11,6 +11,13 @@ examples/ex1_frameworked_job.py:  # shows frameworked pyspark ops, same as ex1_f
     other_events: {'path':"data/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
   output: {'path':'data/wiki_example/output_ex1_frameworked/{now}/', 'type':'csv'}
 
+job_using_generic_template:
+  py_job: 'jobs/examples/ex1_frameworked_job.py'
+  inputs:
+    some_events: {'path':"data/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    other_events: {'path':"data/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+  output: {'path':'data/wiki_example/output_ex1_frameworked_p2/{now}/', 'type':'csv'}
+
 # ex1_raw_job:  # shows raw pyspark ops, no helper functions to deal with boilerplate. Job exists but doesn't rely on jobs_metadata entries
 
 examples/ex2_frameworked_job.py:  # more complex version of ex1_frameworked_job
