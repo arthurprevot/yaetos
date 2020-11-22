@@ -152,7 +152,6 @@ class ETL_Base(object):
         # TODO: redo without without the mapping.
         job_file = self.set_job_file() # file where code is, could be .py or .sql. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
         job_yml_parser = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
-        # job_yml_parser.set_job_params(loaded_inputs, job_file=self.job_file)
 
         self.job_name = job_yml_parser.job_name  # name as written in jobs_metadata file, ex "examples/ex1_frameworked_job.py" or "examples/ex1_full_sql_job.sql"
         self.py_job = job_yml_parser.py_job  # name of python file supporting execution. Different from job_file for sql jobs or other generic python files.
@@ -160,7 +159,7 @@ class ETL_Base(object):
         if self.args.get('job_param_file'):
             self.job_yml = job_yml_parser.yml_args
         self.INPUTS = job_yml_parser.INPUTS
-        print('##----- self.INPUTS:',self.INPUTS)
+        # print('##----- self.INPUTS:',self.INPUTS)
         self.OUTPUT = job_yml_parser.OUTPUT
         self.frequency = job_yml_parser.frequency
         self.redshift_copy_params = job_yml_parser.redshift_copy_params
@@ -373,13 +372,13 @@ class Job_Args_Parser():
     # TODO: rewrite all. without relying on class attributes, without requiring args, and avoid rerunning it from within the job if ran from Flow()
     def __init__(self, cmd_args={}, job_file=None, get_all=True, loaded_inputs={}):
         # print('##----- loading Job_Args_Parser:')
-        job_name, py_job, yml_args = self.set_job_name(cmd_args, job_file)
+        job_name, py_job, yml_args = self.set_job_main_params(cmd_args, job_file)
         if get_all:
-            self.set_job_params(loaded_inputs, cmd_args, yml_args)  # sets outputs to self.
+            self.set_job_other_params(loaded_inputs, cmd_args, yml_args)  # sets outputs to self.
         self.cmd_args = cmd_args
         self.job_name, self.py_job, self.yml_args = job_name, py_job, yml_args
 
-    def set_job_name(self, cmd_args, job_file=None):
+    def set_job_main_params(self, cmd_args, job_file=None):
         job_name = cmd_args['job_name'] if cmd_args.get('job_name') else None
 
         if job_name:  # job_name is name from job_metadata.yml, takes priority if provided.
@@ -395,7 +394,7 @@ class Job_Args_Parser():
         # print('##----- job_name, py_job, yml_args:',job_name, py_job, yml_args)
         return job_name, py_job, yml_args
 
-    def set_job_params(self, loaded_inputs, cmd_args, yml_args):
+    def set_job_other_params(self, loaded_inputs, cmd_args, yml_args):
         """ Setting the params from yml or from commandline args if available."""  # TODO: change so class doesn't involve commandline args here, just yml.
 
         if cmd_args['storage'] == 's3' and self.job_file.startswith('jobs/'):
