@@ -372,7 +372,7 @@ class ETL_Base(object):
 class Job_Args_Parser():
     # TODO: rewrite all. without relying on class attributes, without requiring args, and avoid rerunning it from within the job if ran from Flow()
     def __init__(self, cmd_args={}, job_file=None, get_all=True, loaded_inputs={}):
-        print('##----- loading Job_Args_Parser:')
+        # print('##----- loading Job_Args_Parser:')
         job_name, py_job, yml_args = self.set_job_name(cmd_args, job_file)
         if get_all:
             self.set_job_params(loaded_inputs, cmd_args, yml_args)  # sets outputs to self.
@@ -380,39 +380,28 @@ class Job_Args_Parser():
         self.job_name, self.py_job, self.yml_args = job_name, py_job, yml_args
 
     def set_job_name(self, cmd_args, job_file=None):
-        # import ipdb; ipdb.set_trace()
         job_name = cmd_args['job_name'] if cmd_args.get('job_name') else None
 
         if job_name:  # job_name is name from job_metadata.yml, takes priority if provided.
-            # self.set_job_file_from_name(job_name)
-            # self.job_name = job_name
-            # job_file = self.job_file  # TODO remove later when rest cleaner.
             yml_args = self.set_job_yml(cmd_args, job_name)
             py_job = yml_args['py_job'] if yml_args.get('py_job') else self.set_job_file_from_name(job_name)
         elif job_file:
             py_job = job_file
-            job_name = self.set_job_name_from_file(job_file)  # differs from app_name when one spark app runs several jobs.
-            # self.job_file = job_file
+            job_name = self.set_job_name_from_file(job_file)
             yml_args = self.set_job_yml(cmd_args, job_name)
-
         else:
             raise Exception("Need to specify at least job_name or job_file")
 
-        print('##----- job_name, py_job, yml_args:',job_name, py_job, yml_args)
+        # print('##----- job_name, py_job, yml_args:',job_name, py_job, yml_args)
         return job_name, py_job, yml_args
 
     def set_job_params(self, loaded_inputs, cmd_args, yml_args):
         """ Setting the params from yml or from commandline args if available."""  # TODO: change so class doesn't involve commandline args here, just yml.
 
-        # import ipdb; ipdb.set_trace()
         if cmd_args['storage'] == 's3' and self.job_file.startswith('jobs/'):
             self.job_file = CLUSTER_APP_FOLDER+self.job_file
             logger.info("overwrote job_file needed for running on cluster: '{}'".format(self.job_file))  # TODO: integrate this patch directly in var assignment above when refactored, to avoid conflicting messages
 
-        # if self.args.get('job_param_file'):
-        #     self.set_job_yml(self.job_name)  # sets self.job_yml
-
-        # self.set_py_job(job_file)
         self.set_inputs(cmd_args, yml_args, loaded_inputs)
         self.set_output(cmd_args, yml_args)
         self.set_frequency(cmd_args, yml_args)
@@ -463,7 +452,6 @@ class Job_Args_Parser():
 
     def set_inputs(self, cmd_args, yml_args, loaded_inputs):
         inputs_in_args = len([item for item in cmd_args.keys() if item.startswith('input_')]) >= 1
-        # import ipdb; ipdb.set_trace()
         if inputs_in_args:
             self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in cmd_args.items() if key.startswith('input_')}
         elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
@@ -485,18 +473,6 @@ class Job_Args_Parser():
         else:
             raise Exception("No output given")
         logger.info("output: '{}'".format(self.OUTPUT))
-
-    # def set_py_job(self, job_file):
-    #     """Used by Flow() to get python file for sql job or other generic python jobs running multiple jobs."""
-    #     if self.args.get('py_job'):
-    #         self.py_job = self.args['py_job']
-    #     elif job_file.endswith('.py'):
-    #         self.py_job = job_file
-    #     elif self.args.get('job_param_file'):
-    #         self.py_job = self.job_yml.get('py_job')
-    #     else:
-    #         self.py_job = None
-    #     logger.info("py_job: '{}'".format(self.py_job))
 
     def set_frequency(self, cmd_args, yml_args):
         if cmd_args.get('frequency'):
@@ -720,10 +696,6 @@ class Commandliner():
         self.set_commandline_args(args)  # sets self.args TODO: make explicit
         if Job is None:  # when job run from launcher.py --job_name=some_name_from_job_metadata_file
             assert self.args['job_name']
-            # import ipdb; ipdb.set_trace()
-            # job_yml_parser = Job_Args_Parser(self.args)
-            # job_yml_parser.set_job_params(job_name=self.args['job_name']) # part to avoid. General one.
-            # job_yml_parser.set_job_yml(job_name)
             job_yml_parser = Job_Args_Parser(cmd_args=self.args, job_file=None, get_all=False)
             Job = get_job_class(job_yml_parser.py_job)
 
@@ -732,8 +704,6 @@ class Commandliner():
         else:  # when deploying to AWS
             job = Job(self.args)
             job_file = job.set_job_file()
-            # yml = Job_Args_Parser(self.args)
-            # yml.set_job_params(job_file=job_file) # to be reviewed later ?
             job_yml_parser = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True)
             deploy_args = {'aws_config_file': self.args.pop('aws_config_file'),
                            'aws_setup': self.args.pop('aws_setup'),
@@ -797,11 +767,7 @@ class Commandliner():
     def launch_run_mode(self, Job, args):
         job = Job(args)
         job.set_job_params() # just need the job.job_name from there.
-        # import ipdb; ipdb.set_trace()
         app_name = job.job_name
-        # app_name = job.args['job_name']
-        ###
-
         sc, sc_sql = self.create_contexts(app_name, args['mode'], args['load_connectors'])
         if not self.args['dependencies']:
             job.etl(sc, sc_sql)
@@ -863,7 +829,6 @@ class Flow():
         df = self.create_connections_jobs(storage, args)
         logger.debug('Flow app_name : {}, connection_table: {}'.format(app_name, df))
         graph = self.create_global_graph(df)  # top to bottom
-        # import ipdb; ipdb.set_trace()
         tree = self.create_local_tree(graph, nx.DiGraph(), app_name) # bottom to top
         leafs = self.get_leafs(tree, leafs=[]) # bottom to top
         logger.info('Sequence of jobs to be run: {}'.format(leafs))
@@ -875,8 +840,6 @@ class Flow():
         for job_name in leafs:
             args['job_name'] = job_name
             job_yml_parser = Job_Args_Parser(cmd_args=args, job_file=None, get_all=False)
-            # job_yml_parser = Job_Args_Parser(args)
-            # job_yml_parser.set_job_params(job_name=job_name)
             # args = job_yml_parser.update_args(args, job_yml_parser.job_file)
             Job = get_job_class(job_yml_parser.py_job)
             job = Job(args)
@@ -896,14 +859,6 @@ class Flow():
                 gc.collect()
             logger.info('-'*80)
             logger.info('-')
-
-    # @staticmethod
-    # def get_job_class(py_job):
-    #     name_import = py_job.replace('/','.').replace('.py','')
-    #     import_cmd = "from {} import Job".format(name_import)
-    #     namespace = {}
-    #     exec(import_cmd, namespace)
-    #     return namespace['Job']
 
     def create_connections_jobs(self, storage, args):
         meta_file = args.get('job_param_file')
