@@ -368,16 +368,12 @@ class ETL_Base(object):
 
 
 class Job_Args_Parser():
-    # TODO: rewrite all. without relying on class attributes, without requiring args, and avoid rerunning it from within the job if ran from Flow()
     def __init__(self, cmd_args={}, job_file=None, get_all=True, loaded_inputs={}):
         self.job_name, self.py_job, self.yml_args = self.set_job_main_params(cmd_args, job_file)
         if get_all:
             args = self.set_job_other_params(loaded_inputs, cmd_args, self.yml_args)
             [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
-            # map(lambda key, value: setattr(self, key, value), args.items()) # attach vars to self.*
-            # import ipdb; ipdb.set_trace()
-
-            # TODO: check later that it can be removed.
+            # TODO: check later that code below can be removed.
             # if cmd_args['storage'] == 's3' and job_file.startswith('jobs/'):
             #     # TODO: fix self.job_file, will break.
             #     self.job_file = CLUSTER_APP_FOLDER+job_file
@@ -386,7 +382,7 @@ class Job_Args_Parser():
     def set_job_main_params(self, cmd_args, job_file=None):
         job_name = cmd_args['job_name'] if cmd_args.get('job_name') else None
 
-        if job_name:  # job_name is name from job_metadata.yml, takes priority if provided.
+        if job_name:  # job_name (name from job_metadata.yml) takes priority if provided.
             yml_args = self.set_job_yml(cmd_args, job_name)
             py_job = yml_args['py_job'] if yml_args.get('py_job') else self.set_job_file_from_name(job_name)
         elif job_file:
@@ -471,7 +467,6 @@ class Job_Args_Parser():
             return {}
 
     def set_output(self, cmd_args, yml_args):
-        # import ipdb; ipdb.set_trace()
         output = self.set_generic_param(cmd_args, yml_args, param='output')
         if output is None and cmd_args.get('mode_no_io'):
             output = {}
@@ -480,38 +475,6 @@ class Job_Args_Parser():
             raise Exception("No output given")
         logger.info("output: '{}'".format(output))
         return output
-
-    # def set_frequency(self, cmd_args, yml_args):
-    #     if cmd_args.get('frequency'):
-    #         self.frequency = cmd_args['frequency']
-    #     elif cmd_args.get('job_param_file'):
-    #         self.frequency = yml_args.get('frequency')
-    #     else:
-    #         self.frequency = None
-
-    # def set_start_date(self, cmd_args, yml_args):
-    #     if cmd_args.get('start_date'):
-    #         self.start_date = cmd_args['start_date']  # will likely be loaded as string.
-    #     elif cmd_args.get('job_param_file'):
-    #         self.start_date = yml_args.get('start_date')
-    #     else:
-    #         self.start_date = None
-
-    # def set_copy_to_redshift(self, cmd_args, yml_args):
-    #     if cmd_args.get('copy_to_redshift'):
-    #         self.redshift_copy_params = cmd_args.get('copy_to_redshift')
-    #     elif cmd_args.get('job_param_file'):
-    #         self.redshift_copy_params = yml_args.get('copy_to_redshift')
-    #     else:
-    #         self.redshift_copy_params = None
-
-    # def set_copy_to_kafka(self, cmd_args, yml_args):
-    #     if cmd_args.get('copy_to_kafka'):
-    #         self.copy_to_kafka = cmd_args.get('copy_to_kafka')
-    #     elif cmd_args.get('job_param_file'):
-    #         self.copy_to_kafka = yml_args.get('copy_to_kafka')
-    #     else:
-    #         self.copy_to_kafka = None
 
     def set_db_creds(self, cmd_args, yml_args):
         if cmd_args.get('db_creds'):
