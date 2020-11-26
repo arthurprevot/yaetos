@@ -158,9 +158,8 @@ class ETL_Base(object):
         # self.app_name  # set earlier
         if self.args.get('job_param_file'):
             self.job_yml = job_yml_parser.yml_args
-        self.INPUTS = job_yml_parser.INPUTS
-        # print('##----- self.INPUTS:',self.INPUTS)
-        self.OUTPUT = job_yml_parser.OUTPUT
+        self.INPUTS = job_yml_parser.inputs
+        self.OUTPUT = job_yml_parser.output
         self.frequency = job_yml_parser.frequency
         self.redshift_copy_params = job_yml_parser.redshift_copy_params
         self.copy_to_kafka = job_yml_parser.copy_to_kafka
@@ -371,18 +370,18 @@ class ETL_Base(object):
 class Job_Args_Parser():
     # TODO: rewrite all. without relying on class attributes, without requiring args, and avoid rerunning it from within the job if ran from Flow()
     def __init__(self, cmd_args={}, job_file=None, get_all=True, loaded_inputs={}):
-        # print('##----- loading Job_Args_Parser:')
-        job_name, py_job, yml_args = self.set_job_main_params(cmd_args, job_file)
+        self.job_name, self.py_job, self.yml_args = self.set_job_main_params(cmd_args, job_file)
         if get_all:
-            self.set_job_other_params(loaded_inputs, cmd_args, yml_args)  # sets outputs to self.
+            args = self.set_job_other_params(loaded_inputs, cmd_args, self.yml_args)
+            [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
+            # map(lambda key, value: setattr(self, key, value), args.items()) # attach vars to self.*
+            # import ipdb; ipdb.set_trace()
+
             # TODO: check later that it can be removed.
             # if cmd_args['storage'] == 's3' and job_file.startswith('jobs/'):
             #     # TODO: fix self.job_file, will break.
             #     self.job_file = CLUSTER_APP_FOLDER+job_file
             #     logger.info("overwrote job_file needed for running on cluster: '{}'".format(self.job_file))  # TODO: integrate this patch directly in var assignment above when refactored, to avoid conflicting messages
-
-        self.cmd_args = cmd_args
-        self.job_name, self.py_job, self.yml_args = job_name, py_job, yml_args
 
     def set_job_main_params(self, cmd_args, job_file=None):
         job_name = cmd_args['job_name'] if cmd_args.get('job_name') else None
@@ -397,20 +396,20 @@ class Job_Args_Parser():
         else:
             raise Exception("Need to specify at least job_name or job_file")
 
-        # print('##----- job_name, py_job, yml_args:',job_name, py_job, yml_args)
         return job_name, py_job, yml_args
 
     def set_job_other_params(self, loaded_inputs, cmd_args, yml_args):
         """ Setting the params from yml or from commandline args if available."""  # TODO: change so class doesn't involve commandline args here, just yml.
-
-        self.set_inputs(cmd_args, yml_args, loaded_inputs)
-        self.set_output(cmd_args, yml_args)
-        self.set_frequency(cmd_args, yml_args)
-        self.set_start_date(cmd_args, yml_args)
-        self.set_is_incremental()
-        self.set_db_creds(cmd_args, yml_args)
-        self.set_copy_to_redshift(cmd_args, yml_args)
-        self.set_copy_to_kafka(cmd_args, yml_args)
+        args = {}
+        args['inputs'] = self.set_inputs(cmd_args, yml_args, loaded_inputs)
+        args['output'] = self.set_output(cmd_args, yml_args)
+        args['frequency'] = self.set_generic_param(cmd_args, yml_args, param='frequency')
+        args['start_date'] = self.set_generic_param(cmd_args, yml_args, param='start_date')
+        args['is_incremental'] = self.set_is_incremental(args['inputs'], args['output'])
+        args['db_creds'] = self.set_db_creds(cmd_args, yml_args)
+        args['redshift_copy_params'] = self.set_generic_param(cmd_args, yml_args, param='copy_to_redshift')
+        args['copy_to_kafka'] = self.set_generic_param(cmd_args, yml_args, param='copy_to_kafka')
+        return args
 
     def set_job_name_from_file(self, job_file):
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
@@ -451,74 +450,79 @@ class Job_Args_Parser():
         except KeyError:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(job_name, meta_file))
 
+    def set_generic_param(self, cmd_args, yml_args, param):
+        if cmd_args.get(param):
+            return cmd_args[param]
+        elif cmd_args.get('job_param_file'):
+            return yml_args.get(param)
+        else:
+            return None
+
     def set_inputs(self, cmd_args, yml_args, loaded_inputs):
         inputs_in_args = len([item for item in cmd_args.keys() if item.startswith('input_')]) >= 1
         if inputs_in_args:
-            self.INPUTS = {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in cmd_args.items() if key.startswith('input_')}
+            return {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in cmd_args.items() if key.startswith('input_')}
         elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
-            self.INPUTS = yml_args.get('inputs') or {}
+            return yml_args.get('inputs') or {}
         elif loaded_inputs:
-            self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
+            return {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
         else:
             logger.info("No input given, through commandline nor yml file.")
-            self.INPUTS = {}
+            return {}
 
     def set_output(self, cmd_args, yml_args):
-        if cmd_args.get('output'):
-            self.OUTPUT = cmd_args['output']
-        elif cmd_args.get('job_param_file'):
-            self.OUTPUT = yml_args['output']
-        elif cmd_args.get('mode_no_io'):
-            self.OUTPUT = {}
+        # import ipdb; ipdb.set_trace()
+        output = self.set_generic_param(cmd_args, yml_args, param='output')
+        if output is None and cmd_args.get('mode_no_io'):
+            output = {}
             logger.info("No output given")
-        else:
+        elif output is None:
             raise Exception("No output given")
-        logger.info("output: '{}'".format(self.OUTPUT))
+        logger.info("output: '{}'".format(output))
+        return output
 
-    def set_frequency(self, cmd_args, yml_args):
-        if cmd_args.get('frequency'):
-            self.frequency = cmd_args['frequency']
-        elif cmd_args.get('job_param_file'):
-            self.frequency = yml_args.get('frequency')
-        else:
-            self.frequency = None
+    # def set_frequency(self, cmd_args, yml_args):
+    #     if cmd_args.get('frequency'):
+    #         self.frequency = cmd_args['frequency']
+    #     elif cmd_args.get('job_param_file'):
+    #         self.frequency = yml_args.get('frequency')
+    #     else:
+    #         self.frequency = None
 
-    def set_start_date(self, cmd_args, yml_args):
-        if cmd_args.get('start_date'):
-            self.start_date = cmd_args['start_date']  # will likely be loaded as string.
-        elif cmd_args.get('job_param_file'):
-            self.start_date = yml_args.get('start_date')
-        else:
-            self.start_date = None
+    # def set_start_date(self, cmd_args, yml_args):
+    #     if cmd_args.get('start_date'):
+    #         self.start_date = cmd_args['start_date']  # will likely be loaded as string.
+    #     elif cmd_args.get('job_param_file'):
+    #         self.start_date = yml_args.get('start_date')
+    #     else:
+    #         self.start_date = None
 
-    def set_copy_to_redshift(self, cmd_args, yml_args):
-        if cmd_args.get('copy_to_redshift'):
-            self.redshift_copy_params = cmd_args.get('copy_to_redshift')
-        elif cmd_args.get('job_param_file'):
-            self.redshift_copy_params = yml_args.get('copy_to_redshift')
-        else:
-            self.redshift_copy_params = None
+    # def set_copy_to_redshift(self, cmd_args, yml_args):
+    #     if cmd_args.get('copy_to_redshift'):
+    #         self.redshift_copy_params = cmd_args.get('copy_to_redshift')
+    #     elif cmd_args.get('job_param_file'):
+    #         self.redshift_copy_params = yml_args.get('copy_to_redshift')
+    #     else:
+    #         self.redshift_copy_params = None
 
-    def set_copy_to_kafka(self, cmd_args, yml_args):
-        if cmd_args.get('copy_to_kafka'):
-            self.copy_to_kafka = cmd_args.get('copy_to_kafka')
-        elif cmd_args.get('job_param_file'):
-            self.copy_to_kafka = yml_args.get('copy_to_kafka')
-        else:
-            self.copy_to_kafka = None
+    # def set_copy_to_kafka(self, cmd_args, yml_args):
+    #     if cmd_args.get('copy_to_kafka'):
+    #         self.copy_to_kafka = cmd_args.get('copy_to_kafka')
+    #     elif cmd_args.get('job_param_file'):
+    #         self.copy_to_kafka = yml_args.get('copy_to_kafka')
+    #     else:
+    #         self.copy_to_kafka = None
 
     def set_db_creds(self, cmd_args, yml_args):
         if cmd_args.get('db_creds'):
-            self.db_creds = cmd_args['db_creds']
+            return cmd_args['db_creds']
         elif cmd_args.get('job_param_file') and yml_args.get('from_redshift'):
-            self.db_creds = yml_args['from_redshift'].get('creds')
-        elif cmd_args.get('job_param_file') and not yml_args.get('from_redshift'):
-            self.db_creds = None
+            return yml_args['from_redshift'].get('creds')
         else:
-            self.db_creds = None
+            return None
 
-    def set_is_incremental(self):
-        self.is_incremental = any(['inc_field' in self.INPUTS[item] for item in self.INPUTS.keys()]) or 'inc_field' in self.OUTPUT
+    def set_is_incremental(self, inputs, output):
+        return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
 
     @staticmethod
     def load_meta(fname):
@@ -526,10 +530,10 @@ class Job_Args_Parser():
             yml = yaml.load(stream)
         return yml
 
-    def update_args(self, args, job_file):
-        if job_file.endswith('.sql'):
-            args['sql_file'] = job_file
-        return args
+    # def update_args(self, args, job_file):
+    #     if job_file.endswith('.sql'):
+    #         args['sql_file'] = job_file
+    #     return args
 
 
 class FS_Ops_Dispatcher():
