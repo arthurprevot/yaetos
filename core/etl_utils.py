@@ -375,6 +375,12 @@ class Job_Args_Parser():
         job_name, py_job, yml_args = self.set_job_main_params(cmd_args, job_file)
         if get_all:
             self.set_job_other_params(loaded_inputs, cmd_args, yml_args)  # sets outputs to self.
+            # TODO: check later that it can be removed.
+            # if cmd_args['storage'] == 's3' and job_file.startswith('jobs/'):
+            #     # TODO: fix self.job_file, will break.
+            #     self.job_file = CLUSTER_APP_FOLDER+job_file
+            #     logger.info("overwrote job_file needed for running on cluster: '{}'".format(self.job_file))  # TODO: integrate this patch directly in var assignment above when refactored, to avoid conflicting messages
+
         self.cmd_args = cmd_args
         self.job_name, self.py_job, self.yml_args = job_name, py_job, yml_args
 
@@ -396,10 +402,6 @@ class Job_Args_Parser():
 
     def set_job_other_params(self, loaded_inputs, cmd_args, yml_args):
         """ Setting the params from yml or from commandline args if available."""  # TODO: change so class doesn't involve commandline args here, just yml.
-
-        if cmd_args['storage'] == 's3' and self.job_file.startswith('jobs/'):
-            self.job_file = CLUSTER_APP_FOLDER+self.job_file
-            logger.info("overwrote job_file needed for running on cluster: '{}'".format(self.job_file))  # TODO: integrate this patch directly in var assignment above when refactored, to avoid conflicting messages
 
         self.set_inputs(cmd_args, yml_args, loaded_inputs)
         self.set_output(cmd_args, yml_args)
