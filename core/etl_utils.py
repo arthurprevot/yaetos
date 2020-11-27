@@ -62,16 +62,16 @@ class ETL_Base(object):
     SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union({'other', 'None'})
 
     def __init__(self, args={}):
-        self.args = args
+        self.args = args  # TODO, remove this and rely on jargs in etl() only.
 
-    def etl(self, sc, sc_sql, loaded_inputs={}):
+    def etl(self, sc, sc_sql, loaded_inputs={}):  # TODO, add jargs here. and use it throughout below.
         """ Main function. If incremental, reruns ETL process multiple time until
         fully loaded, otherwise, just run ETL once.
         It's a way to deal with case where full incremental rerun from scratch would
         require a larger cluster to build in 1 shot than the typical incremental.
         """
         self.set_job_params(loaded_inputs)  # TODO: check way to remove from here since already computed in Commandliner
-        if not self.is_incremental:
+        if not self.jargs.is_incremental:
             output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
         else:
             output = self.etl_multi_pass(sc, sc_sql, loaded_inputs)
@@ -96,7 +96,7 @@ class ETL_Base(object):
 
     def etl_one_pass(self, sc, sc_sql, loaded_inputs={}):
         """ Main etl function, loads inputs, runs transform, and saves output."""
-        logger.info("-------Starting running job '{}'--------".format(self.job_name))
+        logger.info("-------Starting running job '{}'--------".format(self.jargs.job_name))
         start_time = time()
         self.start_dt = datetime.utcnow() # attached to self so available within dev expose "transform()" func.
         output = self.etl_no_io(sc, sc_sql, loaded_inputs)
@@ -106,8 +106,8 @@ class ETL_Base(object):
         logger.info('Output count: {}'.format(count))
         logger.info("Output data types: {}".format([(fd.name, fd.dataType) for fd in output.schema.fields]))
         self.output_empty = count == 0
-        if self.output_empty and self.is_incremental:
-            logger.info("-------End job '{}', increment with empty output--------".format(self.job_name))
+        if self.output_empty and self.jargs.is_incremental:
+            logger.info("-------End job '{}', increment with empty output--------".format(self.jargs.job_name))
             # TODO: look at saving output empty table instead of skipping output.
             return output
 
@@ -117,26 +117,26 @@ class ETL_Base(object):
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
-        if self.redshift_copy_params:
+        if self.jargs.redshift_copy_params:
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
-        if self.copy_to_kafka:
+        if self.jargs.copy_to_kafka:
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
         output.unpersist()
-        logger.info("-------End job '{}'--------".format(self.job_name))
+        logger.info("-------End job '{}'--------".format(self.jargs.job_name))
         return output
 
     def etl_no_io(self, sc, sc_sql, loaded_inputs={}):
         """ Function to load inputs (including from live vars) and run transform. No output to disk.
         Having this code isolated is useful for cases with no I/O possible, like testing."""
         logger.info("etl args: {}".format(self.args))
-        if self.args.get('mode_no_io'):  # TODO: check if condition can be skipped
+        if self.args.get('mode_no_io'):  # TODO: check if condition can be skipped, # TODO: pass jargs to etl_no_io so this can be removed.
             self.set_job_params(loaded_inputs)
         self.sc = sc
         self.sc_sql = sc_sql
         self.app_name = sc.appName
         self.logger = logger
-        if self.job_name != self.app_name:
+        if self.jargs.job_name != self.app_name:
             logger.info("... part of spark app '{}'".format(self.app_name))
 
         loaded_datasets = self.load_inputs(loaded_inputs)
@@ -151,19 +151,19 @@ class ETL_Base(object):
     def set_job_params(self, loaded_inputs={}, job_file=None):
         # TODO: redo without without the mapping.
         job_file = self.set_job_file() # file where code is, could be .py or .sql. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
-        jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
+        self.jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
 
-        self.job_name = jargs.job_name  # name as written in jobs_metadata file, ex "examples/ex1_frameworked_job.py" or "examples/ex1_full_sql_job.sql"
-        self.py_job = jargs.py_job  # name of python file supporting execution. Different from job_file for sql jobs or other generic python files.
-        # self.app_name  # set earlier
-        self.job_yml = jargs.yml_args
-        self.INPUTS = jargs.inputs
-        self.OUTPUT = jargs.output
-        self.frequency = jargs.frequency
-        self.redshift_copy_params = jargs.redshift_copy_params
-        self.copy_to_kafka = jargs.copy_to_kafka
-        self.db_creds = jargs.db_creds
-        self.is_incremental = jargs.is_incremental
+        # self.job_name = jargs.job_name  # name as written in jobs_metadata file, ex "examples/ex1_frameworked_job.py" or "examples/ex1_full_sql_job.sql"
+        # self.py_job = jargs.py_job  # name of python file supporting execution. Different from job_file for sql jobs or other generic python files.
+        # # self.app_name  # set earlier
+        # self.job_yml = jargs.yml_args
+        # self.INPUTS = jargs.inputs
+        # self.OUTPUT = jargs.output
+        # self.frequency = jargs.frequency
+        # self.redshift_copy_params = jargs.redshift_copy_params
+        # self.copy_to_kafka = jargs.copy_to_kafka
+        # self.db_creds = jargs.db_creds
+        # self.is_incremental = jargs.is_incremental
 
     def set_job_file(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -174,10 +174,10 @@ class ETL_Base(object):
 
     def load_inputs(self, loaded_inputs):
         app_args = {}
-        if self.db_creds:
+        if self.jargs.db_creds:
             return app_args
 
-        for item in self.INPUTS.keys():
+        for item in self.jargs.inputs.keys():
 
             # Load from memory if available
             if item in loaded_inputs.keys():
@@ -186,7 +186,7 @@ class ETL_Base(object):
                 continue
 
             # Skip "other" types
-            if self.INPUTS[item]['type'] == "other":
+            if self.jargs.inputs[item]['type'] == "other":
                 app_args[item] = None
                 logger.info("Input '{}' not loaded since type set to 'other'.".format(item))
                 continue
@@ -195,7 +195,7 @@ class ETL_Base(object):
             app_args[item] = self.load_input(item)
             logger.info("Input '{}' loaded.".format(item))
 
-        if self.is_incremental:
+        if self.jargs.is_incremental:
             app_args = self.filter_incremental_inputs(app_args)
 
         self.sql_register(app_args)
@@ -207,8 +207,8 @@ class ETL_Base(object):
         # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
-            input_is_tabular = self.INPUTS[item]['type'] in self.TABULAR_TYPES
-            inc = self.INPUTS[item].get('inc_field', None)
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES
+            inc = self.jargs.inputs[item].get('inc_field', None)
             if input_is_tabular and inc:
                 max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
                 maxes.append(max_dt)
@@ -216,8 +216,8 @@ class ETL_Base(object):
 
         # Filter
         for item in app_args.keys():
-            input_is_tabular = self.INPUTS[item]['type'] in self.TABULAR_TYPES
-            inc = self.INPUTS[item].get('inc_field', None)
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES
+            inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
                     # TODO: add limit to amount of input data, and set self.final_inc=False
@@ -235,14 +235,14 @@ class ETL_Base(object):
     def sql_register(self, app_args):
         for item in app_args.keys():
             input_is_tabular = hasattr(app_args[item], "rdd")  # assuming DataFrame will keep 'rdd' attribute
-            # ^ better than using self.INPUTS[item]['type'] in self.TABULAR_TYPES since doesn't require 'type' being defined.
+            # ^ better than using self.jargs.inputs[item]['type'] in self.TABULAR_TYPES since doesn't require 'type' being defined.
             if input_is_tabular:
                 app_args[item].createOrReplaceTempView(item)
 
     def load_input(self, input_name):
-        input_type = self.INPUTS[input_name]['type']
+        input_type = self.jargs.inputs[input_name]['type']
         if input_type in self.FILE_TYPES:
-            path = self.INPUTS[input_name]['path']
+            path = self.jargs.inputs[input_name]['path']
             path = path.replace('s3://', 's3a://') if self.args['mode'] == 'local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
             path = Path_Handler(path).expand_later(self.args['storage'])
@@ -258,17 +258,17 @@ class ETL_Base(object):
         elif input_type == 'mysql':
             sdf = self.load_mysql(input_name)
         else:
-            raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.INPUTS[input_name].get('path'), self.SUPPORTED_TYPES))
+            raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.SUPPORTED_TYPES))
 
         logger.info("Input data types: {}".format([(fd.name, fd.dataType) for fd in sdf.schema.fields]))
         return sdf
 
     def load_mysql(self, input_name):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
-        creds_section = self.INPUTS[input_name]['creds']
+        creds_section = self.jargs.inputs[input_name]['creds']
         db = creds[creds_section]
         url = 'jdbc:mysql://{host}:{port}/{service}'.format(host=db['host'], port=db['port'], service=db['service'])
-        dbtable = self.INPUTS[input_name]['db_table']
+        dbtable = self.jargs.inputs[input_name]['db_table']
         logger.info('Pulling table "{}" from mysql'.format(dbtable))
         return self.sc_sql.read \
             .format('jdbc') \
@@ -280,10 +280,10 @@ class ETL_Base(object):
             .load()
 
     def get_previous_output_max_timestamp(self):
-        path = self.OUTPUT['path']
+        path = self.jargs.output['path']
         path += '*' # to go into subfolders
         try:
-            df = self.load_input(path, self.OUTPUT['type'])
+            df = self.load_input(path, self.jargs.output['type'])
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
             return None
@@ -293,28 +293,28 @@ class ETL_Base(object):
         return dt
 
     def get_max_timestamp(self, df):
-        return df.agg({self.OUTPUT['inc_field']: "max"}).collect()[0][0]
+        return df.agg({self.jargs.output['inc_field']: "max"}).collect()[0][0]
 
     def save(self, output, now_dt, path=None):
         if path is None:
-            path = Path_Handler(self.OUTPUT['path']).expand_now(now_dt)
+            path = Path_Handler(self.jargs.output['path']).expand_now(now_dt)
         self.path = path
 
-        if self.OUTPUT['type'] == 'None':
+        if self.jargs.output['type'] == 'None':
             logger.info('Did not write output to disk')
             return None
 
-        if self.is_incremental:
+        if self.jargs.is_incremental:
             current_time = now_dt.strftime('%Y%m%d_%H%M%S_utc')  # no use of now_dt to make it updated for each inc.
             file_tag = ('_' + self.args.get('file_tag')) if self.args.get('file_tag') else ""
             path += 'inc_{}{}/'.format(current_time, file_tag)
 
         # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
-        if self.OUTPUT['type'] == 'txt':
+        if self.jargs.output['type'] == 'txt':
             output.saveAsTextFile(path)
-        elif self.OUTPUT['type'] == 'parquet':
+        elif self.jargs.output['type'] == 'parquet':
             output.write.parquet(path)
-        elif self.OUTPUT['type'] == 'csv':
+        elif self.jargs.output['type'] == 'csv':
             output.write.option("header", "true").csv(path)
         else:
             raise Exception("Need to specify supported output type, either txt, parquet or csv.")
@@ -332,7 +332,7 @@ class ETL_Base(object):
             -- output folder : TBD
             -- github hash: TBD
             -- code: TBD
-            """%(self.app_name, self.job_name, elapsed)
+            """%(self.app_name, self.jargs.job_name, elapsed)
         FS_Ops_Dispatcher().save_metadata(fname, content, self.args['storage'])
 
     def query(self, query_str):
@@ -347,19 +347,19 @@ class ETL_Base(object):
         from core.db_utils import cast_col
         df = output.toPandas()
         df = cast_col(df, types)
-        connection_profile = self.redshift_copy_params['creds']
-        schema, name_tb= self.redshift_copy_params['table'].split('.')
+        connection_profile = self.jargs.redshift_copy_params['creds']
+        schema, name_tb = self.jargs.redshift_copy_params['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
-        create_table(df, connection_profile, name_tb, schema, types, creds, self.is_incremental)
+        create_table(df, connection_profile, name_tb, schema, types, creds, self.jargs.is_incremental)
         del(df)
 
     def copy_to_redshift_using_spark(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
         from core.redshift_spark import create_table
-        connection_profile = self.redshift_copy_params['creds']
-        schema, name_tb= self.redshift_copy_params['table'].split('.')
+        connection_profile = self.jargs.redshift_copy_params['creds']
+        schema, name_tb= self.jargs.redshift_copy_params['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
-        create_table(sdf, connection_profile, name_tb, schema, creds, self.is_incremental, REDSHIFT_S3_TMP_DIR)
+        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, REDSHIFT_S3_TMP_DIR)
 
     def push_to_kafka(self, output, types):
         """ Needs to be overriden by each specific job."""
@@ -458,7 +458,7 @@ class Job_Args_Parser():
         inputs_in_args = len([item for item in cmd_args.keys() if item.startswith('input_')]) >= 1
         if inputs_in_args:
             return {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in cmd_args.items() if key.startswith('input_')}
-        elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
+        elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
             return yml_args.get('inputs') or {}
         elif loaded_inputs:
             return {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
@@ -735,7 +735,7 @@ class Commandliner():
     def launch_run_mode(self, Job, args):
         job = Job(args)
         job.set_job_params() # just need the job.job_name from there.
-        app_name = job.job_name
+        app_name = job.jargs.job_name
         sc, sc_sql = self.create_contexts(app_name, args['mode'], args['load_connectors'])
         if not self.args['dependencies']:
             job.etl(sc, sc_sql)
