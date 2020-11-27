@@ -436,7 +436,7 @@ class Job_Args_Parser():
         if meta_file == 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if cmd_args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         elif meta_file is None:
-            return None
+            return {}
 
         yml = self.load_meta(meta_file)
         logger.info('Loaded job param file: ' + meta_file)
