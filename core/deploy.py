@@ -379,13 +379,14 @@ class DeployPySparkScriptOnAws(object):
             "--mode=localEMR",
             "--storage=s3",
             '--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE),
-            "--dependencies" if app_args.get('dependencies') else "",
-            "--boxed_dependencies" if app_args.get('boxed_dependencies') else "",
             "--rerun_criteria={}".format(app_args.get('rerun_criteria')),
-            "--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file']) if app_args.get('sql_file') else "",
             ]
-        cmd_runner_args = [item for item in cmd_runner_args if item]
-        return cmd_runner_args
+        dep = ["--dependencies"] if app_args.get('dependencies') else []
+        box = ["--boxed_dependencies"] if app_args.get('boxed_dependencies') else []
+        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else []
+        nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
+
+        return cmd_runner_args + dep + box + sql + nam
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
