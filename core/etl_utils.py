@@ -151,20 +151,20 @@ class ETL_Base(object):
     def set_job_params(self, loaded_inputs={}, job_file=None):
         # TODO: redo without without the mapping.
         job_file = self.set_job_file() # file where code is, could be .py or .sql. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
-        job_yml_parser = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
+        jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
 
-        self.job_name = job_yml_parser.job_name  # name as written in jobs_metadata file, ex "examples/ex1_frameworked_job.py" or "examples/ex1_full_sql_job.sql"
-        self.py_job = job_yml_parser.py_job  # name of python file supporting execution. Different from job_file for sql jobs or other generic python files.
+        self.job_name = jargs.job_name  # name as written in jobs_metadata file, ex "examples/ex1_frameworked_job.py" or "examples/ex1_full_sql_job.sql"
+        self.py_job = jargs.py_job  # name of python file supporting execution. Different from job_file for sql jobs or other generic python files.
         # self.app_name  # set earlier
         if self.args.get('job_param_file'):
-            self.job_yml = job_yml_parser.yml_args
-        self.INPUTS = job_yml_parser.inputs
-        self.OUTPUT = job_yml_parser.output
-        self.frequency = job_yml_parser.frequency
-        self.redshift_copy_params = job_yml_parser.redshift_copy_params
-        self.copy_to_kafka = job_yml_parser.copy_to_kafka
-        self.db_creds = job_yml_parser.db_creds
-        self.is_incremental = job_yml_parser.is_incremental
+            self.job_yml = jargs.yml_args
+        self.INPUTS = jargs.inputs
+        self.OUTPUT = jargs.output
+        self.frequency = jargs.frequency
+        self.redshift_copy_params = jargs.redshift_copy_params
+        self.copy_to_kafka = jargs.copy_to_kafka
+        self.db_creds = jargs.db_creds
+        self.is_incremental = jargs.is_incremental
 
     def set_job_file(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -380,8 +380,7 @@ class Job_Args_Parser():
             #     logger.info("overwrote job_file needed for running on cluster: '{}'".format(self.job_file))  # TODO: integrate this patch directly in var assignment above when refactored, to avoid conflicting messages
 
     def set_job_main_params(self, cmd_args, job_file=None):
-        job_name = cmd_args['job_name'] if cmd_args.get('job_name') else None
-
+        job_name = cmd_args.get('job_name')
         if job_name:  # job_name (name from job_metadata.yml) takes priority if provided.
             yml_args = self.set_job_yml(cmd_args, job_name)
             py_job = yml_args['py_job'] if yml_args.get('py_job') else self.set_job_file_from_name(job_name)
@@ -664,20 +663,20 @@ class Commandliner():
         self.set_commandline_args(args)  # sets self.args TODO: make explicit
         if Job is None:  # when job run from launcher.py --job_name=some_name_from_job_metadata_file
             assert self.args['job_name']
-            job_yml_parser = Job_Args_Parser(cmd_args=self.args, job_file=None, get_all=False)
-            Job = get_job_class(job_yml_parser.py_job)
+            jargs = Job_Args_Parser(cmd_args=self.args, job_file=None, get_all=False)
+            Job = get_job_class(jargs.py_job)
 
         if self.args['mode'] in ('local', 'localEMR'):
             self.launch_run_mode(Job, self.args)
         else:  # when deploying to AWS
             job = Job(self.args)
             job_file = job.set_job_file()
-            job_yml_parser = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True)
+            jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True)
             deploy_args = {'aws_config_file': self.args.pop('aws_config_file'),
                            'aws_setup': self.args.pop('aws_setup'),
                            'leave_on': self.args.pop('leave_on'),
                            }
-            self.launch_deploy_mode(job_yml_parser, deploy_args, app_args=self.args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
+            self.launch_deploy_mode(jargs, deploy_args, app_args=self.args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
 
     def set_commandline_args(self, args):
         """Command line arguments take precedence over function ones."""
@@ -807,17 +806,17 @@ class Flow():
         df = {}
         for job_name in leafs:
             args['job_name'] = job_name
-            job_yml_parser = Job_Args_Parser(cmd_args=args, job_file=None, get_all=False)
-            # args = job_yml_parser.update_args(args, job_yml_parser.job_file)
-            Job = get_job_class(job_yml_parser.py_job)
+            jargs = Job_Args_Parser(cmd_args=args, job_file=None, get_all=False)
+            # args = jargs.update_args(args, jargs.job_file)
+            Job = get_job_class(jargs.py_job)
             job = Job(args)
             logger.info('About to run : {}'.format(job_name))
 
             loaded_inputs = {}
             if not args['boxed_dependencies']:
-                if job_yml_parser.job_yml.get('inputs', 'no input') == 'no input':
+                if jargs.job_yml.get('inputs', 'no input') == 'no input':
                     raise Exception("Pb with loading job_yml or finding 'inputs' parameter in it. You can work around it by using 'boxed_dependencies' argument.")
-                for in_name, in_properties in job_yml_parser.job_yml['inputs'].items():
+                for in_name, in_properties in jargs.job_yml['inputs'].items():
                     if in_properties.get('from'):
                         loaded_inputs[in_name] = df[in_properties['from']]
             df[job_name] = job.etl(sc, sc_sql, loaded_inputs) # at this point df[job_name] is unpersisted.
