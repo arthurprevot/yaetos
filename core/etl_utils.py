@@ -156,8 +156,7 @@ class ETL_Base(object):
         self.job_name = jargs.job_name  # name as written in jobs_metadata file, ex "examples/ex1_frameworked_job.py" or "examples/ex1_full_sql_job.sql"
         self.py_job = jargs.py_job  # name of python file supporting execution. Different from job_file for sql jobs or other generic python files.
         # self.app_name  # set earlier
-        if self.args.get('job_param_file'):
-            self.job_yml = jargs.yml_args
+        self.job_yml = jargs.yml_args
         self.INPUTS = jargs.inputs
         self.OUTPUT = jargs.output
         self.frequency = jargs.frequency
@@ -436,6 +435,8 @@ class Job_Args_Parser():
         meta_file = cmd_args.get('job_param_file')
         if meta_file == 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if cmd_args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
+        elif meta_file is None:
+            return None
 
         yml = self.load_meta(meta_file)
         logger.info('Loaded job param file: ' + meta_file)
