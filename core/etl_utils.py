@@ -62,20 +62,22 @@ class ETL_Base(object):
     FILE_TYPES = ('csv', 'parquet', 'txt')
     SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union({'other', 'None'})
 
-    def __init__(self, args={}):
-        self.args = args  # TODO, remove this and rely on jargs in etl() only.
+    def __init__(self, cmd_args={}, jargs=None, loaded_inputs={}):
+        # self.args = args  # TODO, remove this and rely on jargs in etl() only.
+        self.loaded_inputs = loaded_inputs
+        self.jargs = self.set_jargs(cmd_args, loaded_inputs) if not jargs else jargs
 
-    def etl(self, sc, sc_sql, loaded_inputs={}):  # TODO, add jargs here. and use it throughout below.
+    def etl(self, sc, sc_sql):
         """ Main function. If incremental, reruns ETL process multiple time until
         fully loaded, otherwise, just run ETL once.
         It's a way to deal with case where full incremental rerun from scratch would
         require a larger cluster to build in 1 shot than the typical incremental.
         """
-        self.set_job_params(loaded_inputs)  # TODO: check way to remove from here since already computed in Commandliner
+        # self.set_jargs(args, loaded_inputs)  # TODO: check way to remove from here since already computed in Commandliner
         if not self.jargs.is_incremental:
-            output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
+            output = self.etl_one_pass(sc, sc_sql, self.loaded_inputs)
         else:
-            output = self.etl_multi_pass(sc, sc_sql, loaded_inputs)
+            output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
         return output
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
@@ -147,9 +149,10 @@ class ETL_Base(object):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
-    def set_job_params(self, loaded_inputs={}, job_file=None):
+    def set_jargs(self, args, loaded_inputs={}, job_file=None):
+        """ jargs => job args"""
         job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
-        self.jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
+        return Job_Args_Parser(cmd_args=args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
 
     def set_job_file(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -662,13 +665,13 @@ class Commandliner():
             self.launch_run_mode(Job, self.args)
         else:  # when deploying to AWS
             job = Job(self.args)
-            job_file = job.set_job_file()
-            jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True)
+            # job_file = job.set_job_file()
+            # jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True)
             deploy_args = {'aws_config_file': self.args.pop('aws_config_file'),
                            'aws_setup': self.args.pop('aws_setup'),
                            'leave_on': self.args.pop('leave_on'),
                            }
-            self.launch_deploy_mode(jargs, deploy_args, app_args=self.args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
+            self.launch_deploy_mode(job.jargs, deploy_args, app_args=self.args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
 
     def set_commandline_args(self, args):
         """Command line arguments take precedence over function ones."""
@@ -727,7 +730,6 @@ class Commandliner():
 
     def launch_run_mode(self, Job, args):
         job = Job(args)
-        job.set_job_params() # just need the job.job_name from there.
         app_name = job.jargs.job_name
         sc, sc_sql = self.create_contexts(app_name, args['mode'], args['load_connectors'])
         if not self.args['dependencies']:
@@ -800,10 +802,9 @@ class Flow():
         df = {}
         for job_name in leafs:
             args['job_name'] = job_name
-            jargs = Job_Args_Parser(cmd_args=args, job_file=None, get_all=False)
+            jargs = Job_Args_Parser(cmd_args=args, job_file=None, get_all=True)
             # args = jargs.update_args(args, jargs.job_file)
             Job = get_job_class(jargs.py_job)
-            job = Job(args)
             logger.info('About to run : {}'.format(job_name))
 
             loaded_inputs = {}
@@ -813,7 +814,10 @@ class Flow():
                 for in_name, in_properties in jargs.job_yml['inputs'].items():
                     if in_properties.get('from'):
                         loaded_inputs[in_name] = df[in_properties['from']]
-            df[job_name] = job.etl(sc, sc_sql, loaded_inputs) # at this point df[job_name] is unpersisted.
+
+            job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
+            df[job_name] = job.etl(sc, sc_sql) # at this point df[job_name] is unpersisted. TODO: keep it persisted.
+
             if args['boxed_dependencies']:
                 df[job_name].unpersist()
                 del df[job_name]
