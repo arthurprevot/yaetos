@@ -23,6 +23,7 @@ from configparser import ConfigParser
 from shutil import copyfile
 import core.etl_utils as eu
 import core.logger as log
+logger = log.setup_logging('Deploy')
 
 
 class DeployPySparkScriptOnAws(object):
@@ -599,20 +600,12 @@ def terminate(error_message=None):
     exit()
 
 
-logger = log.setup_logging('Deploy')
-
-
 if __name__ == "__main__":
     # Deploying 1 job manually.
     # Use as standalone to push random python script to cluster.
     # TODO: fails to create a new cluster but works to add a step to an existing cluster.
     print('command line: ', ' '.join(sys.argv))
     job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'  # TODO: move to 'jobs/examples/ex1_raw_job_cluster.py'
-    # class bag(object):
-    #     pass
-    # jargs = bag()
-    # jargs.job_name = job_name
-    # jargs.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
     deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
     app_args = {'job_name':job_name, 'py_job':py_job, 'mode':'EMR'}
     DeployPySparkScriptOnAws(deploy_args, app_args).run()

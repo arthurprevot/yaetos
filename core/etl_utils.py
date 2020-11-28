@@ -676,12 +676,6 @@ class Commandliner():
             job = Job(self.args)
             deploy_args = job.jargs.get_deploy_args()
             app_args = job.jargs.get_app_args()
-            # job_file = job.set_job_file()
-            # jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True)
-            # deploy_args = {'aws_config_file': self.args.pop('aws_config_file'),
-            #                'aws_setup': self.args.pop('aws_setup'),
-            #                'leave_on': self.args.pop('leave_on'),
-            #                }
             self.launch_deploy_mode(deploy_args, app_args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
 
     def set_commandline_args(self, args):
