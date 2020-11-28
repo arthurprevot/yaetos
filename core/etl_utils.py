@@ -82,11 +82,11 @@ class ETL_Base(object):
         needs_run = True
         while needs_run:
             output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
-            if self.args.get('rerun_criteria') == 'last_date':
+            if self.jargs.rerun_criteria == 'last_date':
                 needs_run = not self.final_inc
-            elif self.args.get('rerun_criteria') == 'output_empty':
+            elif self.jargs.rerun_criteria == 'output_empty':
                 needs_run = not self.output_empty
-            elif self.args.get('rerun_criteria') == 'both':
+            elif self.jargs.rerun_criteria == 'both':
                 needs_run = not (self.output_empty or self.final_inc)
             if needs_run:
                 del(output)
@@ -229,9 +229,9 @@ class ETL_Base(object):
         input_type = self.jargs.inputs[input_name]['type']
         if input_type in self.FILE_TYPES:
             path = self.jargs.inputs[input_name]['path']
-            path = path.replace('s3://', 's3a://') if self.args['mode'] == 'local' else path
+            path = path.replace('s3://', 's3a://') if self.jargs.mode == 'local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-            path = Path_Handler(path).expand_later(self.args['storage'])
+            path = Path_Handler(path).expand_later(self.jargs.storage)
 
         if input_type == 'txt':
             return self.sc.textFile(path)
@@ -250,7 +250,7 @@ class ETL_Base(object):
         return sdf
 
     def load_mysql(self, input_name):
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         creds_section = self.jargs.inputs[input_name]['creds']
         db = creds[creds_section]
         url = 'jdbc:mysql://{host}:{port}/{service}'.format(host=db['host'], port=db['port'], service=db['service'])
@@ -292,7 +292,7 @@ class ETL_Base(object):
 
         if self.jargs.is_incremental:
             current_time = now_dt.strftime('%Y%m%d_%H%M%S_utc')  # no use of now_dt to make it updated for each inc.
-            file_tag = ('_' + self.args.get('file_tag')) if self.args.get('file_tag') else ""
+            file_tag = ('_' + self.jargs.merged_args.get('file_tag')) if self.jargs.merged_args.get('file_tag') else ""  # TODO: make that param standard in cmd_args ?
             path += 'inc_{}{}/'.format(current_time, file_tag)
 
         # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
@@ -319,7 +319,7 @@ class ETL_Base(object):
             -- github hash: TBD
             -- code: TBD
             """%(self.app_name, self.jargs.job_name, elapsed)
-        FS_Ops_Dispatcher().save_metadata(fname, content, self.args['storage'])
+        FS_Ops_Dispatcher().save_metadata(fname, content, self.jargs.storage)
 
     def query(self, query_str):
         logger.info('Query string:\n' + query_str)
@@ -335,7 +335,7 @@ class ETL_Base(object):
         df = cast_col(df, types)
         connection_profile = self.jargs.redshift_copy_params['creds']
         schema, name_tb = self.jargs.redshift_copy_params['table'].split('.')
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(df, connection_profile, name_tb, schema, types, creds, self.jargs.is_incremental)
         del(df)
 
@@ -344,7 +344,7 @@ class ETL_Base(object):
         from core.redshift_spark import create_table
         connection_profile = self.jargs.redshift_copy_params['creds']
         schema, name_tb= self.jargs.redshift_copy_params['table'].split('.')
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, REDSHIFT_S3_TMP_DIR)
 
     def push_to_kafka(self, output, types):
