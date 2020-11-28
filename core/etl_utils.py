@@ -369,10 +369,16 @@ class ETL_Base(object):
 
 class Job_Args_Parser():
     def __init__(self, cmd_args={}, job_file=None, get_all=True, loaded_inputs={}):
-        self.job_name, self.py_job, self.yml_args = self.set_job_main_params(cmd_args, job_file)
+        args = cmd_args.copy()
+        args['job_name'], args['py_job'], yml_args = self.set_job_main_params(cmd_args, job_file)
         if get_all:
-            args = self.set_job_other_params(loaded_inputs, cmd_args, self.yml_args)
-            [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
+            args.update(self.set_job_other_params(loaded_inputs, cmd_args, yml_args))
+        [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
+        logger.info("Job args: '{}'".format(pformat(args)))
+        # for other access to vars
+        self.merged_args = args
+        self.cmd_args = cmd_args
+        self.yml_args = yml_args
 
     def set_job_main_params(self, cmd_args, job_file=None):
         job_name = cmd_args.get('job_name')
