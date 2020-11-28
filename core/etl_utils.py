@@ -127,12 +127,11 @@ class ETL_Base(object):
         logger.info("-------End job '{}'--------".format(self.jargs.job_name))
         return output
 
-    def etl_no_io(self, sc, sc_sql, loaded_inputs={}):
+    def etl_no_io(self, sc, sc_sql, loaded_inputs={}, jargs=None):
         """ Function to load inputs (including from live vars) and run transform. No output to disk.
         Having this code isolated is useful for cases with no I/O possible, like testing."""
+        self.jargs = jargs or self.jargs
         logger.info("etl args: {}".format(self.args))
-        if self.args.get('mode_no_io'):  # TODO: check if condition can be skipped, # TODO: pass jargs to etl_no_io so this can be removed.
-            self.set_job_params(loaded_inputs)
         self.sc = sc
         self.sc_sql = sc_sql
         self.app_name = sc.appName
