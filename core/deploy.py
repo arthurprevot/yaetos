@@ -547,7 +547,7 @@ def deploy_all_scheduled():
         meta_file = args.get('job_param_file', 'repo')
         if meta_file is 'repo':
             meta_file = eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE if args['storage']=='s3' else eu.JOBS_METADATA_LOCAL_FILE
-        yml = eu.Job_Yml_Parser.load_meta(meta_file)
+        yml = eu.Job_Args_Parser.load_meta(meta_file)
         logger.info('Loaded job param file: ' + meta_file)
         return yml
 

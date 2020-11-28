@@ -18,7 +18,7 @@ class Job(ETL_Base):
     #     if inputs_in_args:
     #         self.INPUTS = {key.replace('input_', ''): val for key, val in self.args.iteritems() if key.startswith('input_')}
     #     elif self.args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
-    #         self.INPUTS = self.job_yml.get('inputs') or {}
+    #         self.INPUTS = self.jargs.yml_args.get('inputs') or {}
     #     # elif loaded_inputs:
     #     #     self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.iteritems()}
     #     else:
