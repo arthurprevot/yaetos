@@ -373,11 +373,6 @@ class Job_Args_Parser():
         if get_all:
             args = self.set_job_other_params(loaded_inputs, cmd_args, self.yml_args)
             [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
-            # TODO: check later that code below can be removed.
-            # if cmd_args['storage'] == 's3' and job_file.startswith('jobs/'):
-            #     # TODO: fix self.job_file, will break.
-            #     self.job_file = CLUSTER_APP_FOLDER+job_file
-            #     logger.info("overwrote job_file needed for running on cluster: '{}'".format(self.job_file))  # TODO: integrate this patch directly in var assignment above when refactored, to avoid conflicting messages
 
     def set_job_main_params(self, cmd_args, job_file=None):
         job_name = cmd_args.get('job_name')
@@ -390,6 +385,10 @@ class Job_Args_Parser():
             yml_args = self.set_job_yml(cmd_args, job_name)
         else:
             raise Exception("Need to specify at least job_name or job_file")
+
+        # if cmd_args['storage'] == 's3' and py_job.startswith('jobs/'):
+        #     py_job = CLUSTER_APP_FOLDER+py_job
+        #     logger.info("overwrote py_job needed for running on cluster: '{}'".format(py_job))
 
         return job_name, py_job, yml_args
 
