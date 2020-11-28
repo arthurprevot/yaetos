@@ -37,6 +37,7 @@ from configparser import ConfigParser
 import numpy as np
 #from sklearn.externals import joblib  # TODO: re-enable later after fixing lib versions.
 import gc
+from pprint import pformat
 import core.logger as log
 logger = log.setup_logging('Job')
 
@@ -104,7 +105,7 @@ class ETL_Base(object):
         output.show()
         count = output.count()
         logger.info('Output count: {}'.format(count))
-        logger.info("Output data types: {}".format([(fd.name, fd.dataType) for fd in output.schema.fields]))
+        logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
         self.output_empty = count == 0
         if self.output_empty and self.jargs.is_incremental:
             logger.info("-------End job '{}', increment with empty output--------".format(self.jargs.job_name))
@@ -260,7 +261,7 @@ class ETL_Base(object):
         else:
             raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.SUPPORTED_TYPES))
 
-        logger.info("Input data types: {}".format([(fd.name, fd.dataType) for fd in sdf.schema.fields]))
+        logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
     def load_mysql(self, input_name):
