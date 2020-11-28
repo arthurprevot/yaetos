@@ -131,7 +131,6 @@ class ETL_Base(object):
         """ Function to load inputs (including from live vars) and run transform. No output to disk.
         Having this code isolated is useful for cases with no I/O possible, like testing."""
         self.jargs = jargs or self.jargs
-        logger.info("etl args: {}".format(self.args))
         self.sc = sc
         self.sc_sql = sc_sql
         self.app_name = sc.appName
@@ -149,21 +148,8 @@ class ETL_Base(object):
         raise NotImplementedError
 
     def set_job_params(self, loaded_inputs={}, job_file=None):
-        # TODO: redo without without the mapping.
-        job_file = self.set_job_file() # file where code is, could be .py or .sql. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
+        job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
         self.jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
-
-        # self.job_name = jargs.job_name  # name as written in jobs_metadata file, ex "examples/ex1_frameworked_job.py" or "examples/ex1_full_sql_job.sql"
-        # self.py_job = jargs.py_job  # name of python file supporting execution. Different from job_file for sql jobs or other generic python files.
-        # # self.app_name  # set earlier
-        # self.job_yml = jargs.yml_args
-        # self.INPUTS = jargs.inputs
-        # self.OUTPUT = jargs.output
-        # self.frequency = jargs.frequency
-        # self.redshift_copy_params = jargs.redshift_copy_params
-        # self.copy_to_kafka = jargs.copy_to_kafka
-        # self.db_creds = jargs.db_creds
-        # self.is_incremental = jargs.is_incremental
 
     def set_job_file(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -704,6 +690,7 @@ class Commandliner():
         parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
+        parser.add_argument("-q", "--sql_file", help="Path to an sql file to execute.")
         parser.add_argument("--connection_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("--jobs_folder", help="Identify the folder where job code is. Necessary if job code is outside the repo, i.e. if this is used as an external library. By default, uses the repo 'jobs/' folder.")
         parser.add_argument("-s", "--storage", choices=set(['local', 's3']), help="Choose 'local' (default) or 's3'.")
@@ -722,6 +709,7 @@ class Commandliner():
                     'mode': 'local',
                     'job_param_file': 'repo',
                     'job_name': None,
+                    'sql_file': None,
                     'connection_file': CONNECTION_FILE,
                     'jobs_folder': JOB_FOLDER,
                     'storage': 'local',
