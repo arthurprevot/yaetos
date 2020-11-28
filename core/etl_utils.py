@@ -383,7 +383,7 @@ class Job_Args_Parser():
         job_name = cmd_args.get('job_name')
         if job_name:  # job_name (name from job_metadata.yml) takes priority if provided.
             yml_args = self.set_job_yml(cmd_args, job_name)
-            py_job = yml_args['py_job'] if yml_args.get('py_job') else self.set_job_file_from_name(job_name)
+            py_job = yml_args['py_job'] if yml_args.get('py_job') else self.set_py_job_from_name(job_name)
         elif job_file:
             py_job = job_file
             job_name = self.set_job_name_from_file(job_file)
@@ -427,10 +427,10 @@ class Job_Args_Parser():
         logger.info("job_name: '{}', from job_file: '{}'".format(job_name, job_file))
         return job_name
 
-    def set_job_file_from_name(self, job_name):
-        job_file='jobs/{}'.format(job_name)
-        logger.info("job_name: '{}', and corresponding job_file: '{}'".format(job_name, job_file))
-        return job_file
+    def set_py_job_from_name(self, job_name):
+        py_job='jobs/{}'.format(job_name)
+        logger.info("job_name: '{}', and corresponding py_job: '{}'".format(job_name, py_job))
+        return py_job
 
     def set_job_yml(self, cmd_args, job_name):
         meta_file = cmd_args.get('job_param_file')
