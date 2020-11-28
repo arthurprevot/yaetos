@@ -356,6 +356,9 @@ class ETL_Base(object):
 
 
 class Job_Args_Parser():
+
+    DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets']
+
     def __init__(self, cmd_args={}, job_file=None, get_all=True, loaded_inputs={}):
         args = cmd_args.copy()
         args['job_name'], args['py_job'], yml_args = self.set_job_main_params(cmd_args, job_file)
@@ -367,6 +370,12 @@ class Job_Args_Parser():
         self.merged_args = args
         self.cmd_args = cmd_args
         self.yml_args = yml_args
+
+    def get_deploy_args(self):
+        return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
+
+    def get_app_args(self):
+        return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST}
 
     def set_job_main_params(self, cmd_args, job_file=None):
         job_name = cmd_args.get('job_name')
@@ -665,13 +674,15 @@ class Commandliner():
             self.launch_run_mode(Job, self.args)
         else:  # when deploying to AWS
             job = Job(self.args)
+            deploy_args = job.jargs.get_deploy_args()
+            app_args = job.jargs.get_app_args()
             # job_file = job.set_job_file()
             # jargs = Job_Args_Parser(cmd_args=self.args, job_file=job_file, get_all=True)
-            deploy_args = {'aws_config_file': self.args.pop('aws_config_file'),
-                           'aws_setup': self.args.pop('aws_setup'),
-                           'leave_on': self.args.pop('leave_on'),
-                           }
-            self.launch_deploy_mode(job.jargs, deploy_args, app_args=self.args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
+            # deploy_args = {'aws_config_file': self.args.pop('aws_config_file'),
+            #                'aws_setup': self.args.pop('aws_setup'),
+            #                'leave_on': self.args.pop('leave_on'),
+            #                }
+            self.launch_deploy_mode(deploy_args, app_args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
 
     def set_commandline_args(self, args):
         """Command line arguments take precedence over function ones."""
@@ -737,10 +748,10 @@ class Commandliner():
         else:
             Flow(sc, sc_sql, args, app_name)
 
-    def launch_deploy_mode(self, yml, deploy_args, app_args):
+    def launch_deploy_mode(self, deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from core.deploy import DeployPySparkScriptOnAws
-        DeployPySparkScriptOnAws(yml, deploy_args, app_args).run()
+        DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
     def create_contexts(self, app_name, mode, load_connectors):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
