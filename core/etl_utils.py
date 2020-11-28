@@ -3,20 +3,13 @@ Helper functions. Setup to run locally and on cluster.
 """
 # TODO:
 # - add linter
-# - make yml look more like command line info, with path of python script.
 # - finish _metadata.txt file content.
-# - make raw functions available to raw spark jobs.
-# - refactor to have schedule input managed first and passed as args that can be overiden by commandline, so easier to change input output from commandline
-# - make use of "incremental" param in job_metadata files.
-# - rewrite Job_Args_Parser(), see class, and add function to generate spark_submit args and cmdlines.
-# - cleaner job args vs yml inputs. Functions shouldn't need both, and shouldn't rerun when already done. Could you inputs like "jobname_or_yml_obj"
+# - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - add ability to change dev vs prod vs local base path in jobs_metadata
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line.
 # - rename mode=EMR and EMR_Scheduled modes to deploy="EMR" and "EMR_Scheduled" and None, and use new "mode" arg so app knows in which mode it currently is.
 # - make boxed_dependencies the default, as more conservative.
-# - better integration of redshift based on spark instead of sqlalchemy.
-# - add ability to sent a comment about the job through the commandline, like "debug run with condition x", "scheduled run"...
 
 
 import sys
@@ -63,7 +56,6 @@ class ETL_Base(object):
     SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union({'other', 'None'})
 
     def __init__(self, cmd_args={}, jargs=None, loaded_inputs={}):
-        # self.args = args  # TODO, remove this and rely on jargs in etl() only.
         self.loaded_inputs = loaded_inputs
         self.jargs = self.set_jargs(cmd_args, loaded_inputs) if not jargs else jargs
 
@@ -73,7 +65,6 @@ class ETL_Base(object):
         It's a way to deal with case where full incremental rerun from scratch would
         require a larger cluster to build in 1 shot than the typical incremental.
         """
-        # self.set_jargs(args, loaded_inputs)  # TODO: check way to remove from here since already computed in Commandliner
         if not self.jargs.is_incremental:
             output = self.etl_one_pass(sc, sc_sql, self.loaded_inputs)
         else:
@@ -101,7 +92,7 @@ class ETL_Base(object):
         """ Main etl function, loads inputs, runs transform, and saves output."""
         logger.info("-------Starting running job '{}'--------".format(self.jargs.job_name))
         start_time = time()
-        self.start_dt = datetime.utcnow() # attached to self so available within dev expose "transform()" func.
+        self.start_dt = datetime.utcnow() # attached to self so available within "transform()" func.
         output = self.etl_no_io(sc, sc_sql, loaded_inputs)
         logger.info('Output sample:')
         output.show()
@@ -150,7 +141,7 @@ class ETL_Base(object):
         raise NotImplementedError
 
     def set_jargs(self, args, loaded_inputs={}, job_file=None):
-        """ jargs => job args"""
+        """ jargs means job args"""
         job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
         return Job_Args_Parser(cmd_args=args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
 
