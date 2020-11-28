@@ -12,7 +12,7 @@ class Job(ETL_Base):
         # logger.info("job_file: '{}'".format(job_file))
         return job_file
 
-    ## Can't use that anymore since set_inputs now in separate class "Job_Yml_Parser". This change is only necessary "if inputs_in_args". TODO: find other way to integrate it.
+    ## Can't use that anymore since set_inputs now in separate class "Job_Args_Parser". This change is only necessary "if inputs_in_args". TODO: find other way to integrate it.
     # def set_inputs(self, loaded_inputs=None):  # TODO: can't be used that way now.
     #     inputs_in_args = len([item for item in self.args.keys() if item.startswith('input_')]) >= 1
     #     if inputs_in_args:
