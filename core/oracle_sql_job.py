@@ -8,29 +8,16 @@ class Job(ETL_Base):
     """To run/deploy sql jobs, requires --sql_file arg."""
 
     def set_job_file(self):
-        job_file=self.args['sql_file']
+        job_file=self.jargs.cmd_args['sql_file']
         # logger.info("job_file: '{}'".format(job_file))
         return job_file
 
-    ## Can't use that anymore since set_inputs now in separate class "Job_Yml_Parser". This change is only necessary "if inputs_in_args". TODO: find other way to integrate it.
-    # def set_inputs(self, loaded_inputs=None):  # TODO: can't be used that way now.
-    #     inputs_in_args = len([item for item in self.args.keys() if item.startswith('input_')]) >= 1
-    #     if inputs_in_args:
-    #         self.INPUTS = {key.replace('input_', ''): val for key, val in self.args.iteritems() if key.startswith('input_')}
-    #     elif self.args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.INPUTS and loaded_inputs, so not incompatible.
-    #         self.INPUTS = self.job_yml.get('inputs') or {}
-    #     # elif loaded_inputs:
-    #     #     self.INPUTS = {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.iteritems()}
-    #     else:
-    #         logger.info("No input given, through commandline nor yml file.")
-    #         self.INPUTS = {}
-
     def transform(self, **ignored):
-        sql_file = self.args['sql_file']
+        sql_file = self.jargs.cmd_args['sql_file']
         sql = self.read_sql_file(sql_file)
         sql = self.update_sql_file(sql)
         self.OUTPUT_TYPES = self.get_output_types_from_sql(sql)
-        cred_profiles = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'])
+        cred_profiles = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage)
 
         print "Running query: \n", sql
         pdf = query_oracle(sql, db=self.db_creds, connection_type='sqlalchemy', creds_or_file=cred_profiles) # for testing locally: from libs.analysis_toolkit.query_helper import process_and_cache; pdf = process_and_cache('test', 'data/', lambda : query_oracle(sql, db=self.db_creds, connection_type='sqlalchemy', creds_or_file=cred_profiles), force_rerun=False)

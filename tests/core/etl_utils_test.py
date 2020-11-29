@@ -1,5 +1,5 @@
 import pytest
-from core.etl_utils import ETL_Base, Job_Yml_Parser, Flow, Commandliner, LOCAL_APP_FOLDER
+from core.etl_utils import ETL_Base, Job_Args_Parser, Flow, Commandliner, LOCAL_APP_FOLDER
 
 class Test_ETL_Base(object):
 
@@ -23,9 +23,9 @@ class Test_ETL_Base(object):
         job_file = ETL_Base().copy_to_oracle(output, types)
         assert job_file.replace(LOCAL_APP_FOLDER, '') == 'core/etl_utils.py' # file is the one that starts execution, typically the job python file.
 
-class Test_Job_Yml_Parser(object):
+class Test_Job_Args_Parser(object):
     def test_set_job_name(self):
-        yml = Job_Yml_Parser()
+        yml = Job_Args_Parser()
         yml.set_job_name('jobs/some/file.py')
         assert yml.job_name == 'some/file.py'
 

@@ -23,6 +23,7 @@ from configparser import ConfigParser
 from shutil import copyfile
 import core.etl_utils as eu
 import core.logger as log
+logger = log.setup_logging('Deploy')
 
 
 class DeployPySparkScriptOnAws(object):
@@ -32,7 +33,7 @@ class DeployPySparkScriptOnAws(object):
     SCRIPTS = 'core/scripts/' # TODO: move to etl_utils.py
     TMP = 'tmp/files_to_ship/'
 
-    def __init__(self, yml, deploy_args, app_args):
+    def __init__(self, deploy_args, app_args):
 
         logger.info("etl deploy_args: {}".format(deploy_args))
         logger.info("etl app_args: {}".format(app_args))
@@ -41,8 +42,9 @@ class DeployPySparkScriptOnAws(object):
         assert os.path.isfile(deploy_args['aws_config_file'])
         config.read(deploy_args['aws_config_file'])
 
-        self.app_file = yml.py_job  # TODO: remove all refs to app_file to be consistent.
-        self.yml = yml
+        self.app_args = app_args
+        self.app_file = app_args['py_job']  # TODO: remove all refs to app_file to be consistent.
+        # self.jargs = jargs
         self.aws_setup = aws_setup
         self.ec2_key_name  = config.get(aws_setup, 'ec2_key_name')
         self.s3_region     = config.get(aws_setup, 's3_region')
@@ -51,14 +53,13 @@ class DeployPySparkScriptOnAws(object):
         self.ec2_subnet_id = config.get(aws_setup, 'ec2_subnet_id')
         self.extra_security_gp = config.get(aws_setup, 'extra_security_gp')
         self.emr_core_instances = int(app_args.get('emr_core_instances', 1))  # TODO: make this update EMR_Scheduled mode too.
-        self.app_args = app_args
         self.deploy_args = deploy_args
         self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  #'m5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
         self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
         self.metadata_folder = 'pipelines_metadata'
-        self.job_name = self.generate_pipeline_name(self.yml.job_name, self.user)  #TODO: rename job_name to pipeline_name format: some_job.some_user.20181204.153429
+        self.job_name = self.generate_pipeline_name(self.app_args['job_name'], self.user)  #TODO: rename job_name to pipeline_name format: some_job.some_user.20181204.153429
         self.job_log_path = '{}/jobs_code/{}'.format(self.metadata_folder, self.job_name)  # format: yaetos/logs/some_job.some_user.20181204.153429
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
         self.package_path  = self.job_log_path+'/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
@@ -379,13 +380,14 @@ class DeployPySparkScriptOnAws(object):
             "--mode=localEMR",
             "--storage=s3",
             '--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE),
-            "--dependencies" if app_args.get('dependencies') else "",
-            "--boxed_dependencies" if app_args.get('boxed_dependencies') else "",
             "--rerun_criteria={}".format(app_args.get('rerun_criteria')),
-            "--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file']) if app_args.get('sql_file') else "",
             ]
-        cmd_runner_args = [item for item in cmd_runner_args if item]
-        return cmd_runner_args
+        dep = ["--dependencies"] if app_args.get('dependencies') else []
+        box = ["--boxed_dependencies"] if app_args.get('boxed_dependencies') else []
+        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else []
+        nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
+
+        return cmd_runner_args + dep + box + sql + nam
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
@@ -451,7 +453,7 @@ class DeployPySparkScriptOnAws(object):
         pipelines = self.list_data_pipeline(client)
         for item in pipelines:
             job_name = self.get_job_name(item['name'])
-            if job_name == self.yml.job_name:
+            if job_name == self.app_args['job_name']:
                 response = client.deactivate_pipeline(pipelineId=item['id'], cancelActive=True)
                 logger.info('Deactivated pipeline {}, {}, {}'.format(job_name, item['name'], item['id']))
 
@@ -459,14 +461,14 @@ class DeployPySparkScriptOnAws(object):
         # TODO: check if easier/simpler to change values at the source json instead of a processed one.
         # Change key pair
         myScheduleType = {'EMR_Scheduled': 'cron', 'EMR_DataPipeTest': 'ONDEMAND'}[self.app_args.get('mode')]
-        myPeriod = self.yml.frequency or '1 Day'
-        if self.yml.start_date and isinstance(self.yml.start_date, datetime):
-            myStartDateTime = self.yml.start_date.strftime('%Y-%m-%dT%H:%M:%S')
-        elif self.yml.start_date and isinstance(self.yml.start_date, str):
-            myStartDateTime = self.yml.start_date.format(today=datetime.today().strftime('%Y-%m-%d'))
+        myPeriod = self.app_args['frequency'] or '1 Day'
+        if self.app_args['start_date'] and isinstance(self.app_args['start_date'], datetime):
+            myStartDateTime = self.app_args['start_date'].strftime('%Y-%m-%dT%H:%M:%S')
+        elif self.app_args['start_date'] and isinstance(self.app_args['start_date'], str):
+            myStartDateTime = self.app_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d'))
         else :
             myStartDateTime = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
-        # TODO: self.yml.start_date is taken from jobs_metadata_local.yml, instead of jobs_metadata.yml. Fix it
+        # TODO: self.app_args['start_date'] is taken from jobs_metadata_local.yml, instead of jobs_metadata.yml. Fix it
         bootstrap = 's3://{}/setup_nodes.sh'.format(self.package_path_with_bucket)
 
         for ii, item in enumerate(parameterValues):
@@ -545,7 +547,7 @@ def deploy_all_scheduled():
         meta_file = args.get('job_param_file', 'repo')
         if meta_file is 'repo':
             meta_file = eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE if args['storage']=='s3' else eu.JOBS_METADATA_LOCAL_FILE
-        yml = eu.Job_Yml_Parser.load_meta(meta_file)
+        yml = eu.Job_Args_Parser.load_meta(meta_file)
         logger.info('Loaded job param file: ' + meta_file)
         return yml
 
@@ -575,16 +577,16 @@ def deploy_all_scheduled():
     yml = get_yml(app_args)
     pipelines = yml.keys()
     for pipeline in pipelines:
-        job_yml = eu.Job_Yml_Parser(app_args)
-        job_yml.set_job_params(job_name=pipeline)
-        if not job_yml.frequency:
+        jargs = eu.Job_Args_Parser(app_args)
+        jargs.set_job_params(job_name=pipeline) # broken TODO: fix.
+        if not jargs.frequency:
             continue
 
         run = validate_job(pipeline)
         if not run:
             continue
 
-        DeployPySparkScriptOnAws(job_yml, deploy_args, app_args).run()
+        DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
 
 def terminate(error_message=None):
@@ -598,26 +600,18 @@ def terminate(error_message=None):
     exit()
 
 
-logger = log.setup_logging('Deploy')
-
-
 if __name__ == "__main__":
     # Deploying 1 job manually.
     # Use as standalone to push random python script to cluster.
     # TODO: fails to create a new cluster but works to add a step to an existing cluster.
     print('command line: ', ' '.join(sys.argv))
     job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'  # TODO: move to 'jobs/examples/ex1_raw_job_cluster.py'
-    class bag(object):
-        pass
-    job_yml = bag()
-    job_yml.job_name = job_name
-    job_yml.py_job = job_name # will add /home/hadoop/app/  # TODO: try later as better from cmdline.
     deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
-    app_args = {'mode':'EMR'}
-    DeployPySparkScriptOnAws(job_yml, deploy_args, app_args).run()
+    app_args = {'job_name':job_name, 'py_job':py_job, 'mode':'EMR'}
+    DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
     # Show list of all jobs running.
-    deployer = DeployPySparkScriptOnAws(job_yml, deploy_args, app_args)
+    deployer = DeployPySparkScriptOnAws(deploy_args, app_args)
     client = deployer.session.client('datapipeline')
     pipelines = deployer.list_data_pipeline(client)
     print('#--- pipelines: ', pipelines)
@@ -630,6 +624,6 @@ if __name__ == "__main__":
     app_args = {'job_param_file':'conf/jobs_metadata_local.yml',
                 'jobs_folder':'jobs',
                 }
-    deployer = DeployPySparkScriptOnAws(job_yml, deploy_args, app_args)  # TODO: should remove need for some of these inputs as they are not required by tar_python_scripts()
+    deployer = DeployPySparkScriptOnAws(deploy_args, app_args)  # TODO: should remove need for some of these inputs as they are not required by tar_python_scripts()
     pipelines = deployer.tar_python_scripts()
     print('#--- Finished packaging ---')

@@ -9,8 +9,8 @@ logger = log.setup_logging('Job')
 
 class Job(ETL_Base):
     def transform(self, some_events):
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'], creds=self.args.get('connection_file'))
-        creds_section = self.job_yml['copy_to_redshift']['creds']
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds_section = self.jargs.yml_args['copy_to_redshift']['creds']
         db = creds[creds_section]
         url = 'jdbc:redshift://{host}:{port}/{service}'.format(host=db['host'], port=db['port'], service=db['service'])
         dbtable = 'sandbox.test_ex9_redshift'
