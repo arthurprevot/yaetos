@@ -12,7 +12,7 @@ class Job(ETL_Base):
         }
 
     def transform(self):
-        cred_profiles = Cred_Ops_Dispatcher().retrieve_secrets(self.args['storage'])
+        cred_profiles = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage)
         query_str = """
             SELECT session_id, count_events
             FROM test_ex5_pyspark_job
