@@ -45,7 +45,7 @@ LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
 REDSHIFT_S3_TMP_DIR = "s3a://sandbox-arthur/yaetos/tmp_spark/"  # user setting. TODO: set from job_metadata.yml
-PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
+PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22'  # necessary for reading/writing to redshift and mysql using spark connector.
 PACKAGES_EMR = 'com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
 JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
 
@@ -247,12 +247,13 @@ class ETL_Base(object):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         creds_section = self.jargs.inputs[input_name]['creds']
         db = creds[creds_section]
-        url = 'jdbc:mysql://{host}:{port}/{service}'.format(host=db['host'], port=db['port'], service=db['service'])
+        extra_params = '' # can use '?zeroDateTimeBehavior=CONVERT_TO_NULL' to help solve "java.sql.SQLException: Zero date value prohibited" but leads to other error msg.
+        url = 'jdbc:mysql://{host}:{port}/{service}{extra_params}'.format(host=db['host'], port=db['port'], service=db['service'], extra_params=extra_params)
         dbtable = self.jargs.inputs[input_name]['db_table']
         logger.info('Pulling table "{}" from mysql'.format(dbtable))
         return self.sc_sql.read \
             .format('jdbc') \
-            .option('driver', "com.mysql.jdbc.Driver") \
+            .option('driver', "com.mysql.cj.jdbc.Driver") \
             .option("url", url) \
             .option("user", db['user']) \
             .option("password", db['password']) \
