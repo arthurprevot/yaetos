@@ -44,7 +44,6 @@ class DeployPySparkScriptOnAws(object):
 
         self.app_args = app_args
         self.app_file = app_args['py_job']  # TODO: remove all refs to app_file to be consistent.
-        # self.jargs = jargs
         self.aws_setup = aws_setup
         self.ec2_key_name  = config.get(aws_setup, 'ec2_key_name')
         self.s3_region     = config.get(aws_setup, 's3_region')

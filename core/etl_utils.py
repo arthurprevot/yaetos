@@ -228,15 +228,20 @@ class ETL_Base(object):
             path = Path_Handler(path).expand_later(self.jargs.storage)
 
         if input_type == 'txt':
-            return self.sc.textFile(path)
+            rdd = self.sc.textFile(path)
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            return rdd
 
         # Tabular types
         if input_type == 'csv':
             sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
             sdf = self.sc_sql.read.parquet(path)
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'mysql':
             sdf = self.load_mysql(input_name)
+            logger.info("Input '{}' loaded from mysql".format(input_name))
         else:
             raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.SUPPORTED_TYPES))
 
