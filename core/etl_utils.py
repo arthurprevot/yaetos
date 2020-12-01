@@ -461,7 +461,6 @@ class Job_Args_Parser():
             input_paths = {key.replace('input_path_', ''): {'path': val} for key, val in cmd_args.items() if key.startswith('input_path_')}
             input_types = {key.replace('input_type_', ''): {'type': val} for key, val in cmd_args.items() if key.startswith('input_type_')}
             inputs = {key: {'path': val['path'], 'type':input_types[key]['type']} for key, val in input_paths.items()}
-            # import ipdb; ipdb.set_trace()
             return inputs
         elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
             return yml_args.get('inputs', {})
@@ -472,12 +471,10 @@ class Job_Args_Parser():
             return {}
 
     def set_output(self, cmd_args, yml_args):
-        # output = self.set_generic_param(cmd_args, yml_args, param='output')
         output_in_args = any([item == 'output_path' for item in cmd_args.keys()])
         if output_in_args:
             # code below limited, will break in non-friendly way if not all output params are provided, doesn't support other types of outputs like db ones. TODO: make it better.
             output = {'path':cmd_args['output_path'], 'type':cmd_args['output_type']}
-            # import ipdb; ipdb.set_trace()
             return output
         elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
             return yml_args.get('output', {})
@@ -700,7 +697,6 @@ class Commandliner():
         self.args.update(args)  # Add/overwrite args from job file, passed to "Commandliner(Job, **args)"
         self.args.update(cmd_args)  # Add/overwrite args from cmd_args (known args)
         self.args.update(unknown_args)  # Add/overwrite args from cmd_args (unknown args)
-        # import ipdb; ipdb.set_trace()
 
     @staticmethod
     def define_commandline_args():
