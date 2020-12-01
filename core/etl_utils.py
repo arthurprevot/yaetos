@@ -439,8 +439,6 @@ class Job_Args_Parser():
             return {}
 
         yml = self.load_meta(meta_file)
-        logger.info('Loaded job param file: ' + meta_file)
-
         try:
             return yml[job_name]
         except KeyError:
@@ -483,7 +481,6 @@ class Job_Args_Parser():
             logger.info("No output given")
         else:
             raise Exception("No output given")
-        logger.info("output: '{}'".format(output))
         return output
 
     def set_db_creds(self, cmd_args, yml_args):
