@@ -688,15 +688,15 @@ class Commandliner():
     def set_commandline_args(self, args):
         """Command line arguments take precedence over function ones."""
         parser, defaults = self.define_commandline_args()
-        cmd_args, unknown_args = parser.parse_known_args()
+        cmd_args, cmd_unknown_args = parser.parse_known_args()
         cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
-        unknown_args = dict([item[2:].split('=') for item in unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
+        cmd_unknown_args = dict([item[2:].split('=') for item in cmd_unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
 
         #load defaults, overwrite by yml, overwrite job commandliner(), overwrite by cmdline args if any.
         self.args = defaults
         self.args.update(args)  # Add/overwrite args from job file, passed to "Commandliner(Job, **args)"
         self.args.update(cmd_args)  # Add/overwrite args from cmd_args (known args)
-        self.args.update(unknown_args)  # Add/overwrite args from cmd_args (unknown args)
+        self.args.update(cmd_unknown_args)  # Add/overwrite args from cmd_args (unknown args)
 
     @staticmethod
     def define_commandline_args():
