@@ -455,11 +455,16 @@ class Job_Args_Parser():
             return None
 
     def set_inputs(self, cmd_args, yml_args, loaded_inputs):
-        inputs_in_args = len([item for item in cmd_args.keys() if item.startswith('input_')]) >= 1
+        inputs_in_args = any([item.startswith('input_') for item in cmd_args.keys()])
         if inputs_in_args:
-            return {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in cmd_args.items() if key.startswith('input_')}
+            # code below limited, will break in non-friendly way if not all input params are provided, doesn't support other types of inputs like db ones. TODO: make it better.
+            input_paths = {key.replace('input_path_', ''): {'path': val} for key, val in cmd_args.items() if key.startswith('input_path_')}
+            input_types = {key.replace('input_type_', ''): {'type': val} for key, val in cmd_args.items() if key.startswith('input_type_')}
+            inputs = {key: {'path': val['path'], 'type':input_types[key]['type']} for key, val in input_paths.items()}
+            # import ipdb; ipdb.set_trace()
+            return inputs
         elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
-            return yml_args.get('inputs') or {}
+            return yml_args.get('inputs', {})
         elif loaded_inputs:
             return {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
         else:
@@ -467,11 +472,19 @@ class Job_Args_Parser():
             return {}
 
     def set_output(self, cmd_args, yml_args):
-        output = self.set_generic_param(cmd_args, yml_args, param='output')
-        if output is None and cmd_args.get('mode_no_io'):
+        # output = self.set_generic_param(cmd_args, yml_args, param='output')
+        output_in_args = any([item == 'output_path' for item in cmd_args.keys()])
+        if output_in_args:
+            # code below limited, will break in non-friendly way if not all output params are provided, doesn't support other types of outputs like db ones. TODO: make it better.
+            output = {'path':cmd_args['output_path'], 'type':cmd_args['output_type']}
+            # import ipdb; ipdb.set_trace()
+            return output
+        elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
+            return yml_args.get('output', {})
+        elif cmd_args.get('mode_no_io'):
             output = {}
             logger.info("No output given")
-        elif output is None:
+        else:
             raise Exception("No output given")
         logger.info("output: '{}'".format(output))
         return output
@@ -684,9 +697,10 @@ class Commandliner():
 
         #load defaults, overwrite by yml, overwrite job commandliner(), overwrite by cmdline args if any.
         self.args = defaults
-        self.args.update(args)  # same
-        self.args.update(cmd_args)  # cmd_args (if set) overwrite upstream (function defined) args
-        self.args.update(unknown_args)  # same
+        self.args.update(args)  # Add/overwrite args from job file, passed to "Commandliner(Job, **args)"
+        self.args.update(cmd_args)  # Add/overwrite args from cmd_args (known args)
+        self.args.update(unknown_args)  # Add/overwrite args from cmd_args (unknown args)
+        # import ipdb; ipdb.set_trace()
 
     @staticmethod
     def define_commandline_args():
