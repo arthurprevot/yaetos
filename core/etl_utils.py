@@ -680,7 +680,7 @@ class Commandliner():
             job = Job(self.args)
             deploy_args = job.jargs.get_deploy_args()
             app_args = job.jargs.get_app_args()
-            self.launch_deploy_mode(deploy_args, app_args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
+            self.launch_deploy_mode(deploy_args, app_args)
 
     def set_commandline_args(self, args):
         """Command line arguments take precedence over function ones."""
@@ -689,11 +689,10 @@ class Commandliner():
         cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
         cmd_unknown_args = dict([item[2:].split('=') for item in cmd_unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
 
-        #load defaults, overwrite by yml, overwrite job commandliner(), overwrite by cmdline args if any.
-        self.args = defaults
+        self.args = defaults  # TODO: should overwrite yml args directly after this line.
         self.args.update(args)  # Add/overwrite args from job file, passed to "Commandliner(Job, **args)"
-        self.args.update(cmd_args)  # Add/overwrite args from cmd_args (known args)
-        self.args.update(cmd_unknown_args)  # Add/overwrite args from cmd_args (unknown args)
+        self.args.update(cmd_args)  # Add/overwrite args from commandline (known args), like "python some_job.py --some_args=xxx"
+        self.args.update(cmd_unknown_args)  # Add/overwrite args from commandline (unknown args)
 
     @staticmethod
     def define_commandline_args():
@@ -836,6 +835,7 @@ class Flow():
 
     def create_connections_jobs(self, storage, args):
         meta_file = args.get('job_param_file')
+        # TODO: remove 2 lines below when handled in job_arg_parser.
         if meta_file == 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         yml = Job_Args_Parser.load_meta(meta_file)
