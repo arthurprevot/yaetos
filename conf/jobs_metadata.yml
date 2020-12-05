@@ -89,9 +89,11 @@ jobs:
     api_inputs: {'api_creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
     output: {'path':'{base_path}/mysql_example/output_ex6_mysql/{now}/', 'type':'csv'}
 
-  examples/ex7_frameworked_job.py:  # shows job with no output (still requiring table as output but not dumped to disk)
+  job_with_no_output:  # shows job with no output (still requiring table as output but not dumped to disk)
+  py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
       some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
     output: {'path':'n/a', 'type':'None'}
 
   examples/ex8_koalas_job.py:
