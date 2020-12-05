@@ -225,7 +225,7 @@ class ETL_Base(object):
             path = self.jargs.inputs[input_name]['path']
             path = path.replace('s3://', 's3a://') if self.jargs.mode == 'local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-            path = Path_Handler(path).expand_later(self.jargs.storage)
+            path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
 
         if input_type == 'txt':
             rdd = self.sc.textFile(path)
@@ -283,7 +283,7 @@ class ETL_Base(object):
 
     def save(self, output, now_dt, path=None):
         if path is None:
-            path = Path_Handler(self.jargs.output['path']).expand_now(now_dt)
+            path = Path_Handler(self.jargs.output['path'], self.jargs.base_path).expand_now(now_dt)
         self.path = path
 
         if self.jargs.output['type'] == 'None':
@@ -403,6 +403,7 @@ class Job_Args_Parser():
         args['db_creds'] = self.set_db_creds(cmd_args, yml_args)
         args['redshift_copy_params'] = self.set_generic_param(cmd_args, yml_args, param='copy_to_redshift')
         args['copy_to_kafka'] = self.set_generic_param(cmd_args, yml_args, param='copy_to_kafka')
+        args['base_path'] = self.set_generic_param(cmd_args, yml_args, param='base_path')
         return args
 
     def set_job_name_from_file(self, job_file):
@@ -433,16 +434,26 @@ class Job_Args_Parser():
 
     def set_job_yml(self, cmd_args, job_name):
         meta_file = cmd_args.get('job_param_file')
+        mapping_modes = {'local': 'local_dev', 'localEMR':'EMR_dev', 'EMR': 'EMR_dev', 'EMR_Scheduled': 'prod'} # TODO: test
+        yml_mode = mapping_modes[cmd_args['mode']]
         if meta_file == 'repo':
             meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if cmd_args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
         elif meta_file is None:
             return {}
-
         yml = self.load_meta(meta_file)
-        try:
-            return yml[job_name]
-        except KeyError:
+
+        if job_name not in yml['jobs']:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(job_name, meta_file))
+
+        if yml_mode not in yml['common_params']['mode_specific_params']:
+            raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, meta_file))
+
+        job_yml = yml['jobs'][job_name]
+        mode_spec_yml = yml['common_params']['mode_specific_params'][yml_mode]
+        out = yml['common_params']['all_mode_params']
+        out.update(mode_spec_yml)
+        out.update(job_yml)
+        return out
 
     def set_generic_param(self, cmd_args, yml_args, param):
         if cmd_args.get(param):
@@ -638,7 +649,9 @@ class Cred_Ops_Dispatcher():
 
 
 class Path_Handler():
-    def __init__(self, path):
+    def __init__(self, path, base_path=None):
+        if base_path:
+            path = path.format(base_path=base_path, latest='{latest}', now='{now}')
         self.path = path
 
     def expand_later(self, storage):
@@ -699,7 +712,7 @@ class Commandliner():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
         parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
-        parser.add_argument("-j", "--job_param_file", help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")
+        parser.add_argument("-j", "--job_param_file", help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")  # change "repo" to "automatic"
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
         parser.add_argument("-q", "--sql_file", help="Path to an sql file to execute.")
         parser.add_argument("--connection_file", help="Identify file to use. Default to repo one.")

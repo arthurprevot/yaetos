@@ -1,97 +1,116 @@
-# may be out of sync with job_metadata_local.yml. Master ref is job_metadata_local.yml.
+# Jobs details below. Common job params listed at the bottom of this file.
+jobs:
+  examples/ex1_full_sql_job.sql:
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example_sql/output_ex1_full_sql/{now}/', 'type':'csv'}
 
-examples/ex1_full_sql_job.sql:
-  inputs:
-    some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-    other_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'s3://sandbox-spark/wiki_example_sql/output_ex1_full_sql/{now}/', 'type':'csv'}
+  examples/ex1_frameworked_job.py:
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex1_frameworked/{now}/', 'type':'csv'}
 
-examples/ex1_frameworked_job.py:
-  inputs:
-    some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-    other_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex1_frameworked/{now}/', 'type':'csv'}
+  examples/ex1_raw_job.py:
+    frequency: 24h
+    email: 'some_email@address.com'
 
-examples/ex1_raw_job.py:
-  frequency: 24h
-  email: 'some_email@address.com'
+  examples/ex2_frameworked_job.py:
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex2/{now}/', 'type':'csv'}
+    frequency: 1 day
+    start_date: "{today}T07:00:00"
+    email: 'some_email@address.com'
 
-examples/ex2_frameworked_job.py:
-  inputs:
-    some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-    other_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex2/{now}/', 'type':'csv'}
-  frequency: 1 day
-  start_date: "{today}T07:00:00"
-  email: 'some_email@address.com'
+  examples/ex3_incremental_job.py:
+    inputs:
+      processed_events: {'path':"{base_path}/wiki_example/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj'}
+    output: {'path':'{base_path}/wiki_example/output_ex3_inc/incremental_build_v1/', 'type':'csv', 'inc_field': 'other_timestamp'}
+    dependencies: [examples/ex3_incremental_prep_job.py]
+    frequency: 24h
+    email: 'some_email@address.com'
 
-examples/ex3_incremental_job.py:
-  inputs:
-    processed_events: {'path':"s3://sandbox-spark/wiki_example/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex3_inc/incremental_build_v1/', 'type':'csv', 'inc_field': 'other_timestamp'}
-  dependencies: [examples/ex3_incremental_prep_job.py]
-  frequency: 24h
-  email: 'some_email@address.com'
+  examples/ex3_incremental_prep_job.py:
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex3_dep/{now}/', 'type':'csv'}
+    frequency: 24h
+    email: 'some_email@address.com'
 
-examples/ex3_incremental_prep_job.py:
-  inputs:
-    some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex3_dep/{now}/', 'type':'csv'}
-  frequency: 24h
-  email: 'some_email@address.com'
+  examples/ex4_dependency1_job.py:
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex4_dep1/{now}/', 'type':'csv'}
 
-examples/ex4_dependency1_job.py:
-  inputs:
-    some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex4_dep1/{now}/', 'type':'csv'}
+  examples/ex4_dependency2_job.py:
+    inputs:
+      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep1/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency1_job.py'}
+    output: {'path':'{base_path}/wiki_example/output_ex4_dep2/{now}/', 'type':'csv'}
+    dependencies: [examples/ex4_dependency1_job.py]
 
-examples/ex4_dependency2_job.py:
-  inputs:
-    some_events: {'path':'s3://sandbox-spark/wiki_example/output_ex4_dep1/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency1_job.py'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex4_dep2/{now}/', 'type':'csv'}
-  dependencies: [examples/ex4_dependency1_job.py]
+  examples/ex4_dependency3_job.sql:
+    inputs:
+      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
+    output: {'path':'{base_path}/wiki_example/output_ex4_dep3/{now}/', 'type':'csv'}
+    dependencies: [examples/ex4_dependency2_job.py, examples/ex4_dependency1_job.py]
 
-examples/ex4_dependency3_job.sql:
-  inputs:
-    some_events: {'path':'s3://sandbox-spark/wiki_example/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex4_dep3/{now}/', 'type':'csv'}
-  dependencies: [examples/ex4_dependency2_job.py, examples/ex4_dependency1_job.py]
+  examples/ex4_dependency4_job.py:
+    inputs:
+      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep3/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency3_job.sql'}
+    output: {'path':'{base_path}/wiki_example/output_ex4_dep4/{now}/', 'type':'csv'}
+    dependencies: [examples/ex4_dependency3_job.sql]
 
-examples/ex4_dependency4_job.py:
-  inputs:
-    some_events: {'path':'s3://sandbox-spark/wiki_example/output_ex4_dep3/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency3_job.sql'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex4_dep4/{now}/', 'type':'csv'}
-  dependencies: [examples/ex4_dependency3_job.sql]
+  examples/ex7_frameworked_job.py:  # shows job with no output (still requiring table as output but not dumped to disk)
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    output: {'path':'n/a', 'type':'None'}
 
-examples/ex7_frameworked_job.py:  # shows job with no output (still requiring table as output but not dumped to disk)
-  inputs:
-    some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'n/a', 'type':'None'}
+  examples/ex8_koalas_job.py:
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex8_koalas/{now}/', 'type':'csv'}
 
-examples/ex8_koalas_job.py:
-  inputs:
-    some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-    other_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex8_koalas/{now}/', 'type':'csv'}
+  examples/ex9_redshift_job.py:
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex9_redshift/{now}/', 'type':'csv'}
+    copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': 'sandbox.test_ex9_redshift'}
 
-examples/ex9_redshift_job.py:
-  inputs:
-    some_events: {'path':"s3://sandbox-spark/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex9_redshift/{now}/', 'type':'csv'}
-  copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': 'sandbox.test_ex9_redshift'}
-
-examples/ex9_mysql_framework_load_job.py:
-  inputs:
-    some_events: {'type':'mysql', 'db_table': 'some_schema.some_table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
-  output: {'path':'s3://sandbox-spark/wiki_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
+  examples/ex9_mysql_framework_load_job.py:
+    inputs:
+      some_events: {'type':'mysql', 'db_table': 'some_schema.some_table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
+    output: {'path':'{base_path}/wiki_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
 
 
-examples/wordcount_frameworked_job.py:
-  inputs:
-    lines: {'path':"s3://sandbox-spark/wordcount_example/input/sample_text.txt", 'type':'txt'}
-  output: {'path':'s3://sandbox-spark/wordcount_example/output_frameworked/{now}/', 'type':'txt'}
-  dependencies: [] # list here if any
-  frequency: 24h
-  email: 'some_email@address.com'
+  examples/wordcount_frameworked_job.py:
+    inputs:
+      lines: {'path':"{base_path}/wordcount_example/input/sample_text.txt", 'type':'txt'}
+    output: {'path':'{base_path}/wordcount_example/output_frameworked/{now}/', 'type':'txt'}
+    dependencies: [] # list here if any
+    frequency: 24h
+    email: 'some_email@address.com'
 
-# wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
+  # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
+
+common_params:
+  all_mode_params:
+    emr_core_instances: 1
+    connection_file:  conf/connections.cfg
+    aws_config_file:  conf/aws_config.cfg
+    aws_setup:        dev
+    jobs_folder:      jobs/
+  mode_specific_params:
+    prod:
+      base_path: s3://sandbox-spark  # TODO: replace by s3://sandbox-spark
+      schema: production
+    EMR_dev:
+      base_path: s3://sandbox-spark
+      schema: sandbox
+    local_dev:
+      base_path: ./data/
+      schema: sandbox
+
