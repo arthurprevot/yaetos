@@ -105,10 +105,10 @@ common_params:
     jobs_folder:      jobs/
   mode_specific_params:
     prod:
-      base_path: s3://sandbox-spark  # TODO: replace by s3://sandbox-spark
+      base_path: s3://prod-spark/
       schema: production
     EMR_dev:
-      base_path: s3://sandbox-spark
+      base_path: s3://sandbox-spark/
       schema: sandbox
     local_dev:
       base_path: ./data/
