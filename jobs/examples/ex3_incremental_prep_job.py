@@ -27,4 +27,5 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    Commandliner(Job, aws_setup='perso')
+    args = {'job_param_file':   'conf/jobs_metadata.yml'}
+    Commandliner(Job, **args)
