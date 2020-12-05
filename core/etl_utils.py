@@ -854,7 +854,7 @@ class Flow():
         yml = Job_Args_Parser.load_meta(meta_file)
 
         connections = []
-        for job_name, job_meta in yml.items():
+        for job_name, job_meta in yml['jobs'].items():
             dependencies = job_meta.get('dependencies') or []
             for dependency in dependencies:
                 row = {'source_job': dependency, 'destination_job': job_name}
