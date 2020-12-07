@@ -90,7 +90,7 @@ jobs:
     output: {'path':'{base_path}/mysql_example/output_ex6_mysql/{now}/', 'type':'csv'}
 
   job_with_no_output:  # shows job with no output (still requiring table as output but not dumped to disk)
-  py_job: 'jobs/examples/ex1_frameworked_job.py'
+    py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
       some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
       other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
