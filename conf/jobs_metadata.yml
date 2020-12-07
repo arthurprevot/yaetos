@@ -129,18 +129,22 @@ jobs:
 
 common_params:
   all_mode_params:
-    emr_core_instances: 1
     connection_file:  conf/connections.cfg
-    aws_config_file:  conf/aws_config.cfg
-    aws_setup:        dev
-    jobs_folder:      jobs/
   mode_specific_params:
     prod:
       base_path: s3://prod-spark/
       schema: production
+      emr_core_instances: 1
+      aws_config_file:  conf/aws_config.cfg
+      aws_setup:        dev
+      jobs_folder:      jobs/
     EMR_dev:
       base_path: s3://sandbox-spark/
       schema: sandbox
+      emr_core_instances: 1
+      aws_config_file:  conf/aws_config.cfg
+      aws_setup:        dev
+      jobs_folder:      jobs/
     local_dev:
       base_path: ./data/
       schema: sandbox
