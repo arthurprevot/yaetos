@@ -358,27 +358,6 @@ class Job_Yml_Parser():
         self.yml_args['job_name'] = job_name
         self.yml_args['py_job'] = self.yml_args['py_job'] if self.yml_args.get('py_job') else self.set_py_job_from_name(job_name)
 
-    # def set_job_main_params(self, cmd_args, job_file=None):
-    #     # TODO: change to only take "job_name" as input, and have code to go from job_file to job_name upstream.
-    #     job_name = cmd_args.get('job_name')
-    #     if job_name:  # job_name (name from job_metadata.yml) takes priority if provided.
-    #         # yml_args = self.set_job_yml(cmd_args, job_name)
-    #         yml_args = self.set_job_yml(args['job_param_file'], args['mode'], job_name)
-    #         py_job = yml_args['py_job'] if yml_args.get('py_job') else self.set_py_job_from_name(job_name)
-    #     elif job_file:
-    #         py_job = job_file
-    #         job_name = self.set_job_name_from_file(job_file)
-    #         # yml_args = self.set_job_yml(cmd_args, job_name)
-    #         yml_args = self.set_job_yml(args['job_param_file'], args['mode'], job_name)
-    #     else:
-    #         raise Exception("Need to specify at least job_name or job_file")
-    #
-    #     # if cmd_args['storage'] == 's3' and py_job.startswith('jobs/'):
-    #     #     py_job = CLUSTER_APP_FOLDER+py_job
-    #     #     logger.info("overwrote py_job needed for running on cluster: '{}'".format(py_job))
-    #
-    #     return job_name, py_job, yml_args
-
     @staticmethod
     def set_job_name_from_file(job_file):
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
@@ -461,7 +440,7 @@ class Job_Args_Parser():
         args.update(job_args)
         args.update(cmd_args)
 
-        args = self.update_args(args)
+        args = self.update_args(args, loaded_inputs)
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
         # Other access to vars
@@ -478,26 +457,26 @@ class Job_Args_Parser():
     def get_app_args(self):
         return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST}
 
-    def update_args(self, args):
-        """ Setting the params from yml or from commandline args if available."""
-        # args['inputs'] = self.set_inputs(cmd_args, yml_args, loaded_inputs)  # TODO: fix later
+    def update_args(self, args, loaded_inputs):
+        """ Updating params or adding new ones, according to execution environment (local, prod...)"""
+        args['inputs'] = self.set_inputs(args, loaded_inputs)
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
-        args['is_incremental'] = self.set_is_incremental(args['inputs'], args['output'])
+        args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
         args['db_creds'] = self.set_db_creds(args)
         args['redshift_copy_params'] = args.get('redshift_copy_params') if 'from_redshift' in args.keys() else None
         return args
 
     # TODO: modify later since not used now
-    def set_inputs(self, cmd_args, yml_args, loaded_inputs):
-        inputs_in_args = any([item.startswith('input_') for item in cmd_args.keys()])
-        if inputs_in_args:
-            # code below limited, will break in non-friendly way if not all input params are provided, doesn't support other types of inputs like db ones. TODO: make it better.
-            input_paths = {key.replace('input_path_', ''): {'path': val} for key, val in cmd_args.items() if key.startswith('input_path_')}
-            input_types = {key.replace('input_type_', ''): {'type': val} for key, val in cmd_args.items() if key.startswith('input_type_')}
-            inputs = {key: {'path': val['path'], 'type':input_types[key]['type']} for key, val in input_paths.items()}
-            return inputs
-        elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
-            return yml_args.get('inputs', {})
+    def set_inputs(self, args, loaded_inputs):
+        # inputs_in_args = any([item.startswith('input_') for item in cmd_args.keys()])
+        # if inputs_in_args:
+        #     # code below limited, will break in non-friendly way if not all input params are provided, doesn't support other types of inputs like db ones. TODO: make it better.
+        #     input_paths = {key.replace('input_path_', ''): {'path': val} for key, val in cmd_args.items() if key.startswith('input_path_')}
+        #     input_types = {key.replace('input_type_', ''): {'type': val} for key, val in cmd_args.items() if key.startswith('input_type_')}
+        #     inputs = {key: {'path': val['path'], 'type':input_types[key]['type']} for key, val in input_paths.items()}
+        #     return inputs
+        if args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
+            return args.get('inputs', {})
         elif loaded_inputs:
             return {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
         else:
@@ -835,7 +814,6 @@ class Flow():
 
             # Get jargs
             jargs = Job_Args_Parser(launch_jargs.defaults_args, yml_args, launch_jargs.job_args, launch_jargs.cmd_args, loaded_inputs=loaded_inputs)
-            # args = jargs.update_args(args, jargs.job_file)
 
             Job = get_job_class(yml_args['py_job'])
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
