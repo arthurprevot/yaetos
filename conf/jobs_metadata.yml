@@ -144,6 +144,7 @@ common_params:
       aws_config_file:  conf/aws_config.cfg
       aws_setup:        dev
       jobs_folder:      jobs/
+      load_connectors: all
     EMR_dev:
       base_path: s3://dev-spark  # don't add '/' at the end
       schema: sandbox
@@ -151,6 +152,9 @@ common_params:
       aws_config_file:  conf/aws_config.cfg
       aws_setup:        dev
       jobs_folder:      jobs/
+      load_connectors: all
     local_dev:
       base_path: ./data  # don't add '/' at the end
       schema: sandbox
+      load_connectors: none
+      aws_config_file:  none
