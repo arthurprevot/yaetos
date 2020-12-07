@@ -132,19 +132,19 @@ common_params:
     connection_file:  conf/connections.cfg
   mode_specific_params:
     prod:
-      base_path: s3://prod-spark/
+      base_path: s3://prod-spark  # don't add '/' at the end
       schema: production
       emr_core_instances: 1
       aws_config_file:  conf/aws_config.cfg
       aws_setup:        dev
       jobs_folder:      jobs/
     EMR_dev:
-      base_path: s3://sandbox-spark/
+      base_path: s3://dev-spark  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 1
       aws_config_file:  conf/aws_config.cfg
       aws_setup:        dev
       jobs_folder:      jobs/
     local_dev:
-      base_path: ./data/
+      base_path: ./data  # don't add '/' at the end
       schema: sandbox
