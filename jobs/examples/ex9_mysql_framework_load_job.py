@@ -11,11 +11,5 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    args = {
-        'job_param_file':   'conf/jobs_metadata_local.yml',  # Just to be explicit. Not needed since this is default.
-        'connection_file':  'conf/connections.cfg',  # Just to be explicit. Not needed since this is default.
-        'aws_config_file':  'conf/aws_config.cfg',  # Just to be explicit. Not needed since this is default.
-        'aws_setup':        'dev',  # Just to be explicit. Not needed since this is default.
-        'jobs_folder':      'jobs/',  # Just to be explicit. Not needed since this is default.
-        }
+    args = {'job_param_file':   'conf/jobs_metadata.yml'}
     Commandliner(Job, **args)

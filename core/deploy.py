@@ -44,7 +44,6 @@ class DeployPySparkScriptOnAws(object):
 
         self.app_args = app_args
         self.app_file = app_args['py_job']  # TODO: remove all refs to app_file to be consistent.
-        # self.jargs = jargs
         self.aws_setup = aws_setup
         self.ec2_key_name  = config.get(aws_setup, 'ec2_key_name')
         self.s3_region     = config.get(aws_setup, 's3_region')
@@ -461,11 +460,11 @@ class DeployPySparkScriptOnAws(object):
         # TODO: check if easier/simpler to change values at the source json instead of a processed one.
         # Change key pair
         myScheduleType = {'EMR_Scheduled': 'cron', 'EMR_DataPipeTest': 'ONDEMAND'}[self.app_args.get('mode')]
-        myPeriod = self.app_args['frequency'] or '1 Day'
-        if self.app_args['start_date'] and isinstance(self.app_args['start_date'], datetime):
-            myStartDateTime = self.app_args['start_date'].strftime('%Y-%m-%dT%H:%M:%S')
-        elif self.app_args['start_date'] and isinstance(self.app_args['start_date'], str):
-            myStartDateTime = self.app_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d'))
+        myPeriod = self.deploy_args['frequency'] or '1 Day'
+        if self.deploy_args['start_date'] and isinstance(self.deploy_args['start_date'], datetime):
+            myStartDateTime = self.deploy_args['start_date'].strftime('%Y-%m-%dT%H:%M:%S')
+        elif self.deploy_args['start_date'] and isinstance(self.deploy_args['start_date'], str):
+            myStartDateTime = self.deploy_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d'))
         else :
             myStartDateTime = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
         # TODO: self.app_args['start_date'] is taken from jobs_metadata_local.yml, instead of jobs_metadata.yml. Fix it

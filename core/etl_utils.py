@@ -5,7 +5,6 @@ Helper functions. Setup to run locally and on cluster.
 # - add linter
 # - finish _metadata.txt file content.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
-# - add ability to change dev vs prod vs local base path in jobs_metadata
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line.
 # - rename mode=EMR and EMR_Scheduled modes to deploy="EMR" and "EMR_Scheduled" and None, and use new "mode" arg so app knows in which mode it currently is.
@@ -36,7 +35,6 @@ logger = log.setup_logging('Job')
 
 
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
-JOBS_METADATA_LOCAL_FILE = 'conf/jobs_metadata_local.yml'
 AWS_CONFIG_FILE = 'conf/aws_config.cfg'
 CONNECTION_FILE = 'conf/connections.cfg'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
@@ -55,9 +53,9 @@ class ETL_Base(object):
     FILE_TYPES = ('csv', 'parquet', 'txt')
     SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union({'other', 'None'})
 
-    def __init__(self, cmd_args={}, jargs=None, loaded_inputs={}):
+    def __init__(self, pre_jargs={}, jargs=None, loaded_inputs={}):
         self.loaded_inputs = loaded_inputs
-        self.jargs = self.set_jargs(cmd_args, loaded_inputs) if not jargs else jargs
+        self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
 
     def etl(self, sc, sc_sql):
         """ Main function. If incremental, reruns ETL process multiple time until
@@ -111,9 +109,9 @@ class ETL_Base(object):
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
-        if self.jargs.redshift_copy_params:
+        if self.jargs.merged_args.get('redshift_copy_params'):
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
-        if self.jargs.copy_to_kafka:
+        if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
         output.unpersist()
@@ -140,14 +138,16 @@ class ETL_Base(object):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
-    def set_jargs(self, args, loaded_inputs={}, job_file=None):
+    def set_jargs(self, pre_jargs, loaded_inputs={}, job_file=None):
         """ jargs means job args"""
         job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
-        return Job_Args_Parser(cmd_args=args, job_file=job_file, get_all=True, loaded_inputs=loaded_inputs)  # has to be removed since already done in Commandliner()
+        job_name = Job_Yml_Parser.set_job_name_from_file(job_file)
+        pre_jargs['job_args']['job_name'] = job_name
+        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], loaded_inputs=loaded_inputs)
 
     def set_job_file(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
-        Only to be used when the job is launched that way."""
+        Only gives good output when the job is launched that way."""
         job_file = inspect.getsourcefile(self.__class__)
         logger.info("job_file: '{}'".format(job_file))
         return job_file
@@ -225,18 +225,23 @@ class ETL_Base(object):
             path = self.jargs.inputs[input_name]['path']
             path = path.replace('s3://', 's3a://') if self.jargs.mode == 'local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-            path = Path_Handler(path).expand_later(self.jargs.storage)
+            path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
 
         if input_type == 'txt':
-            return self.sc.textFile(path)
+            rdd = self.sc.textFile(path)
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            return rdd
 
         # Tabular types
         if input_type == 'csv':
             sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
             sdf = self.sc_sql.read.parquet(path)
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'mysql':
             sdf = self.load_mysql(input_name)
+            logger.info("Input '{}' loaded from mysql".format(input_name))
         else:
             raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.SUPPORTED_TYPES))
 
@@ -278,7 +283,7 @@ class ETL_Base(object):
 
     def save(self, output, now_dt, path=None):
         if path is None:
-            path = Path_Handler(self.jargs.output['path']).expand_now(now_dt)
+            path = Path_Handler(self.jargs.output['path'], self.jargs.base_path).expand_now(now_dt)
         self.path = path
 
         if self.jargs.output['type'] == 'None':
@@ -346,61 +351,15 @@ class ETL_Base(object):
         """ Needs to be overriden by each specific job."""
         raise NotImplementedError
 
+class Job_Yml_Parser():
 
-class Job_Args_Parser():
+    def __init__(self, job_name, job_param_file, mode):
+        self.yml_args = self.set_job_yml(job_name, job_param_file, mode)
+        self.yml_args['job_name'] = job_name
+        self.yml_args['py_job'] = self.yml_args['py_job'] if self.yml_args.get('py_job') else self.set_py_job_from_name(job_name)
 
-    DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets']
-
-    def __init__(self, cmd_args={}, job_file=None, get_all=True, loaded_inputs={}):
-        args = cmd_args.copy()
-        args['job_name'], args['py_job'], yml_args = self.set_job_main_params(cmd_args, job_file)
-        if get_all:
-            args.update(self.set_job_other_params(loaded_inputs, cmd_args, yml_args))
-        [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
-        logger.info("Job args: '{}'".format(pformat(args)))
-        # for other access to vars
-        self.merged_args = args
-        self.cmd_args = cmd_args
-        self.yml_args = yml_args
-
-    def get_deploy_args(self):
-        return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
-
-    def get_app_args(self):
-        return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST}
-
-    def set_job_main_params(self, cmd_args, job_file=None):
-        job_name = cmd_args.get('job_name')
-        if job_name:  # job_name (name from job_metadata.yml) takes priority if provided.
-            yml_args = self.set_job_yml(cmd_args, job_name)
-            py_job = yml_args['py_job'] if yml_args.get('py_job') else self.set_py_job_from_name(job_name)
-        elif job_file:
-            py_job = job_file
-            job_name = self.set_job_name_from_file(job_file)
-            yml_args = self.set_job_yml(cmd_args, job_name)
-        else:
-            raise Exception("Need to specify at least job_name or job_file")
-
-        # if cmd_args['storage'] == 's3' and py_job.startswith('jobs/'):
-        #     py_job = CLUSTER_APP_FOLDER+py_job
-        #     logger.info("overwrote py_job needed for running on cluster: '{}'".format(py_job))
-
-        return job_name, py_job, yml_args
-
-    def set_job_other_params(self, loaded_inputs, cmd_args, yml_args):
-        """ Setting the params from yml or from commandline args if available."""  # TODO: change so class doesn't involve commandline args here, just yml.
-        args = {}
-        args['inputs'] = self.set_inputs(cmd_args, yml_args, loaded_inputs)
-        args['output'] = self.set_output(cmd_args, yml_args)
-        args['frequency'] = self.set_generic_param(cmd_args, yml_args, param='frequency')
-        args['start_date'] = self.set_generic_param(cmd_args, yml_args, param='start_date')
-        args['is_incremental'] = self.set_is_incremental(args['inputs'], args['output'])
-        args['db_creds'] = self.set_db_creds(cmd_args, yml_args)
-        args['redshift_copy_params'] = self.set_generic_param(cmd_args, yml_args, param='copy_to_redshift')
-        args['copy_to_kafka'] = self.set_generic_param(cmd_args, yml_args, param='copy_to_kafka')
-        return args
-
-    def set_job_name_from_file(self, job_file):
+    @staticmethod
+    def set_job_name_from_file(job_file):
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
         if job_file.startswith(CLUSTER_APP_FOLDER+'jobs/'):
             job_name = job_file[len(CLUSTER_APP_FOLDER+'jobs/'):]
@@ -421,66 +380,31 @@ class Job_Args_Parser():
         logger.info("job_name: '{}', from job_file: '{}'".format(job_name, job_file))
         return job_name
 
-    def set_py_job_from_name(self, job_name):
+    @staticmethod
+    def set_py_job_from_name(job_name):
         py_job='jobs/{}'.format(job_name)
         logger.info("job_name: '{}', and corresponding py_job: '{}'".format(job_name, py_job))
         return py_job
 
-    def set_job_yml(self, cmd_args, job_name):
-        meta_file = cmd_args.get('job_param_file')
-        if meta_file == 'repo':
-            meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if cmd_args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
-        elif meta_file is None:
+    def set_job_yml(self, job_name, job_param_file, mode):
+        mapping_modes = {'local': 'local_dev', 'localEMR':'EMR_dev', 'EMR': 'EMR_dev', 'EMR_Scheduled': 'prod'} # TODO: test
+        yml_mode = mapping_modes[mode]
+        if job_param_file is None:
             return {}
+        yml = self.load_meta(job_param_file)
 
-        yml = self.load_meta(meta_file)
-        logger.info('Loaded job param file: ' + meta_file)
+        if job_name not in yml['jobs']:
+            raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(job_name, job_param_file))
 
-        try:
-            return yml[job_name]
-        except KeyError:
-            raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(job_name, meta_file))
+        if yml_mode not in yml['common_params']['mode_specific_params']:
+            raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
 
-    def set_generic_param(self, cmd_args, yml_args, param):
-        if cmd_args.get(param):
-            return cmd_args[param]
-        elif cmd_args.get('job_param_file'):
-            return yml_args.get(param)
-        else:
-            return None
-
-    def set_inputs(self, cmd_args, yml_args, loaded_inputs):
-        inputs_in_args = len([item for item in cmd_args.keys() if item.startswith('input_')]) >= 1
-        if inputs_in_args:
-            return {key.replace('input_', ''): {'path': val, 'type': 'df'} for key, val in cmd_args.items() if key.startswith('input_')}
-        elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
-            return yml_args.get('inputs') or {}
-        elif loaded_inputs:
-            return {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
-        else:
-            logger.info("No input given, through commandline nor yml file.")
-            return {}
-
-    def set_output(self, cmd_args, yml_args):
-        output = self.set_generic_param(cmd_args, yml_args, param='output')
-        if output is None and cmd_args.get('mode_no_io'):
-            output = {}
-            logger.info("No output given")
-        elif output is None:
-            raise Exception("No output given")
-        logger.info("output: '{}'".format(output))
-        return output
-
-    def set_db_creds(self, cmd_args, yml_args):
-        if cmd_args.get('db_creds'):
-            return cmd_args['db_creds']
-        elif cmd_args.get('job_param_file') and yml_args.get('from_redshift'):
-            return yml_args['from_redshift'].get('creds')
-        else:
-            return None
-
-    def set_is_incremental(self, inputs, output):
-        return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
+        job_yml = yml['jobs'][job_name]
+        mode_spec_yml = yml['common_params']['mode_specific_params'][yml_mode]
+        out = yml['common_params']['all_mode_params']
+        out.update(mode_spec_yml)
+        out.update(job_yml)
+        return out
 
     @staticmethod
     def load_meta(fname):
@@ -488,6 +412,100 @@ class Job_Args_Parser():
             yml = yaml.load(stream)
         return yml
 
+class Job_Args_Parser():
+
+    DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date', 'email']
+
+    def __init__(self, defaults_args, yml_args, job_args, cmd_args, loaded_inputs={}):
+        """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
+        If yml_args not provided, it will go and get it.
+        Sets of params:
+            - defaults_args: defaults command line args, as defined in define_commandline_args()
+            - yml_args: args for specific job from yml
+            - job_args: args passed to "Commandliner(Job, **args)" in each job file
+            - cmd_args: args passed in commandline, like "python some_job.py --some_args=xxx", predefined in define_commandline_args() or not
+        """
+        if yml_args is None:
+            # Getting merged args, without yml (order matters)
+            args = defaults_args.copy()
+            args.update(job_args)
+            args.update(cmd_args)
+            assert 'job_name' in args.keys()
+            yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode']).yml_args
+
+        # Get merged args, with yml (order matters)
+        # TODO: need to add business of flatten/unflatten so they can be merged cleanely.
+        args = defaults_args.copy()
+        args.update(yml_args)
+        args.update(job_args)
+        args.update(cmd_args)
+
+        args = self.update_args(args, loaded_inputs)
+
+        [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
+        # Other access to vars
+        self.merged_args = args
+        self.defaults_args = defaults_args
+        self.yml_args = yml_args
+        self.job_args = job_args
+        self.cmd_args = cmd_args
+        logger.info("Job args: \n{}".format(pformat(args)))
+
+    def get_deploy_args(self):
+        return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
+
+    def get_app_args(self):
+        return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST}
+
+    def update_args(self, args, loaded_inputs):
+        """ Updating params or adding new ones, according to execution environment (local, prod...)"""
+        args['inputs'] = self.set_inputs(args, loaded_inputs)
+        # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
+        args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
+        args['db_creds'] = self.set_db_creds(args)
+        args['redshift_copy_params'] = args.get('redshift_copy_params') if 'from_redshift' in args.keys() else None
+        return args
+
+    # TODO: modify later since not used now
+    def set_inputs(self, args, loaded_inputs):
+        # inputs_in_args = any([item.startswith('input_') for item in cmd_args.keys()])
+        # if inputs_in_args:
+        #     # code below limited, will break in non-friendly way if not all input params are provided, doesn't support other types of inputs like db ones. TODO: make it better.
+        #     input_paths = {key.replace('input_path_', ''): {'path': val} for key, val in cmd_args.items() if key.startswith('input_path_')}
+        #     input_types = {key.replace('input_type_', ''): {'type': val} for key, val in cmd_args.items() if key.startswith('input_type_')}
+        #     inputs = {key: {'path': val['path'], 'type':input_types[key]['type']} for key, val in input_paths.items()}
+        #     return inputs
+        if args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
+            return args.get('inputs', {})
+        elif loaded_inputs:
+            return {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
+        else:
+            logger.info("No input given, through commandline nor yml file.")
+            return {}
+
+    # TODO: modify later since not used now
+    def set_output(self, cmd_args, yml_args):
+        output_in_args = any([item == 'output_path' for item in cmd_args.keys()])
+        if output_in_args:
+            # code below limited, will break in non-friendly way if not all output params are provided, doesn't support other types of outputs like db ones. TODO: make it better.
+            output = {'path':cmd_args['output_path'], 'type':cmd_args['output_type']}
+            return output
+        elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
+            return yml_args.get('output', {})
+        elif cmd_args.get('mode_no_io'):
+            output = {}
+            logger.info("No output given")
+        else:
+            raise Exception("No output given")
+        return output
+
+    def set_db_creds(self, args):
+        return args['from_redshift'].get('creds') if 'from_redshift' in args.keys() else None
+
+    def set_is_incremental(self, inputs, output):
+        return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
+
+    # TODO: fix later
     # def update_args(self, args, job_file):
     #     if job_file.endswith('.sql'):
     #         args['sql_file'] = job_file
@@ -626,7 +644,9 @@ class Cred_Ops_Dispatcher():
 
 
 class Path_Handler():
-    def __init__(self, path):
+    def __init__(self, path, base_path=None):
+        if base_path:
+            path = path.format(base_path=base_path, latest='{latest}', now='{now}')
         self.path = path
 
     def expand_later(self, storage):
@@ -655,40 +675,38 @@ class Path_Handler():
 
 
 class Commandliner():
-    def __init__(self, Job, **args):
-        self.set_commandline_args(args)  # sets self.args TODO: make explicit
-        if Job is None:  # when job run from launcher.py --job_name=some_name_from_job_metadata_file
-            assert self.args['job_name']
-            jargs = Job_Args_Parser(cmd_args=self.args, job_file=None, get_all=False)
+    def __init__(self, Job, **job_args):
+        defaults_args, cmd_args = self.set_commandline_args()
+
+        # Building "job", which will include all job args.
+        if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
+            jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, loaded_inputs={})
             Job = get_job_class(jargs.py_job)
+            job = Job(jargs=jargs)
+        else:  # when job run from "python some_job.py"
+            job = Job(pre_jargs={'defaults_args':defaults_args, 'job_args': job_args, 'cmd_args':cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
 
-        if self.args['mode'] in ('local', 'localEMR'):
-            self.launch_run_mode(Job, self.args)
-        else:  # when deploying to AWS
-            job = Job(self.args)
-            deploy_args = job.jargs.get_deploy_args()
-            app_args = job.jargs.get_app_args()
-            self.launch_deploy_mode(deploy_args, app_args)  # TODO: make deployment args explicit + preprocess yml param upstread and remove it here.
+        # Executing or deploying
+        if job.jargs.mode in ('local', 'localEMR'):  # when executing job code
+            self.launch_run_mode(job)
+        else:  # when deploying to AWS for execution there
+            self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
 
-    def set_commandline_args(self, args):
+    def set_commandline_args(self):
         """Command line arguments take precedence over function ones."""
         parser, defaults = self.define_commandline_args()
-        cmd_args, unknown_args = parser.parse_known_args()
+        cmd_args, cmd_unknown_args = parser.parse_known_args()
         cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
-        unknown_args = dict([item[2:].split('=') for item in unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
-
-        #load defaults, overwrite by yml, overwrite job commandliner(), overwrite by cmdline args if any.
-        self.args = defaults
-        self.args.update(args)  # same
-        self.args.update(cmd_args)  # cmd_args (if set) overwrite upstream (function defined) args
-        self.args.update(unknown_args)  # same
+        cmd_unknown_args = dict([item[2:].split('=') for item in cmd_unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
+        cmd_args.update(cmd_unknown_args)
+        return defaults, cmd_args
 
     @staticmethod
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
         parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
-        parser.add_argument("-j", "--job_param_file", help="Identify file to use. If 'repo', then default files from the repo are used. It can be set to 'False' to not load any file and provide all parameters through arguments.")
+        parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
         parser.add_argument("-q", "--sql_file", help="Path to an sql file to execute.")
         parser.add_argument("--connection_file", help="Identify file to use. Default to repo one.")
@@ -703,11 +721,10 @@ class Commandliner():
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster in mode 'EMR'.")
         parser.add_argument("-p", "--push_secrets", action='store_true', help="Pushing secrets to cluster. Only relevant if choosing to deploy to a cluster.")
-        # parser.add_argument("-o", "--output", default=None, help="output path")
-        # For later : --machines, --inputs, to be integrated only as a way to overide values from file.
+        # --inputs and --output args can be set from job or commandline too, just not set here.
         defaults = {
                     'mode': 'local',
-                    'job_param_file': 'repo',
+                    'job_param_file': JOBS_METADATA_FILE,
                     'job_name': None,
                     'sql_file': None,
                     'connection_file': CONNECTION_FILE,
@@ -725,14 +742,13 @@ class Commandliner():
                     }
         return parser, defaults
 
-    def launch_run_mode(self, Job, args):
-        job = Job(args)
+    def launch_run_mode(self, job):
         app_name = job.jargs.job_name
-        sc, sc_sql = self.create_contexts(app_name, args['mode'], args['load_connectors'])
-        if not self.args['dependencies']:
+        sc, sc_sql = self.create_contexts(app_name, job.jargs.mode, job.jargs.load_connectors)
+        if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:
-            Flow(sc, sc_sql, args, app_name)
+            Flow(sc, sc_sql, job.jargs, app_name)
 
     def launch_deploy_mode(self, deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
@@ -764,29 +780,15 @@ class Commandliner():
             .getOrCreate()
         sc = spark.sparkContext
 
-        ## Other ways to change spark config from python, instead of using spark-defaults.conf or adding jars in spark-submit
-        # os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars extra/ojdbc6.jar'  # or s3://some_path/ojdbc6.jar
-        # sc._jsc.addJAR(/path/to.jar)
-        # sc.addFile("filename") # to add a file in every nodes.
-        ## Hadoop configuration
-        # sc._jsc.hadoopConfiguration().set("fs.s3.awsAccessKeyId", credentials.access_key)  # doesn't work.
-        # sc._jsc.hadoopConfiguration().set("fs.s3.awsSecretAccessKey", credentials.secret_key)  # doesn't work.
-        # or use env variable
-        # export AWS_ACCESS_KEY_ID=`aws configure get default.aws_access_key_id`
-        # export AWS_SECRET_ACCESS_KEY=`aws configure get default.aws_secret_access_key`
-        ## Other
-        # sc.setLogLevel("ERROR")
-
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
         return sc, sc_sql
 
 
 class Flow():
-    def __init__(self, sc, sc_sql, args, app_name):
+    def __init__(self, sc, sc_sql, launch_jargs, app_name):
         self.app_name = app_name
-        storage = args['storage']
-        df = self.create_connections_jobs(storage, args)
+        df = self.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
         logger.debug('Flow app_name : {}, connection_table: {}'.format(app_name, df))
         graph = self.create_global_graph(df)  # top to bottom
         tree = self.create_local_tree(graph, nx.DiGraph(), app_name) # bottom to top
@@ -798,24 +800,26 @@ class Flow():
         # load all job classes and run them
         df = {}
         for job_name in leafs:
-            args['job_name'] = job_name
-            jargs = Job_Args_Parser(cmd_args=args, job_file=None, get_all=True)
-            # args = jargs.update_args(args, jargs.job_file)
-            Job = get_job_class(jargs.py_job)
             logger.info('About to run : {}'.format(job_name))
-
+            # Get yml
+            yml_args = Job_Yml_Parser(job_name, launch_jargs.job_param_file, launch_jargs.mode).yml_args
+            # Get loaded_inputs
             loaded_inputs = {}
-            if not args['boxed_dependencies']:
-                if jargs.job_yml.get('inputs', 'no input') == 'no input':
+            if not launch_jargs.boxed_dependencies:
+                if yml_args.get('inputs', 'no input') == 'no input':
                     raise Exception("Pb with loading job_yml or finding 'inputs' parameter in it. You can work around it by using 'boxed_dependencies' argument.")
-                for in_name, in_properties in jargs.job_yml['inputs'].items():
+                for in_name, in_properties in yml_args['inputs'].items():
                     if in_properties.get('from'):
                         loaded_inputs[in_name] = df[in_properties['from']]
 
+            # Get jargs
+            jargs = Job_Args_Parser(launch_jargs.defaults_args, yml_args, launch_jargs.job_args, launch_jargs.cmd_args, loaded_inputs=loaded_inputs)
+
+            Job = get_job_class(yml_args['py_job'])
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
             df[job_name] = job.etl(sc, sc_sql) # at this point df[job_name] is unpersisted. TODO: keep it persisted.
 
-            if args['boxed_dependencies']:
+            if launch_jargs.boxed_dependencies:
                 df[job_name].unpersist()
                 del df[job_name]
                 gc.collect()
@@ -823,13 +827,10 @@ class Flow():
             logger.info('-')
 
     def create_connections_jobs(self, storage, args):
-        meta_file = args.get('job_param_file')
-        if meta_file == 'repo':
-            meta_file = CLUSTER_APP_FOLDER+JOBS_METADATA_FILE if args['storage']=='s3' else JOBS_METADATA_LOCAL_FILE
-        yml = Job_Args_Parser.load_meta(meta_file)
+        yml = Job_Yml_Parser.load_meta(args['job_param_file'])
 
         connections = []
-        for job_name, job_meta in yml.items():
+        for job_name, job_meta in yml['jobs'].items():
             dependencies = job_meta.get('dependencies') or []
             for dependency in dependencies:
                 row = {'source_job': dependency, 'destination_job': job_name}
