@@ -154,8 +154,8 @@ class ETL_Base(object):
 
     def load_inputs(self, loaded_inputs):
         app_args = {}
-        if self.jargs.db_creds:
-            return app_args
+        # if self.jargs.db_creds:  # ???
+        #     return app_args
 
         for item in self.jargs.inputs.keys():
 
@@ -462,7 +462,7 @@ class Job_Args_Parser():
         args['inputs'] = self.set_inputs(args, loaded_inputs)
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
-        args['db_creds'] = self.set_db_creds(args)
+        # args['db_creds'] = self.set_db_creds(args)
         args['redshift_copy_params'] = args.get('redshift_copy_params') if 'from_redshift' in args.keys() else None
         return args
 
@@ -475,32 +475,29 @@ class Job_Args_Parser():
         #     input_types = {key.replace('input_type_', ''): {'type': val} for key, val in cmd_args.items() if key.startswith('input_type_')}
         #     inputs = {key: {'path': val['path'], 'type':input_types[key]['type']} for key, val in input_paths.items()}
         #     return inputs
-        if args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
-            return args.get('inputs', {})
-        elif loaded_inputs:
+        if loaded_inputs:
             return {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
         else:
-            logger.info("No input given, through commandline nor yml file.")
-            return {}
+            return args.get('inputs', {})
 
     # TODO: modify later since not used now
-    def set_output(self, cmd_args, yml_args):
-        output_in_args = any([item == 'output_path' for item in cmd_args.keys()])
-        if output_in_args:
-            # code below limited, will break in non-friendly way if not all output params are provided, doesn't support other types of outputs like db ones. TODO: make it better.
-            output = {'path':cmd_args['output_path'], 'type':cmd_args['output_type']}
-            return output
-        elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
-            return yml_args.get('output', {})
-        elif cmd_args.get('mode_no_io'):
-            output = {}
-            logger.info("No output given")
-        else:
-            raise Exception("No output given")
-        return output
+    # def set_output(self, cmd_args, yml_args):
+    #     output_in_args = any([item == 'output_path' for item in cmd_args.keys()])
+    #     if output_in_args:
+    #         # code below limited, will break in non-friendly way if not all output params are provided, doesn't support other types of outputs like db ones. TODO: make it better.
+    #         output = {'path':cmd_args['output_path'], 'type':cmd_args['output_type']}
+    #         return output
+    #     elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
+    #         return yml_args.get('output', {})
+    #     elif cmd_args.get('mode_no_io'):
+    #         output = {}
+    #         logger.info("No output given")
+    #     else:
+    #         raise Exception("No output given")
+    #     return output
 
-    def set_db_creds(self, args):
-        return args['from_redshift'].get('creds') if 'from_redshift' in args.keys() else None
+    # def set_db_creds(self, args):
+    #     return args['from_redshift'].get('creds') if 'from_redshift' in args.keys() else None
 
     def set_is_incremental(self, inputs, output):
         return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
