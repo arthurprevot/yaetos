@@ -463,7 +463,7 @@ class Job_Args_Parser():
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
         # args['db_creds'] = self.set_db_creds(args)
-        args['redshift_copy_params'] = args.get('redshift_copy_params') if 'from_redshift' in args.keys() else None
+        args['redshift_copy_params'] = args.get('copy_to_redshift', None)  # TODO: simplify, remove redshift_copy_params and use copy_to_redshift instead.
         return args
 
     # TODO: modify later since not used now
