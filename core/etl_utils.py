@@ -34,6 +34,7 @@ import core.logger as log
 logger = log.setup_logging('Job')
 
 
+# User settable params below can be changed from command line or yml or job inputs.
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 AWS_CONFIG_FILE = 'conf/aws_config.cfg'
 CONNECTION_FILE = 'conf/connections.cfg'
@@ -42,7 +43,6 @@ LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_
 LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
-REDSHIFT_S3_TMP_DIR = "s3a://sandbox-arthur/yaetos/tmp_spark/"  # user setting. TODO: set from job_metadata.yml
 PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22'  # necessary for reading/writing to redshift and mysql using spark connector.
 PACKAGES_EMR = 'com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
 JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
@@ -345,7 +345,7 @@ class ETL_Base(object):
         connection_profile = self.jargs.redshift_copy_params['creds']
         schema, name_tb= self.jargs.redshift_copy_params['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
-        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, REDSHIFT_S3_TMP_DIR)
+        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir)
 
     def push_to_kafka(self, output, types):
         """ Needs to be overriden by each specific job."""
@@ -769,14 +769,15 @@ class Commandliner():
                 .set("spark.jars.packages", PACKAGES_LOCAL) \
                 .set("spark.jars", JARS)
         else:
+            # Setup above not needed when running from EMR where setup done in spark-submit.
             conf = SparkConf()
 
         spark = SparkSession.builder \
             .appName(app_name) \
             .config(conf=conf) \
             .getOrCreate()
-        sc = spark.sparkContext
 
+        sc = spark.sparkContext
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
         return sc, sc_sql
