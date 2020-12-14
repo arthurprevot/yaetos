@@ -109,7 +109,7 @@ class ETL_Base(object):
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
-        if self.jargs.merged_args.get('redshift_copy_params'):
+        if self.jargs.merged_args.get('copy_to_redshift'):
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
@@ -330,8 +330,8 @@ class ETL_Base(object):
         from core.db_utils import cast_col
         df = output.toPandas()
         df = cast_col(df, types)
-        connection_profile = self.jargs.redshift_copy_params['creds']
-        schema, name_tb = self.jargs.redshift_copy_params['table'].split('.')
+        connection_profile = self.jargs.copy_to_redshift['creds']
+        schema, name_tb = self.jargs.copy_to_redshift['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(df, connection_profile, name_tb, schema, types, creds, self.jargs.is_incremental)
         del(df)
@@ -339,8 +339,8 @@ class ETL_Base(object):
     def copy_to_redshift_using_spark(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
         from core.redshift_spark import create_table
-        connection_profile = self.jargs.redshift_copy_params['creds']
-        schema, name_tb= self.jargs.redshift_copy_params['table'].split('.')
+        connection_profile = self.jargs.copy_to_redshift['creds']
+        schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir)
 
@@ -459,7 +459,6 @@ class Job_Args_Parser():
         args['inputs'] = self.set_inputs(args, loaded_inputs)
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
-        args['redshift_copy_params'] = args.get('copy_to_redshift', None)  # TODO: simplify, remove redshift_copy_params and use copy_to_redshift instead.
         return args
 
     # TODO: modify later since not used now
