@@ -154,9 +154,6 @@ class ETL_Base(object):
 
     def load_inputs(self, loaded_inputs):
         app_args = {}
-        # if self.jargs.db_creds:  # ???
-        #     return app_args
-
         for item in self.jargs.inputs.keys():
 
             # Load from memory if available
@@ -462,7 +459,6 @@ class Job_Args_Parser():
         args['inputs'] = self.set_inputs(args, loaded_inputs)
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
-        # args['db_creds'] = self.set_db_creds(args)
         args['redshift_copy_params'] = args.get('copy_to_redshift', None)  # TODO: simplify, remove redshift_copy_params and use copy_to_redshift instead.
         return args
 
@@ -495,9 +491,6 @@ class Job_Args_Parser():
     #     else:
     #         raise Exception("No output given")
     #     return output
-
-    # def set_db_creds(self, args):
-    #     return args['from_redshift'].get('creds') if 'from_redshift' in args.keys() else None
 
     def set_is_incremental(self, inputs, output):
         return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
