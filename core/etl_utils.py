@@ -138,12 +138,12 @@ class ETL_Base(object):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
-    def set_jargs(self, pre_jargs, loaded_inputs={}, job_file=None):
+    def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args"""
         job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
         job_name = Job_Yml_Parser.set_job_name_from_file(job_file)
-        pre_jargs['job_args']['job_name'] = job_name
-        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], loaded_inputs=loaded_inputs)
+        pre_jargs['job_args']['job_name'] = job_name  # necessary to get Job_Args_Parser() loading yml properly
+        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
 
     def set_job_file(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -349,6 +349,7 @@ class ETL_Base(object):
         raise NotImplementedError
 
 class Job_Yml_Parser():
+    """Functions to load and parse yml, and functions to get job_name, which is the key to the yml info."""
 
     def __init__(self, job_name, job_param_file, mode):
         self.yml_args = self.set_job_yml(job_name, job_param_file, mode)
