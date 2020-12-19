@@ -139,7 +139,7 @@ class ETL_Base(object):
         raise NotImplementedError
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
-        """ jargs means job args"""
+        """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
         job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
         job_name = Job_Yml_Parser.set_job_name_from_file(job_file)
         pre_jargs['job_args']['job_name'] = job_name  # necessary to get Job_Args_Parser() loading yml properly
