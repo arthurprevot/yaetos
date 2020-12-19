@@ -1,6 +1,7 @@
 # Jobs details below. Common job params listed at the bottom of this file.
 jobs:
   examples/ex1_full_sql_job.sql:  # shows 100% sql job, easiest when sql is enough
+    py_job: 'core/sql_job.py'
     inputs:
       some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
       other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
@@ -66,6 +67,7 @@ jobs:
     dependencies: [examples/ex4_dependency1_job.py]
 
   examples/ex4_dependency3_job.sql:  # shows dependency with sql
+    py_job: 'core/sql_job.py'
     inputs:
       some_events: {'path':'{base_path}/wiki_example/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
     output: {'path':'{base_path}/wiki_example/output_ex4_dep3/{now}/', 'type':'csv'}
