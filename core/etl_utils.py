@@ -70,8 +70,9 @@ class ETL_Base(object):
             else:
                 output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
         except Exception as err:
-            self.send_failure_email(err)
-            raise Exception("Job failed, error: \n{err}".format(err))
+            if self.jargs.mode == 'localEMR':
+                self.send_failure_email(err)
+            raise Exception("Job failed, error: \n{}".format(err))
         return output
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
@@ -354,10 +355,10 @@ class ETL_Base(object):
         raise NotImplementedError
 
     def send_failure_email(self, error_msg):
-        message = """Subject: [Data Pipeline Failure] {name} \n\nA Data pipeline named '{name}' failed. Error message \n{error}\nPlease check AWS Data Pipeline.""".format(name=self.jargs.job_name, error=error_msg)
+        message = """Subject: [Data Pipeline Failure] {name} \n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\nPlease check AWS Data Pipeline.""".format(name=self.jargs.job_name, error=error_msg)
         owners = self.jargs.merged_args.get('owners')
         if not owners:
-            logger.error('Job failed. No email recipient set in {}, so email not sent. Error message: \n{}'.format(self.jargs.job_param_file, error_msg))
+            logger.error('Job failed. No email recipient set in {}, so email not sent.\nError message: \n{}'.format(self.jargs.job_param_file, error_msg))
             return None
 
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
