@@ -30,6 +30,7 @@ import numpy as np
 #from sklearn.externals import joblib  # TODO: re-enable later after fixing lib versions.
 import gc
 from pprint import pformat
+import smtplib, ssl
 import core.logger as log
 logger = log.setup_logging('Job')
 
@@ -63,10 +64,14 @@ class ETL_Base(object):
         It's a way to deal with case where full incremental rerun from scratch would
         require a larger cluster to build in 1 shot than the typical incremental.
         """
-        if not self.jargs.is_incremental:
-            output = self.etl_one_pass(sc, sc_sql, self.loaded_inputs)
-        else:
-            output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
+        try:
+            if not self.jargs.is_incremental:
+                output = self.etl_one_pass(sc, sc_sql, self.loaded_inputs)
+            else:
+                output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
+        except Exception as err:
+            self.send_failure_email(err)
+            raise Exception("Job failed, error: \n{err}".format(err))
         return output
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
@@ -347,6 +352,26 @@ class ETL_Base(object):
     def push_to_kafka(self, output, types):
         """ Needs to be overriden by each specific job."""
         raise NotImplementedError
+
+    def send_failure_email(self, error_msg):
+        message = """Subject: [Data Pipeline Failure] {name} \n\nA Data pipeline named '{name}' failed. Error message \n{error}\nPlease check AWS Data Pipeline.""".format(name=self.jargs.job_name, error=error_msg)
+        owners = self.jargs.merged_args.get('owners')
+        if not owners:
+            logger.error('Job failed. No email recipient set in {}, so email not sent. Error message: \n{}'.format(self.jargs.job_param_file, error_msg))
+            return None
+
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds_section = self.jargs.email_cred_section
+
+        sender_email = creds.get(creds_section, 'sender_email')
+        password = creds.get(creds_section, 'password')
+        smtp_server = creds.get(creds_section, 'smtp_server')
+        port = creds.get(creds_section, 'port')
+
+        for receiver in owners:
+            send_email(message, receiver, sender_email, password, smtp_server, port)
+            logger.info('Failure email sent to {}'.format(receiver))
+
 
 class Job_Yml_Parser():
     """Functions to load and parse yml, and functions to get job_name, which is the key to the yml info."""
@@ -876,3 +901,13 @@ def get_job_class(py_job):
     namespace = {}
     exec(import_cmd, namespace)
     return namespace['Job']
+
+def send_email(message, receiver_email, sender_email, password, smtp_server, port):
+    context = ssl.create_default_context()
+    with smtplib.SMTP(smtp_server, port) as server:
+        server.starttls(context=context)
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message)
+
+if __name__=='__main__':
+    send_email()
