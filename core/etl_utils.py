@@ -30,10 +30,12 @@ import numpy as np
 #from sklearn.externals import joblib  # TODO: re-enable later after fixing lib versions.
 import gc
 from pprint import pformat
+import smtplib, ssl
 import core.logger as log
 logger = log.setup_logging('Job')
 
 
+# User settable params below can be changed from command line or yml or job inputs.
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 AWS_CONFIG_FILE = 'conf/aws_config.cfg'
 CONNECTION_FILE = 'conf/connections.cfg'
@@ -42,7 +44,6 @@ LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_
 LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
-REDSHIFT_S3_TMP_DIR = "s3a://sandbox-arthur/yaetos/tmp_spark/"  # user setting. TODO: set from job_metadata.yml
 PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22'  # necessary for reading/writing to redshift and mysql using spark connector.
 PACKAGES_EMR = 'com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
 JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
@@ -63,10 +64,15 @@ class ETL_Base(object):
         It's a way to deal with case where full incremental rerun from scratch would
         require a larger cluster to build in 1 shot than the typical incremental.
         """
-        if not self.jargs.is_incremental:
-            output = self.etl_one_pass(sc, sc_sql, self.loaded_inputs)
-        else:
-            output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
+        try:
+            if not self.jargs.is_incremental:
+                output = self.etl_one_pass(sc, sc_sql, self.loaded_inputs)
+            else:
+                output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
+        except Exception as err:
+            if self.jargs.mode == 'localEMR':
+                self.send_failure_email(err)
+            raise Exception("Job failed, error: \n{}".format(err))
         return output
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
@@ -109,7 +115,7 @@ class ETL_Base(object):
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
-        if self.jargs.merged_args.get('redshift_copy_params'):
+        if self.jargs.merged_args.get('copy_to_redshift'):
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
@@ -138,12 +144,12 @@ class ETL_Base(object):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
-    def set_jargs(self, pre_jargs, loaded_inputs={}, job_file=None):
-        """ jargs means job args"""
+    def set_jargs(self, pre_jargs, loaded_inputs={}):
+        """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
         job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
         job_name = Job_Yml_Parser.set_job_name_from_file(job_file)
-        pre_jargs['job_args']['job_name'] = job_name
-        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], loaded_inputs=loaded_inputs)
+        pre_jargs['job_args']['job_name'] = job_name  # necessary to get Job_Args_Parser() loading yml properly
+        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
 
     def set_job_file(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -154,9 +160,6 @@ class ETL_Base(object):
 
     def load_inputs(self, loaded_inputs):
         app_args = {}
-        if self.jargs.db_creds:
-            return app_args
-
         for item in self.jargs.inputs.keys():
 
             # Load from memory if available
@@ -333,8 +336,8 @@ class ETL_Base(object):
         from core.db_utils import cast_col
         df = output.toPandas()
         df = cast_col(df, types)
-        connection_profile = self.jargs.redshift_copy_params['creds']
-        schema, name_tb = self.jargs.redshift_copy_params['table'].split('.')
+        connection_profile = self.jargs.copy_to_redshift['creds']
+        schema, name_tb = self.jargs.copy_to_redshift['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(df, connection_profile, name_tb, schema, types, creds, self.jargs.is_incremental)
         del(df)
@@ -342,21 +345,44 @@ class ETL_Base(object):
     def copy_to_redshift_using_spark(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
         from core.redshift_spark import create_table
-        connection_profile = self.jargs.redshift_copy_params['creds']
-        schema, name_tb= self.jargs.redshift_copy_params['table'].split('.')
+        connection_profile = self.jargs.copy_to_redshift['creds']
+        schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
-        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, REDSHIFT_S3_TMP_DIR)
+        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir)
 
     def push_to_kafka(self, output, types):
         """ Needs to be overriden by each specific job."""
         raise NotImplementedError
 
+    def send_failure_email(self, error_msg):
+        owners = self.jargs.merged_args.get('owners')
+        if not owners:
+            logger.error('Job failed. No email recipient set in {}, so email not sent.\nError message: \n{}'.format(self.jargs.job_param_file, error_msg))
+            return None
+
+        message = """Subject: [Data Pipeline Failure] {name}\n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\n\nPlease check AWS Data Pipeline.""".format(name=self.jargs.job_name, error=error_msg)
+
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds_section = self.jargs.email_cred_section
+
+        sender_email = creds.get(creds_section, 'sender_email')
+        password = creds.get(creds_section, 'password')
+        smtp_server = creds.get(creds_section, 'smtp_server')
+        port = creds.get(creds_section, 'port')
+
+        for receiver in owners:
+            send_email(message, receiver, sender_email, password, smtp_server, port)
+            logger.info('Failure email sent to {}'.format(receiver))
+
+
 class Job_Yml_Parser():
+    """Functions to load and parse yml, and functions to get job_name, which is the key to the yml info."""
 
     def __init__(self, job_name, job_param_file, mode):
         self.yml_args = self.set_job_yml(job_name, job_param_file, mode)
         self.yml_args['job_name'] = job_name
         self.yml_args['py_job'] = self.yml_args['py_job'] if self.yml_args.get('py_job') else self.set_py_job_from_name(job_name)
+        self.yml_args['sql_file'] = self.set_py_job_from_name(job_name) if job_name.endswith('.sql') else None  # TODO: change set_py_job_from_name name as misleading here.
 
     @staticmethod
     def set_job_name_from_file(job_file):
@@ -412,6 +438,7 @@ class Job_Yml_Parser():
             yml = yaml.load(stream)
         return yml
 
+
 class Job_Args_Parser():
 
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date', 'email']
@@ -462,8 +489,6 @@ class Job_Args_Parser():
         args['inputs'] = self.set_inputs(args, loaded_inputs)
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
-        args['db_creds'] = self.set_db_creds(args)
-        args['redshift_copy_params'] = args.get('redshift_copy_params') if 'from_redshift' in args.keys() else None
         return args
 
     # TODO: modify later since not used now
@@ -475,41 +500,29 @@ class Job_Args_Parser():
         #     input_types = {key.replace('input_type_', ''): {'type': val} for key, val in cmd_args.items() if key.startswith('input_type_')}
         #     inputs = {key: {'path': val['path'], 'type':input_types[key]['type']} for key, val in input_paths.items()}
         #     return inputs
-        if args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
-            return args.get('inputs', {})
-        elif loaded_inputs:
+        if loaded_inputs:
             return {key: {'path': val, 'type': 'df'} for key, val in loaded_inputs.items()}
         else:
-            logger.info("No input given, through commandline nor yml file.")
-            return {}
+            return args.get('inputs', {})
 
     # TODO: modify later since not used now
-    def set_output(self, cmd_args, yml_args):
-        output_in_args = any([item == 'output_path' for item in cmd_args.keys()])
-        if output_in_args:
-            # code below limited, will break in non-friendly way if not all output params are provided, doesn't support other types of outputs like db ones. TODO: make it better.
-            output = {'path':cmd_args['output_path'], 'type':cmd_args['output_type']}
-            return output
-        elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
-            return yml_args.get('output', {})
-        elif cmd_args.get('mode_no_io'):
-            output = {}
-            logger.info("No output given")
-        else:
-            raise Exception("No output given")
-        return output
-
-    def set_db_creds(self, args):
-        return args['from_redshift'].get('creds') if 'from_redshift' in args.keys() else None
+    # def set_output(self, cmd_args, yml_args):
+    #     output_in_args = any([item == 'output_path' for item in cmd_args.keys()])
+    #     if output_in_args:
+    #         # code below limited, will break in non-friendly way if not all output params are provided, doesn't support other types of outputs like db ones. TODO: make it better.
+    #         output = {'path':cmd_args['output_path'], 'type':cmd_args['output_type']}
+    #         return output
+    #     elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
+    #         return yml_args.get('output', {})
+    #     elif cmd_args.get('mode_no_io'):
+    #         output = {}
+    #         logger.info("No output given")
+    #     else:
+    #         raise Exception("No output given")
+    #     return output
 
     def set_is_incremental(self, inputs, output):
         return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
-
-    # TODO: fix later
-    # def update_args(self, args, job_file):
-    #     if job_file.endswith('.sql'):
-    #         args['sql_file'] = job_file
-    #     return args
 
 
 class FS_Ops_Dispatcher():
@@ -772,14 +785,15 @@ class Commandliner():
                 .set("spark.jars.packages", PACKAGES_LOCAL) \
                 .set("spark.jars", JARS)
         else:
+            # Setup above not needed when running from EMR where setup done in spark-submit.
             conf = SparkConf()
 
         spark = SparkSession.builder \
             .appName(app_name) \
             .config(conf=conf) \
             .getOrCreate()
-        sc = spark.sparkContext
 
+        sc = spark.sparkContext
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
         return sc, sc_sql
@@ -878,9 +892,17 @@ class Flow():
             self.get_leafs(tree, leafs)
         return leafs + list(tree.nodes())
 
+
 def get_job_class(py_job):
     name_import = py_job.replace('/','.').replace('.py','')
     import_cmd = "from {} import Job".format(name_import)
     namespace = {}
     exec(import_cmd, namespace)
     return namespace['Job']
+
+def send_email(message, receiver_email, sender_email, password, smtp_server, port):
+    context = ssl.create_default_context()
+    with smtplib.SMTP(smtp_server, port) as server:
+        server.starttls(context=context)
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message)

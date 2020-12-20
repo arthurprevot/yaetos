@@ -76,7 +76,7 @@ class DeployPySparkScriptOnAws(object):
     def run_direct(self):
         """Useful to run job on cluster without bothering with aws data pipeline. Also useful to add steps to existing cluster."""
         self.s3_ops(self.session)
-        if self.app_args.get('push_secrets', False):
+        if self.deploy_args.get('push_secrets', False):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
         # EMR ops
@@ -390,7 +390,7 @@ class DeployPySparkScriptOnAws(object):
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
-        if self.app_args.get('push_secrets', False):
+        if self.deploy_args.get('push_secrets', False):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
         # AWSDataPipeline ops
