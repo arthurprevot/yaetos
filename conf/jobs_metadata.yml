@@ -8,7 +8,7 @@ jobs:
     output: {'path':'{base_path}/wiki_example_sql/output_ex1_full_sql/{now}/', 'type':'csv'}
     frequency: 1 day
     start_date: "{today}T07:00:00"
-    email: 'some_email@address.com'
+    owners: ['some_email@address.com']
 
   examples/ex1_frameworked_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
     inputs:
@@ -17,7 +17,7 @@ jobs:
     output: {'path':'{base_path}/wiki_example/output_ex1_frameworked/{now}/', 'type':'csv'}
     frequency: 1 day
     start_date: "{today}T07:00:00"
-    email: 'some_email@address.com'
+    owners: ['some_email@address.com']
 
   job_using_generic_template:  # to show how to reuse existing job code
     py_job: 'jobs/examples/ex1_frameworked_job.py'
@@ -28,7 +28,7 @@ jobs:
 
   examples/ex1_raw_job.py:
     frequency: 24h
-    email: 'some_email@address.com'
+    owners: ['some_email@address.com']
 
   examples/ex2_frameworked_job.py:  # more complex version of ex1_frameworked_job
     inputs:
@@ -37,7 +37,7 @@ jobs:
     output: {'path':'{base_path}/wiki_example/output_ex2/{now}/', 'type':'csv'}
     frequency: 1 day
     start_date: "{today}T07:00:00"
-    email: 'some_email@address.com'
+    owners: ['some_email@address.com']
 
   examples/ex3_incremental_job.py:  # focus on incremental loading and dropping
     inputs:
@@ -45,14 +45,14 @@ jobs:
     output: {'path':'{base_path}/wiki_example/output_ex3_inc/incremental_build_v1/', 'type':'csv', 'inc_field': 'other_timestamp'}
     dependencies: [examples/ex3_incremental_prep_job.py]
     frequency: 24h
-    email: 'some_email@address.com'
+    owners: ['some_email@address.com']
 
   examples/ex3_incremental_prep_job.py:  # shows computation of dependency as necessary for ex3_incremental_job
     inputs:
       some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex3_dep/{now}/', 'type':'csv'}
     frequency: 24h
-    email: 'some_email@address.com'
+    owners: ['some_email@address.com']
 
   examples/ex4_dependency1_job.py:  # shows dependency
     inputs:
@@ -131,7 +131,7 @@ jobs:
     output: {'path':'{base_path}/wordcount_example/output_frameworked/{now}/', 'type':'txt'}
     dependencies: [] # list here if any
     frequency: 24h
-    email: 'some_email@address.com'
+    owners: ['some_email@address.com']
 
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
@@ -139,6 +139,7 @@ common_params:
   all_mode_params:
     connection_file:  conf/connections.cfg
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
+    email_cred_section: some_email_cred_section  # Section from "connection_file"
   mode_specific_params:
     prod:
       base_path: s3://prod-spark  # don't add '/' at the end
