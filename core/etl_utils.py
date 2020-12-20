@@ -381,7 +381,7 @@ class Job_Yml_Parser():
         self.yml_args = self.set_job_yml(job_name, job_param_file, mode)
         self.yml_args['job_name'] = job_name
         self.yml_args['py_job'] = self.yml_args['py_job'] if self.yml_args.get('py_job') else self.set_py_job_from_name(job_name)
-        self.yml_args['sql_file'] = self.set_py_job_from_name(job_name) if job_name.endswith('.sql') else None
+        self.yml_args['sql_file'] = self.set_py_job_from_name(job_name) if job_name.endswith('.sql') else None  # TODO: change set_py_job_from_name name as misleading here.
 
     @staticmethod
     def set_job_name_from_file(job_file):
@@ -436,6 +436,7 @@ class Job_Yml_Parser():
         with open(fname, 'r') as stream:
             yml = yaml.load(stream)
         return yml
+
 
 class Job_Args_Parser():
 
@@ -521,12 +522,6 @@ class Job_Args_Parser():
 
     def set_is_incremental(self, inputs, output):
         return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
-
-    # TODO: fix later
-    # def update_args(self, args, job_file):
-    #     if job_file.endswith('.sql'):
-    #         args['sql_file'] = job_file
-    #     return args
 
 
 class FS_Ops_Dispatcher():
@@ -896,6 +891,7 @@ class Flow():
             self.get_leafs(tree, leafs)
         return leafs + list(tree.nodes())
 
+
 def get_job_class(py_job):
     name_import = py_job.replace('/','.').replace('.py','')
     import_cmd = "from {} import Job".format(name_import)
@@ -909,6 +905,3 @@ def send_email(message, receiver_email, sender_email, password, smtp_server, por
         server.starttls(context=context)
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message)
-
-if __name__=='__main__':
-    send_email()
