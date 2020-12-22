@@ -71,7 +71,7 @@ class ETL_Base(object):
                 output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
         except Exception as err:
             if self.jargs.mode == 'localEMR':
-                self.send_failure_email(err)
+                self.send_job_failure_email(err)
             raise Exception("Job failed, error: \n{}".format(err))
         return output
 
@@ -354,13 +354,14 @@ class ETL_Base(object):
         """ Needs to be overriden by each specific job."""
         raise NotImplementedError
 
-    def send_failure_email(self, error_msg):
-        owners = self.jargs.merged_args.get('owners')
-        if not owners:
-            logger.error('Job failed. No email recipient set in {}, so email not sent.\nError message: \n{}'.format(self.jargs.job_param_file, error_msg))
+    def send_msg(self, msg, recipients=None):
+        """ Sending message to recipients (list of email addresse) or, if not specified, to yml 'owners'.
+        Pulling email sender account info from connection_file."""
+        if not recipients:
+            recipients = self.jargs.merged_args.get('owners')
+        if not recipients:
+            logger.error("Email can't be sent since no recipient set in {}, .\nMessage : \n{}".format(self.jargs.job_param_file, msg))
             return None
-
-        message = """Subject: [Data Pipeline Failure] {name}\n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\n\nPlease check AWS Data Pipeline.""".format(name=self.jargs.job_name, error=error_msg)
 
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         creds_section = self.jargs.email_cred_section
@@ -370,9 +371,13 @@ class ETL_Base(object):
         smtp_server = creds.get(creds_section, 'smtp_server')
         port = creds.get(creds_section, 'port')
 
-        for receiver in owners:
-            send_email(message, receiver, sender_email, password, smtp_server, port)
-            logger.info('Failure email sent to {}'.format(receiver))
+        for recipient in recipients:
+            send_email(message, recipient, sender_email, password, smtp_server, port)
+            logger.info('Email sent to {}'.format(recipient))
+
+    def send_job_failure_email(self, error_msg):
+        message = """Subject: [Data Pipeline Failure] {name}\n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\n\nPlease check AWS Data Pipeline.""".format(name=self.jargs.job_name, error=error_msg)
+        self.send_msg(message)
 
 
 class Job_Yml_Parser():
