@@ -379,6 +379,27 @@ class ETL_Base(object):
         message = """Subject: [Data Pipeline Failure] {name}\n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\n\nPlease check AWS Data Pipeline.""".format(name=self.jargs.job_name, error=error_msg)
         self.send_msg(message)
 
+    def check_pk(self, df, pks):
+        count = df.count()
+        count_pk = df.select(pks).dropDuplicates().count()
+        if count != count_pk:
+            logger.error("PKs not unique. count={}, count_pk={}".format(count, count_pk))
+            return False
+        else:
+            logger.info("Fields given are PKs. count=count_pk={}".format(count))
+            return True
+
+    def identify_non_unique_pks(self, df, pks):
+        from pyspark.sql.window import Window
+        from pyspark.sql import functions as F
+
+        # import ipdb; ipdb.set_trace()
+        windowSpec  = Window.partitionBy([F.col(item) for item in pks])
+        df = df.withColumn('_count_pk', F.count('*').over(windowSpec)) \
+            .where(F.col('_count_pk') >= 2)
+        # df.repartition(1).write.mode('overwrite').option("header", "true").csv('data/sandbox/non_unique_test/')
+        return df
+
 
 class Job_Yml_Parser():
     """Functions to load and parse yml, and functions to get job_name, which is the key to the yml info."""
