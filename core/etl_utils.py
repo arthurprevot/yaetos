@@ -115,7 +115,7 @@ class ETL_Base(object):
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
-        if self.jargs.merged_args.get('copy_to_redshift'):
+        if self.jargs.merged_args.get('copy_to_redshift') and self.jargs.enable_redshift_push:
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
@@ -757,6 +757,7 @@ class Commandliner():
                     'aws_setup': 'dev',
                     # 'leave_on': False, # only set from commandline
                     # 'push_secrets': False, # only set from commandline
+                    'enable_redshift_push': True,
                     }
         return parser, defaults
 
