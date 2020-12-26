@@ -97,7 +97,7 @@ class ETL_Base(object):
         logger.info("-------Starting running job '{}'--------".format(self.jargs.job_name))
         start_time = time()
         self.start_dt = datetime.utcnow() # attached to self so available within "transform()" func.
-        output = self.etl_no_io(sc, sc_sql, loaded_inputs)
+        output, meta = self.etl_no_io(sc, sc_sql, loaded_inputs)
         logger.info('Output sample:')
         output.show()
         count = output.count()
@@ -114,6 +114,11 @@ class ETL_Base(object):
         elapsed = end_time - start_time
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
+
+        # import ipdb; ipdb.set_trace()
+        meta.save_yaml(self.jargs.job_name)
+
+
 
         if self.jargs.merged_args.get('copy_to_redshift') and self.jargs.enable_redshift_push:
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
@@ -138,7 +143,10 @@ class ETL_Base(object):
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
         output.cache()
-        return output
+        meta = Meta_Builder()
+        meta.generate_meta(loaded_datasets, output)
+        return output, meta
+
 
     def transform(self, **app_args):
         """ The function that needs to be overriden by each specific job."""
@@ -399,6 +407,27 @@ class ETL_Base(object):
             .where(F.col('_count_pk') >= 2)
         # df.repartition(1).write.mode('overwrite').option("header", "true").csv('data/sandbox/non_unique_test/')
         return df
+
+
+class Meta_Builder():
+    TYPES_FOLDER = 'types/'
+    def generate_meta(self, loaded_datasets, output):
+        # from collections import OrderedDict
+        yml = {'inputs':{}}  # OrderedDict()
+        for key, value in loaded_datasets.items():
+            # types = [(fd.name, fd.dataType) for fd in value.schema.fields]
+            # types =
+            yml['inputs'][key] = {fd.name: fd.dataType.__str__() for fd in value.schema.fields}
+        yml['output'] = {fd.name: fd.dataType.__str__() for fd in output.schema.fields}
+        # import ipdb; ipdb.set_trace()
+        self.yml = yml
+
+    def save_yaml(self, job_name):
+        job_name = job_name.replace('.py', '')
+        fname = self.TYPES_FOLDER + job_name+'.yaml'
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+        with open(fname, 'w') as file:
+            documents = yaml.dump(self.yml, file)
 
 
 class Job_Yml_Parser():
