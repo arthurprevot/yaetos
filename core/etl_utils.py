@@ -113,12 +113,8 @@ class ETL_Base(object):
         end_time = time()
         elapsed = end_time - start_time
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
-        # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
-
-        # import ipdb; ipdb.set_trace()
         meta.save_yaml(self.jargs.job_name)
-
-
+        # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
         if self.jargs.merged_args.get('copy_to_redshift') and self.jargs.enable_redshift_push:
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
@@ -412,14 +408,10 @@ class ETL_Base(object):
 class Meta_Builder():
     TYPES_FOLDER = 'types/'
     def generate_meta(self, loaded_datasets, output):
-        # from collections import OrderedDict
         yml = {'inputs':{}}  # OrderedDict()
         for key, value in loaded_datasets.items():
-            # types = [(fd.name, fd.dataType) for fd in value.schema.fields]
-            # types =
             yml['inputs'][key] = {fd.name: fd.dataType.__str__() for fd in value.schema.fields}
         yml['output'] = {fd.name: fd.dataType.__str__() for fd in output.schema.fields}
-        # import ipdb; ipdb.set_trace()
         self.yml = yml
 
     def save_yaml(self, job_name):
