@@ -31,6 +31,8 @@ import numpy as np
 import gc
 from pprint import pformat
 import smtplib, ssl
+from pyspark.sql.window import Window
+from pyspark.sql import functions as F
 import core.logger as log
 logger = log.setup_logging('Job')
 
@@ -392,14 +394,14 @@ class ETL_Base(object):
             return True
 
     def identify_non_unique_pks(self, df, pks):
-        from pyspark.sql.window import Window
-        from pyspark.sql import functions as F
+        # from pyspark.sql.window import Window
+        # from pyspark.sql import functions as F
 
         # import ipdb; ipdb.set_trace()
         windowSpec  = Window.partitionBy([F.col(item) for item in pks])
         df = df.withColumn('_count_pk', F.count('*').over(windowSpec)) \
             .where(F.col('_count_pk') >= 2)
-        # df.repartition(1).write.mode('overwrite').option("header", "true").csv('data/sandbox/non_unique_test/')
+        # Debug: df.repartition(1).write.mode('overwrite').option("header", "true").csv('data/sandbox/non_unique_test/')
         return df
 
 
