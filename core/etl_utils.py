@@ -143,7 +143,6 @@ class ETL_Base(object):
         meta.generate_meta(loaded_datasets, output)
         return output, meta
 
-
     def transform(self, **app_args):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
@@ -152,7 +151,6 @@ class ETL_Base(object):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
         job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
         job_name = Job_Yml_Parser.set_job_name_from_file(job_file)
-        # pre_jargs['job_args']['job_name'] = job_name  # necessary to get Job_Args_Parser() loading yml properly
         return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
 
     def set_job_file(self):
@@ -495,9 +493,10 @@ class Job_Args_Parser():
         If yml_args not provided, it will go and get it.
         Sets of params:
             - defaults_args: defaults command line args, as defined in define_commandline_args()
-            - yml_args: args for specific job from yml
+            - yml_args: args for specific job from yml. If = None, it will rebuild it using job_name param.
             - job_args: args passed to "Commandliner(Job, **args)" in each job file
             - cmd_args: args passed in commandline, like "python some_job.py --some_args=xxx", predefined in define_commandline_args() or not
+            - job_name: to use only when yml_args is set to None, to specify what section of the yml to pick.
         """
         if yml_args is None:
             # Getting merged args, without yml (order matters)
