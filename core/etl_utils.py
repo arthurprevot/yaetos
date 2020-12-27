@@ -404,7 +404,7 @@ class ETL_Base(object):
 
 
 class Meta_Builder():
-    TYPES_FOLDER = 'types/'
+    TYPES_FOLDER = 'schemas/'
     def generate_meta(self, loaded_datasets, output):
         yml = {'inputs':{}}  # OrderedDict()
         for key, value in loaded_datasets.items():
