@@ -119,7 +119,8 @@ class ETL_Base(object):
         end_time = time()
         elapsed = end_time - start_time
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
-        meta.save_yaml(self.jargs.job_name)
+        if self.jargs.save_schemas:
+            meta.save_yaml(self.jargs.job_name)
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
         if self.jargs.merged_args.get('copy_to_redshift') and self.jargs.enable_redshift_push:
@@ -847,7 +848,9 @@ class Commandliner():
                     'aws_setup': 'dev',
                     # 'leave_on': False, # only set from commandline
                     # 'push_secrets': False, # only set from commandline
+                    # Not added in command line args:
                     'enable_redshift_push': True,
+                    'save_schemas': False,
                     'manage_git_info': False,
                     }
         return parser, defaults
