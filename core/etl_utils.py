@@ -401,10 +401,10 @@ class ETL_Base(object):
         return df
 
 
-class Meta_Builder():
+class Meta_Builder():  # TODO: rename to "schemas" here and below
     TYPES_FOLDER = 'schemas/'
     def generate_meta(self, loaded_datasets, output):
-        yml = {'inputs':{}}  # OrderedDict()
+        yml = {'inputs':{}}
         for key, value in loaded_datasets.items():
             yml['inputs'][key] = {fd.name: fd.dataType.__str__() for fd in value.schema.fields}
         yml['output'] = {fd.name: fd.dataType.__str__() for fd in output.schema.fields}
