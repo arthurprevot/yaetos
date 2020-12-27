@@ -59,6 +59,10 @@ class ETL_Base(object):
     def __init__(self, pre_jargs={}, jargs=None, loaded_inputs={}):
         self.loaded_inputs = loaded_inputs
         self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
+        if self.jargs.manage_git_info:
+            git_yml = Git_Config_Manager().get_config()
+            logger.info('Git info {}'.format(git_yml))
+            # import ipdb; ipdb.set_trace()
 
     def etl(self, sc, sc_sql):
         """ Main function. If incremental, reruns ETL process multiple time until
@@ -417,6 +421,52 @@ class Meta_Builder():  # TODO: rename to "schemas" here and below
         with open(fname, 'w') as file:
             documents = yaml.dump(self.yml, file)
 
+class Git_Config_Manager():
+
+    FNAME = 'conf/git_config.yml'
+
+    def get_config(self):
+        if self.is_git_controlled():
+            config = self.get_config_from_git()
+            self.save_yaml(config)
+        else:
+            config = self.get_config_from_file()
+        # import ipdb; ipdb.set_trace()
+        return config
+
+    def get_config_from_git(self):
+        import subprocess
+        branch = subprocess.check_output(["git", "describe", '--all']).strip().decode('ascii')  # to get if dirty, add '--dirty'.
+        last_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('ascii')
+        diffs = subprocess.check_output(['git', 'diff', 'HEAD']).strip().decode('ascii')
+        is_dirty = True if diffs else False
+        # import ipdb; ipdb.set_trace()
+        config = {'branch':branch,
+                  'last_commit':last_commit,
+                  'is_dirty':is_dirty}
+        # self.config = config
+        return config
+
+    def is_git_controlled(self):
+        import subprocess
+        #out = subprocess.check_output(["git", "rev-parse"]).strip().decode('ascii')
+        out = os.system('git rev-parse')
+        # import ipdb; ipdb.set_trace()
+        if out == 0:
+            return True
+        else:
+            return False  # will send "fatal: not a git repository" to stderr
+
+    def save_yaml(self, config):
+        os.makedirs(os.path.dirname(self.FNAME), exist_ok=True)
+        with open(self.FNAME, 'w') as file:
+            documents = yaml.dump(config, file)
+
+    def get_config_from_file():
+        if os.path.isfile(self.FNAME):
+            return Job_Yml_Parser.load_meta(self.FNAME)
+        else:
+            return False
 
 class Job_Yml_Parser():
     """Functions to load and parse yml, and functions to get job_name, which is the key to the yml info."""
@@ -798,6 +848,7 @@ class Commandliner():
                     # 'leave_on': False, # only set from commandline
                     # 'push_secrets': False, # only set from commandline
                     'enable_redshift_push': True,
+                    'manage_git_info': False,
                     }
         return parser, defaults
 

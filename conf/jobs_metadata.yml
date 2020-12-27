@@ -150,6 +150,7 @@ common_params:
       jobs_folder:      jobs/
       load_connectors: all
       enable_redshift_push: True
+      manage_git_info: True
     EMR_dev:
       base_path: s3://dev-spark  # don't add '/' at the end
       schema: sandbox
@@ -159,9 +160,11 @@ common_params:
       jobs_folder:      jobs/
       load_connectors: all
       enable_redshift_push: False
+      manage_git_info: True
     local_dev:
       base_path: ./data  # don't add '/' at the end
       schema: sandbox
       load_connectors: none
       aws_config_file:  none
       enable_redshift_push: False
+      manage_git_info: False
