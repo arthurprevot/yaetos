@@ -394,10 +394,6 @@ class ETL_Base(object):
             return True
 
     def identify_non_unique_pks(self, df, pks):
-        # from pyspark.sql.window import Window
-        # from pyspark.sql import functions as F
-
-        # import ipdb; ipdb.set_trace()
         windowSpec  = Window.partitionBy([F.col(item) for item in pks])
         df = df.withColumn('_count_pk', F.count('*').over(windowSpec)) \
             .where(F.col('_count_pk') >= 2)
