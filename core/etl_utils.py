@@ -420,7 +420,7 @@ class Meta_Builder():  # TODO: rename to "schemas" here and below
         fname = self.TYPES_FOLDER + job_name+'.yaml'
         os.makedirs(os.path.dirname(fname), exist_ok=True)
         with open(fname, 'w') as file:
-            documents = yaml.dump(self.yml, file)
+            ignored = yaml.dump(self.yml, file)
 
 class Git_Config_Manager():
 
