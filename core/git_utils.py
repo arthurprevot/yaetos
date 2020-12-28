@@ -12,7 +12,7 @@ class Git_Config_Manager():
     def get_config(self, mode, **kwargs):
         if mode in ('local', 'EMR', 'EMR_Scheduled'):
             config = self.get_config_from_git(kwargs['local_app_folder'])
-            # self.save_yaml(config)
+            # For debug: self.save_yaml(config)
         elif mode == 'localEMR':
             config = self.get_config_from_file(kwargs['cluster_app_folder'])
         else:
