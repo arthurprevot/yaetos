@@ -63,7 +63,6 @@ class ETL_Base(object):
             git_yml = Git_Config_Manager().get_config()
             [git_yml.pop(key, None) for key in ('diffs', 'diffs_yaetos')]
             logger.info('Git info {}'.format(git_yml))
-            # import ipdb; ipdb.set_trace()
 
     def etl(self, sc, sc_sql):
         """ Main function. If incremental, reruns ETL process multiple time until
@@ -442,16 +441,11 @@ class Git_Config_Manager():
         last_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('ascii')
         diffs = subprocess.check_output(['git', 'diff', 'HEAD']).strip().decode('ascii')
         is_dirty = True if diffs else False
-        # import ipdb; ipdb.set_trace()
-        # path_var = os.pathsep.join(os.environ.get('PATH', os.defpath), some_dir)
-        # path_var = os.environ.get('PATH', os.defpath)
-        # env = dict(os.environ, PATH=path_var)
         branch_yaetos = subprocess.check_output(['git', 'describe', '--all'], cwd=LOCAL_APP_FOLDER).strip().decode('ascii')
         last_commit_yaetos = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=LOCAL_APP_FOLDER).strip().decode('ascii')
         diffs_yaetos = subprocess.check_output(['git', 'diff', 'HEAD'], cwd=LOCAL_APP_FOLDER).strip().decode('ascii')
         is_dirty_yaetos = True if diffs_yaetos else False
 
-        # import ipdb; ipdb.set_trace()
         config = {'branch':branch,
                   'last_commit':last_commit,
                   'diffs':diffs,
@@ -461,7 +455,6 @@ class Git_Config_Manager():
                   'diffs_yaetos':diffs_yaetos,
                   'is_dirty_yaetos':is_dirty_yaetos
                   }
-        # self.config = config
         return config
 
     def is_git_controlled(self):
