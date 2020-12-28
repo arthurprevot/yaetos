@@ -22,6 +22,7 @@ import json
 from configparser import ConfigParser
 from shutil import copyfile
 import core.etl_utils as eu
+from core.git_utils import Git_Config_Manager
 import core.logger as log
 logger = log.setup_logging('Deploy')
 
@@ -64,6 +65,9 @@ class DeployPySparkScriptOnAws(object):
         self.package_path  = self.job_log_path+'/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
         self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
         self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
+
+        git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
+        Git_Config_Manager().save_yaml(git_yml)
 
     def run(self):
         if self.app_args.get('mode')=='EMR':
@@ -172,8 +176,9 @@ class DeployPySparkScriptOnAws(object):
         # Create tar.gz file
         t_file = tarfile.open(output_path, 'w:gz')
 
-        # Add files
+        # Add config files
         t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
+        t_file.add(base+'conf/git_config.yml', arcname='conf/git_config.yml') # TODO: remove hardcoding
 
         # ./core files
         files = os.listdir(base+'core/')

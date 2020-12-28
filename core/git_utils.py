@@ -1,18 +1,22 @@
 import yaml
 import os
 import subprocess
+import core.logger as log
+logger = log.setup_logging('Job')
 
 
 class Git_Config_Manager():
 
     FNAME = 'conf/git_config.yml'
 
-    def get_config(self, local_app_folder):
-        if self.is_git_controlled():
-            config = self.get_config_from_git(local_app_folder)
+    def get_config(self, mode, **kwargs):
+        if mode in ('local', 'EMR', 'EMR_Scheduled'):
+            config = self.get_config_from_git(kwargs['local_app_folder'])
             # self.save_yaml(config)
+        elif mode == 'localEMR':
+            config = self.get_config_from_file(kwargs['cluster_app_folder'])
         else:
-            config = self.get_config_from_file()
+            raise Exception('Wrong mode')
         return config
 
     def get_config_from_git(self, local_app_folder):
@@ -38,21 +42,23 @@ class Git_Config_Manager():
         return config
 
     def is_git_controlled(self):
-        import subprocess
         out = os.system('git rev-parse')  # not using subprocess.check_output() to avoid crash if it fails.
         if out == 0:
             return True
         else:
-            return False  # will send "fatal: not a git repository" to stderr
+            return False  # will send "fatal: not a git repository" or "git: command not found" to stderr
 
     def save_yaml(self, config):
         os.makedirs(os.path.dirname(self.FNAME), exist_ok=True)
         with open(self.FNAME, 'w') as file:
             ignored = yaml.dump(config, file)
+        logger.info('Saved yml with git info: {}'.format(self.FNAME))
 
-    def get_config_from_file():
-        if os.path.isfile(self.FNAME):
-            with open(self.FNAME, 'r') as stream:
+    def get_config_from_file(self, cluster_app_folder):
+        """Meant to work in localEMR mode"""
+        fname = cluster_app_folder+self.FNAME
+        if os.path.isfile(fname):
+            with open(fname, 'r') as stream:
                 yml = yaml.load(stream)
             return yml
         else:
