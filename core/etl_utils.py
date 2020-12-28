@@ -61,6 +61,7 @@ class ETL_Base(object):
         self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
         if self.jargs.manage_git_info:
             git_yml = Git_Config_Manager().get_config()
+            [git_yml.pop(key, None) for key in ('diffs', 'diffs_yaetos')]
             logger.info('Git info {}'.format(git_yml))
             # import ipdb; ipdb.set_trace()
 
@@ -442,9 +443,24 @@ class Git_Config_Manager():
         diffs = subprocess.check_output(['git', 'diff', 'HEAD']).strip().decode('ascii')
         is_dirty = True if diffs else False
         # import ipdb; ipdb.set_trace()
+        # path_var = os.pathsep.join(os.environ.get('PATH', os.defpath), some_dir)
+        # path_var = os.environ.get('PATH', os.defpath)
+        # env = dict(os.environ, PATH=path_var)
+        branch_yaetos = subprocess.check_output(['git', 'describe', '--all'], cwd=LOCAL_APP_FOLDER).strip().decode('ascii')
+        last_commit_yaetos = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=LOCAL_APP_FOLDER).strip().decode('ascii')
+        diffs_yaetos = subprocess.check_output(['git', 'diff', 'HEAD'], cwd=LOCAL_APP_FOLDER).strip().decode('ascii')
+        is_dirty_yaetos = True if diffs_yaetos else False
+
+        # import ipdb; ipdb.set_trace()
         config = {'branch':branch,
                   'last_commit':last_commit,
-                  'is_dirty':is_dirty}
+                  'diffs':diffs,
+                  'is_dirty':is_dirty,
+                  'branch_yaetos':branch_yaetos,
+                  'last_commit_yaetos':last_commit_yaetos,
+                  'diffs_yaetos':diffs_yaetos,
+                  'is_dirty_yaetos':is_dirty_yaetos
+                  }
         # self.config = config
         return config
 
