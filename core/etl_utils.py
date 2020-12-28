@@ -62,7 +62,7 @@ class ETL_Base(object):
         self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
         if self.jargs.manage_git_info:
             git_yml = Git_Config_Manager().get_config(LOCAL_APP_FOLDER)
-            [git_yml.pop(key, None) for key in ('diffs', 'diffs_yaetos')]
+            [git_yml.pop(key, None) for key in ('diffs_current', 'diffs_yaetos')]
             logger.info('Git info {}'.format(git_yml))
 
     def etl(self, sc, sc_sql):

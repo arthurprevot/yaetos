@@ -26,10 +26,10 @@ class Git_Config_Manager():
         diffs_yaetos = subprocess.check_output(['git', 'diff', 'HEAD'], cwd=local_app_folder).strip().decode('ascii')
         is_dirty_yaetos = True if diffs_yaetos else False
 
-        config = {'branch':branch,
-                  'last_commit':last_commit,
-                  'diffs':diffs,
-                  'is_dirty':is_dirty,
+        config = {'branch_current':branch,
+                  'last_commit_current':last_commit,
+                  'diffs_current':diffs,
+                  'is_dirty_current':is_dirty,
                   'branch_yaetos':branch_yaetos,
                   'last_commit_yaetos':last_commit_yaetos,
                   'diffs_yaetos':diffs_yaetos,
