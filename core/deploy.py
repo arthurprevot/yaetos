@@ -178,7 +178,7 @@ class DeployPySparkScriptOnAws(object):
 
         # Add config files
         t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
-        t_file.add(base+'conf/git_config.yml', arcname='conf/git_config.yml') # TODO: remove hardcoding
+        t_file.add('conf/git_config.yml', arcname='conf/git_config.yml') # TODO: remove hardcoding
 
         # ./core files
         files = os.listdir(base+'core/')
