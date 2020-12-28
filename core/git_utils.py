@@ -10,7 +10,7 @@ class Git_Config_Manager():
     def get_config(self, local_app_folder):
         if self.is_git_controlled():
             config = self.get_config_from_git(local_app_folder)
-            self.save_yaml(config)
+            # self.save_yaml(config)
         else:
             config = self.get_config_from_file()
         return config
@@ -48,10 +48,12 @@ class Git_Config_Manager():
     def save_yaml(self, config):
         os.makedirs(os.path.dirname(self.FNAME), exist_ok=True)
         with open(self.FNAME, 'w') as file:
-            documents = yaml.dump(config, file)
+            ignored = yaml.dump(config, file)
 
     def get_config_from_file():
         if os.path.isfile(self.FNAME):
-            return Job_Yml_Parser.load_meta(self.FNAME)
+            with open(self.FNAME, 'r') as stream:
+                yml = yaml.load(stream)
+            return yml
         else:
             return False
