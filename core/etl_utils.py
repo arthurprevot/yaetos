@@ -432,7 +432,6 @@ class Git_Config_Manager():
             self.save_yaml(config)
         else:
             config = self.get_config_from_file()
-        # import ipdb; ipdb.set_trace()
         return config
 
     def get_config_from_git(self):
@@ -459,9 +458,7 @@ class Git_Config_Manager():
 
     def is_git_controlled(self):
         import subprocess
-        #out = subprocess.check_output(["git", "rev-parse"]).strip().decode('ascii')
-        out = os.system('git rev-parse')
-        # import ipdb; ipdb.set_trace()
+        out = os.system('git rev-parse')  # not using subprocess.check_output() to avoid crash if it fails.
         if out == 0:
             return True
         else:
@@ -477,6 +474,7 @@ class Git_Config_Manager():
             return Job_Yml_Parser.load_meta(self.FNAME)
         else:
             return False
+
 
 class Job_Yml_Parser():
     """Functions to load and parse yml, and functions to get job_name, which is the key to the yml info."""
