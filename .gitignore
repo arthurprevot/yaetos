@@ -7,3 +7,5 @@ derby.log
 conf/aws_config.cfg
 conf/connections.cfg
 libs/python_db_connectors/credentials.cfg
+conf/git_config.yml
+launch_env.sh
