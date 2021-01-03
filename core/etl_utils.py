@@ -386,7 +386,7 @@ class ETL_Base(object):
             logger.info('Email sent to {}'.format(recipient))
 
     def send_job_failure_email(self, error_msg):
-        message = """Subject: [Data Pipeline Failure] {name}\n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\n\nPlease check AWS Data Pipeline.""".format(name=self.jargs.job_name, error=error_msg)
+        message = """Subject: [Data Pipeline Failure] {name}\n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\n\nPlease check logs in AWS.""".format(name=self.jargs.job_name, error=error_msg)
         self.send_msg(message)
 
     def check_pk(self, df, pks):
@@ -458,7 +458,7 @@ class Job_Yml_Parser():
     @staticmethod
     def set_py_job_from_name(job_name):
         py_job='jobs/{}'.format(job_name)
-        logger.info("job_name: '{}', and corresponding py_job: '{}'".format(job_name, py_job))
+        logger.info("job_name: '{}', and corresponding py_job: '{}'".format(job_name, py_job))  # TODO: fix py_job being .sql file in EMR runs (even though jobs work) and job_name here Doesn't match job_name in param list.
         return py_job
 
     def set_job_yml(self, job_name, job_param_file, mode):
