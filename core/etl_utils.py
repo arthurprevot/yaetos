@@ -104,7 +104,7 @@ class ETL_Base(object):
         logger.info("-------Starting running job '{}'--------".format(self.jargs.job_name))
         start_time = time()
         self.start_dt = datetime.utcnow() # attached to self so available within "transform()" func.
-        output, meta = self.etl_no_io(sc, sc_sql, loaded_inputs)
+        output, schemas = self.etl_no_io(sc, sc_sql, loaded_inputs)
         logger.info('Output sample:')
         output.show()
         count = output.count()
@@ -121,7 +121,7 @@ class ETL_Base(object):
         elapsed = end_time - start_time
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
         if self.jargs.save_schemas:
-            meta.save_yaml(self.jargs.job_name)
+            schemas.save_yaml(self.jargs.job_name)
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
         if self.jargs.merged_args.get('copy_to_redshift') and self.jargs.enable_redshift_push:
@@ -147,9 +147,9 @@ class ETL_Base(object):
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
         output.cache()
-        meta = Meta_Builder()
-        meta.generate_meta(loaded_datasets, output)
-        return output, meta
+        schemas = Schema_Builder()
+        schemas.generate_schemas(loaded_datasets, output)
+        return output, schemas
 
     def transform(self, **app_args):
         """ The function that needs to be overriden by each specific job."""
@@ -407,9 +407,9 @@ class ETL_Base(object):
         return df
 
 
-class Meta_Builder():  # TODO: rename to "schemas" here and below
+class Schema_Builder():
     TYPES_FOLDER = 'schemas/'
-    def generate_meta(self, loaded_datasets, output):
+    def generate_schemas(self, loaded_datasets, output):
         yml = {'inputs':{}}
         for key, value in loaded_datasets.items():
             yml['inputs'][key] = {fd.name: fd.dataType.__str__() for fd in value.schema.fields}
