@@ -19,6 +19,7 @@ import botocore
 from botocore.exceptions import ClientError
 import uuid
 import json
+from pprint import pformat
 from configparser import ConfigParser
 from shutil import copyfile
 import core.etl_utils as eu
@@ -36,8 +37,8 @@ class DeployPySparkScriptOnAws(object):
 
     def __init__(self, deploy_args, app_args):
 
-        logger.info("etl deploy_args: {}".format(deploy_args))
-        logger.info("etl app_args: {}".format(app_args))
+        logger.info("etl deploy_args: \n{}".format(pformat(deploy_args)))
+        logger.info("etl app_args: \n{}".format(pformat(app_args)))
         aws_setup = deploy_args['aws_setup']
         config = ConfigParser()
         assert os.path.isfile(deploy_args['aws_config_file'])
@@ -380,7 +381,7 @@ class DeployPySparkScriptOnAws(object):
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
             "--packages={}".format(eu.PACKAGES_EMR),
             "--jars={}".format(eu.JARS),
-            eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
+            eu.CLUSTER_APP_FOLDER+app_file,
             "--mode=localEMR",
             "--storage=s3",
             '--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE),

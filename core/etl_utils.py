@@ -430,8 +430,8 @@ class Job_Yml_Parser():
     def __init__(self, job_name, job_param_file, mode):
         self.yml_args = self.set_job_yml(job_name, job_param_file, mode)
         self.yml_args['job_name'] = job_name
-        self.yml_args['py_job'] = self.yml_args['py_job'] if self.yml_args.get('py_job') else self.set_py_job_from_name(job_name)
-        self.yml_args['sql_file'] = self.set_py_job_from_name(job_name) if job_name.endswith('.sql') else None  # TODO: change set_py_job_from_name name as misleading here.
+        self.yml_args['py_job'] = self.yml_args.get('py_job') or self.set_py_job_from_name(job_name)
+        self.yml_args['sql_file'] = self.set_sql_file_from_name(job_name, mode)
 
     @staticmethod
     def set_job_name_from_file(job_file):
@@ -458,8 +458,23 @@ class Job_Yml_Parser():
     @staticmethod
     def set_py_job_from_name(job_name):
         py_job='jobs/{}'.format(job_name)
-        logger.info("job_name: '{}', and corresponding py_job: '{}'".format(job_name, py_job))  # TODO: fix py_job being .sql file in EMR runs (even though jobs work) and job_name here Doesn't match job_name in param list.
+        logger.info("py_job: '{}', from job_name: '{}'".format(py_job, job_name))
         return py_job
+
+    @staticmethod
+    def set_sql_file_from_name(job_name, mode):
+        if not job_name.endswith('.sql'):
+            return None
+
+        if mode in ('localEMR', 'EMR', 'EMR_Scheduled'):
+            sql_file=CLUSTER_APP_FOLDER+'jobs/{}'.format(job_name)
+        elif mode == 'local':
+            sql_file='jobs/{}'.format(job_name)
+        else:
+            raise Exception("Mode not supported in set_sql_file_from_name(): {}".format(mode))
+
+        logger.info("sql_file: '{}', from job_name: '{}'".format(sql_file, job_name))
+        return sql_file
 
     def set_job_yml(self, job_name, job_param_file, mode):
         mapping_modes = {'local': 'local_dev', 'localEMR':'EMR_dev', 'EMR': 'EMR_dev', 'EMR_Scheduled': 'prod'} # TODO: test
