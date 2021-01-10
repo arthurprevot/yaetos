@@ -443,7 +443,7 @@ class Job_Yml_Parser():
         if not job_name.endswith('.sql'):
             return None
 
-        if mode in ('localEMR', 'EMR', 'EMR_Scheduled'):
+        if mode == 'localEMR':
             sql_file=CLUSTER_APP_FOLDER+'jobs/{}'.format(job_name)
         elif mode == 'local':
             sql_file='jobs/{}'.format(job_name)
