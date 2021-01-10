@@ -2,6 +2,7 @@
 tmp/
 data/
 extra/
+schemas/
 metastore_db/
 derby.log
 conf/aws_config.cfg
