@@ -396,7 +396,7 @@ class ETL_Base(object):
             logger.error("PKs not unique. count={}, count_pk={}".format(count, count_pk))
             return False
         else:
-            logger.info("Fields given are PKs. count=count_pk={}".format(count))
+            logger.info("Confirmed fields given are PKs (i.e. unique). count=count_pk={}".format(count))
             return True
 
     def identify_non_unique_pks(self, df, pks):

@@ -176,7 +176,7 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
         item1 = compare1[ii]
         item2 = compare2[ii]
         assert item1!=item2
-        df_joined['_delta_'+item1] = df_joined.apply(lambda row: (row[item1] if not np.isnan(row[item1]) else 0.0)-(row[item2] if not np.isnan(row[item2]) else 0.0), axis=1) # need to deal with case where df1 and df2 have same col name and merge adds suffix _1 and _2
+        df_joined['_delta_'+item1] = df_joined.apply(lambda row: (row[item1] if not pd.isna(row[item1]) else 0.0)-(row[item2] if not pd.isna(row[item2]) else 0.0), axis=1) # need to deal with case where df1 and df2 have same col name and merge adds suffix _1 and _2
         df_joined['_delta_'+item1+'_%'] = df_joined.apply(check_delta, axis=1)
         df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas']==True and row['_delta_'+item1+'_%']<threshold, axis=1)
     np.seterr(divide='raise')
