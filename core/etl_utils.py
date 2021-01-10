@@ -157,16 +157,16 @@ class ETL_Base(object):
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
-        job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
-        job_name = Job_Yml_Parser.set_job_name_from_file(job_file)
+        py_job = self.set_py_job()
+        job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
         return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
 
-    def set_job_file(self):
+    def set_py_job(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
         Only gives good output when the job is launched that way."""
-        job_file = inspect.getsourcefile(self.__class__)
-        logger.info("job_file: '{}'".format(job_file))
-        return job_file
+        py_job = inspect.getsourcefile(self.__class__)
+        logger.info("py_job: '{}'".format(py_job))
+        return py_job
 
     def load_inputs(self, loaded_inputs):
         app_args = {}
@@ -886,7 +886,7 @@ class Flow():
         # load all job classes and run them
         df = {}
         for job_name in leafs:
-            logger.info('About to run : {}'.format(job_name))
+            logger.info('About to run job_name: {}'.format(job_name))
             # Get yml
             yml_args = Job_Yml_Parser(job_name, launch_jargs.job_param_file, launch_jargs.mode).yml_args
             # Get loaded_inputs
