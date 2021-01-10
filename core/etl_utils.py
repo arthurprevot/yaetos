@@ -880,6 +880,8 @@ class Flow():
         logger.info('Sequence of jobs to be run: {}'.format(leafs))
         logger.info('-'*80)
         logger.info('-')
+        launch_jargs.cmd_args.pop('job_name', None)  # removing since it should be pulled from yml and not be overriden by cmd_args.
+        launch_jargs.job_args.pop('job_name', None)  # same
 
         # load all job classes and run them
         df = {}
