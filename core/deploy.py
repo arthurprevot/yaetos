@@ -60,8 +60,8 @@ class DeployPySparkScriptOnAws(object):
         # Paths
         self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
         self.metadata_folder = 'pipelines_metadata'
-        self.pipeline_name = self.generate_pipeline_name(self.app_args['job_name'], self.user)  # format: some_job.some_user.20181204.153429
-        self.job_log_path = '{}/jobs_code/{}'.format(self.metadata_folder, self.pipeline_name)  # format: yaetos/logs/some_job.some_user.20181204.153429
+        self.pipeline_name = self.generate_pipeline_name(self.deploy_args['deploy_mode'], self.app_args['job_name'], self.user)  # format: some_job.some_user.20181204.153429
+        self.job_log_path = self.get_job_log_path()  # format: yaetos/logs/some_job.some_user.20181204.153429
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
         self.package_path  = self.job_log_path+'/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
         self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
@@ -141,15 +141,26 @@ class DeployPySparkScriptOnAws(object):
                 'name':clusters[int(answer)-1][2]}
 
     @staticmethod
-    def generate_pipeline_name(job_name, user):
-        return "yaetos__{}__{}".format(
-            job_name.replace('.','_d_').replace('/','_s_'),
+    def generate_pipeline_name(deploy_mode, job_name, user):
+        """Opposite of get_job_name()"""
+        name = "yaetos__{deploy_mode}__{pname}__{time}".format(
+            deploy_mode=deploy_mode,
+            pname=job_name.replace('.','_d_').replace('/','_s_'),
             # user.replace('.','_'),
-            datetime.now().strftime("%Y%m%dT%H%M%S"))
+            time=datetime.now().strftime("%Y%m%dT%H%M%S"))
+        print('Pipeline Name "{}":'.format(name))
+        return name
 
     @staticmethod
     def get_job_name(pipeline_name):
-        return pipeline_name.split('__')[1].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
+        """Opposite of generate_pipeline_name()"""
+        return pipeline_name.split('__')[2].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
+
+    def get_job_log_path(self):
+        if self.deploy_args.get('deploy_mode')=='prod':
+            return '{}/jobs_code/production'.format(self.metadata_folder)
+        else:
+            return '{}/jobs_code/{}'.format(self.metadata_folder, self.pipeline_name)
 
     def temp_bucket_exists(self, s3):
         """
@@ -226,8 +237,6 @@ class DeployPySparkScriptOnAws(object):
     def upload_temp_files(self, s3):
         """
         Move the PySpark + bash scripts to the S3 bucket we use to store temporary files
-        :param s3:
-        :return:
         """
         # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1 below.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
