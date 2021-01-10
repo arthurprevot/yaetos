@@ -2,8 +2,11 @@
 tmp/
 data/
 extra/
+schemas/
 metastore_db/
 derby.log
 conf/aws_config.cfg
 conf/connections.cfg
+conf/git_config.yml
 libs/python_db_connectors/credentials.cfg
+launch_env.sh

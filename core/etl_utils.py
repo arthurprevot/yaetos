@@ -31,6 +31,9 @@ import numpy as np
 import gc
 from pprint import pformat
 import smtplib, ssl
+from pyspark.sql.window import Window
+from pyspark.sql import functions as F
+from core.git_utils import Git_Config_Manager
 import core.logger as log
 logger = log.setup_logging('Job')
 
@@ -57,6 +60,10 @@ class ETL_Base(object):
     def __init__(self, pre_jargs={}, jargs=None, loaded_inputs={}):
         self.loaded_inputs = loaded_inputs
         self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
+        if self.jargs.manage_git_info:
+            git_yml = Git_Config_Manager().get_config(mode=self.jargs.mode, local_app_folder=LOCAL_APP_FOLDER, cluster_app_folder=CLUSTER_APP_FOLDER)
+            [git_yml.pop(key, None) for key in ('diffs_current', 'diffs_yaetos') if git_yml]
+            logger.info('Git info {}'.format(git_yml))
 
     def etl(self, sc, sc_sql):
         """ Main function. If incremental, reruns ETL process multiple time until
@@ -71,7 +78,7 @@ class ETL_Base(object):
                 output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
         except Exception as err:
             if self.jargs.mode == 'localEMR':
-                self.send_failure_email(err)
+                self.send_job_failure_email(err)
             raise Exception("Job failed, error: \n{}".format(err))
         return output
 
@@ -97,7 +104,7 @@ class ETL_Base(object):
         logger.info("-------Starting running job '{}'--------".format(self.jargs.job_name))
         start_time = time()
         self.start_dt = datetime.utcnow() # attached to self so available within "transform()" func.
-        output = self.etl_no_io(sc, sc_sql, loaded_inputs)
+        output, schemas = self.etl_no_io(sc, sc_sql, loaded_inputs)
         logger.info('Output sample:')
         output.show()
         count = output.count()
@@ -113,9 +120,11 @@ class ETL_Base(object):
         end_time = time()
         elapsed = end_time - start_time
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
+        if self.jargs.save_schemas:
+            schemas.save_yaml(self.jargs.job_name)
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
-        if self.jargs.merged_args.get('copy_to_redshift'):
+        if self.jargs.merged_args.get('copy_to_redshift') and self.jargs.enable_redshift_push:
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
@@ -138,7 +147,9 @@ class ETL_Base(object):
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
         output.cache()
-        return output
+        schemas = Schema_Builder()
+        schemas.generate_schemas(loaded_datasets, output)
+        return output, schemas
 
     def transform(self, **app_args):
         """ The function that needs to be overriden by each specific job."""
@@ -146,17 +157,16 @@ class ETL_Base(object):
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
-        job_file = self.set_job_file() # file where code is, could be .py or .sql if ETL_Base subclassed. ex "jobs/examples/ex1_frameworked_job.py" or "jobs/examples/ex1_full_sql_job.sql"
-        job_name = Job_Yml_Parser.set_job_name_from_file(job_file)
-        pre_jargs['job_args']['job_name'] = job_name  # necessary to get Job_Args_Parser() loading yml properly
-        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
+        py_job = self.set_py_job()
+        job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
+        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
 
-    def set_job_file(self):
+    def set_py_job(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
         Only gives good output when the job is launched that way."""
-        job_file = inspect.getsourcefile(self.__class__)
-        logger.info("job_file: '{}'".format(job_file))
-        return job_file
+        py_job = inspect.getsourcefile(self.__class__)
+        logger.info("py_job: '{}'".format(py_job))
+        return py_job
 
     def load_inputs(self, loaded_inputs):
         app_args = {}
@@ -354,13 +364,14 @@ class ETL_Base(object):
         """ Needs to be overriden by each specific job."""
         raise NotImplementedError
 
-    def send_failure_email(self, error_msg):
-        owners = self.jargs.merged_args.get('owners')
-        if not owners:
-            logger.error('Job failed. No email recipient set in {}, so email not sent.\nError message: \n{}'.format(self.jargs.job_param_file, error_msg))
+    def send_msg(self, msg, recipients=None):
+        """ Sending message to recipients (list of email addresse) or, if not specified, to yml 'owners'.
+        Pulling email sender account info from connection_file."""
+        if not recipients:
+            recipients = self.jargs.merged_args.get('owners')
+        if not recipients:
+            logger.error("Email can't be sent since no recipient set in {}, .\nMessage : \n{}".format(self.jargs.job_param_file, msg))
             return None
-
-        message = """Subject: [Data Pipeline Failure] {name}\n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\n\nPlease check AWS Data Pipeline.""".format(name=self.jargs.job_name, error=error_msg)
 
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         creds_section = self.jargs.email_cred_section
@@ -370,9 +381,47 @@ class ETL_Base(object):
         smtp_server = creds.get(creds_section, 'smtp_server')
         port = creds.get(creds_section, 'port')
 
-        for receiver in owners:
-            send_email(message, receiver, sender_email, password, smtp_server, port)
-            logger.info('Failure email sent to {}'.format(receiver))
+        for recipient in recipients:
+            send_email(message, recipient, sender_email, password, smtp_server, port)
+            logger.info('Email sent to {}'.format(recipient))
+
+    def send_job_failure_email(self, error_msg):
+        message = """Subject: [Data Pipeline Failure] {name}\n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\n\nPlease check logs in AWS.""".format(name=self.jargs.job_name, error=error_msg)
+        self.send_msg(message)
+
+    def check_pk(self, df, pks):
+        count = df.count()
+        count_pk = df.select(pks).dropDuplicates().count()
+        if count != count_pk:
+            logger.error("PKs not unique. count={}, count_pk={}".format(count, count_pk))
+            return False
+        else:
+            logger.info("Confirmed fields given are PKs (i.e. unique). count=count_pk={}".format(count))
+            return True
+
+    def identify_non_unique_pks(self, df, pks):
+        windowSpec  = Window.partitionBy([F.col(item) for item in pks])
+        df = df.withColumn('_count_pk', F.count('*').over(windowSpec)) \
+            .where(F.col('_count_pk') >= 2)
+        # Debug: df.repartition(1).write.mode('overwrite').option("header", "true").csv('data/sandbox/non_unique_test/')
+        return df
+
+
+class Schema_Builder():
+    TYPES_FOLDER = 'schemas/'
+    def generate_schemas(self, loaded_datasets, output):
+        yml = {'inputs':{}}
+        for key, value in loaded_datasets.items():
+            yml['inputs'][key] = {fd.name: fd.dataType.__str__() for fd in value.schema.fields}
+        yml['output'] = {fd.name: fd.dataType.__str__() for fd in output.schema.fields}
+        self.yml = yml
+
+    def save_yaml(self, job_name):
+        job_name = job_name.replace('.py', '')
+        fname = self.TYPES_FOLDER + job_name+'.yaml'
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+        with open(fname, 'w') as file:
+            ignored = yaml.dump(self.yml, file)
 
 
 class Job_Yml_Parser():
@@ -381,8 +430,8 @@ class Job_Yml_Parser():
     def __init__(self, job_name, job_param_file, mode):
         self.yml_args = self.set_job_yml(job_name, job_param_file, mode)
         self.yml_args['job_name'] = job_name
-        self.yml_args['py_job'] = self.yml_args['py_job'] if self.yml_args.get('py_job') else self.set_py_job_from_name(job_name)
-        self.yml_args['sql_file'] = self.set_py_job_from_name(job_name) if job_name.endswith('.sql') else None  # TODO: change set_py_job_from_name name as misleading here.
+        self.yml_args['py_job'] = self.yml_args.get('py_job') or self.set_py_job_from_name(job_name)
+        self.yml_args['sql_file'] = self.set_sql_file_from_name(job_name, mode)
 
     @staticmethod
     def set_job_name_from_file(job_file):
@@ -409,8 +458,23 @@ class Job_Yml_Parser():
     @staticmethod
     def set_py_job_from_name(job_name):
         py_job='jobs/{}'.format(job_name)
-        logger.info("job_name: '{}', and corresponding py_job: '{}'".format(job_name, py_job))
+        logger.info("py_job: '{}', from job_name: '{}'".format(py_job, job_name))
         return py_job
+
+    @staticmethod
+    def set_sql_file_from_name(job_name, mode):
+        if not job_name.endswith('.sql'):
+            return None
+
+        if mode in ('localEMR', 'EMR', 'EMR_Scheduled'):
+            sql_file=CLUSTER_APP_FOLDER+'jobs/{}'.format(job_name)
+        elif mode == 'local':
+            sql_file='jobs/{}'.format(job_name)
+        else:
+            raise Exception("Mode not supported in set_sql_file_from_name(): {}".format(mode))
+
+        logger.info("sql_file: '{}', from job_name: '{}'".format(sql_file, job_name))
+        return sql_file
 
     def set_job_yml(self, job_name, job_param_file, mode):
         mapping_modes = {'local': 'local_dev', 'localEMR':'EMR_dev', 'EMR': 'EMR_dev', 'EMR_Scheduled': 'prod'} # TODO: test
@@ -443,20 +507,22 @@ class Job_Args_Parser():
 
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date', 'email']
 
-    def __init__(self, defaults_args, yml_args, job_args, cmd_args, loaded_inputs={}):
+    def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
         If yml_args not provided, it will go and get it.
         Sets of params:
             - defaults_args: defaults command line args, as defined in define_commandline_args()
-            - yml_args: args for specific job from yml
+            - yml_args: args for specific job from yml. If = None, it will rebuild it using job_name param.
             - job_args: args passed to "Commandliner(Job, **args)" in each job file
             - cmd_args: args passed in commandline, like "python some_job.py --some_args=xxx", predefined in define_commandline_args() or not
+            - job_name: to use only when yml_args is set to None, to specify what section of the yml to pick.
         """
         if yml_args is None:
             # Getting merged args, without yml (order matters)
             args = defaults_args.copy()
             args.update(job_args)
             args.update(cmd_args)
+            args.update({'job_name':job_name} if job_name else {})
             assert 'job_name' in args.keys()
             yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode']).yml_args
 
@@ -752,6 +818,10 @@ class Commandliner():
                     'aws_setup': 'dev',
                     # 'leave_on': False, # only set from commandline
                     # 'push_secrets': False, # only set from commandline
+                    # Not added in command line args:
+                    'enable_redshift_push': True,
+                    'save_schemas': False,
+                    'manage_git_info': False,
                     }
         return parser, defaults
 
@@ -810,11 +880,13 @@ class Flow():
         logger.info('Sequence of jobs to be run: {}'.format(leafs))
         logger.info('-'*80)
         logger.info('-')
+        launch_jargs.cmd_args.pop('job_name', None)  # removing since it should be pulled from yml and not be overriden by cmd_args.
+        launch_jargs.job_args.pop('job_name', None)  # same
 
         # load all job classes and run them
         df = {}
         for job_name in leafs:
-            logger.info('About to run : {}'.format(job_name))
+            logger.info('About to run job_name: {}'.format(job_name))
             # Get yml
             yml_args = Job_Yml_Parser(job_name, launch_jargs.job_param_file, launch_jargs.mode).yml_args
             # Get loaded_inputs

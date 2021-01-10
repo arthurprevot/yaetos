@@ -19,9 +19,11 @@ import botocore
 from botocore.exceptions import ClientError
 import uuid
 import json
+from pprint import pformat
 from configparser import ConfigParser
 from shutil import copyfile
 import core.etl_utils as eu
+from core.git_utils import Git_Config_Manager
 import core.logger as log
 logger = log.setup_logging('Deploy')
 
@@ -35,8 +37,8 @@ class DeployPySparkScriptOnAws(object):
 
     def __init__(self, deploy_args, app_args):
 
-        logger.info("etl deploy_args: {}".format(deploy_args))
-        logger.info("etl app_args: {}".format(app_args))
+        logger.info("etl deploy_args: \n{}".format(pformat(deploy_args)))
+        logger.info("etl app_args: \n{}".format(pformat(app_args)))
         aws_setup = deploy_args['aws_setup']
         config = ConfigParser()
         assert os.path.isfile(deploy_args['aws_config_file'])
@@ -64,6 +66,9 @@ class DeployPySparkScriptOnAws(object):
         self.package_path  = self.job_log_path+'/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
         self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
         self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
+
+        git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
+        Git_Config_Manager().save_yaml(git_yml)
 
     def run(self):
         if self.app_args.get('mode')=='EMR':
@@ -172,8 +177,9 @@ class DeployPySparkScriptOnAws(object):
         # Create tar.gz file
         t_file = tarfile.open(output_path, 'w:gz')
 
-        # Add files
+        # Add config files
         t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
+        t_file.add('conf/git_config.yml', arcname='conf/git_config.yml') # TODO: remove hardcoding
 
         # ./core files
         files = os.listdir(base+'core/')
@@ -375,7 +381,7 @@ class DeployPySparkScriptOnAws(object):
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
             "--packages={}".format(eu.PACKAGES_EMR),
             "--jars={}".format(eu.JARS),
-            eu.CLUSTER_APP_FOLDER+app_file if app_file.startswith(eu.JOB_FOLDER) else eu.CLUSTER_APP_FOLDER+eu.JOB_FOLDER+app_file,
+            eu.CLUSTER_APP_FOLDER+app_file,
             "--mode=localEMR",
             "--storage=s3",
             '--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE),
