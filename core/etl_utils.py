@@ -105,16 +105,21 @@ class ETL_Base(object):
         start_time = time()
         self.start_dt = datetime.utcnow() # attached to self so available within "transform()" func.
         output, schemas = self.etl_no_io(sc, sc_sql, loaded_inputs)
+        if output is None:
+            if self.jargs.is_incremental:
+                logger.info("-------End job '{}', increment with empty output--------".format(self.jargs.job_name))
+                self.output_empty = True
+            else:
+                logger.info("-------End job '{}', no output--------".format(self.jargs.job_name))
+            # TODO: add process time in that case.
+            return None
+
         logger.info('Output sample:')
         output.show()
         count = output.count()
         logger.info('Output count: {}'.format(count))
         logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
         self.output_empty = count == 0
-        if self.output_empty and self.jargs.is_incremental:
-            logger.info("-------End job '{}', increment with empty output--------".format(self.jargs.job_name))
-            # TODO: look at saving output empty table instead of skipping output.
-            return output
 
         self.save_output(output, self.start_dt)
         end_time = time()
@@ -146,9 +151,12 @@ class ETL_Base(object):
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
-        output.cache()
-        schemas = Schema_Builder()
-        schemas.generate_schemas(loaded_datasets, output)
+        if output:
+            output.cache()
+            schemas = Schema_Builder()
+            schemas.generate_schemas(loaded_datasets, output)
+        else:
+            schemas = None
         return output, schemas
 
     def transform(self, **app_args):
@@ -261,6 +269,31 @@ class ETL_Base(object):
         logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
+    def load_data_from_files(self, name, path, type):
+        input_type = type
+        input_name = name
+        path = path.replace('s3://', 's3a://') if self.jargs.mode == 'local' else path
+        logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
+        path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
+
+        if input_type == 'txt':
+            rdd = self.sc.textFile(path)
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            return rdd
+
+        # Tabular types
+        if input_type == 'csv':
+            sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+        elif input_type == 'parquet':
+            sdf = self.sc_sql.read.parquet(path)
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+        else:
+            raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, path, self.SUPPORTED_TYPES))
+
+        logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
+        return sdf
+
     def load_mysql(self, input_name):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         creds_section = self.jargs.inputs[input_name]['creds']
@@ -282,7 +315,8 @@ class ETL_Base(object):
         path = self.jargs.output['path']
         path += '*' # to go into subfolders
         try:
-            df = self.load_input(path, self.jargs.output['type'])
+            # df = self.load_input(path, self.jargs.output['type'])
+            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'])
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
             return None
