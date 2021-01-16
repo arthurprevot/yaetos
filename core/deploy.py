@@ -60,8 +60,8 @@ class DeployPySparkScriptOnAws(object):
         # Paths
         self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
         self.metadata_folder = 'pipelines_metadata'
-        self.job_name = self.generate_pipeline_name(self.app_args['job_name'], self.user)  #TODO: rename job_name to pipeline_name format: some_job.some_user.20181204.153429
-        self.job_log_path = '{}/jobs_code/{}'.format(self.metadata_folder, self.job_name)  # format: yaetos/logs/some_job.some_user.20181204.153429
+        self.pipeline_name = self.generate_pipeline_name(self.deploy_args['deploy_mode'], self.app_args['job_name'], self.user)  # format: some_job.some_user.20181204.153429
+        self.job_log_path = self.get_job_log_path()  # format: yaetos/logs/some_job.some_user.20181204.153429
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
         self.package_path  = self.job_log_path+'/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
         self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
@@ -92,7 +92,7 @@ class DeployPySparkScriptOnAws(object):
         if new_cluster:
             print("Starting new cluster")
             self.start_spark_cluster(c)
-            print("cluster name: %s, and id: %s"%(self.job_name, self.cluster_id))
+            print("cluster name: %s, and id: %s"%(self.pipeline_name, self.cluster_id))
             self.step_run_setup_scripts(c)
         else:
             print("Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id']))
@@ -141,15 +141,26 @@ class DeployPySparkScriptOnAws(object):
                 'name':clusters[int(answer)-1][2]}
 
     @staticmethod
-    def generate_pipeline_name(job_name, user):
-        return "yaetos__{}__{}".format(
-            job_name.replace('.','_d_').replace('/','_s_'),
+    def generate_pipeline_name(deploy_mode, job_name, user):
+        """Opposite of get_job_name()"""
+        name = "yaetos__{deploy_mode}__{pname}__{time}".format(
+            deploy_mode=deploy_mode,
+            pname=job_name.replace('.','_d_').replace('/','_s_'),
             # user.replace('.','_'),
-            datetime.now().strftime("%Y%m%dT%H%M%S"))
+            time=datetime.now().strftime("%Y%m%dT%H%M%S"))
+        print('Pipeline Name "{}":'.format(name))
+        return name
 
     @staticmethod
     def get_job_name(pipeline_name):
-        return pipeline_name.split('__')[1].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
+        """Opposite of generate_pipeline_name()"""
+        return pipeline_name.split('__')[2].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
+
+    def get_job_log_path(self):
+        if self.deploy_args.get('deploy_mode')=='prod':
+            return '{}/jobs_code/production'.format(self.metadata_folder)
+        else:
+            return '{}/jobs_code/{}'.format(self.metadata_folder, self.pipeline_name)
 
     def temp_bucket_exists(self, s3):
         """
@@ -226,8 +237,6 @@ class DeployPySparkScriptOnAws(object):
     def upload_temp_files(self, s3):
         """
         Move the PySpark + bash scripts to the S3 bucket we use to store temporary files
-        :param s3:
-        :return:
         """
         # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1 below.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
@@ -249,7 +258,7 @@ class DeployPySparkScriptOnAws(object):
         """
         bucket = s3.Bucket(self.s3_bucket_logs)
         for key in bucket.objects.all():
-            if key.key.startswith(self.job_name) is True:
+            if key.key.startswith(self.pipeline_name) is True:
                 key.delete()
                 logger.info("Removed '{}' from bucket for temporary files".format(key.key))
 
@@ -260,7 +269,7 @@ class DeployPySparkScriptOnAws(object):
         """
         emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
         response = c.run_job_flow(
-            Name=self.job_name,
+            Name=self.pipeline_name,
             LogUri="s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder),
             ReleaseLabel=emr_version,
             Instances={
@@ -401,14 +410,14 @@ class DeployPySparkScriptOnAws(object):
 
         # AWSDataPipeline ops
         client = self.session.client('datapipeline')
-        self.deactivate_similar_pipelines(client, self.job_name)
+        self.deactivate_similar_pipelines(client, self.pipeline_name)
         pipe_id = self.create_data_pipeline(client)
         parameterValues = self.define_data_pipeline(client, pipe_id)
         self.activate_data_pipeline(client, pipe_id, parameterValues)
 
     def create_data_pipeline(self, client):
         unique_id = uuid.uuid1()
-        create = client.create_pipeline(name=self.job_name, uniqueId=str(unique_id))
+        create = client.create_pipeline(name=self.pipeline_name, uniqueId=str(unique_id))
         logger.debug('Pipeline created :' + str(create))
 
         pipe_id = create['pipelineId']  # format: 'df-0624751J5O10SBRYJJF'
