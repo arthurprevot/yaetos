@@ -116,7 +116,7 @@ class ETL_Base(object):
             # TODO: look at saving output empty table instead of skipping output.
             return output
 
-        self.save(output, self.start_dt)
+        self.save_output(output, self.start_dt)
         end_time = time()
         elapsed = end_time - start_time
         logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
@@ -294,31 +294,40 @@ class ETL_Base(object):
     def get_max_timestamp(self, df):
         return df.agg({self.jargs.output['inc_field']: "max"}).collect()[0][0]
 
-    def save(self, output, now_dt, path=None):
-        if path is None:
-            path = Path_Handler(self.jargs.output['path'], self.jargs.base_path).expand_now(now_dt)
-        self.path = path
+    def save_output(self, output, now_dt=None):
+        self.path = self.save(output=output,
+                  path=self.jargs.output['path'],
+                  base_path=self.jargs.base_path,
+                  type=self.jargs.output['type'],
+                  now_dt=now_dt,
+                  is_incremental=self.jargs.is_incremental,
+                  file_tag=self.jargs.merged_args.get('file_tag'))  # TODO: make param standard in cmd_args ?
 
-        if self.jargs.output['type'] == 'None':
+    def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, file_tag=None):
+        """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
+        path = Path_Handler(path, base_path).expand_now(now_dt)
+
+        if type == 'None':
             logger.info('Did not write output to disk')
             return None
 
-        if self.jargs.is_incremental:
+        if is_incremental:
             current_time = now_dt.strftime('%Y%m%d_%H%M%S_utc')  # no use of now_dt to make it updated for each inc.
-            file_tag = ('_' + self.jargs.merged_args.get('file_tag')) if self.jargs.merged_args.get('file_tag') else ""  # TODO: make that param standard in cmd_args ?
+            file_tag = ('_' + file_tag) if file_tag else ""  # TODO: make that param standard in cmd_args ?
             path += 'inc_{}{}/'.format(current_time, file_tag)
 
         # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
-        if self.jargs.output['type'] == 'txt':
+        if type == 'txt':
             output.saveAsTextFile(path)
-        elif self.jargs.output['type'] == 'parquet':
+        elif type == 'parquet':
             output.write.parquet(path)
-        elif self.jargs.output['type'] == 'csv':
+        elif type == 'csv':
             output.write.option("header", "true").csv(path)
         else:
             raise Exception("Need to specify supported output type, either txt, parquet or csv.")
 
         logger.info('Wrote output to ' + path)
+        return path
 
     def save_metadata(self, elapsed):
         fname = self.path + '_metadata.txt'
