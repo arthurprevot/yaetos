@@ -270,6 +270,7 @@ class ETL_Base(object):
         return sdf
 
     def load_data_from_files(self, name, path, type):
+        # TODO: integrate with load_input to remove duplicated code.
         input_type = type
         input_name = name
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'local' else path
