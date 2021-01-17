@@ -6,9 +6,9 @@ import core.logger as log
 logger = log.setup_logging('Job')
 
 
-class ETL_Incremental_Base(ETL_Base):
+class ETL_Daily_Incremental_Base(ETL_Base):
     def __init__(self, pre_jargs={}, jargs=None, loaded_inputs={}):
-        super(ETL_Incremental_Base, self).__init__(pre_jargs, jargs, loaded_inputs)
+        super(ETL_Daily_Incremental_Base, self).__init__(pre_jargs, jargs, loaded_inputs)
         self.last_attempted_period = None
 
     def transform(self, **loaded_datasets):
@@ -37,7 +37,7 @@ class ETL_Incremental_Base(ETL_Base):
         self.last_attempted_period = period
         self.jargs.merged_args['file_tag'] = period
 
-        df = self.transform_inc(period)  # TODO: check to pass it as arg so code more retracable from my classes.
+        df = self.transform_inc(period, **loaded_datasets)
         return df
 
     @staticmethod
