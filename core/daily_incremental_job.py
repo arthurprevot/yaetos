@@ -1,9 +1,6 @@
 from core.etl_utils import ETL_Base
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
-from core.db_utils import pdf_to_sdf
-import core.logger as log
-logger = log.setup_logging('Job')
 
 
 class ETL_Daily_Incremental_Base(ETL_Base):

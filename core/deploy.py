@@ -189,7 +189,8 @@ class DeployPySparkScriptOnAws(object):
         t_file = tarfile.open(output_path, 'w:gz')
 
         # Add config files
-        t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
+        if self.app_args['job_param_file']:
+            t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
         t_file.add('conf/git_config.yml', arcname='conf/git_config.yml') # TODO: remove hardcoding
 
         # ./core files
@@ -393,15 +394,15 @@ class DeployPySparkScriptOnAws(object):
             eu.CLUSTER_APP_FOLDER+app_file,
             "--mode=localEMR",
             "--storage=s3",
-            '--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE),
             "--rerun_criteria={}".format(app_args.get('rerun_criteria')),
             ]
+        jop = ['--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE)] if app_args.get('job_param_file') else []
         dep = ["--dependencies"] if app_args.get('dependencies') else []
         box = ["--boxed_dependencies"] if app_args.get('boxed_dependencies') else []
         sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else []
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
 
-        return cmd_runner_args + dep + box + sql + nam
+        return cmd_runner_args + jop + dep + box + sql + nam
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
