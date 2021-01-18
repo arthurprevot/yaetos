@@ -426,7 +426,7 @@ class ETL_Base(object):
         port = creds.get(creds_section, 'port')
 
         for recipient in recipients:
-            send_email(message, recipient, sender_email, password, smtp_server, port)
+            send_email(msg, recipient, sender_email, password, smtp_server, port)
             logger.info('Email sent to {}'.format(recipient))
 
     def send_job_failure_email(self, error_msg):
