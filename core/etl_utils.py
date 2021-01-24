@@ -541,7 +541,10 @@ class Job_Yml_Parser():
         return sql_file
 
     def set_job_yml(self, job_name, job_param_file, mode):
-        mapping_modes = {'local': 'local_dev', 'localEMR':'EMR_dev', 'EMR': 'EMR_dev', 'EMR_Scheduled': 'prod'} # TODO: test
+        mapping_modes = {'local':         'local_dev',
+                         'localEMR':      'EMR_dev',
+                         'EMR':           'EMR_dev',
+                         'EMR_Scheduled': 'prod'}
         yml_mode = mapping_modes[mode]
         if job_param_file is None:
             return {}
