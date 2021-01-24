@@ -47,7 +47,7 @@ LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_
 LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
-PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22'  # necessary for reading/writing to redshift and mysql using spark connector.
+PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22,org.postgresql:postgresql:42.2.18'  # necessary for reading/writing to redshift and mysql using spark connector.
 PACKAGES_EMR = 'com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
 JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
 
@@ -263,6 +263,9 @@ class ETL_Base(object):
         elif input_type == 'mysql':
             sdf = self.load_mysql(input_name)
             logger.info("Input '{}' loaded from mysql".format(input_name))
+        elif input_type == 'clickhouse':
+            sdf = self.load_clickhouse(input_name)
+            logger.info("Input '{}' loaded from clickhouse".format(input_name))
         else:
             raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.SUPPORTED_TYPES))
 
@@ -306,6 +309,23 @@ class ETL_Base(object):
         return self.sc_sql.read \
             .format('jdbc') \
             .option('driver', "com.mysql.cj.jdbc.Driver") \
+            .option("url", url) \
+            .option("user", db['user']) \
+            .option("password", db['password']) \
+            .option("dbtable", dbtable)\
+            .load()
+
+    def load_clickhouse(self, input_name):
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds_section = self.jargs.inputs[input_name]['creds']
+        db = creds[creds_section]
+        url = 'jdbc:postgresql://{host}/{service}'.format(host=db['host'], service=db['service'])
+        dbtable = self.jargs.inputs[input_name]['db_table']
+
+        logger.info('Pulling table "{}" from clickhouse'.format(dbtable))
+        return self.sc_sql.read \
+            .format('jdbc') \
+            .option('driver', "org.postgresql.Driver") \
             .option("url", url) \
             .option("user", db['user']) \
             .option("password", db['password']) \
