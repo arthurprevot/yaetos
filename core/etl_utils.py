@@ -273,29 +273,31 @@ class ETL_Base(object):
         return sdf
 
     def load_data_from_files(self, name, path, type):
+        """Loading any dataset (input or not) and only from file system (not from DBs). Used by incremental jobs to load previous output.
+        Different from load_input() which only loads input (input jargs hardcoded) and from any source."""
         # TODO: integrate with load_input to remove duplicated code.
         input_type = type
         input_name = name
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
-        logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
+        logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
         path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
 
         if input_type == 'txt':
             rdd = self.sc.textFile(path)
-            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
             return rdd
 
         # Tabular types
         if input_type == 'csv':
             sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
-            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
             sdf = self.sc_sql.read.parquet(path)
-            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         else:
-            raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, path, self.SUPPORTED_TYPES))
+            raise Exception("Unsupported dataset type '{}' for path '{}'. Supported types are: {}. ".format(input_type, path, self.SUPPORTED_TYPES))
 
-        logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
+        logger.info("Dataset data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
     def load_mysql(self, input_name):
@@ -336,7 +338,6 @@ class ETL_Base(object):
         path = self.jargs.output['path']
         path += '*' # to go into subfolders
         try:
-            # df = self.load_input(path, self.jargs.output['type'])
             df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'])
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
