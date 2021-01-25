@@ -7,7 +7,6 @@ Helper functions. Setup to run locally and on cluster.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line.
-# - rename mode=EMR and EMR_Scheduled modes to deploy="EMR" and "EMR_Scheduled" and None, and use new "mode" arg so app knows in which mode it currently is.
 # - make boxed_dependencies the default, as more conservative.
 
 
@@ -77,7 +76,7 @@ class ETL_Base(object):
             else:
                 output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
         except Exception as err:
-            if self.jargs.mode == 'localEMR':
+            if self.jargs.mode in ('dev_EMR', 'prod_EMR'):
                 self.send_job_failure_email(err)
             raise Exception("Job failed, error: \n{}".format(err))
         return output
@@ -244,7 +243,7 @@ class ETL_Base(object):
         input_type = self.jargs.inputs[input_name]['type']
         if input_type in self.FILE_TYPES:
             path = self.jargs.inputs[input_name]['path']
-            path = path.replace('s3://', 's3a://') if self.jargs.mode == 'local' else path
+            path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
             path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
 
@@ -276,7 +275,7 @@ class ETL_Base(object):
         # TODO: integrate with load_input to remove duplicated code.
         input_type = type
         input_name = name
-        path = path.replace('s3://', 's3a://') if self.jargs.mode == 'local' else path
+        path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
         logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
         path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
 
@@ -530,9 +529,9 @@ class Job_Yml_Parser():
         if not job_name.endswith('.sql'):
             return None
 
-        if mode in ('localEMR', 'EMR', 'EMR_Scheduled'):
+        if mode in ('dev_EMR', 'prod_EMR'):
             sql_file=CLUSTER_APP_FOLDER+'jobs/{}'.format(job_name)
-        elif mode == 'local':
+        elif mode == 'dev_local':
             sql_file='jobs/{}'.format(job_name)
         else:
             raise Exception("Mode not supported in set_sql_file_from_name(): {}".format(mode))
@@ -540,12 +539,13 @@ class Job_Yml_Parser():
         logger.info("sql_file: '{}', from job_name: '{}'".format(sql_file, job_name))
         return sql_file
 
-    def set_job_yml(self, job_name, job_param_file, mode):
-        mapping_modes = {'local':         'local_dev',
-                         'localEMR':      'EMR_dev',
-                         'EMR':           'EMR_dev',
-                         'EMR_Scheduled': 'prod'}
-        yml_mode = mapping_modes[mode]
+    def set_job_yml(self, job_name, job_param_file, yml_mode):
+        # mapping_modes = {'local':         'local_dev',
+        #                  'localEMR':      'EMR_dev',
+        #                  # 'localEMR':      'EMR_dev',
+        #                  'EMR':           'EMR_dev',
+        #                  'EMR_Scheduled': 'prod'}
+        # yml_mode = mapping_modes[mode]
         if job_param_file is None:
             return {}
         yml = self.load_meta(job_param_file)
@@ -572,7 +572,7 @@ class Job_Yml_Parser():
 
 class Job_Args_Parser():
 
-    DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date', 'email', 'deploy_mode']
+    DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date', 'email', 'mode', 'deploy']
 
     def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
@@ -615,7 +615,7 @@ class Job_Args_Parser():
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
 
     def get_app_args(self):
-        return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST}
+        return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST or key=='mode'}
 
     def update_args(self, args, loaded_inputs):
         """ Updating params or adding new ones, according to execution environment (local, prod...)"""
@@ -833,9 +833,10 @@ class Commandliner():
             job = Job(pre_jargs={'defaults_args':defaults_args, 'job_args': job_args, 'cmd_args':cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
 
         # Executing or deploying
-        if job.jargs.mode in ('local', 'localEMR'):  # when executing job code
+        # if job.jargs.deploy in ('local', 'localEMR'):  # when executing job code
+        if job.jargs.deploy in ('none'):  # when executing job code
             self.launch_run_mode(job)
-        else:  # when deploying to AWS for execution there
+        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
 
     def set_commandline_args(self):
@@ -851,7 +852,9 @@ class Commandliner():
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
+        # parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
+        parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
         parser.add_argument("-q", "--sql_file", help="Path to an sql file to execute.")
@@ -861,15 +864,16 @@ class Commandliner():
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
         parser.add_argument("-c", "--rerun_criteria", choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
         parser.add_argument("-b", "--boxed_dependencies", action='store_true', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).")
-        parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful if running in --mode=local.")
+        parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful when deploy=local.")
         # Deploy specific
         parser.add_argument("--aws_config_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
-        parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster in mode 'EMR'.")
+        parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster when deploy=EMR.")
         parser.add_argument("-p", "--push_secrets", action='store_true', help="Pushing secrets to cluster. Only relevant if choosing to deploy to a cluster.")
         # --inputs and --output args can be set from job or commandline too, just not set here.
         defaults = {
-                    'mode': 'local',
+                    'deploy': 'none',
+                    'mode': 'dev_local',
                     'job_param_file': JOBS_METADATA_FILE,
                     'job_name': None,
                     'sql_file': None,
@@ -889,7 +893,7 @@ class Commandliner():
                     'enable_redshift_push': True,
                     'save_schemas': False,
                     'manage_git_info': False,
-                    'deploy_mode': 'dev',
+                    # 'deploy_mode': 'dev',
                     }
         return parser, defaults
 
@@ -912,7 +916,7 @@ class Commandliner():
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
 
-        if mode == 'local' and load_connectors == 'all':
+        if mode == 'dev_local' and load_connectors == 'all':
             # S3 access
             session = boto3.Session()
             credentials = session.get_credentials()

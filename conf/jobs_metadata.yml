@@ -151,7 +151,7 @@ common_params:
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
   mode_specific_params:
-    prod:
+    prod_EMR:
       base_path: s3://prod-spark  # don't add '/' at the end
       schema: production
       emr_core_instances: 1
@@ -162,7 +162,7 @@ common_params:
       enable_redshift_push: True
       save_schemas: False
       manage_git_info: True
-    EMR_dev:
+    dev_EMR:
       base_path: s3://dev-spark  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 1
@@ -173,7 +173,7 @@ common_params:
       enable_redshift_push: False
       save_schemas: False
       manage_git_info: True
-    local_dev:
+    dev_local:
       base_path: ./data  # don't add '/' at the end
       schema: sandbox
       load_connectors: none
