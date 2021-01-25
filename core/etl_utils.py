@@ -623,6 +623,7 @@ class Job_Args_Parser():
         args['inputs'] = self.set_inputs(args, loaded_inputs)
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
+        args['output']['type'] = args.pop('output.type', None) or args['output']['type']
         return args
 
     # TODO: modify later since not used now
@@ -853,7 +854,6 @@ class Commandliner():
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        # parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
         parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
@@ -865,7 +865,8 @@ class Commandliner():
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
         parser.add_argument("-c", "--rerun_criteria", choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
         parser.add_argument("-b", "--boxed_dependencies", action='store_true', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).")
-        parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful when deploy=local.")
+        parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful when mode=dev_local.")
+        parser.add_argument("-t", "--output.type", choices=set(['csv', 'parquet']), help="Override output type. Useful for development. Can be ignored otherwise.")
         # Deploy specific
         parser.add_argument("--aws_config_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
@@ -885,7 +886,8 @@ class Commandliner():
                     'rerun_criteria': 'both',
                     # 'boxed_dependencies': False,  # only set from commandline
                     'load_connectors': 'all',
-                    # Deploy specific below
+                    # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
+                    #-- Deploy specific below --
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
                     # 'leave_on': False, # only set from commandline
