@@ -10,10 +10,10 @@ class Git_Config_Manager():
     FNAME = 'conf/git_config.yml'
 
     def get_config(self, mode, **kwargs):
-        if mode in ('local', 'EMR', 'EMR_Scheduled'):
+        if mode == 'dev_local':
             config = self.get_config_from_git(kwargs['local_app_folder'])
             # For debug: self.save_yaml(config)
-        elif mode == 'localEMR':
+        elif mode in ('dev_EMR', 'prod_EMR'):
             config = self.get_config_from_file(kwargs['cluster_app_folder'])
         else:
             raise Exception('Wrong mode')
@@ -55,7 +55,7 @@ class Git_Config_Manager():
         logger.info('Saved yml with git info: {}'.format(self.FNAME))
 
     def get_config_from_file(self, cluster_app_folder):
-        """Meant to work in localEMR mode"""
+        """Meant to work in EMR"""
         fname = cluster_app_folder+self.FNAME
         if os.path.isfile(fname):
             with open(fname, 'r') as stream:

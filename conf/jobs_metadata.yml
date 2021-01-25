@@ -125,6 +125,16 @@ jobs:
       some_events: {'type':'mysql', 'db_table': 'some_schema.some_table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
     output: {'path':'{base_path}/wiki_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
 
+  examples/ex9_clickhouse_job.py:
+    db_inputs: {'creds': 'some_clickhouse_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
+    output: {'path':'{base_path}/db_example/output_ex9_clickhouse/{now}/', 'type':'csv'}
+
+  examples/ex9_clickhouse_framework_load_job:
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      some_events: {'type':'clickhouse', 'db_table': 'some_schema.some_table', 'creds': 'some_clickhouse_cred_section', 'note':'creds defined in conf/connections.cfg'}
+    output: {'path':'{base_path}/db_example/output_ex9_clickhouse_direct/{now}/', 'type':'csv'}
+
   examples/wordcount_frameworked_job.py:  # shows raw pyspark rdd ops in framework, same as wordcount_raw_job
     inputs:
       lines: {'path':"{base_path}/wordcount_example/input/sample_text.txt", 'type':'txt'}
@@ -141,7 +151,7 @@ common_params:
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
   mode_specific_params:
-    prod:
+    prod_EMR:
       base_path: s3://prod-spark  # don't add '/' at the end
       schema: production
       emr_core_instances: 1
@@ -152,7 +162,7 @@ common_params:
       enable_redshift_push: True
       save_schemas: False
       manage_git_info: True
-    EMR_dev:
+    dev_EMR:
       base_path: s3://dev-spark  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 1
@@ -163,7 +173,7 @@ common_params:
       enable_redshift_push: False
       save_schemas: False
       manage_git_info: True
-    local_dev:
+    dev_local:
       base_path: ./data  # don't add '/' at the end
       schema: sandbox
       load_connectors: none

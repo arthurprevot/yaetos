@@ -7,7 +7,6 @@ Helper functions. Setup to run locally and on cluster.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line.
-# - rename mode=EMR and EMR_Scheduled modes to deploy="EMR" and "EMR_Scheduled" and None, and use new "mode" arg so app knows in which mode it currently is.
 # - make boxed_dependencies the default, as more conservative.
 
 
@@ -47,13 +46,13 @@ LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_
 LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
-PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22'  # necessary for reading/writing to redshift and mysql using spark connector.
-PACKAGES_EMR = 'com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.11'  # necessary for reading/writing to redshift and mysql using spark connector.
+PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22,org.postgresql:postgresql:42.2.18'  # necessary for reading/writing to S3, redshift, mysql & clickhouse using spark connector.
+PACKAGES_EMR = 'com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22,org.postgresql:postgresql:42.2.18'  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
 JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
 
 
 class ETL_Base(object):
-    TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql')
+    TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
     FILE_TYPES = ('csv', 'parquet', 'txt')
     SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union({'other', 'None'})
 
@@ -77,7 +76,7 @@ class ETL_Base(object):
             else:
                 output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
         except Exception as err:
-            if self.jargs.mode == 'localEMR':
+            if self.jargs.mode in ('dev_EMR', 'prod_EMR'):
                 self.send_job_failure_email(err)
             raise Exception("Job failed, error: \n{}".format(err))
         return output
@@ -105,16 +104,21 @@ class ETL_Base(object):
         start_time = time()
         self.start_dt = datetime.utcnow() # attached to self so available within "transform()" func.
         output, schemas = self.etl_no_io(sc, sc_sql, loaded_inputs)
+        if output is None:
+            if self.jargs.is_incremental:
+                logger.info("-------End job '{}', increment with empty output--------".format(self.jargs.job_name))
+                self.output_empty = True
+            else:
+                logger.info("-------End job '{}', no output--------".format(self.jargs.job_name))
+            # TODO: add process time in that case.
+            return None
+
         logger.info('Output sample:')
         output.show()
         count = output.count()
         logger.info('Output count: {}'.format(count))
         logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
         self.output_empty = count == 0
-        if self.output_empty and self.jargs.is_incremental:
-            logger.info("-------End job '{}', increment with empty output--------".format(self.jargs.job_name))
-            # TODO: look at saving output empty table instead of skipping output.
-            return output
 
         self.save_output(output, self.start_dt)
         end_time = time()
@@ -146,9 +150,13 @@ class ETL_Base(object):
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
-        output.cache()
-        schemas = Schema_Builder()
-        schemas.generate_schemas(loaded_datasets, output)
+        if output and self.jargs.output['type'] in self.TABULAR_TYPES:
+            output = output.withColumn('_created_at', F.lit(self.start_dt))
+            output.cache()
+            schemas = Schema_Builder()
+            schemas.generate_schemas(loaded_datasets, output)
+        else:
+            schemas = None
         return output, schemas
 
     def transform(self, **app_args):
@@ -236,7 +244,7 @@ class ETL_Base(object):
         input_type = self.jargs.inputs[input_name]['type']
         if input_type in self.FILE_TYPES:
             path = self.jargs.inputs[input_name]['path']
-            path = path.replace('s3://', 's3a://') if self.jargs.mode == 'local' else path
+            path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
             path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
 
@@ -255,10 +263,41 @@ class ETL_Base(object):
         elif input_type == 'mysql':
             sdf = self.load_mysql(input_name)
             logger.info("Input '{}' loaded from mysql".format(input_name))
+        elif input_type == 'clickhouse':
+            sdf = self.load_clickhouse(input_name)
+            logger.info("Input '{}' loaded from clickhouse".format(input_name))
         else:
             raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.SUPPORTED_TYPES))
 
         logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
+        return sdf
+
+    def load_data_from_files(self, name, path, type):
+        """Loading any dataset (input or not) and only from file system (not from DBs). Used by incremental jobs to load previous output.
+        Different from load_input() which only loads input (input jargs hardcoded) and from any source."""
+        # TODO: integrate with load_input to remove duplicated code.
+        input_type = type
+        input_name = name
+        path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
+        logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
+        path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
+
+        if input_type == 'txt':
+            rdd = self.sc.textFile(path)
+            logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
+            return rdd
+
+        # Tabular types
+        if input_type == 'csv':
+            sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
+            logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
+        elif input_type == 'parquet':
+            sdf = self.sc_sql.read.parquet(path)
+            logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
+        else:
+            raise Exception("Unsupported dataset type '{}' for path '{}'. Supported types are: {}. ".format(input_type, path, self.SUPPORTED_TYPES))
+
+        logger.info("Dataset data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
     def load_mysql(self, input_name):
@@ -278,11 +317,28 @@ class ETL_Base(object):
             .option("dbtable", dbtable)\
             .load()
 
+    def load_clickhouse(self, input_name):
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds_section = self.jargs.inputs[input_name]['creds']
+        db = creds[creds_section]
+        url = 'jdbc:postgresql://{host}/{service}'.format(host=db['host'], service=db['service'])
+        dbtable = self.jargs.inputs[input_name]['db_table']
+
+        logger.info('Pulling table "{}" from clickhouse'.format(dbtable))
+        return self.sc_sql.read \
+            .format('jdbc') \
+            .option('driver', "org.postgresql.Driver") \
+            .option("url", url) \
+            .option("user", db['user']) \
+            .option("password", db['password']) \
+            .option("dbtable", dbtable)\
+            .load()
+
     def get_previous_output_max_timestamp(self):
         path = self.jargs.output['path']
         path += '*' # to go into subfolders
         try:
-            df = self.load_input(path, self.jargs.output['type'])
+            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'])
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
             return None
@@ -391,7 +447,7 @@ class ETL_Base(object):
         port = creds.get(creds_section, 'port')
 
         for recipient in recipients:
-            send_email(message, recipient, sender_email, password, smtp_server, port)
+            send_email(msg, recipient, sender_email, password, smtp_server, port)
             logger.info('Email sent to {}'.format(recipient))
 
     def send_job_failure_email(self, error_msg):
@@ -475,9 +531,9 @@ class Job_Yml_Parser():
         if not job_name.endswith('.sql'):
             return None
 
-        if mode in ('localEMR', 'EMR', 'EMR_Scheduled'):
+        if mode in ('dev_EMR', 'prod_EMR'):
             sql_file=CLUSTER_APP_FOLDER+'jobs/{}'.format(job_name)
-        elif mode == 'local':
+        elif mode == 'dev_local':
             sql_file='jobs/{}'.format(job_name)
         else:
             raise Exception("Mode not supported in set_sql_file_from_name(): {}".format(mode))
@@ -485,9 +541,7 @@ class Job_Yml_Parser():
         logger.info("sql_file: '{}', from job_name: '{}'".format(sql_file, job_name))
         return sql_file
 
-    def set_job_yml(self, job_name, job_param_file, mode):
-        mapping_modes = {'local': 'local_dev', 'localEMR':'EMR_dev', 'EMR': 'EMR_dev', 'EMR_Scheduled': 'prod'} # TODO: test
-        yml_mode = mapping_modes[mode]
+    def set_job_yml(self, job_name, job_param_file, yml_mode):
         if job_param_file is None:
             return {}
         yml = self.load_meta(job_param_file)
@@ -514,7 +568,7 @@ class Job_Yml_Parser():
 
 class Job_Args_Parser():
 
-    DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date', 'email', 'deploy_mode']
+    DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date', 'email', 'mode', 'deploy']
 
     def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
@@ -557,13 +611,14 @@ class Job_Args_Parser():
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
 
     def get_app_args(self):
-        return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST}
+        return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST or key=='mode'}
 
     def update_args(self, args, loaded_inputs):
         """ Updating params or adding new ones, according to execution environment (local, prod...)"""
         args['inputs'] = self.set_inputs(args, loaded_inputs)
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
+        args['output']['type'] = args.pop('output.type', None) or args['output']['type']
         return args
 
     # TODO: modify later since not used now
@@ -775,9 +830,9 @@ class Commandliner():
             job = Job(pre_jargs={'defaults_args':defaults_args, 'job_args': job_args, 'cmd_args':cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
 
         # Executing or deploying
-        if job.jargs.mode in ('local', 'localEMR'):  # when executing job code
+        if job.jargs.deploy in ('none'):  # when executing job code
             self.launch_run_mode(job)
-        else:  # when deploying to AWS for execution there
+        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
 
     def set_commandline_args(self):
@@ -793,7 +848,8 @@ class Commandliner():
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-m", "--mode", choices=set(['local', 'EMR', 'localEMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job. localEMR should not be used by user.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
+        parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
         parser.add_argument("-q", "--sql_file", help="Path to an sql file to execute.")
@@ -803,15 +859,17 @@ class Commandliner():
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
         parser.add_argument("-c", "--rerun_criteria", choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
         parser.add_argument("-b", "--boxed_dependencies", action='store_true', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).")
-        parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful if running in --mode=local.")
+        parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful when mode=dev_local.")
+        parser.add_argument("-t", "--output.type", choices=set(['csv', 'parquet']), help="Override output type. Useful for development. Can be ignored otherwise.")
         # Deploy specific
         parser.add_argument("--aws_config_file", help="Identify file to use. Default to repo one.")
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
-        parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster in mode 'EMR'.")
+        parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster when deploy=EMR.")
         parser.add_argument("-p", "--push_secrets", action='store_true', help="Pushing secrets to cluster. Only relevant if choosing to deploy to a cluster.")
         # --inputs and --output args can be set from job or commandline too, just not set here.
         defaults = {
-                    'mode': 'local',
+                    'deploy': 'none',
+                    'mode': 'dev_local',
                     'job_param_file': JOBS_METADATA_FILE,
                     'job_name': None,
                     'sql_file': None,
@@ -822,7 +880,8 @@ class Commandliner():
                     'rerun_criteria': 'both',
                     # 'boxed_dependencies': False,  # only set from commandline
                     'load_connectors': 'all',
-                    # Deploy specific below
+                    # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
+                    #-- Deploy specific below --
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
                     # 'leave_on': False, # only set from commandline
@@ -831,7 +890,6 @@ class Commandliner():
                     'enable_redshift_push': True,
                     'save_schemas': False,
                     'manage_git_info': False,
-                    'deploy_mode': 'dev',
                     }
         return parser, defaults
 
@@ -854,7 +912,7 @@ class Commandliner():
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
 
-        if mode == 'local' and load_connectors == 'all':
+        if mode == 'dev_local' and load_connectors == 'all':
             # S3 access
             session = boto3.Session()
             credentials = session.get_credentials()
