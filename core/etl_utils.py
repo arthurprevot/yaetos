@@ -52,7 +52,7 @@ JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/Red
 
 
 class ETL_Base(object):
-    TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql')
+    TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
     FILE_TYPES = ('csv', 'parquet', 'txt')
     SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union({'other', 'None'})
 
@@ -150,7 +150,7 @@ class ETL_Base(object):
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
-        if output:  # TODO add check output is df
+        if output and self.jargs.output['type'] in self.TABULAR_TYPES:
             output = output.withColumn('_created_at', F.lit(self.start_dt))
             output.cache()
             schemas = Schema_Builder()
