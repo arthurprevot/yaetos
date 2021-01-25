@@ -150,7 +150,9 @@ class ETL_Base(object):
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
-        if output:
+        if output:  # TODO add check output is df
+            # output = output.withColumn('_created_at', F.lit(self.start_dt.strftime('%Y%m%dT%H%M%S')))
+            output = output.withColumn('_created_at', F.lit(self.start_dt))
             output.cache()
             schemas = Schema_Builder()
             schemas.generate_schemas(loaded_datasets, output)
