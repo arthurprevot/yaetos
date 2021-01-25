@@ -386,6 +386,8 @@ class DeployPySparkScriptOnAws(object):
         time.sleep(1)  # Prevent ThrottlingException
 
     def get_spark_submit_args(self, app_file, app_args):
+
+        emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
         cmd_runner_args = [
             "spark-submit",
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
@@ -394,7 +396,7 @@ class DeployPySparkScriptOnAws(object):
             "--packages={}".format(eu.PACKAGES_EMR),
             "--jars={}".format(eu.JARS),
             eu.CLUSTER_APP_FOLDER+app_file,
-            "--mode={}".format(app_args['mode']),
+            "--mode={}".format(emr_mode),
             "--deploy=none",
             "--storage=s3",
             "--rerun_criteria={}".format(app_args.get('rerun_criteria')),
