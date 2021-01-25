@@ -480,7 +480,7 @@ class DeployPySparkScriptOnAws(object):
     def update_params(self, parameterValues):
         # TODO: check if easier/simpler to change values at the source json instead of a processed one.
         # Change key pair
-        myScheduleType = {'EMR_Scheduled': 'cron', 'EMR_DataPipeTest': 'ONDEMAND'}[self.app_args.get('deploy')]
+        myScheduleType = {'EMR_Scheduled': 'cron', 'EMR_DataPipeTest': 'ONDEMAND'}[self.deploy_args.get('deploy')]
         myPeriod = self.deploy_args['frequency'] or '1 Day'
         if self.deploy_args['start_date'] and isinstance(self.deploy_args['start_date'], datetime):
             myStartDateTime = self.deploy_args['start_date'].strftime('%Y-%m-%dT%H:%M:%S')
