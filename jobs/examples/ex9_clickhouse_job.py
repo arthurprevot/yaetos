@@ -15,7 +15,6 @@ class Job(ETL_Base):
         url = 'jdbc:postgresql://{host}/{service}'.format(host=db['host'], service=db['service'])
         dbtable = 'some.table'
 
-
         # Reading from clickhouse
         logger.info('Pulling table "{}" from clickhouse'.format(dbtable))
         df = self.sc_sql.read \

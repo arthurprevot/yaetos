@@ -71,7 +71,6 @@ class DeployPySparkScriptOnAws(object):
         Git_Config_Manager().save_yaml(git_yml)
 
     def run(self):
-        # import ipdb; ipdb.set_trace()
         if self.deploy_args['deploy']=='EMR':
             self.run_direct()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):

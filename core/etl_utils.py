@@ -541,12 +541,6 @@ class Job_Yml_Parser():
         return sql_file
 
     def set_job_yml(self, job_name, job_param_file, yml_mode):
-        # mapping_modes = {'local':         'local_dev',
-        #                  'localEMR':      'EMR_dev',
-        #                  # 'localEMR':      'EMR_dev',
-        #                  'EMR':           'EMR_dev',
-        #                  'EMR_Scheduled': 'prod'}
-        # yml_mode = mapping_modes[mode]
         if job_param_file is None:
             return {}
         yml = self.load_meta(job_param_file)
@@ -835,7 +829,6 @@ class Commandliner():
             job = Job(pre_jargs={'defaults_args':defaults_args, 'job_args': job_args, 'cmd_args':cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
 
         # Executing or deploying
-        # if job.jargs.deploy in ('local', 'localEMR'):  # when executing job code
         if job.jargs.deploy in ('none'):  # when executing job code
             self.launch_run_mode(job)
         elif job.jargs.deploy in ('EMR', 'EMR_Scheduled'):  # when deploying to AWS for execution there
@@ -896,7 +889,6 @@ class Commandliner():
                     'enable_redshift_push': True,
                     'save_schemas': False,
                     'manage_git_info': False,
-                    # 'deploy_mode': 'dev',
                     }
         return parser, defaults
 
