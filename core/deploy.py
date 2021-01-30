@@ -75,8 +75,16 @@ class DeployPySparkScriptOnAws(object):
             self.run_direct()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
             self.run_aws_data_pipeline()
+        elif self.deploy_args['deploy'] in ('code'):
+            self.run_push_code()
         else:
             raise Exception("Shouldn't get here.")
+
+    def run_push_code(self):
+        print("Pushing code only")
+        self.s3_ops(self.session)
+        if self.deploy_args.get('push_secrets', False):
+            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
     def run_direct(self):
         """Useful to run job on cluster without bothering with aws data pipeline. Also useful to add steps to existing cluster."""

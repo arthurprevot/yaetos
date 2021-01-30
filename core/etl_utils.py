@@ -832,7 +832,7 @@ class Commandliner():
         # Executing or deploying
         if job.jargs.deploy in ('none'):  # when executing job code
             self.launch_run_mode(job)
-        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled'):  # when deploying to AWS for execution there
+        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
 
     def set_commandline_args(self):
@@ -848,7 +848,7 @@ class Commandliner():
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
