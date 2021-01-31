@@ -819,7 +819,8 @@ class Path_Handler():
 
 class Commandliner():
     def __init__(self, Job, **job_args):
-        defaults_args, cmd_args = self.set_commandline_args()
+        parser, defaults_args = self.define_commandline_args()
+        cmd_args = self.set_commandline_args(parser)
 
         # Building "job", which will include all job args.
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
@@ -835,14 +836,15 @@ class Commandliner():
         elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
 
-    def set_commandline_args(self):
+    @staticmethod
+    def set_commandline_args(parser):
         """Command line arguments take precedence over function ones."""
-        parser, defaults = self.define_commandline_args()
+        # parser, defaults = self.define_commandline_args()
         cmd_args, cmd_unknown_args = parser.parse_known_args()
         cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
         cmd_unknown_args = dict([item[2:].split('=') for item in cmd_unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
         cmd_args.update(cmd_unknown_args)
-        return defaults, cmd_args
+        return cmd_args
 
     @staticmethod
     def define_commandline_args():
