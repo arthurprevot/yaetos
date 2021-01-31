@@ -75,8 +75,16 @@ class DeployPySparkScriptOnAws(object):
             self.run_direct()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
             self.run_aws_data_pipeline()
+        elif self.deploy_args['deploy'] in ('code'):
+            self.run_push_code()
         else:
             raise Exception("Shouldn't get here.")
+
+    def run_push_code(self):
+        print("Pushing code only")
+        self.s3_ops(self.session)
+        if self.deploy_args.get('push_secrets', False):
+            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
     def run_direct(self):
         """Useful to run job on cluster without bothering with aws data pipeline. Also useful to add steps to existing cluster."""
@@ -618,31 +626,47 @@ def terminate(error_message=None):
     logger.critical('The script is now terminating')
     exit()
 
+def deploy_standalone():
+    # TODO: refactor below to use 'deploy' arg to trigger all deploy features, instead of new 'deploy_option' set below.
+    job_args = {
+        # --- regular job params ---
+        'job_param_file': None,
+        'mode':'dev_EMR',
+        'output': {'path':'n_a', 'type':'csv'},
+        'job_name': 'n_a',
+        # --- params specific to running this file directly, can be overriden by command line ---
+        'deploy_option':'deploy_code_only',
+    }
+
+    parser, defaults_args = eu.Commandliner.define_commandline_args()
+    cmd_args = eu.Commandliner.set_commandline_args(parser)
+    jargs = eu.Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, loaded_inputs={})
+    deploy_args = jargs.get_deploy_args()
+    app_args=jargs.get_app_args()
+
+    if jargs.deploy_option == 'deploy_job': # can be used to push random code to cluster
+        # TODO: fails to create a new cluster but works to add a step to an existing cluster.
+        DeployPySparkScriptOnAws(deploy_args, app_args).run()
+
+    elif jargs.deploy_option == 'deploy_code_only':
+        deploy_args['deploy'] = 'code'
+        DeployPySparkScriptOnAws(deploy_args, app_args).run()
+
+    elif jargs.deploy_option == 'show_list_pipelines':
+        deployer = DeployPySparkScriptOnAws(deploy_args, app_args)
+        client = deployer.session.client('datapipeline')
+        pipelines = deployer.list_data_pipeline(client)
+        print('#--- pipelines: ', pipelines)
+
+    elif jargs.deploy_option == 'deploy_all_jobs':
+        deploy_all_scheduled() # TODO: needs more testing.
+
+    elif jargs.deploy_option == 'package_code_locally_only':  # only for debuging
+        deployer = DeployPySparkScriptOnAws(deploy_args, app_args)  # TODO: should remove need for some of these inputs as they are not required by tar_python_scripts()
+        pipelines = deployer.tar_python_scripts()
+        print('#--- Finished packaging ---')
+    return True
+
 
 if __name__ == "__main__":
-    # Deploying 1 job manually.
-    # Use as standalone to push random python script to cluster.
-    # TODO: fails to create a new cluster but works to add a step to an existing cluster.
-    print('command line: ', ' '.join(sys.argv))
-    job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'  # TODO: move to 'jobs/examples/ex1_raw_job_cluster.py'
-    deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
-    app_args = {'job_name':job_name, 'py_job':py_job, 'deploy':'EMR'}
-    DeployPySparkScriptOnAws(deploy_args, app_args).run()
-
-    # Show list of all jobs running.
-    deployer = DeployPySparkScriptOnAws(deploy_args, app_args)
-    client = deployer.session.client('datapipeline')
-    pipelines = deployer.list_data_pipeline(client)
-    print('#--- pipelines: ', pipelines)
-
-    # (Re)deploy schedule jobs
-    #deploy_all_scheduled() # TODO: needs more testing.
-
-    # Package code locally, not needed to run the job locally though.
-    deploy_args = {'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
-    app_args = {'job_param_file':'conf/jobs_metadata_local.yml',
-                'jobs_folder':'jobs',
-                }
-    deployer = DeployPySparkScriptOnAws(deploy_args, app_args)  # TODO: should remove need for some of these inputs as they are not required by tar_python_scripts()
-    pipelines = deployer.tar_python_scripts()
-    print('#--- Finished packaging ---')
+    deploy_standalone()

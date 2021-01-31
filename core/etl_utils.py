@@ -819,7 +819,8 @@ class Path_Handler():
 
 class Commandliner():
     def __init__(self, Job, **job_args):
-        defaults_args, cmd_args = self.set_commandline_args()
+        parser, defaults_args = self.define_commandline_args()
+        cmd_args = self.set_commandline_args(parser)
 
         # Building "job", which will include all job args.
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
@@ -832,23 +833,23 @@ class Commandliner():
         # Executing or deploying
         if job.jargs.deploy in ('none'):  # when executing job code
             self.launch_run_mode(job)
-        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled'):  # when deploying to AWS for execution there
+        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
 
-    def set_commandline_args(self):
+    @staticmethod
+    def set_commandline_args(parser):
         """Command line arguments take precedence over function ones."""
-        parser, defaults = self.define_commandline_args()
         cmd_args, cmd_unknown_args = parser.parse_known_args()
         cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
         cmd_unknown_args = dict([item[2:].split('=') for item in cmd_unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
         cmd_args.update(cmd_unknown_args)
-        return defaults, cmd_args
+        return cmd_args
 
     @staticmethod
     def define_commandline_args():
         # Defined here separatly for overridability.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest']), help="Choose where to run the job.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
