@@ -839,7 +839,6 @@ class Commandliner():
     @staticmethod
     def set_commandline_args(parser):
         """Command line arguments take precedence over function ones."""
-        # parser, defaults = self.define_commandline_args()
         cmd_args, cmd_unknown_args = parser.parse_known_args()
         cmd_args = {key: value for (key, value) in cmd_args.__dict__.items() if value is not None}
         cmd_unknown_args = dict([item[2:].split('=') for item in cmd_unknown_args])  # imposes for unknown args to be defined with '=' and to start with '--'
