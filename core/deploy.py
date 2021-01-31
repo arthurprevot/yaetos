@@ -626,8 +626,7 @@ def terminate(error_message=None):
     logger.critical('The script is now terminating')
     exit()
 
-
-if __name__ == "__main__":
+def deploy_standalone():
     job_args = {
         # --- regular job params ---
         'job_param_file': None,
@@ -639,18 +638,12 @@ if __name__ == "__main__":
         'deploy_option':'deploy_code_only',
     }
 
-    # defaults_args, cmd_args = eu.Commandliner(eu.ETL_Base).set_commandline_args()
     parser, defaults_args = eu.Commandliner.define_commandline_args()
     cmd_args = eu.Commandliner.set_commandline_args(parser)
     jargs = eu.Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, loaded_inputs={})
     deploy_args = jargs.get_deploy_args()
     app_args=jargs.get_app_args()
 
-    # import ipdb; ipdb.set_trace()
-    # print('command line: ', ' '.join(sys.argv))
-    # job_name = sys.argv[1] if len(sys.argv) > 1 else 'examples/ex1_raw_job_cluster.py'  # TODO: move to 'jobs/examples/ex1_raw_job_cluster.py'
-    # deploy_args = {'leave_on': True, 'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
-    # app_args = {'job_name':job_name, 'py_job':py_job, 'deploy':'EMR'}
     if jargs.deploy_option == 'deploy_job': # can be used to push random code to cluster
         # TODO: fails to create a new cluster but works to add a step to an existing cluster.
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
@@ -669,10 +662,11 @@ if __name__ == "__main__":
         deploy_all_scheduled() # TODO: needs more testing.
 
     elif jargs.deploy_option == 'package_code_locally_only':  # only for debuging
-        # deploy_args = {'aws_config_file':eu.AWS_CONFIG_FILE, 'aws_setup':'dev'}
-        # app_args = {'job_param_file':'conf/jobs_metadata_local.yml',
-        #             'jobs_folder':'jobs',
-        #             }
         deployer = DeployPySparkScriptOnAws(deploy_args, app_args)  # TODO: should remove need for some of these inputs as they are not required by tar_python_scripts()
         pipelines = deployer.tar_python_scripts()
         print('#--- Finished packaging ---')
+    return True
+
+
+if __name__ == "__main__":
+    deploy_standalone()
