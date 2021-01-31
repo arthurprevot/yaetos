@@ -627,10 +627,10 @@ def terminate(error_message=None):
     exit()
 
 def deploy_standalone():
+    # TODO: refactor below to use 'deploy' arg to trigger all deploy features, instead of new 'deploy_option' set below.
     job_args = {
         # --- regular job params ---
         'job_param_file': None,
-        # 'deploy':'EMR',
         'mode':'dev_EMR',
         'output': {'path':'n_a', 'type':'csv'},
         'job_name': 'n_a',
