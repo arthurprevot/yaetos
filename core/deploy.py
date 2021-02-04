@@ -626,7 +626,7 @@ def terminate(error_message=None):
     logger.critical('The script is now terminating')
     exit()
 
-def deploy_standalone():
+def deploy_standalone(job_args_update={}):
     # TODO: refactor below to use 'deploy' arg to trigger all deploy features, instead of new 'deploy_option' set below.
     job_args = {
         # --- regular job params ---
@@ -637,6 +637,7 @@ def deploy_standalone():
         # --- params specific to running this file directly, can be overriden by command line ---
         'deploy_option':'deploy_code_only',
     }
+    job_args.update(job_args_update)
 
     parser, defaults_args = eu.Commandliner.define_commandline_args()
     cmd_args = eu.Commandliner.set_commandline_args(parser)
