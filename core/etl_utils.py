@@ -590,7 +590,7 @@ class Job_Args_Parser():
             args.update(cmd_args)
             args.update({'job_name':job_name} if job_name else {})
             assert 'job_name' in args.keys()
-            yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args['skip_job']).yml_args
+            yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
 
         # Get merged args, with yml (order matters)
         # TODO: need to add business of flatten/unflatten so they can be merged cleanely.
