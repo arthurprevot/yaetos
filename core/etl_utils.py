@@ -492,8 +492,8 @@ class Schema_Builder():
 class Job_Yml_Parser():
     """Functions to load and parse yml, and functions to get job_name, which is the key to the yml info."""
 
-    def __init__(self, job_name, job_param_file, mode):
-        self.yml_args = self.set_job_yml(job_name, job_param_file, mode)
+    def __init__(self, job_name, job_param_file, mode, skip_job=False):
+        self.yml_args = self.set_job_yml(job_name, job_param_file, mode, skip_job)
         self.yml_args['job_name'] = job_name
         self.yml_args['py_job'] = self.yml_args.get('py_job') or self.set_py_job_from_name(job_name)
         self.yml_args['sql_file'] = self.set_sql_file_from_name(job_name, mode)
@@ -541,18 +541,21 @@ class Job_Yml_Parser():
         logger.info("sql_file: '{}', from job_name: '{}'".format(sql_file, job_name))
         return sql_file
 
-    def set_job_yml(self, job_name, job_param_file, yml_mode):
+    def set_job_yml(self, job_name, job_param_file, yml_mode, skip_job):
         if job_param_file is None:
             return {}
         yml = self.load_meta(job_param_file)
 
-        if job_name not in yml['jobs']:
+        if job_name not in yml['jobs'] and not skip_job:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(job_name, job_param_file))
+        elif job_name not in yml['jobs'] and skip_job:
+            job_yml = {}
+        else:
+            job_yml = yml['jobs'][job_name]
 
         if yml_mode not in yml['common_params']['mode_specific_params']:
             raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
 
-        job_yml = yml['jobs'][job_name]
         mode_spec_yml = yml['common_params']['mode_specific_params'][yml_mode]
         out = yml['common_params']['all_mode_params']
         out.update(mode_spec_yml)
@@ -587,7 +590,7 @@ class Job_Args_Parser():
             args.update(cmd_args)
             args.update({'job_name':job_name} if job_name else {})
             assert 'job_name' in args.keys()
-            yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode']).yml_args
+            yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
 
         # Get merged args, with yml (order matters)
         # TODO: need to add business of flatten/unflatten so they can be merged cleanely.
