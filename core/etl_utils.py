@@ -151,7 +151,8 @@ class ETL_Base(object):
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
         if output and self.jargs.output['type'] in self.TABULAR_TYPES:
-            output = output.withColumn('_created_at', F.lit(self.start_dt))
+            if self.jargs.add_created_at=='true':
+                output = output.withColumn('_created_at', F.lit(self.start_dt))
             output.cache()
             schemas = Schema_Builder()
             schemas.generate_schemas(loaded_datasets, output)
@@ -894,6 +895,7 @@ class Commandliner():
                     'enable_redshift_push': True,
                     'save_schemas': False,
                     'manage_git_info': False,
+                    'add_created_at': 'true',  # set as string to be overrideable in cmdline.
                     }
         return parser, defaults
 
