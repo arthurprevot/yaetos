@@ -6,8 +6,6 @@
 s3_bucket="$1"
 s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
 
-# export CRYPTOGRAPHY_DONT_BUILD_RUST=1
-python3 -m pip install -U pip
 
 # Update awscli here as required by "aws s3 cp ..."
 # TODO: pip install -r requirements.txt # see related note in setup_nodes.sh
@@ -19,7 +17,7 @@ sudo pip-3.6 install jsonschema==3.0.2
 # sudo pip-3.6 install koalas==1.3.0  # fails installing now. TODO: check.
 # DB and API libs
 sudo pip-3.6 install soql==1.0.2  # Necessary for simple-salesforce
-sudo pip-3.6 install setuptools-rust==0.11.6  # Necessary for simple-salesforce
+# sudo pip-3.6 install setuptools-rust==0.11.6  # Necessary for simple-salesforce
 sudo pip-3.6 install cryptography==3.3.1  # Necessary for simple-salesforce, to avoid simple-salesforce loading 3.4.4 causing pbs.
 sudo pip-3.6 install simple-salesforce==1.10.1
 sudo pip-3.6 install pymysql==0.9.3
