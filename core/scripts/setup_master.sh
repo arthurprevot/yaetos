@@ -6,6 +6,7 @@
 s3_bucket="$1"
 s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
 
+
 # Update awscli here as required by "aws s3 cp ..."
 # TODO: pip install -r requirements.txt # see related note in setup_nodes.sh
 sudo pip-3.6 install awscli==1.16.67 # depends on botocore from 1.12.57
@@ -13,9 +14,11 @@ sudo pip-3.6 install scikit-learn==0.20.0  # TODO: remove when using req file
 sudo pip-3.6 install statsmodels==0.9.0  # TODO: remove when using req file
 sudo pip-3.6 install kafka-python==1.4.7
 sudo pip-3.6 install jsonschema==3.0.2
-sudo pip-3.6 install koalas==1.3.0
+# sudo pip-3.6 install koalas==1.3.0  # fails installing now. TODO: check.
 # DB and API libs
 sudo pip-3.6 install soql==1.0.2  # Necessary for simple-salesforce
+# sudo pip-3.6 install setuptools-rust==0.11.6  # Necessary for simple-salesforce
+sudo pip-3.6 install cryptography==3.3.1  # Necessary for simple-salesforce, to avoid simple-salesforce loading 3.4.4 causing pbs.
 sudo pip-3.6 install simple-salesforce==1.10.1
 sudo pip-3.6 install pymysql==0.9.3
 sudo pip-3.6 install psycopg2-binary==2.8.5  # necesary for sqlalchemy-redshift, psycopg2==2.8.5 fails installing.
