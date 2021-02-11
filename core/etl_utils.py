@@ -336,7 +336,7 @@ class ETL_Base(object):
             .load()
 
     def get_previous_output_max_timestamp(self):
-        path = self.jargs.output['path']
+        path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
         path += '*' # to go into subfolders
         try:
             df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'])
