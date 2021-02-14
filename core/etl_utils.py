@@ -114,7 +114,11 @@ class ETL_Base(object):
             return None
 
         logger.info('Output sample:')
-        output.show()
+        try:
+            output.show()
+        except Exception as e:
+            logger.info("Warning: Failed showing table sample with error '{}'.".format(e))
+            pass
         count = output.count()
         logger.info('Output count: {}'.format(count))
         logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
