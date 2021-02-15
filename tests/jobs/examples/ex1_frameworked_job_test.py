@@ -22,5 +22,10 @@ class Test_Job(object):
             {'session_id': 1235, 'count_events': 1},
             ]
 
-        actual = Job(args={'mode_no_io':True}).etl_no_io(sc, sc_sql, loaded_inputs={'some_events': some_events, 'other_events':other_events}).toPandas().to_dict(orient='records')
+        pre_jargs = {'defaults_args':
+                        {'manage_git_info': False, 'mode':'dev_local', 'deploy':'none', 'job_param_file':None,
+                         'output': {'type':None},
+                         'inputs': {'some_events':{'type':None}, 'other_events':{'type':None}}},
+                     'job_args':{}, 'cmd_args':{}}
+        actual = Job(pre_jargs=pre_jargs).etl_no_io(sc, sc_sql, loaded_inputs={'some_events': some_events, 'other_events':other_events})[0].toPandas().to_dict(orient='records')
         assert actual == expected
