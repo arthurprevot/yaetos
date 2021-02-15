@@ -2,6 +2,17 @@ import pytest
 from jobs.examples.ex1_frameworked_job import Job
 
 
+def get_pre_jargs(loaded_inputs):
+    inputs  = {key: {'type':None} for key in loaded_inputs.keys()}
+    pre_jargs = {
+        'defaults_args': {
+            'manage_git_info': False, 'mode':'dev_local', 'deploy':'none', 'job_param_file':None,
+            'output': {'type':None},
+            'inputs': inputs},
+        'job_args':{},
+        'cmd_args':{}}
+    return pre_jargs
+
 class Test_Job(object):
     def test_transform(self, sc, sc_sql, ss):
         some_events = ss.read.json(sc.parallelize([
@@ -22,10 +33,6 @@ class Test_Job(object):
             {'session_id': 1235, 'count_events': 1},
             ]
 
-        pre_jargs = {'defaults_args':
-                        {'manage_git_info': False, 'mode':'dev_local', 'deploy':'none', 'job_param_file':None,
-                         'output': {'type':None},
-                         'inputs': {'some_events':{'type':None}, 'other_events':{'type':None}}},
-                     'job_args':{}, 'cmd_args':{}}
-        actual = Job(pre_jargs=pre_jargs).etl_no_io(sc, sc_sql, loaded_inputs={'some_events': some_events, 'other_events':other_events})[0].toPandas().to_dict(orient='records')
+        loaded_inputs={'some_events': some_events, 'other_events':other_events}
+        actual = Job(pre_jargs=get_pre_jargs(loaded_inputs)).etl_no_io(sc, sc_sql, loaded_inputs=loaded_inputs)[0].toPandas().to_dict(orient='records')
         assert actual == expected
