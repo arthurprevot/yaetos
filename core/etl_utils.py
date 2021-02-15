@@ -594,6 +594,7 @@ class Job_Args_Parser():
             args.update(job_args)
             args.update(cmd_args)
             args.update({'job_name':job_name} if job_name else {})
+            args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled') else args['mode']
             assert 'job_name' in args.keys()
             yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
 
@@ -603,7 +604,7 @@ class Job_Args_Parser():
         args.update(yml_args)
         args.update(job_args)
         args.update(cmd_args)
-
+        args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled') else args['mode']
         args = self.update_args(args, loaded_inputs)
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
