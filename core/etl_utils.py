@@ -164,6 +164,17 @@ class ETL_Base(object):
             schemas = None
         return output, schemas
 
+    def etl_no_io_function(self, sc, sc_sql, transform=None, transform_args={}, loaded_inputs={}):
+        """ Used for testing internal functions"""
+        # self.jargs = jargs
+        self.sc = sc
+        self.sc_sql = sc_sql
+        self.app_name = sc.appName
+        self.logger = logger
+        loaded_datasets = self.load_inputs(loaded_inputs)
+        output = transform(**transform_args)
+        return output
+
     def transform(self, **app_args):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
