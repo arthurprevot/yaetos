@@ -67,8 +67,12 @@ class DeployPySparkScriptOnAws(object):
         self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
         self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
 
-        git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
-        Git_Config_Manager().save_yaml(git_yml)
+        try:
+            git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
+            Git_Config_Manager().save_yaml(git_yml)
+        except Exception as e:  # TODO: get specific exception
+            logger.info("Error saving yml file with git info, with error '{}'.".format(e))
+
 
     def run(self):
         if self.deploy_args['deploy']=='EMR':
@@ -200,7 +204,10 @@ class DeployPySparkScriptOnAws(object):
         # Add config files
         if self.app_args['job_param_file']:
             t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
-        t_file.add('conf/git_config.yml', arcname='conf/git_config.yml') # TODO: remove hardcoding
+
+        git_yml = 'conf/git_config.yml'
+        if os.path.isfile(git_yml):
+            t_file.add(git_yml, arcname=git_yml)
 
         # ./core files
         files = os.listdir(base+'core/')
