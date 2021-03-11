@@ -19,7 +19,8 @@ class ETL_Daily_Incremental_Base(ETL_Base):
         """ Incremental assumes last available month from the previous output was fully loaded."""
         first_day = self.jargs.merged_args['first_day']
         if not self.last_attempted_period:
-            self.last_attempted_period  = self.get_previous_output_max_timestamp().strftime("%Y-%m-%d") or first_day  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in oracle.
+            previous_day = self.get_previous_output_max_timestamp().strftime("%Y-%m-%d") if self.get_previous_output_max_timestamp() else None
+            self.last_attempted_period  = previous_day or first_day  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in oracle.
 
         periods = self.get_last_output_to_last_day(self.last_attempted_period, first_day)
         if len(periods) == 0:
