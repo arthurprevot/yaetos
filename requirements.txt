@@ -1,5 +1,5 @@
 # For docker env. TODO: use it for AWS setup too, would involve splitting it in 2 req files (master and slave sides).
-pyyaml==5.3.1  # leads to error with "awscli 1.16.67 has requirement PyYAML<=3.13,>=3.10". But tool still working.
+pyyaml==5.4  # leads to error with "awscli 1.16.67 has requirement PyYAML<=3.13,>=3.10". But tool still working.
 ipdb==0.13.4
 awscli==1.16.67  # necessary to deploy to AWS Data Pipeline. Tried 1.19.7 but causes pb with botocore.
 boto3==1.9.57
