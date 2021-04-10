@@ -120,10 +120,13 @@ jobs:
     db_inputs: {'creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
     output: {'path':'{base_path}/wiki_example/output_ex9_mysql/{now}/', 'type':'csv'}
 
-  examples/ex9_mysql_framework_load_job.py:
+  examples/ex9_mysql_framework_load_job:
+    py_job: jobs/generic/copy_job.py
     inputs:
-      some_events: {'type':'mysql', 'db_table': 'some_schema.some_table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
-    output: {'path':'{base_path}/wiki_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
+      table_to_copy: {'type':'mysql', 'db_table': 'some_schema.some_table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
+    output: {'path':'{base_path}/db_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
+    load_connectors: all
+    enable_redshift_push: True
 
   examples/ex9_clickhouse_job.py:
     db_inputs: {'creds': 'some_clickhouse_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
