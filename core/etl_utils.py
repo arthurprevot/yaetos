@@ -134,6 +134,8 @@ class ETL_Base(object):
 
         if self.jargs.merged_args.get('copy_to_redshift') and self.jargs.enable_redshift_push:
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
+        if self.jargs.merged_args.get('copy_to_clickhouse') and self.jargs.enable_redshift_push:  # TODO: rename enable_redshift_push to enable_db_push since not redshift here.
+            self.copy_to_clickhouse(output)
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
@@ -440,6 +442,14 @@ class ETL_Base(object):
         schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir)
+
+    def copy_to_clickhouse(self, sdf):
+        # import put here below to avoid loading heavy libraries when not needed (optional feature).
+        from core.clickhouse import create_table
+        connection_profile = self.jargs.copy_to_clickhouse['creds']
+        schema, name_tb= self.jargs.copy_to_clickhouse['table'].split('.')
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental)
 
     def push_to_kafka(self, output, types):
         """ Needs to be overriden by each specific job."""
