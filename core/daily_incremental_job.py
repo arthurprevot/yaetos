@@ -1,3 +1,5 @@
+"""OBSOLETE. Will be deleted."""
+
 from core.etl_utils import ETL_Base
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
