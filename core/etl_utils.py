@@ -365,7 +365,7 @@ class ETL_Base(object):
         else:
             inc_field = self.jargs.inputs[input_name]['inc_field']
             period = self.last_attempted_period
-            query_str = "select * from {} where {} = '{}' limit 100".format(dbtable, inc_field, period)
+            query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
             logger.info('Pulling table from mysql with query_str "{}"'.format(query_str))
             # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
             sdf = self.sc_sql.read \
@@ -380,23 +380,40 @@ class ETL_Base(object):
                 .load()
         return sdf
 
-
     def load_clickhouse(self, input_name):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         creds_section = self.jargs.inputs[input_name]['creds']
         db = creds[creds_section]
         url = 'jdbc:postgresql://{host}/{service}'.format(host=db['host'], service=db['service'])
         dbtable = self.jargs.inputs[input_name]['db_table']
-
-        logger.info('Pulling table "{}" from clickhouse'.format(dbtable))
-        return self.sc_sql.read \
-            .format('jdbc') \
-            .option('driver', "org.postgresql.Driver") \
-            .option("url", url) \
-            .option("user", db['user']) \
-            .option("password", db['password']) \
-            .option("dbtable", dbtable)\
-            .load()
+        inc_field = self.jargs.inputs[input_name].get('inc_field')
+        if not inc_field:
+            logger.info('Pulling table "{}" from Clickhouse'.format(dbtable))
+            sdf = self.sc_sql.read \
+                .format('jdbc') \
+                .option('driver', "com.mysql.cj.jdbc.Driver") \
+                .option("url", url) \
+                .option("user", db['user']) \
+                .option("password", db['password']) \
+                .option("dbtable", dbtable)\
+                .load()
+        else:
+            inc_field = self.jargs.inputs[input_name]['inc_field']
+            period = self.last_attempted_period
+            query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
+            logger.info('Pulling table from Clickhouse with query_str "{}"'.format(query_str))
+            # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
+            sdf = self.sc_sql.read \
+                .format('jdbc') \
+                .option('driver', "com.mysql.jdbc.Driver") \
+                .option('fetchsize', 10000) \
+                .option('numPartitions', 3) \
+                .option("url", url) \
+                .option("user", db['user']) \
+                .option("password", db['password']) \
+                .option("query", query_str) \
+                .load()
+        return sdf
 
     def get_previous_output_max_timestamp(self):
         path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
