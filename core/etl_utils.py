@@ -33,6 +33,7 @@ import smtplib, ssl
 from pyspark.sql.window import Window
 from pyspark.sql import functions as F
 from core.git_utils import Git_Config_Manager
+from dateutil.relativedelta import relativedelta
 import core.logger as log
 logger = log.setup_logging('Job')
 
@@ -83,8 +84,27 @@ class ETL_Base(object):
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
         needs_run = True
+        # last_attempted_period = None
         while needs_run:
-            output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
+            # TODO: add daily inc code here to remove it from special class, and to allow loading the df incrementally.
+            if self.jargs.merged_args.get('job_increment') == 'daily':
+                first_day = self.jargs.merged_args['first_day']
+                last_attempted_period = self.get_last_attempted_period()
+                periods = Period_Builder().get_last_output_to_last_day(last_attempted_period, first_day)
+                if len(periods) == 0:
+                    logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_attempted_period, self.get_last_day()))
+                    self.final_inc = True  # remove "self." when sandbox job doesn't depend on it.
+                else:
+                    logger.info('Periods remaining to load: {}'.format(periods))
+                    period = periods[0]
+                    logger.info('Period to be loaded in this run: {}'.format(period))
+                    self.final_inc = period == periods[-1]
+                    self.last_attempted_period = period  # TODO: rename to attempted_period
+                    self.jargs.merged_args['file_tag'] = period
+                    output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
+            else:
+                output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
+
             if self.jargs.rerun_criteria == 'last_date':
                 needs_run = not self.final_inc
             elif self.jargs.rerun_criteria == 'output_empty':
@@ -181,6 +201,12 @@ class ETL_Base(object):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
+    def get_last_attempted_period(self):
+        first_day = self.jargs.merged_args['first_day']
+        previous_output_max_timestamp = self.get_previous_output_max_timestamp()
+        last_attempted_period  = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else first_day  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
+        return last_attempted_period
+
     def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
         py_job = self.set_py_job()
@@ -214,8 +240,8 @@ class ETL_Base(object):
             app_args[item] = self.load_input(item)
             logger.info("Input '{}' loaded.".format(item))
 
-        if self.jargs.is_incremental:
-            app_args = self.filter_incremental_inputs(app_args)
+        if self.jargs.is_incremental and self.jargs.merged_args.get('job_increment') is None:
+            app_args = self.filter_incremental_inputs(app_args)  # Filters after df created. Not useful when filter to be applied before df is created (ex. loading from large database tables)
 
         self.sql_register(app_args)
         return app_args
@@ -325,15 +351,35 @@ class ETL_Base(object):
         extra_params = '' # can use '?zeroDateTimeBehavior=CONVERT_TO_NULL' to help solve "java.sql.SQLException: Zero date value prohibited" but leads to other error msg.
         url = 'jdbc:mysql://{host}:{port}/{service}{extra_params}'.format(host=db['host'], port=db['port'], service=db['service'], extra_params=extra_params)
         dbtable = self.jargs.inputs[input_name]['db_table']
-        logger.info('Pulling table "{}" from mysql'.format(dbtable))
-        return self.sc_sql.read \
-            .format('jdbc') \
-            .option('driver', "com.mysql.cj.jdbc.Driver") \
-            .option("url", url) \
-            .option("user", db['user']) \
-            .option("password", db['password']) \
-            .option("dbtable", dbtable)\
-            .load()
+        inc_field = self.jargs.inputs[input_name].get('inc_field')
+        if not inc_field:
+            logger.info('Pulling table "{}" from mysql'.format(dbtable))
+            sdf = self.sc_sql.read \
+                .format('jdbc') \
+                .option('driver', "com.mysql.cj.jdbc.Driver") \
+                .option("url", url) \
+                .option("user", db['user']) \
+                .option("password", db['password']) \
+                .option("dbtable", dbtable)\
+                .load()
+        else:
+            inc_field = self.jargs.inputs[input_name]['inc_field']
+            period = self.last_attempted_period
+            query_str = "select * from {} where {} = '{}' limit 100".format(dbtable, inc_field, period)
+            logger.info('Pulling table from mysql with query_str "{}"'.format(query_str))
+            # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
+            sdf = self.sc_sql.read \
+                .format('jdbc') \
+                .option('driver', "com.mysql.jdbc.Driver") \
+                .option('fetchsize', 10000) \
+                .option('numPartitions', 3) \
+                .option("url", url) \
+                .option("user", db['user']) \
+                .option("password", db['password']) \
+                .option("query", query_str) \
+                .load()
+        return sdf
+
 
     def load_clickhouse(self, input_name):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
@@ -496,6 +542,32 @@ class ETL_Base(object):
             .where(F.col('_count_pk') >= 2)
         # Debug: df.repartition(1).write.mode('overwrite').option("header", "true").csv('data/sandbox/non_unique_test/')
         return df
+
+class Period_Builder():
+    @staticmethod
+    def get_last_day():
+        last_day_dt = datetime.utcnow() + relativedelta(days=-1)
+        last_day = last_day_dt.strftime("%Y-%m-%d")
+        return last_day
+
+    @staticmethod
+    def get_start_to_last_day(first_day):
+        now = datetime.utcnow()
+        start = datetime.strptime(first_day, "%Y-%m-%d")
+        delta = now - start
+        number_days = delta.days
+
+        periods = []
+        iter_days = start
+        for item in range(number_days):
+            periods.append(iter_days.strftime("%Y-%m-%d"))
+            iter_days = iter_days + relativedelta(days=+1)
+        return periods
+
+    def get_last_output_to_last_day(self, last_output, first_day):
+        periods = self.get_start_to_last_day(first_day)
+        # import ipdb; ipdb.set_trace()
+        return [item for item in periods if item > last_output]
 
 
 class Schema_Builder():
