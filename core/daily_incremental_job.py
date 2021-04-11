@@ -1,3 +1,5 @@
+"""OBSOLETE. Will be deleted."""
+
 from core.etl_utils import ETL_Base
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
@@ -11,7 +13,7 @@ class ETL_Daily_Incremental_Base(ETL_Base):
     def transform(self, **loaded_datasets):
         return self.get_transform_inc_from_last_days(**loaded_datasets)
 
-    def transform_inc(self, period):
+    def transform_inc(self, period, **loaded_datasets):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
