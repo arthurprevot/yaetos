@@ -84,9 +84,8 @@ class ETL_Base(object):
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
         needs_run = True
-        # last_attempted_period = None
         while needs_run:
-            # TODO: add daily inc code here to remove it from special class, and to allow loading the df incrementally.
+            # TODO: isolate code below into separate function.
             if self.jargs.merged_args.get('job_increment') == 'daily':
                 first_day = self.jargs.merged_args['first_day']
                 last_attempted_period = self.get_last_attempted_period()
