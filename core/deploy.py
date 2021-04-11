@@ -402,6 +402,7 @@ class DeployPySparkScriptOnAws(object):
     def get_spark_submit_args(self, app_file, app_args):
 
         emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
+        launcher_file = app_args.get('launcher_file') or app_file
         cmd_runner_args = [
             "spark-submit",
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
@@ -409,7 +410,7 @@ class DeployPySparkScriptOnAws(object):
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
             "--packages={}".format(eu.PACKAGES_EMR),
             "--jars={}".format(eu.JARS),
-            eu.CLUSTER_APP_FOLDER+app_file,
+            eu.CLUSTER_APP_FOLDER+launcher_file,
             "--mode={}".format(emr_mode),
             "--deploy=none",
             "--storage=s3",

@@ -583,7 +583,6 @@ class Period_Builder():
 
     def get_last_output_to_last_day(self, last_output, first_day):
         periods = self.get_start_to_last_day(first_day)
-        # import ipdb; ipdb.set_trace()
         return [item for item in periods if item > last_output]
 
 

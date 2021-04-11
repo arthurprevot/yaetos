@@ -1,3 +1,3 @@
 from core.etl_utils import Commandliner
 
-Commandliner(Job=None)
+Commandliner(Job=None, launcher_file = 'jobs/generic/launcher.py')
