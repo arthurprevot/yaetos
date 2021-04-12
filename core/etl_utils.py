@@ -390,7 +390,7 @@ class ETL_Base(object):
             logger.info('Pulling table "{}" from Clickhouse'.format(dbtable))
             sdf = self.sc_sql.read \
                 .format('jdbc') \
-                .option('driver', "com.mysql.cj.jdbc.Driver") \
+                .option('driver', "org.postgresql.Driver") \
                 .option("url", url) \
                 .option("user", db['user']) \
                 .option("password", db['password']) \
@@ -401,10 +401,9 @@ class ETL_Base(object):
             period = self.last_attempted_period
             query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
             logger.info('Pulling table from Clickhouse with query_str "{}"'.format(query_str))
-            # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
             sdf = self.sc_sql.read \
                 .format('jdbc') \
-                .option('driver', "com.mysql.jdbc.Driver") \
+                .option('driver', "org.postgresql.Driver") \
                 .option('fetchsize', 10000) \
                 .option('numPartitions', 3) \
                 .option("url", url) \
@@ -1006,6 +1005,7 @@ class Commandliner():
                     # 'push_secrets': False, # only set from commandline
                     #-- Not added in command line args:
                     'enable_redshift_push': True,
+                    'base_path': '',
                     'save_schemas': False,
                     'manage_git_info': False,
                     'add_created_at': 'true',  # set as string to be overrideable in cmdline.
