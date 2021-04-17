@@ -98,7 +98,7 @@ class ETL_Base(object):
                     period = periods[0]
                     logger.info('Period to be loaded in this run: {}'.format(period))
                     self.final_inc = period == periods[-1]
-                    self.last_attempted_period = period  # TODO: rename to attempted_period
+                    self.period = period  # to be captured in etl_one_pass if needed.
                     self.jargs.merged_args['file_tag'] = period
                     output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
             else:
@@ -367,7 +367,7 @@ class ETL_Base(object):
                 .load()
         else:
             inc_field = self.jargs.inputs[input_name]['inc_field']
-            period = self.last_attempted_period
+            period = self.period
             query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
             logger.info('Pulling table from mysql with query_str "{}"'.format(query_str))
             # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
@@ -402,7 +402,7 @@ class ETL_Base(object):
                 .load()
         else:
             inc_field = self.jargs.inputs[input_name]['inc_field']
-            period = self.last_attempted_period
+            period = self.period
             query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
             logger.info('Pulling table from Clickhouse with query_str "{}"'.format(query_str))
             sdf = self.sc_sql.read \
