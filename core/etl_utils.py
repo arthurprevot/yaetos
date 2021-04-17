@@ -91,11 +91,11 @@ class ETL_Base(object):
             if self.jargs.merged_args.get('job_increment') == 'daily':
                 if ii == 1:
                     first_day = self.jargs.merged_args['first_day']
-                    last_attempted_period = self.get_last_attempted_period()
-                    periods = Period_Builder().get_last_output_to_last_day(last_attempted_period, first_day)
+                    last_run_period = self.get_last_run_period_daily(sc, sc_sql)
+                    periods = Period_Builder().get_last_output_to_last_day(last_run_period, first_day)
 
                 if len(periods) == 0:
-                    logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_attempted_period, self.get_last_day()))
+                    logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_run_period, self.get_last_day()))
                     self.final_inc = True  # remove "self." when sandbox job doesn't depend on it.
                 else:
                     logger.info('Periods remaining to load: {}'.format(periods))
@@ -209,13 +209,11 @@ class ETL_Base(object):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
-    def get_last_attempted_period(self):
-        """Works for "daily" jobs only"""
-        # TODO: make it work for other periods (hourly...).
-        first_day = self.jargs.merged_args['first_day']
-        previous_output_max_timestamp = self.get_previous_output_max_timestamp()
-        last_attempted_period  = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else first_day  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
-        return last_attempted_period
+    def get_last_run_period_daily(self, sc, sc_sql):
+        # first_day = self.jargs.merged_args['first_day']
+        previous_output_max_timestamp = self.get_previous_output_max_timestamp(sc, sc_sql)
+        last_run_period  = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else None  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
+        return last_run_period
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
@@ -263,7 +261,7 @@ class ETL_Base(object):
         """Filter based on Min Of The Max (motm) of all inputs. Good to deal with late arriving data or async load but
         gets stuck if 1 input never has any new data arriving.
         Assumes increment fields are datetime."""
-        min_dt = self.get_previous_output_max_timestamp() if len(app_args.keys()) > 0 else None
+        min_dt = self.get_previous_output_max_timestamp(self.sc, self.sc_sql) if len(app_args.keys()) > 0 else None
 
         # Get latest timestamp in common across incremental inputs
         maxes = []
@@ -361,7 +359,7 @@ class ETL_Base(object):
         logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
-    def load_data_from_files(self, name, path, type):
+    def load_data_from_files(self, name, path, type, sc, sc_sql):
         """Loading any dataset (input or not) and only from file system (not from DBs). Used by incremental jobs to load previous output.
         Different from load_input() which only loads input (input jargs hardcoded) and from any source."""
         # TODO: integrate with load_input to remove duplicated code.
@@ -378,10 +376,10 @@ class ETL_Base(object):
 
         # Tabular types
         if input_type == 'csv':
-            sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
+            sdf = sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
-            sdf = self.sc_sql.read.parquet(path)
+            sdf = sc_sql.read.parquet(path)
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         else:
             raise Exception("Unsupported dataset type '{}' for path '{}'. Supported types are: {}. ".format(input_type, path, self.SUPPORTED_TYPES))
@@ -459,11 +457,11 @@ class ETL_Base(object):
                 .load()
         return sdf
 
-    def get_previous_output_max_timestamp(self):
+    def get_previous_output_max_timestamp(self, sc, sc_sql):
         path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
         path += '*' # to go into subfolders
         try:
-            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'])
+            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql)
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
             return None
@@ -612,7 +610,7 @@ class Period_Builder():
         return last_day
 
     @staticmethod
-    def get_start_to_last_day(first_day):
+    def get_first_to_last_day(first_day):
         now = datetime.utcnow()
         start = datetime.strptime(first_day, "%Y-%m-%d")
         delta = now - start
@@ -625,9 +623,11 @@ class Period_Builder():
             iter_days = iter_days + relativedelta(days=+1)
         return periods
 
-    def get_last_output_to_last_day(self, last_output, first_day):
-        periods = self.get_start_to_last_day(first_day)
-        return [item for item in periods if item > last_output]
+    def get_last_output_to_last_day(self, last_run_period, first_day_input):
+        periods = self.get_first_to_last_day(first_day_input)
+        if last_run_period:
+            periods = [item for item in periods if item > last_run_period]
+        return periods
 
 
 class Schema_Builder():
