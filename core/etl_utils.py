@@ -84,12 +84,16 @@ class ETL_Base(object):
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
         needs_run = True
-        while needs_run:
-            # TODO: isolate code below into separate function.
+        ii = 0
+        while needs_run:  # TODO: check to rewrite as for loop. Simpler and avoiding potential infinite loops.
+            # TODO: isolate code below into separate functions.
+            ii+=1
             if self.jargs.merged_args.get('job_increment') == 'daily':
-                first_day = self.jargs.merged_args['first_day']
-                last_attempted_period = self.get_last_attempted_period()
-                periods = Period_Builder().get_last_output_to_last_day(last_attempted_period, first_day)
+                if ii == 1:
+                    first_day = self.jargs.merged_args['first_day']
+                    last_attempted_period = self.get_last_attempted_period()
+                    periods = Period_Builder().get_last_output_to_last_day(last_attempted_period, first_day)
+
                 if len(periods) == 0:
                     logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_attempted_period, self.get_last_day()))
                     self.final_inc = True  # remove "self." when sandbox job doesn't depend on it.
@@ -97,16 +101,17 @@ class ETL_Base(object):
                     logger.info('Periods remaining to load: {}'.format(periods))
                     period = periods[0]
                     logger.info('Period to be loaded in this run: {}'.format(period))
-                    self.final_inc = period == periods[-1]
-                    self.period = period  # to be captured in etl_one_pass if needed.
+                    self.period = period  # to be captured in etl_one_pass, needed for in database filtering.
                     self.jargs.merged_args['file_tag'] = period
                     output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
+                    self.final_inc = period == periods[-1]
+                    periods.pop(0)  # for next increment.
             else:
                 output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
 
-            if self.jargs.rerun_criteria == 'last_date':
+            if self.jargs.rerun_criteria == 'last_date':  # i.e. stop when reached final increment, i.e. current period is last to process. Pb: can go in infinite loop if missing data.
                 needs_run = not self.final_inc
-            elif self.jargs.rerun_criteria == 'output_empty':
+            elif self.jargs.rerun_criteria == 'output_empty':  # i.e. stop when current inc is empty. Good to deal with late arriving data, but will be a pb if some increment doesn't have data and will never have.
                 needs_run = not self.output_empty
             elif self.jargs.rerun_criteria == 'both':
                 needs_run = not (self.output_empty or self.final_inc)
@@ -132,7 +137,7 @@ class ETL_Base(object):
             # TODO: add process time in that case.
             return None
 
-        if not self.jargs.no_fw_cache:
+        if not self.jargs.no_fw_cache or (self.jargs.is_incremental and self.jargs.rerun_criteria == 'output_empty'):
             logger.info('Output sample:')
             try:
                 output.show()
@@ -205,6 +210,8 @@ class ETL_Base(object):
         raise NotImplementedError
 
     def get_last_attempted_period(self):
+        """Works for "daily" jobs only"""
+        # TODO: make it work for other periods (hourly...).
         first_day = self.jargs.merged_args['first_day']
         previous_output_max_timestamp = self.get_previous_output_max_timestamp()
         last_attempted_period  = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else first_day  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
@@ -243,13 +250,19 @@ class ETL_Base(object):
             app_args[item] = self.load_input(item)
             logger.info("Input '{}' loaded.".format(item))
 
-        if self.jargs.is_incremental and self.jargs.merged_args.get('job_increment') is None:
-            app_args = self.filter_incremental_inputs(app_args)  # Filters after df created. Not useful when filter to be applied before df is created (ex. loading from large database tables)
+        if self.jargs.is_incremental:
+            if self.jargs.merged_args.get('motm_incremental'):
+                app_args = self.filter_incremental_inputs_motm(app_args)
+            else:
+                app_args = self.filter_incremental_inputs_period(app_args)
 
         self.sql_register(app_args)
         return app_args
 
-    def filter_incremental_inputs(self, app_args):
+    def filter_incremental_inputs_motm(self, app_args):
+        """Filter based on Min Of The Max (motm) of all inputs. Good to deal with late arriving data or async load but
+        gets stuck if 1 input never has any new data arriving.
+        Assumes increment fields are datetime."""
         min_dt = self.get_previous_output_max_timestamp() if len(app_args.keys()) > 0 else None
 
         # Get latest timestamp in common across incremental inputs
@@ -276,6 +289,35 @@ class ETL_Base(object):
                         app_args[item] = app_args[item].filter(app_args[item][inc] > min_dt)
                     if max_dt:
                         app_args[item] = app_args[item].filter(app_args[item][inc] <= max_dt)
+                else:
+                    raise Exception("Incremental loading is not supported for unstructured input. You need to handle the incremental logic in the job code.")
+        return app_args
+
+    def filter_incremental_inputs_period(self, app_args):
+        """Filter based on period defined in. Simple but can be a pb if late arriving data or dependencies not run.
+        Inputs filtered inside source database will be filtered again."""
+        # min_dt = self.get_previous_output_max_timestamp() if len(app_args.keys()) > 0 else None
+        #
+        # # Get latest timestamp in common across incremental inputs
+        # maxes = []
+        # for item in app_args.keys():
+        #     input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES
+        #     inc = self.jargs.inputs[item].get('inc_field', None)
+        #     if input_is_tabular and inc:
+        #         max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
+        #         maxes.append(max_dt)
+        # max_dt = min(maxes) if len(maxes)>0 else None
+
+        # Filter
+        for item in app_args.keys():
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES
+            inc = self.jargs.inputs[item].get('inc_field', None)
+            if inc:
+                if input_is_tabular:
+                    # TODO: add limit to amount of input data, and set self.final_inc=False
+                    inc_type = {k:v for k, v in app_args[item].dtypes}[inc]
+                    logger.info("Input dataset '{}' will be filtered for {}='{}'".format(item, inc, self.period))
+                    app_args[item] = app_args[item].filter(app_args[item][inc] == self.period)
                 else:
                     raise Exception("Incremental loading is not supported for unstructured input. You need to handle the incremental logic in the job code.")
         return app_args
