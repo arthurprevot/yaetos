@@ -1040,7 +1040,7 @@ class Commandliner():
                     'jobs_folder': JOB_FOLDER,
                     'storage': 'local',
                     # 'dependencies': False, # only set from commandline
-                    'rerun_criteria': 'both',
+                    'rerun_criteria': 'last_date',
                     # 'boxed_dependencies': False,  # only set from commandline
                     'load_connectors': 'all',
                     # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
