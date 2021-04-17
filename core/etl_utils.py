@@ -147,8 +147,8 @@ class ETL_Base(object):
         self.save_output(output, self.start_dt)
         end_time = time()
         elapsed = end_time - start_time
-        logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
-        if self.jargs.save_schemas:
+        logger.info('Process time to complete (post save to file but pre copy to db if any, also may not include processing if output not saved): {} s'.format(elapsed))
+        if self.jargs.save_schemas and schemas:
             schemas.save_yaml(self.jargs.job_name)
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
@@ -160,6 +160,9 @@ class ETL_Base(object):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
         output.unpersist()
+        end_time = time()
+        elapsed = end_time - start_time
+        logger.info('Process time to complete job (post db copies if any): {} s'.format(elapsed))
         logger.info("-------End job '{}'--------".format(self.jargs.job_name))
         return output
 
