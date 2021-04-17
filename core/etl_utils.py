@@ -132,16 +132,17 @@ class ETL_Base(object):
             # TODO: add process time in that case.
             return None
 
-        logger.info('Output sample:')
-        try:
-            output.show()
-        except Exception as e:
-            logger.info("Warning: Failed showing table sample with error '{}'.".format(e))
-            pass
-        count = output.count()
-        logger.info('Output count: {}'.format(count))
-        logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
-        self.output_empty = count == 0
+        if not self.jargs.no_fw_cache:
+            logger.info('Output sample:')
+            try:
+                output.show()
+            except Exception as e:
+                logger.info("Warning: Failed showing table sample with error '{}'.".format(e))
+                pass
+            count = output.count()
+            logger.info('Output count: {}'.format(count))
+            logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
+            self.output_empty = count == 0
 
         self.save_output(output, self.start_dt)
         end_time = time()
@@ -1009,6 +1010,7 @@ class Commandliner():
                     'save_schemas': False,
                     'manage_git_info': False,
                     'add_created_at': 'true',  # set as string to be overrideable in cmdline.
+                    'no_fw_cache': False,
                     }
         return parser, defaults
 
