@@ -84,29 +84,34 @@ class ETL_Base(object):
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
         needs_run = True
-        while needs_run:
-            # TODO: isolate code below into separate function.
+        ii = 0
+        while needs_run:  # TODO: check to rewrite as for loop. Simpler and avoiding potential infinite loops.
+            # TODO: isolate code below into separate functions.
+            ii+=1
             if self.jargs.merged_args.get('job_increment') == 'daily':
-                first_day = self.jargs.merged_args['first_day']
-                last_attempted_period = self.get_last_attempted_period()
-                periods = Period_Builder().get_last_output_to_last_day(last_attempted_period, first_day)
+                if ii == 1:
+                    first_day = self.jargs.merged_args['first_day']
+                    last_run_period = self.get_last_run_period_daily(sc, sc_sql)
+                    periods = Period_Builder().get_last_output_to_last_day(last_run_period, first_day)
+
                 if len(periods) == 0:
-                    logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_attempted_period, self.get_last_day()))
+                    logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_run_period, self.get_last_day()))
                     self.final_inc = True  # remove "self." when sandbox job doesn't depend on it.
                 else:
                     logger.info('Periods remaining to load: {}'.format(periods))
                     period = periods[0]
                     logger.info('Period to be loaded in this run: {}'.format(period))
-                    self.final_inc = period == periods[-1]
-                    self.last_attempted_period = period  # TODO: rename to attempted_period
+                    self.period = period  # to be captured in etl_one_pass, needed for in database filtering.
                     self.jargs.merged_args['file_tag'] = period
                     output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
+                    self.final_inc = period == periods[-1]
+                    periods.pop(0)  # for next increment.
             else:
                 output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
 
-            if self.jargs.rerun_criteria == 'last_date':
+            if self.jargs.rerun_criteria == 'last_date':  # i.e. stop when reached final increment, i.e. current period is last to process. Pb: can go in infinite loop if missing data.
                 needs_run = not self.final_inc
-            elif self.jargs.rerun_criteria == 'output_empty':
+            elif self.jargs.rerun_criteria == 'output_empty':  # i.e. stop when current inc is empty. Good to deal with late arriving data, but will be a pb if some increment doesn't have data and will never have.
                 needs_run = not self.output_empty
             elif self.jargs.rerun_criteria == 'both':
                 needs_run = not (self.output_empty or self.final_inc)
@@ -132,22 +137,23 @@ class ETL_Base(object):
             # TODO: add process time in that case.
             return None
 
-        logger.info('Output sample:')
-        try:
-            output.show()
-        except Exception as e:
-            logger.info("Warning: Failed showing table sample with error '{}'.".format(e))
-            pass
-        count = output.count()
-        logger.info('Output count: {}'.format(count))
-        logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
-        self.output_empty = count == 0
+        if not self.jargs.no_fw_cache or (self.jargs.is_incremental and self.jargs.rerun_criteria == 'output_empty'):
+            logger.info('Output sample:')
+            try:
+                output.show()
+            except Exception as e:
+                logger.info("Warning: Failed showing table sample with error '{}'.".format(e))
+                pass
+            count = output.count()
+            logger.info('Output count: {}'.format(count))
+            logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
+            self.output_empty = count == 0
 
         self.save_output(output, self.start_dt)
         end_time = time()
         elapsed = end_time - start_time
-        logger.info('Process time to complete (post save to file but pre copy to db if any): {} s'.format(elapsed))
-        if self.jargs.save_schemas:
+        logger.info('Process time to complete (post save to file but pre copy to db if any, also may not include processing if output not saved): {} s'.format(elapsed))
+        if self.jargs.save_schemas and schemas:
             schemas.save_yaml(self.jargs.job_name)
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
@@ -159,6 +165,9 @@ class ETL_Base(object):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
         output.unpersist()
+        end_time = time()
+        elapsed = end_time - start_time
+        logger.info('Process time to complete job (post db copies if any): {} s'.format(elapsed))
         logger.info("-------End job '{}'--------".format(self.jargs.job_name))
         return output
 
@@ -200,11 +209,10 @@ class ETL_Base(object):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
-    def get_last_attempted_period(self):
-        first_day = self.jargs.merged_args['first_day']
-        previous_output_max_timestamp = self.get_previous_output_max_timestamp()
-        last_attempted_period  = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else first_day  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
-        return last_attempted_period
+    def get_last_run_period_daily(self, sc, sc_sql):
+        previous_output_max_timestamp = self.get_previous_output_max_timestamp(sc, sc_sql)
+        last_run_period  = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else None  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
+        return last_run_period
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
@@ -239,14 +247,20 @@ class ETL_Base(object):
             app_args[item] = self.load_input(item)
             logger.info("Input '{}' loaded.".format(item))
 
-        if self.jargs.is_incremental and self.jargs.merged_args.get('job_increment') is None:
-            app_args = self.filter_incremental_inputs(app_args)  # Filters after df created. Not useful when filter to be applied before df is created (ex. loading from large database tables)
+        if self.jargs.is_incremental:
+            if self.jargs.merged_args.get('motm_incremental'):
+                app_args = self.filter_incremental_inputs_motm(app_args)
+            else:
+                app_args = self.filter_incremental_inputs_period(app_args)
 
         self.sql_register(app_args)
         return app_args
 
-    def filter_incremental_inputs(self, app_args):
-        min_dt = self.get_previous_output_max_timestamp() if len(app_args.keys()) > 0 else None
+    def filter_incremental_inputs_motm(self, app_args):
+        """Filter based on Min Of The Max (motm) of all inputs. Good to deal with late arriving data or async load but
+        gets stuck if 1 input never has any new data arriving.
+        Assumes increment fields are datetime."""
+        min_dt = self.get_previous_output_max_timestamp(self.sc, self.sc_sql) if len(app_args.keys()) > 0 else None
 
         # Get latest timestamp in common across incremental inputs
         maxes = []
@@ -272,6 +286,22 @@ class ETL_Base(object):
                         app_args[item] = app_args[item].filter(app_args[item][inc] > min_dt)
                     if max_dt:
                         app_args[item] = app_args[item].filter(app_args[item][inc] <= max_dt)
+                else:
+                    raise Exception("Incremental loading is not supported for unstructured input. You need to handle the incremental logic in the job code.")
+        return app_args
+
+    def filter_incremental_inputs_period(self, app_args):
+        """Filter based on period defined in. Simple but can be a pb if late arriving data or dependencies not run.
+        Inputs filtered inside source database will be filtered again."""
+        for item in app_args.keys():
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES
+            inc = self.jargs.inputs[item].get('inc_field', None)
+            if inc:
+                if input_is_tabular:
+                    # TODO: add limit to amount of input data, and set self.final_inc=False
+                    inc_type = {k:v for k, v in app_args[item].dtypes}[inc]
+                    logger.info("Input dataset '{}' will be filtered for {}='{}'".format(item, inc, self.period))
+                    app_args[item] = app_args[item].filter(app_args[item][inc] == self.period)
                 else:
                     raise Exception("Incremental loading is not supported for unstructured input. You need to handle the incremental logic in the job code.")
         return app_args
@@ -315,7 +345,7 @@ class ETL_Base(object):
         logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
-    def load_data_from_files(self, name, path, type):
+    def load_data_from_files(self, name, path, type, sc, sc_sql):
         """Loading any dataset (input or not) and only from file system (not from DBs). Used by incremental jobs to load previous output.
         Different from load_input() which only loads input (input jargs hardcoded) and from any source."""
         # TODO: integrate with load_input to remove duplicated code.
@@ -332,10 +362,10 @@ class ETL_Base(object):
 
         # Tabular types
         if input_type == 'csv':
-            sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
+            sdf = sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
-            sdf = self.sc_sql.read.parquet(path)
+            sdf = sc_sql.read.parquet(path)
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         else:
             raise Exception("Unsupported dataset type '{}' for path '{}'. Supported types are: {}. ".format(input_type, path, self.SUPPORTED_TYPES))
@@ -363,7 +393,7 @@ class ETL_Base(object):
                 .load()
         else:
             inc_field = self.jargs.inputs[input_name]['inc_field']
-            period = self.last_attempted_period
+            period = self.period
             query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
             logger.info('Pulling table from mysql with query_str "{}"'.format(query_str))
             # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
@@ -398,7 +428,7 @@ class ETL_Base(object):
                 .load()
         else:
             inc_field = self.jargs.inputs[input_name]['inc_field']
-            period = self.last_attempted_period
+            period = self.period
             query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
             logger.info('Pulling table from Clickhouse with query_str "{}"'.format(query_str))
             sdf = self.sc_sql.read \
@@ -413,11 +443,11 @@ class ETL_Base(object):
                 .load()
         return sdf
 
-    def get_previous_output_max_timestamp(self):
+    def get_previous_output_max_timestamp(self, sc, sc_sql):
         path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
         path += '*' # to go into subfolders
         try:
-            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'])
+            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql)
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
             return None
@@ -566,7 +596,7 @@ class Period_Builder():
         return last_day
 
     @staticmethod
-    def get_start_to_last_day(first_day):
+    def get_first_to_last_day(first_day):
         now = datetime.utcnow()
         start = datetime.strptime(first_day, "%Y-%m-%d")
         delta = now - start
@@ -579,9 +609,11 @@ class Period_Builder():
             iter_days = iter_days + relativedelta(days=+1)
         return periods
 
-    def get_last_output_to_last_day(self, last_output, first_day):
-        periods = self.get_start_to_last_day(first_day)
-        return [item for item in periods if item > last_output]
+    def get_last_output_to_last_day(self, last_run_period, first_day_input):
+        periods = self.get_first_to_last_day(first_day_input)
+        if last_run_period:
+            periods = [item for item in periods if item > last_run_period]
+        return periods
 
 
 class Schema_Builder():
@@ -994,7 +1026,7 @@ class Commandliner():
                     'jobs_folder': JOB_FOLDER,
                     'storage': 'local',
                     # 'dependencies': False, # only set from commandline
-                    'rerun_criteria': 'both',
+                    'rerun_criteria': 'last_date',
                     # 'boxed_dependencies': False,  # only set from commandline
                     'load_connectors': 'all',
                     # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
@@ -1009,6 +1041,7 @@ class Commandliner():
                     'save_schemas': False,
                     'manage_git_info': False,
                     'add_created_at': 'true',  # set as string to be overrideable in cmdline.
+                    'no_fw_cache': False,
                     }
         return parser, defaults
 
