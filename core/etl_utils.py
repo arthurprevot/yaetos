@@ -210,7 +210,6 @@ class ETL_Base(object):
         raise NotImplementedError
 
     def get_last_run_period_daily(self, sc, sc_sql):
-        # first_day = self.jargs.merged_args['first_day']
         previous_output_max_timestamp = self.get_previous_output_max_timestamp(sc, sc_sql)
         last_run_period  = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else None  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
         return last_run_period
@@ -294,19 +293,6 @@ class ETL_Base(object):
     def filter_incremental_inputs_period(self, app_args):
         """Filter based on period defined in. Simple but can be a pb if late arriving data or dependencies not run.
         Inputs filtered inside source database will be filtered again."""
-        # min_dt = self.get_previous_output_max_timestamp() if len(app_args.keys()) > 0 else None
-        #
-        # # Get latest timestamp in common across incremental inputs
-        # maxes = []
-        # for item in app_args.keys():
-        #     input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES
-        #     inc = self.jargs.inputs[item].get('inc_field', None)
-        #     if input_is_tabular and inc:
-        #         max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
-        #         maxes.append(max_dt)
-        # max_dt = min(maxes) if len(maxes)>0 else None
-
-        # Filter
         for item in app_args.keys():
             input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES
             inc = self.jargs.inputs[item].get('inc_field', None)
