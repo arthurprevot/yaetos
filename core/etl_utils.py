@@ -408,6 +408,7 @@ class ETL_Base(object):
                 .option("url", url) \
                 .option("user", db['user']) \
                 .option("password", db['password']) \
+                .option("customSchema", self.jargs.merged_args.get('jdbc_custom_schema', '')) \
                 .option("query", query_str) \
                 .load()
         return sdf
