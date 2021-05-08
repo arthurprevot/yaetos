@@ -247,7 +247,7 @@ class ETL_Base(object):
             app_args[item] = self.load_input(item)
             logger.info("Input '{}' loaded.".format(item))
 
-        if self.jargs.is_incremental:
+        if self.jargs.is_incremental and self.jargs.inputs[item]['type'] not in ('mysql', 'clickouse'):
             if self.jargs.merged_args.get('motm_incremental'):
                 app_args = self.filter_incremental_inputs_motm(app_args)
             else:
