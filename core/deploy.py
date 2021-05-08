@@ -295,12 +295,14 @@ class DeployPySparkScriptOnAws(object):
                     'InstanceRole': 'MASTER',
                     'InstanceType': self.ec2_instance_master,
                     'InstanceCount': 1,
-                    }, {
-                    'Name': 'EmrCore',
-                    'InstanceRole': 'CORE',
-                    'InstanceType': self.ec2_instance_slaves,
-                    'InstanceCount': self.emr_core_instances,
-                    }],
+                    },
+                    # {
+                    # 'Name': 'EmrCore',
+                    # 'InstanceRole': 'CORE',
+                    # 'InstanceType': self.ec2_instance_slaves,
+                    # 'InstanceCount': self.emr_core_instances,
+                    # }
+                    ],
                 'Ec2KeyName': self.ec2_key_name,
                 'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
                 'Ec2SubnetId': self.ec2_subnet_id,
