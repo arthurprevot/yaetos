@@ -102,6 +102,7 @@ class ETL_Base(object):
                     period = periods[0]
                     logger.info('Period to be loaded in this run: {}'.format(period))
                     self.period = period  # to be captured in etl_one_pass, needed for in database filtering.
+                    self.period_next = periods[1] if len(periods)>=2 else None  # same
                     self.jargs.merged_args['file_tag'] = period
                     output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
                     self.final_inc = period == periods[-1]
@@ -394,7 +395,9 @@ class ETL_Base(object):
         else:
             inc_field = self.jargs.inputs[input_name]['inc_field']
             period = self.period
-            query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
+            # query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
+            higher_limit = "AND {inc_field} < '{period_next}'".format(inc_field=inc_field, period_next=self.period_next) if self.period_next else ''
+            query_str = "select * from {dbtable} where {inc_field} >= '{period}' {higher_limit}".format(dbtable=dbtable, inc_field=inc_field, period=self.period, higher_limit=higher_limit)
             logger.info('Pulling table from mysql with query_str "{}"'.format(query_str))
             # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
             sdf = self.sc_sql.read \
