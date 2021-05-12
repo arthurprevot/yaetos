@@ -470,9 +470,11 @@ class ETL_Base(object):
                   type=self.jargs.output['type'],
                   now_dt=now_dt,
                   is_incremental=self.jargs.is_incremental,
+                  incremental_type=self.jargs.merged_args.get('incremental_type', 'no_schema'),
+                  partitionby=self.jargs.output.get('inc_field'),
                   file_tag=self.jargs.merged_args.get('file_tag'))  # TODO: make param standard in cmd_args ?
 
-    def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, file_tag=None):
+    def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
         path = Path_Handler(path, base_path).expand_now(now_dt)
 
@@ -480,18 +482,21 @@ class ETL_Base(object):
             logger.info('Did not write output to disk')
             return None
 
-        if is_incremental:
+        if is_incremental and incremental_type == 'no_schema':
             current_time = now_dt.strftime('%Y%m%d_%H%M%S_utc')  # no use of now_dt to make it updated for each inc.
             file_tag = ('_' + file_tag) if file_tag else ""  # TODO: make that param standard in cmd_args ?
             path += 'inc_{}{}/'.format(current_time, file_tag)
+
+        write_mode = 'append' if incremental_type == 'partitioned' else 'overwrite'
+        partitionby = partitionby.split(',') if partitionby and incremental_type == 'partitioned' else []
 
         # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
         if type == 'txt':
             output.saveAsTextFile(path)
         elif type == 'parquet':
-            output.write.parquet(path)
+            output.write.partitionBy(*partitionby).mode(write_mode).parquet(path)
         elif type == 'csv':
-            output.write.option("header", "true").csv(path)
+            output.write.partitionBy(*partitionby).mode(write_mode).option("header", "true").csv(path)
         else:
             raise Exception("Need to specify supported output type, either txt, parquet or csv.")
 
