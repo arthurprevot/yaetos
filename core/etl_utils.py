@@ -366,6 +366,7 @@ class ETL_Base(object):
             sdf = sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
+            # TODO: check to add ...read.option("mergeSchema", "true").parquet...
             sdf = sc_sql.read.parquet(path)
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         else:
@@ -449,7 +450,7 @@ class ETL_Base(object):
 
     def get_previous_output_max_timestamp(self, sc, sc_sql):
         path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
-        path += '*' # to go into subfolders
+        path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else '' # to go into subfolders. TODO: check to remove it once using spark partitions.
         try:
             df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql)
         except Exception as e:  # TODO: don't catch all
@@ -487,7 +488,8 @@ class ETL_Base(object):
             file_tag = ('_' + file_tag) if file_tag else ""  # TODO: make that param standard in cmd_args ?
             path += 'inc_{}{}/'.format(current_time, file_tag)
 
-        write_mode = 'append' if incremental_type == 'partitioned' else 'overwrite'
+        # write_mode = 'append' if incremental_type == 'partitioned' else 'error'
+        write_mode = 'append' if incremental_type == 'partitioned' or partitionby else 'error'
         # partitionby = partitionby.split(',') if partitionby and incremental_type == 'partitioned' else []
         partitionby = partitionby.split(',') if partitionby else []
 
