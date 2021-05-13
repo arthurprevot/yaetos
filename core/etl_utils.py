@@ -471,7 +471,7 @@ class ETL_Base(object):
                   now_dt=now_dt,
                   is_incremental=self.jargs.is_incremental,
                   incremental_type=self.jargs.merged_args.get('incremental_type', 'no_schema'),
-                  partitionby=self.jargs.output.get('inc_field'),
+                  partitionby=self.jargs.output.get('inc_field') or self.jargs.merged_args.get('partitionby'),
                   file_tag=self.jargs.merged_args.get('file_tag'))  # TODO: make param standard in cmd_args ?
 
     def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
@@ -488,7 +488,8 @@ class ETL_Base(object):
             path += 'inc_{}{}/'.format(current_time, file_tag)
 
         write_mode = 'append' if incremental_type == 'partitioned' else 'overwrite'
-        partitionby = partitionby.split(',') if partitionby and incremental_type == 'partitioned' else []
+        # partitionby = partitionby.split(',') if partitionby and incremental_type == 'partitioned' else []
+        partitionby = partitionby.split(',') if partitionby else []
 
         # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
         if type == 'txt':
