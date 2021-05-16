@@ -329,7 +329,8 @@ class ETL_Base(object):
 
         # Tabular types
         if input_type == 'csv':
-            sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
+            delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
+            sdf = self.sc_sql.read.option("delimiter", delimiter).csv(path, header=True)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
             sdf = self.sc_sql.read.parquet(path)
@@ -450,7 +451,7 @@ class ETL_Base(object):
 
     def get_previous_output_max_timestamp(self, sc, sc_sql):
         path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
-        path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else '' # to go into subfolders. TODO: check to remove it once using spark partitions.
+        path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else '' # '*' to go into output subfolders.
         try:
             df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql)
         except Exception as e:  # TODO: don't catch all
@@ -488,9 +489,8 @@ class ETL_Base(object):
             file_tag = ('_' + file_tag) if file_tag else ""  # TODO: make that param standard in cmd_args ?
             path += 'inc_{}{}/'.format(current_time, file_tag)
 
-        # write_mode = 'append' if incremental_type == 'partitioned' else 'error'
+        # TODO: rename 'partitioned' to 'spark_partitions' and 'no_schema' to 'yaetos_partitions'
         write_mode = 'append' if incremental_type == 'partitioned' or partitionby else 'error'
-        # partitionby = partitionby.split(',') if partitionby and incremental_type == 'partitioned' else []
         partitionby = partitionby.split(',') if partitionby else []
 
         # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
