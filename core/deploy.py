@@ -455,7 +455,7 @@ class DeployPySparkScriptOnAws(object):
 
         ## Changing below to definition_standalone_cluster.json allows running on single node cluster.
         ## TODO: check to have single node cluster by default when issue with pushing data to redshift with spark connector works.
-        definition_file = eu.LOCAL_APP_FOLDER+'core/definition_standalone_cluster.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
 
         pipelineObjects = trans.definition_to_api_objects(definition)
