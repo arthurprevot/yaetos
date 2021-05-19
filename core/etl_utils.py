@@ -625,6 +625,7 @@ class Period_Builder():
         periods = self.get_first_to_last_day(first_day_input)
         if last_run_period:
             periods = [item for item in periods if item > last_run_period]
+        # periods = [item for item in periods if item < '2021-01-02']  # TODO: make end period parametrizable from args.
         return periods
 
 
