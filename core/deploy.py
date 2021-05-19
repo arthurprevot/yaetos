@@ -296,13 +296,14 @@ class DeployPySparkScriptOnAws(object):
                     'InstanceType': self.ec2_instance_master,
                     'InstanceCount': 1,
                     },
-                    ## TODO: re-enable below when there is a cleaner way to choose between 1 node and multi node clusters.
-                    # {
-                    # 'Name': 'EmrCore',
-                    # 'InstanceRole': 'CORE',
-                    # 'InstanceType': self.ec2_instance_slaves,
-                    # 'InstanceCount': self.emr_core_instances,
-                    # }
+                    ## Commenting below allows running on single node cluster.
+                    ## TODO: check to have single node cluster by default when issue with pushing data to redshift with spark connector works.
+                    {
+                    'Name': 'EmrCore',
+                    'InstanceRole': 'CORE',
+                    'InstanceType': self.ec2_instance_slaves,
+                    'InstanceCount': self.emr_core_instances,
+                    }
                     ],
                 'Ec2KeyName': self.ec2_key_name,
                 'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
@@ -452,8 +453,9 @@ class DeployPySparkScriptOnAws(object):
     def define_data_pipeline(self, client, pipe_id):
         import awscli.customizations.datapipeline.translator as trans
 
+        ## Changing below to definition_standalone_cluster.json allows running on single node cluster.
+        ## TODO: check to have single node cluster by default when issue with pushing data to redshift with spark connector works.
         definition_file = eu.LOCAL_APP_FOLDER+'core/definition_standalone_cluster.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
-        # TODO: change above to have type and number of instances chooseable from args, implying using "core/definition.json" for multi-node clusters.
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
 
         pipelineObjects = trans.definition_to_api_objects(definition)
