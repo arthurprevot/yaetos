@@ -1,0 +1,169 @@
+{
+  "objects": [
+    {
+      "name": "EmrActivityObjYaetos",
+      "id": "EmrActivityObj",
+      "type": "EmrActivity",
+      "step": "#{myEmrStep}",
+      "runsOn": {"ref": "EmrClusterObj"}
+    },
+    {
+      "name": "EmrClusterObjYaetos",
+      "id": "EmrClusterObj",
+      "type": "EmrCluster",
+      "subnetId": "#{mySubnet}",
+      "taskInstanceType": "#{myTaskInstanceType}",
+      "taskInstanceCount": "#{myTaskInstanceCount}",
+      "bootstrapAction": "#{myBootstrapAction}",
+      "keyPair": "#{myEC2KeyPair}",
+      "masterInstanceType": "#{myMasterInstanceType}",
+      "releaseLabel": "#{myEMRReleaseLabel}",
+      "terminateAfter": "300 Minutes",
+      "applications": "spark",
+      "configuration": {"ref": "spark-env" }
+    },
+    {
+      "name": "spark-env",
+      "id": "spark-env",
+      "type": "EmrConfiguration",
+      "classification": "spark-env",
+      "configuration": {"ref": "export" }
+    },
+    {
+      "name": "export",
+      "id": "export",
+      "type": "EmrConfiguration",
+      "classification": "export",
+      "property": {"ref": "pyspark_python" }
+    },
+    {
+      "name": "pyspark_python",
+      "id": "pyspark_python",
+      "type": "Property",
+      "key": "PYSPARK_PYTHON",
+      "value": "/usr/bin/python3"
+    },
+    {
+      "name": "DefaultYaetos",
+      "id": "Default",
+      "failureAndRerunMode": "CASCADE",
+      "resourceRole": "DataPipelineDefaultResourceRole",
+      "role": "DataPipelineDefaultRole",
+      "pipelineLogUri": "#{myPipelineLogUri}",
+      "scheduleType": "#{myScheduleType}",
+      "schedule": {"ref": "DefaultSchedule"}
+    },
+    {
+      "name": "CustomScheduleYaetos",
+      "id": "DefaultSchedule",
+      "type": "Schedule",
+      "period": "#{myPeriod}",
+      "startDateTime": "#{myStartDateTime}"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "myEC2KeyPair",
+      "type": "String",
+      "helpText": "An existing EC2 key pair to SSH into the master node of the EMR cluster as the user \"hadoop\".",
+      "description": "EC2 key pair",
+      "optional": "true"
+    },
+    {
+      "id": "myPipelineLogUri",
+      "type": "String",
+      "helpText": "blah",
+      "description": "blah bla",
+      "optional": "true"
+    },
+    {
+      "id": "myScheduleType",
+      "type": "String",
+      "helpText": "blah",
+      "description": "values seen: ONDEMAND, cron",
+      "optional": "true"
+    },
+    {
+      "id": "myPeriod",
+      "type": "String",
+      "helpText": "blah",
+      "description": "blah blah",
+      "optional": "true"
+    },
+    {
+      "id": "myStartDateTime",
+      "type": "String",
+      "helpText": "blah",
+      "description": "blah blah",
+      "optional": "true"
+    },
+    {
+      "id": "myEmrStep",
+      "type": "String",
+      "helpLink": "https://docs.aws.amazon.com/console/datapipeline/emrsteps",
+      "watermark": "s3://myBucket/myPath/myStep.jar,firstArg,secondArg",
+      "helpText": "A step is a unit of work you submit to the cluster. You can specify one or more steps",
+      "description": "EMR step(s)",
+      "isArray": "true"
+    },
+    {
+      "id": "myTaskInstanceType",
+      "type": "String",
+      "helpText": "Task instances run Hadoop tasks.",
+      "description": "Task node instance type",
+      "optional": "true"
+    },
+    {
+      "id": "myEMRReleaseLabel",
+      "type": "String",
+      "default": "emr-5.26.0",
+      "helpText": "Determines the base configuration of the instances in your cluster, including the Hadoop version.",
+      "description": "EMR Release Label"
+    },
+    {
+      "id": "myTaskInstanceCount",
+      "type": "Integer",
+      "description": "Task node instance count",
+      "optional": "true"
+    },
+    {
+      "id": "mySubnet",
+      "type": "string",
+      "description": "Subnet for EC2 master node to connect to external dbs for ex",
+      "optional": "true"
+    },
+    {
+      "id": "myBootstrapAction",
+      "type": "String",
+      "helpLink": "https://docs.aws.amazon.com/console/datapipeline/emr_bootstrap_actions",
+      "helpText": "Bootstrap actions are scripts that are executed during setup before Hadoop starts on every cluster node.",
+      "description": "Bootstrap action(s)",
+      "isArray": "true",
+      "optional": "true"
+    },
+    {
+      "id": "myMasterInstanceType",
+      "type": "String",
+      "default": "m5.xlarge",
+      "helpText": "The Master instance assigns Hadoop tasks to core and task nodes, and monitors their status.",
+      "description": "Master node instance type"
+    }
+  ],
+  "values": {
+    "myEMRReleaseLabel": "emr-5.26.0",
+    "myMasterInstanceType": "m5.xlarge",
+    "myBootstrapAction": [
+      "s3://some_bucket/some_script.sh"
+    ],
+    "myEmrStep": [
+      "some_setup_command",
+      "some_spark_submit"
+    ],
+    "mySubnet":"some_value",
+    "myPipelineLogUri": "some_bucket",
+    "myEC2KeyPair": "some_key_pair",
+    "myScheduleType": "ONDEMAND",
+    "myPeriod": "1 Day",
+    "myStartDateTime": "2019-09-09T00:00:00"
+  }
+}

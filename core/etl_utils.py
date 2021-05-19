@@ -102,6 +102,7 @@ class ETL_Base(object):
                     period = periods[0]
                     logger.info('Period to be loaded in this run: {}'.format(period))
                     self.period = period  # to be captured in etl_one_pass, needed for in database filtering.
+                    self.period_next = periods[1] if len(periods)>=2 else None  # same
                     self.jargs.merged_args['file_tag'] = period
                     output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
                     self.final_inc = period == periods[-1]
@@ -247,7 +248,7 @@ class ETL_Base(object):
             app_args[item] = self.load_input(item)
             logger.info("Input '{}' loaded.".format(item))
 
-        if self.jargs.is_incremental:
+        if self.jargs.is_incremental and self.jargs.inputs[item]['type'] not in ('mysql', 'clickouse'):
             if self.jargs.merged_args.get('motm_incremental'):
                 app_args = self.filter_incremental_inputs_motm(app_args)
             else:
@@ -328,7 +329,8 @@ class ETL_Base(object):
 
         # Tabular types
         if input_type == 'csv':
-            sdf = self.sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
+            delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
+            sdf = self.sc_sql.read.option("delimiter", delimiter).csv(path, header=True)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
             sdf = self.sc_sql.read.parquet(path)
@@ -365,6 +367,7 @@ class ETL_Base(object):
             sdf = sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
+            # TODO: check to add ...read.option("mergeSchema", "true").parquet...
             sdf = sc_sql.read.parquet(path)
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
         else:
@@ -394,7 +397,9 @@ class ETL_Base(object):
         else:
             inc_field = self.jargs.inputs[input_name]['inc_field']
             period = self.period
-            query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
+            # query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
+            higher_limit = "AND {inc_field} < '{period_next}'".format(inc_field=inc_field, period_next=self.period_next) if self.period_next else ''
+            query_str = "select * from {dbtable} where {inc_field} >= '{period}' {higher_limit}".format(dbtable=dbtable, inc_field=inc_field, period=self.period, higher_limit=higher_limit)
             logger.info('Pulling table from mysql with query_str "{}"'.format(query_str))
             # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
             sdf = self.sc_sql.read \
@@ -405,6 +410,7 @@ class ETL_Base(object):
                 .option("url", url) \
                 .option("user", db['user']) \
                 .option("password", db['password']) \
+                .option("customSchema", self.jargs.merged_args.get('jdbc_custom_schema', '')) \
                 .option("query", query_str) \
                 .load()
         return sdf
@@ -445,7 +451,7 @@ class ETL_Base(object):
 
     def get_previous_output_max_timestamp(self, sc, sc_sql):
         path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
-        path += '*' # to go into subfolders
+        path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else '' # '*' to go into output subfolders.
         try:
             df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql)
         except Exception as e:  # TODO: don't catch all
@@ -466,9 +472,11 @@ class ETL_Base(object):
                   type=self.jargs.output['type'],
                   now_dt=now_dt,
                   is_incremental=self.jargs.is_incremental,
+                  incremental_type=self.jargs.merged_args.get('incremental_type', 'no_schema'),
+                  partitionby=self.jargs.output.get('inc_field') or self.jargs.merged_args.get('partitionby'),
                   file_tag=self.jargs.merged_args.get('file_tag'))  # TODO: make param standard in cmd_args ?
 
-    def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, file_tag=None):
+    def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
         path = Path_Handler(path, base_path).expand_now(now_dt)
 
@@ -476,18 +484,22 @@ class ETL_Base(object):
             logger.info('Did not write output to disk')
             return None
 
-        if is_incremental:
+        if is_incremental and incremental_type == 'no_schema':
             current_time = now_dt.strftime('%Y%m%d_%H%M%S_utc')  # no use of now_dt to make it updated for each inc.
             file_tag = ('_' + file_tag) if file_tag else ""  # TODO: make that param standard in cmd_args ?
             path += 'inc_{}{}/'.format(current_time, file_tag)
+
+        # TODO: rename 'partitioned' to 'spark_partitions' and 'no_schema' to 'yaetos_partitions'
+        write_mode = 'append' if incremental_type == 'partitioned' or partitionby else 'error'
+        partitionby = partitionby.split(',') if partitionby else []
 
         # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
         if type == 'txt':
             output.saveAsTextFile(path)
         elif type == 'parquet':
-            output.write.parquet(path)
+            output.write.partitionBy(*partitionby).mode(write_mode).parquet(path)
         elif type == 'csv':
-            output.write.option("header", "true").csv(path)
+            output.write.partitionBy(*partitionby).mode(write_mode).option("header", "true").csv(path)
         else:
             raise Exception("Need to specify supported output type, either txt, parquet or csv.")
 
@@ -613,6 +625,7 @@ class Period_Builder():
         periods = self.get_first_to_last_day(first_day_input)
         if last_run_period:
             periods = [item for item in periods if item > last_run_period]
+        # periods = [item for item in periods if item < '2021-01-02']  # TODO: make end period parametrizable from args.
         return periods
 
 

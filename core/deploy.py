@@ -295,12 +295,15 @@ class DeployPySparkScriptOnAws(object):
                     'InstanceRole': 'MASTER',
                     'InstanceType': self.ec2_instance_master,
                     'InstanceCount': 1,
-                    }, {
-                    'Name': 'EmrCore',
-                    'InstanceRole': 'CORE',
-                    'InstanceType': self.ec2_instance_slaves,
-                    'InstanceCount': self.emr_core_instances,
-                    }],
+                    },
+                    ## TODO: re-enable below when there is a cleaner way to choose between 1 node and multi node clusters.
+                    # {
+                    # 'Name': 'EmrCore',
+                    # 'InstanceRole': 'CORE',
+                    # 'InstanceType': self.ec2_instance_slaves,
+                    # 'InstanceCount': self.emr_core_instances,
+                    # }
+                    ],
                 'Ec2KeyName': self.ec2_key_name,
                 'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
                 'Ec2SubnetId': self.ec2_subnet_id,
@@ -449,7 +452,8 @@ class DeployPySparkScriptOnAws(object):
     def define_data_pipeline(self, client, pipe_id):
         import awscli.customizations.datapipeline.translator as trans
 
-        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        definition_file = eu.LOCAL_APP_FOLDER+'core/definition_standalone_cluster.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        # TODO: change above to have type and number of instances chooseable from args, implying using "core/definition.json" for multi-node clusters.
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
 
         pipelineObjects = trans.definition_to_api_objects(definition)
