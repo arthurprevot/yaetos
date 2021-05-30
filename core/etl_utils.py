@@ -110,7 +110,8 @@ class ETL_Base(object):
                     self.final_inc = period == periods[-1]
                     periods.pop(0)  # for next increment.
             else:
-                output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
+                # output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
+                raise Exception("'job_increment' param has to be set to 'daily'")
 
             if self.jargs.rerun_criteria == 'last_date':  # i.e. stop when reached final increment, i.e. current period is last to process. Pb: can go in infinite loop if missing data.
                 needs_run = not self.final_inc
