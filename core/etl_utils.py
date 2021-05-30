@@ -32,6 +32,7 @@ from pprint import pformat
 import smtplib, ssl
 from pyspark.sql.window import Window
 from pyspark.sql import functions as F
+from pyspark.sql.types import StructType
 from core.git_utils import Git_Config_Manager
 from dateutil.relativedelta import relativedelta
 import core.logger as log
@@ -95,7 +96,8 @@ class ETL_Base(object):
                     periods = Period_Builder().get_last_output_to_last_day(last_run_period, first_day)
 
                 if len(periods) == 0:
-                    logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_run_period, self.get_last_day()))
+                    logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_run_period, Period_Builder.get_last_day()))
+                    output = sc_sql.createDataFrame([], StructType([]))
                     self.final_inc = True  # remove "self." when sandbox job doesn't depend on it.
                 else:
                     logger.info('Periods remaining to load: {}'.format(periods))
