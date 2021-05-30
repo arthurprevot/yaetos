@@ -373,6 +373,12 @@ class ETL_Base(object):
         else:
             raise Exception("Unsupported dataset type '{}' for path '{}'. Supported types are: {}. ".format(input_type, path, self.SUPPORTED_TYPES))
 
+        # df_custom_schema = self.jargs.merged_args.get('df_custom_schema')
+        # if df_custom_schema:
+        #     for field, type in df_custom_schema.items():
+        #         table_to_copy = table_to_copy.withColumn(field, table_to_copy[field].cast(type))
+
+
         logger.info("Dataset data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
@@ -401,6 +407,9 @@ class ETL_Base(object):
             higher_limit = "AND {inc_field} < '{period_next}'".format(inc_field=inc_field, period_next=self.period_next) if self.period_next else ''
             query_str = "select * from {dbtable} where {inc_field} >= '{period}' {higher_limit}".format(dbtable=dbtable, inc_field=inc_field, period=self.period, higher_limit=higher_limit)
             logger.info('Pulling table from mysql with query_str "{}"'.format(query_str))
+            # if self.jargs.merged_args.get('custom_schema', '')
+            #         db_overridden_types_str = ', '.join([k + ' ' + v for k, v in db_overridden_types.items()])
+
             # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
             sdf = self.sc_sql.read \
                 .format('jdbc') \
