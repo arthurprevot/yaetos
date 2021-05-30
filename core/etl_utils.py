@@ -77,7 +77,7 @@ class ETL_Base(object):
             else:
                 output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
         except Exception as err:
-            if self.jargs.mode in ('dev_EMR', 'prod_EMR'):
+            if self.jargs.mode in ('prod_EMR') and self.jargs.merged_args.get('owners'):
                 self.send_job_failure_email(err)
             raise Exception("Job failed, error: \n{}".format(err))
         return output
