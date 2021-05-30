@@ -160,6 +160,37 @@ class DeployPySparkScriptOnAws(object):
             self.describe_status_until_terminated(c)
             self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
 
+    def run_direct_emr_on_eks(self):
+        """Useful to run job on cluster without bothering with aws data pipeline. Also useful to add steps to existing cluster."""
+        self.s3_ops(self.session)
+        if self.deploy_args.get('push_secrets', False):
+            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
+
+        # EMR ops
+        c = self.session.client('emr-containers')
+        # clusters = self.get_active_clusters(c)
+        # cluster = self.choose_cluster(clusters)
+        # new_cluster = cluster['id'] is None
+        new_cluster = True
+        if new_cluster:
+            print("Starting new cluster")
+            self.start_spark_eks_pod(c)
+            print("cluster name: %s, and id: %s"%(self.pipeline_name, self.cluster_id))
+            self.step_run_setup_scripts(c)
+        # else:
+        #     print("Reusing existing cluster, name: %s, and id: %s"%(cluster['name'], cluster['id']))
+        #     self.cluster_id = cluster['id']
+        #     self.step_run_setup_scripts(c)
+
+        # Run job
+        self.step_spark_submit(c, self.app_file, self.app_args)
+
+        # Clean
+        if new_cluster and not self.deploy_args.get('leave_on') and self.app_args.get('clean_post_run'):  # TODO: add clean_post_run in input options.
+            logger.info("New cluster setup to be deleted after job finishes.")
+            self.describe_status_until_terminated(c)
+            self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
+
     def s3_ops(self, session):
         s3 = session.resource('s3')
         self.temp_bucket_exists(s3)
@@ -228,8 +259,8 @@ class DeployPySparkScriptOnAws(object):
             # If it was a 404 error, then the bucket does not exist.
             error_code = int(e.response['Error']['Code'])
             if error_code == 404:
-                terminate("Bucket for temporary files does not exist: "+self.s3_bucket_logs+' '+e.message)
-            terminate("Error while connecting to temporary Bucket: "+self.s3_bucket_logs+' '+e.message)
+                terminate("Bucket for temporary files does not exist: "+self.s3_bucket_logs+' '+str(e))
+            terminate("Error while connecting to temporary Bucket: "+self.s3_bucket_logs+' '+str(e))
         logger.info("S3 bucket for temporary files exists: "+self.s3_bucket_logs)
 
     def tar_python_scripts(self):
@@ -377,6 +408,115 @@ class DeployPySparkScriptOnAws(object):
                     }
                 }],
             )
+        # Process response to determine if Spark cluster was started, and if so, the JobFlowId of the cluster
+        response_code = response['ResponseMetadata']['HTTPStatusCode']
+        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+            self.cluster_id = response['JobFlowId']
+        else:
+            terminate("Could not create EMR cluster (status code {})".format(response_code))
+
+        logger.info("Created Spark EMR cluster ({}) with cluster_id {}".format(emr_version, self.cluster_id))
+
+    def start_spark_eks_pod(self, c):
+        """
+        :param c: EMR client
+        :return:
+        """
+        emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
+
+
+        response = c.run_job_flow(
+            Name=self.pipeline_name,
+            LogUri="s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder),
+            ReleaseLabel=emr_version,
+            Instances={
+                'InstanceGroups': [{
+                    'Name': 'EmrMaster',
+                    'InstanceRole': 'MASTER',
+                    'InstanceType': self.ec2_instance_master,
+                    'InstanceCount': 1,
+                    },
+                    ## Commenting below allows running on single node cluster.
+                    ## TODO: check to have single node cluster by default when issue with pushing data to redshift with spark connector works.
+                    {
+                    'Name': 'EmrCore',
+                    'InstanceRole': 'CORE',
+                    'InstanceType': self.ec2_instance_slaves,
+                    'InstanceCount': self.emr_core_instances,
+                    }
+                    ],
+                'Ec2KeyName': self.ec2_key_name,
+                'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
+                'Ec2SubnetId': self.ec2_subnet_id,
+                # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
+            },
+            Applications=[{'Name': 'Hadoop'}, {'Name': 'Spark'}],
+            Configurations=[
+                { # Section to force python3 since emr-5.x uses python2 by default.
+                "Classification": "spark-env",
+                "Configurations": [{
+                    "Classification": "export",
+                    "Properties": {"PYSPARK_PYTHON": "/usr/bin/python3"}
+                    }]
+                },
+                # { # Section to add jars (redshift...), not used for now, since passed in spark-submit args.
+                # "Classification": "spark-defaults",
+                # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"],
+                # }
+            ],
+            JobFlowRole='EMR_EC2_DefaultRole',
+            ServiceRole='EMR_DefaultRole',
+            VisibleToAllUsers=True,
+            BootstrapActions=[{
+                'Name': 'setup_nodes',
+                'ScriptBootstrapAction': {
+                    'Path': 's3n://{}/setup_nodes.sh'.format(self.package_path_with_bucket),
+                    'Args': []
+                    }
+                }],
+            )
+
+        response = client.start_job_run(
+            name='string',
+            virtualClusterId='string',
+            clientToken='string',
+            executionRoleArn='string',
+            releaseLabel='string',
+            jobDriver={
+                'sparkSubmitJobDriver': {
+                    'entryPoint': 'string',
+                    'entryPointArguments': [
+                        'string',
+                    ],
+                    'sparkSubmitParameters': 'string'
+                }
+            },
+            configurationOverrides={
+                'applicationConfiguration': [
+                    {
+                        'classification': 'string',
+                        'properties': {
+                            'string': 'string'
+                        },
+                        'configurations': {'... recursive ...'}
+                    },
+                ],
+                'monitoringConfiguration': {
+                    'persistentAppUI': 'ENABLED'|'DISABLED',
+                    'cloudWatchMonitoringConfiguration': {
+                        'logGroupName': 'string',
+                        'logStreamNamePrefix': 'string'
+                    },
+                    's3MonitoringConfiguration': {
+                        'logUri': 'string'
+                    }
+                }
+            },
+            tags={
+                'string': 'string'
+            }
+        )
+
         # Process response to determine if Spark cluster was started, and if so, the JobFlowId of the cluster
         response_code = response['ResponseMetadata']['HTTPStatusCode']
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
