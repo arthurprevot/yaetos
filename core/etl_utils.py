@@ -110,7 +110,6 @@ class ETL_Base(object):
                     self.final_inc = period == periods[-1]
                     periods.pop(0)  # for next increment.
             else:
-                # output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
                 raise Exception("'job_increment' param has to be set to 'daily'")
 
             if self.jargs.rerun_criteria == 'last_date':  # i.e. stop when reached final increment, i.e. current period is last to process. Pb: can go in infinite loop if missing data.
@@ -376,11 +375,11 @@ class ETL_Base(object):
         else:
             raise Exception("Unsupported dataset type '{}' for path '{}'. Supported types are: {}. ".format(input_type, path, self.SUPPORTED_TYPES))
 
+        # New param "custom_schema" to work for both db and file inputs (instead of just db). TODO: finish.
         # df_custom_schema = self.jargs.merged_args.get('df_custom_schema')
         # if df_custom_schema:
         #     for field, type in df_custom_schema.items():
         #         table_to_copy = table_to_copy.withColumn(field, table_to_copy[field].cast(type))
-
 
         logger.info("Dataset data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
