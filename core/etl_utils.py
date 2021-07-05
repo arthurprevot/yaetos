@@ -32,6 +32,7 @@ from pprint import pformat
 import smtplib, ssl
 from pyspark.sql.window import Window
 from pyspark.sql import functions as F
+from pyspark.sql.types import StructType
 from core.git_utils import Git_Config_Manager
 from dateutil.relativedelta import relativedelta
 import core.logger as log
@@ -77,7 +78,7 @@ class ETL_Base(object):
             else:
                 output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
         except Exception as err:
-            if self.jargs.mode in ('dev_EMR', 'prod_EMR'):
+            if self.jargs.mode in ('prod_EMR') and self.jargs.merged_args.get('owners'):
                 self.send_job_failure_email(err)
             raise Exception("Job failed, error: \n{}".format(err))
         return output
@@ -95,7 +96,8 @@ class ETL_Base(object):
                     periods = Period_Builder().get_last_output_to_last_day(last_run_period, first_day)
 
                 if len(periods) == 0:
-                    logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_run_period, self.get_last_day()))
+                    logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_run_period, Period_Builder.get_last_day()))
+                    output = sc_sql.createDataFrame([], StructType([]))
                     self.final_inc = True  # remove "self." when sandbox job doesn't depend on it.
                 else:
                     logger.info('Periods remaining to load: {}'.format(periods))
@@ -108,7 +110,7 @@ class ETL_Base(object):
                     self.final_inc = period == periods[-1]
                     periods.pop(0)  # for next increment.
             else:
-                output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
+                raise Exception("'job_increment' param has to be set to 'daily'")
 
             if self.jargs.rerun_criteria == 'last_date':  # i.e. stop when reached final increment, i.e. current period is last to process. Pb: can go in infinite loop if missing data.
                 needs_run = not self.final_inc
@@ -373,6 +375,12 @@ class ETL_Base(object):
         else:
             raise Exception("Unsupported dataset type '{}' for path '{}'. Supported types are: {}. ".format(input_type, path, self.SUPPORTED_TYPES))
 
+        # New param "custom_schema" to work for both db and file inputs (instead of just db). TODO: finish.
+        # df_custom_schema = self.jargs.merged_args.get('df_custom_schema')
+        # if df_custom_schema:
+        #     for field, type in df_custom_schema.items():
+        #         table_to_copy = table_to_copy.withColumn(field, table_to_copy[field].cast(type))
+
         logger.info("Dataset data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
@@ -401,6 +409,9 @@ class ETL_Base(object):
             higher_limit = "AND {inc_field} < '{period_next}'".format(inc_field=inc_field, period_next=self.period_next) if self.period_next else ''
             query_str = "select * from {dbtable} where {inc_field} >= '{period}' {higher_limit}".format(dbtable=dbtable, inc_field=inc_field, period=self.period, higher_limit=higher_limit)
             logger.info('Pulling table from mysql with query_str "{}"'.format(query_str))
+            # if self.jargs.merged_args.get('custom_schema', '')
+            #         db_overridden_types_str = ', '.join([k + ' ' + v for k, v in db_overridden_types.items()])
+
             # TODO: check if it should use com.mysql.cj.jdbc.Driver instead as above
             sdf = self.sc_sql.read \
                 .format('jdbc') \
