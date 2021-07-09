@@ -914,8 +914,9 @@ class FS_Ops_Dispatcher():
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
         client = boto3.client('s3')
-        objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
+        objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')  # TODO deal with pagination since it lists only 1000 elements here, or add a check that list is < 1000 items.
         paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
+        assert len(paths) <= 999
         return paths
 
     # --- dir_exist set of functions ----
