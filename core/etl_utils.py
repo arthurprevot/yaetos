@@ -917,20 +917,9 @@ class FS_Ops_Dispatcher():
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
         client = boto3.client('s3')
-        # objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')  # TODO deal with pagination since it lists only 1000 elements here, or add a check that list is < 1000 items.
-        # paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
         paginator = client.get_paginator('list_objects')
         objects = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
-        # for prefix in objects.search('CommonPrefixes'):
-        #     if prefix == None:
-        # paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
         paths = [item['Prefix'].split('/')[-2] for item in objects.search('CommonPrefixes')]
-        # for object in objects.search('CommonPrefixes'):
-        #     import ipdb; ipdb.set_trace()
-
-        print('Number of folders in path "{}": {}'.format(path, len(paths)))
-
-        # assert len(paths) <= 999
         return paths
 
     # --- dir_exist set of functions ----
