@@ -509,7 +509,6 @@ class DeployPySparkScriptOnAws(object):
             myStartDateTime = self.deploy_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d'))
         else :
             myStartDateTime = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
-        # TODO: self.app_args['start_date'] is taken from jobs_metadata_local.yml, instead of jobs_metadata.yml. Fix it
         bootstrap = 's3://{}/setup_nodes.sh'.format(self.package_path_with_bucket)
 
         for ii, item in enumerate(parameterValues):
@@ -527,6 +526,8 @@ class DeployPySparkScriptOnAws(object):
                 parameterValues[ii] = {'id': u'myStartDateTime', 'stringValue': myStartDateTime}
             elif 'myBootstrapAction' in item.values():
                 parameterValues[ii] = {'id': u'myBootstrapAction', 'stringValue': bootstrap}
+            elif 'myTerminateAfter' in item.values():
+                parameterValues[ii] = {'id': u'myTerminateAfter', 'stringValue': self.deploy_args.get('terminate_after', '180 Minutes')}
 
         # Change steps to include proper path
         setup_command =  's3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://{s3_tmp_path}/setup_master.sh,s3://{s3_tmp_path}'.format(s3_tmp_path=self.package_path_with_bucket) # s3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/setup_master.sh,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/
