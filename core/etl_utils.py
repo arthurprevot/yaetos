@@ -919,6 +919,7 @@ class FS_Ops_Dispatcher():
         client = boto3.client('s3')
         objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')  # TODO deal with pagination since it lists only 1000 elements here, or add a check that list is < 1000 items.
         paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
+        print('Number of folders in path "{}": {}'.format(path, len(paths)))
 
         # paginator = client.get_paginator('list_objects')
         # objects = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
