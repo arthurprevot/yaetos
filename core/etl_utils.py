@@ -829,9 +829,10 @@ class Job_Args_Parser():
 
 
 class FS_Ops_Dispatcher():
+    # TODO: remove storage var not used anymore accross all functions below
     # --- save_metadata set of functions ----
     def save_metadata(self, fname, content, storage):
-        self.save_metadata_cluster(fname, content) if storage=='s3' else self.save_metadata_local(fname, content)
+        self.save_metadata_cluster(fname, content) if fname.startswith('s3://') or fname.startswith('s3a://') else self.save_metadata_local(fname, content)
 
     @staticmethod
     def save_metadata_local(fname, content):
@@ -852,7 +853,7 @@ class FS_Ops_Dispatcher():
 
     # --- save_file set of functions ----
     def save_file(self, fname, content, storage):
-        self.save_file_cluster(fname, content) if storage=='s3' else self.save_file_local(fname, content)
+        self.save_file_cluster(fname, content) if fname.startswith('s3://') or fname.startswith('s3a://') else self.save_file_local(fname, content)
 
     @staticmethod
     def save_file_local(fname, content):
@@ -876,7 +877,7 @@ class FS_Ops_Dispatcher():
 
     # --- load_file set of functions ----
     def load_file(self, fname, storage):
-        return self.load_file_cluster(fname) if storage=='s3' else self.load_file_local(fname)
+        return self.load_file_cluster(fname) if fname.startswith('s3://') or fname.startswith('s3a://') else self.load_file_local(fname)
 
     @staticmethod
     def load_file_local(fname):
@@ -896,7 +897,8 @@ class FS_Ops_Dispatcher():
 
     # --- listdir set of functions ----
     def listdir(self, path, storage):
-        return self.listdir_cluster(path) if storage=='s3' else self.listdir_local(path)
+        # return self.listdir_cluster(path) if storage=='s3' else self.listdir_local(path)
+        return self.listdir_cluster(path) if path.startswith('s3://') or path.startswith('s3a://') else self.listdir_local(path)
 
     @staticmethod
     def listdir_local(path):
@@ -917,6 +919,12 @@ class FS_Ops_Dispatcher():
         client = boto3.client('s3')
         objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')  # TODO deal with pagination since it lists only 1000 elements here, or add a check that list is < 1000 items.
         paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
+
+        # paginator = client.get_paginator('list_objects')
+        # objects = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
+        # for prefix in objects.search('CommonPrefixes'):
+        #     if prefix == None:
+
         assert len(paths) <= 999
         return paths
 
