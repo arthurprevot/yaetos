@@ -829,10 +829,15 @@ class Job_Args_Parser():
 
 
 class FS_Ops_Dispatcher():
-    # TODO: remove storage var not used anymore accross all functions below
+    # TODO: remove 'storage' var not used anymore accross all functions below, since now infered from path
+
+    @staticmethod
+    def is_s3_path(path):
+        return path.startswith('s3://') or path.startswith('s3a://')
+
     # --- save_metadata set of functions ----
     def save_metadata(self, fname, content, storage):
-        self.save_metadata_cluster(fname, content) if fname.startswith('s3://') or fname.startswith('s3a://') else self.save_metadata_local(fname, content)
+        self.save_metadata_cluster(fname, content) if self.is_s3_path(fname) else self.save_metadata_local(fname, content)
 
     @staticmethod
     def save_metadata_local(fname, content):
@@ -853,7 +858,7 @@ class FS_Ops_Dispatcher():
 
     # --- save_file set of functions ----
     def save_file(self, fname, content, storage):
-        self.save_file_cluster(fname, content) if fname.startswith('s3://') or fname.startswith('s3a://') else self.save_file_local(fname, content)
+        self.save_file_cluster(fname, content) if self.is_s3_path(fname) else self.save_file_local(fname, content)
 
     @staticmethod
     def save_file_local(fname, content):
@@ -877,7 +882,7 @@ class FS_Ops_Dispatcher():
 
     # --- load_file set of functions ----
     def load_file(self, fname, storage):
-        return self.load_file_cluster(fname) if fname.startswith('s3://') or fname.startswith('s3a://') else self.load_file_local(fname)
+        return self.load_file_cluster(fname) if self.is_s3_path(fname) else self.load_file_local(fname)
 
     @staticmethod
     def load_file_local(fname):
@@ -897,8 +902,7 @@ class FS_Ops_Dispatcher():
 
     # --- listdir set of functions ----
     def listdir(self, path, storage):
-        # return self.listdir_cluster(path) if storage=='s3' else self.listdir_local(path)
-        return self.listdir_cluster(path) if path.startswith('s3://') or path.startswith('s3a://') else self.listdir_local(path)
+        return self.listdir_cluster(path) if self.is_s3_path(path) else self.listdir_local(path)
 
     @staticmethod
     def listdir_local(path):
@@ -924,7 +928,7 @@ class FS_Ops_Dispatcher():
 
     # --- dir_exist set of functions ----
     def dir_exist(self, path, storage):
-        return self.dir_exist_cluster(path) if storage=='s3' else self.dir_exist_local(path)
+        return self.dir_exist_cluster(path) if self.is_s3_path(path) else self.dir_exist_local(path)
 
     @staticmethod
     def dir_exist_local(path):
