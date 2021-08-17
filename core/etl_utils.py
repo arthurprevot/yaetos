@@ -739,7 +739,8 @@ class Job_Yml_Parser():
 
 class Job_Args_Parser():
 
-    DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date', 'email', 'mode', 'deploy']
+    DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date',
+                        'email', 'mode', 'deploy', 'terminate_after']
 
     def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
@@ -828,9 +829,15 @@ class Job_Args_Parser():
 
 
 class FS_Ops_Dispatcher():
+    # TODO: remove 'storage' var not used anymore accross all functions below, since now infered from path
+
+    @staticmethod
+    def is_s3_path(path):
+        return path.startswith('s3://') or path.startswith('s3a://')
+
     # --- save_metadata set of functions ----
     def save_metadata(self, fname, content, storage):
-        self.save_metadata_cluster(fname, content) if storage=='s3' else self.save_metadata_local(fname, content)
+        self.save_metadata_cluster(fname, content) if self.is_s3_path(fname) else self.save_metadata_local(fname, content)
 
     @staticmethod
     def save_metadata_local(fname, content):
@@ -851,7 +858,7 @@ class FS_Ops_Dispatcher():
 
     # --- save_file set of functions ----
     def save_file(self, fname, content, storage):
-        self.save_file_cluster(fname, content) if storage=='s3' else self.save_file_local(fname, content)
+        self.save_file_cluster(fname, content) if self.is_s3_path(fname) else self.save_file_local(fname, content)
 
     @staticmethod
     def save_file_local(fname, content):
@@ -875,7 +882,7 @@ class FS_Ops_Dispatcher():
 
     # --- load_file set of functions ----
     def load_file(self, fname, storage):
-        return self.load_file_cluster(fname) if storage=='s3' else self.load_file_local(fname)
+        return self.load_file_cluster(fname) if self.is_s3_path(fname) else self.load_file_local(fname)
 
     @staticmethod
     def load_file_local(fname):
@@ -895,7 +902,7 @@ class FS_Ops_Dispatcher():
 
     # --- listdir set of functions ----
     def listdir(self, path, storage):
-        return self.listdir_cluster(path) if storage=='s3' else self.listdir_local(path)
+        return self.listdir_cluster(path) if self.is_s3_path(path) else self.listdir_local(path)
 
     @staticmethod
     def listdir_local(path):
@@ -914,14 +921,14 @@ class FS_Ops_Dispatcher():
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
         client = boto3.client('s3')
-        objects = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')  # TODO deal with pagination since it lists only 1000 elements here, or add a check that list is < 1000 items.
-        paths = [item['Prefix'].split('/')[-2] for item in objects.get('CommonPrefixes')]
-        assert len(paths) <= 999
+        paginator = client.get_paginator('list_objects')
+        objects = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
+        paths = [item['Prefix'].split('/')[-2] for item in objects.search('CommonPrefixes')]
         return paths
 
     # --- dir_exist set of functions ----
     def dir_exist(self, path, storage):
-        return self.dir_exist_cluster(path) if storage=='s3' else self.dir_exist_local(path)
+        return self.dir_exist_cluster(path) if self.is_s3_path(path) else self.dir_exist_local(path)
 
     @staticmethod
     def dir_exist_local(path):
