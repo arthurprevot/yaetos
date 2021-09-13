@@ -325,6 +325,7 @@ class ETL_Base(object):
             path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
             path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
+            logger.info("Input '{}' path updated '{}'.".format(input_name, path))
 
         if input_type == 'txt':
             rdd = self.sc.textFile(path)

@@ -380,7 +380,7 @@ class DeployPySparkScriptOnAws(object):
                 'InstanceGroups': instance_groups,
                 'Ec2KeyName': self.ec2_key_name,
                 'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
-                'Ec2SubnetId': self.ec2_subnet_id,
+                # 'Ec2SubnetId': self.ec2_subnet_id,
                 # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
             },
             Applications=[{'Name': 'Hadoop'}, {'Name': 'Spark'}],

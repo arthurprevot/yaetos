@@ -1,9 +1,10 @@
 #!/bin/bash
 # Setup example data for local and cluster runs. Needs to be run from repo root.
+# Usage: ./scripts/setup_examples.sh default
 
 # --------------------------------------
 # Manual steps: create sandbox bucket and put it's name below if necessary
-bucket_name="sandbox-spark"
+bucket_name="dev-spark2"
 # --------------------------------------
 
 # General setup
