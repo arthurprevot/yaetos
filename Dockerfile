@@ -1,4 +1,5 @@
-FROM docker.io/bitnami/spark:2.4.5
+FROM docker.io/bitnami/spark:3.1.2
+# docker.io/bitnami/spark:3.1.2 -> spark 3.1.2, python 3.6.15, scala 2.12.10, https://github.com/bitnami/bitnami-docker-spark, https://hub.docker.com/r/bitnami/spark
 # docker.io/bitnami/spark:2.4.5 -> spark 2.4.5, python 3.6.10, scala 2.11.12, https://github.com/bitnami/bitnami-docker-spark, https://hub.docker.com/r/bitnami/spark
 # FROM bde2020/spark-master:2.4.5-hadoop2.7  # https://github.com/big-data-europe/docker-spark, https://hub.docker.com/r/bde2020/spark-master. Failed installing python libs below. Seems to be missing basic compilers.
 # FROM jupyter/pyspark-notebook # spark 3.0.0. scala 2.12, Python 3.8.5. https://github.com/jupyter/docker-stacks, https://hub.docker.com/r/jupyter/pyspark-notebook. Was used successfully. Now leads to problems with sparks newly added jars that rely on scala 2.11.
