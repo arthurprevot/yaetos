@@ -103,7 +103,7 @@ class DeployPySparkScriptOnAws(object):
         new_cluster = cluster['id'] is None
         if new_cluster:
             print("Starting new cluster")
-            self.start_spark_cluster(c)
+            self.start_spark_cluster(c, self.app_args.get('spark_version'))
             print("cluster name: %s, and id: %s"%(self.pipeline_name, self.cluster_id))
             self.step_run_setup_scripts(c)
         else:
@@ -279,12 +279,17 @@ class DeployPySparkScriptOnAws(object):
                 key.delete()
                 logger.info("Removed '{}' from bucket for temporary files".format(key.key))
 
-    def start_spark_cluster(self, c):
+    def start_spark_cluster(self, c, spark_version):
         """
         :param c: EMR client
         :return:
         """
-        emr_version = "emr-6.1.0" # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0". used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
+        if spark_version == '2.4':
+            emr_version = "emr-5.26.0"
+        elif spark_version == '3.1':
+            emr_version = "emr-6.1.0"
+            # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0". used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
+
         instance_groups = [{
             'Name': 'EmrMaster',
             'InstanceRole': 'MASTER',
