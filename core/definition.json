@@ -172,7 +172,7 @@
     }
   ],
   "values": {
-    "myEMRReleaseLabel": "emr-6.3.0",
+    "myEMRReleaseLabel": "emr-5.26.0",
     "myTerminateAfter": "180 Minutes",
     "myMasterInstanceType": "m5.xlarge",
     "myBootstrapAction": [

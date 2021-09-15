@@ -67,6 +67,13 @@ class DeployPySparkScriptOnAws(object):
         self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
         self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
 
+        spark_version = self.app_args.get('spark_version')
+        if spark_version == '2.4':
+            self.emr_version = "emr-5.26.0"
+        elif spark_version == '3.1':
+            self.emr_version = "emr-6.1.0"
+            # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0". used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
+
         try:
             git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
             Git_Config_Manager().save_yaml(git_yml)
@@ -103,7 +110,7 @@ class DeployPySparkScriptOnAws(object):
         new_cluster = cluster['id'] is None
         if new_cluster:
             print("Starting new cluster")
-            self.start_spark_cluster(c, self.app_args.get('spark_version'))
+            self.start_spark_cluster(c, self.emr_version)
             print("cluster name: %s, and id: %s"%(self.pipeline_name, self.cluster_id))
             self.step_run_setup_scripts(c)
         else:
@@ -279,17 +286,11 @@ class DeployPySparkScriptOnAws(object):
                 key.delete()
                 logger.info("Removed '{}' from bucket for temporary files".format(key.key))
 
-    def start_spark_cluster(self, c, spark_version):
+    def start_spark_cluster(self, c, emr_version):
         """
         :param c: EMR client
         :return:
         """
-        if spark_version == '2.4':
-            emr_version = "emr-5.26.0"
-        elif spark_version == '3.1':
-            emr_version = "emr-6.1.0"
-            # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0". used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
-
         instance_groups = [{
             'Name': 'EmrMaster',
             'InstanceRole': 'MASTER',
@@ -536,6 +537,8 @@ class DeployPySparkScriptOnAws(object):
                 parameterValues[ii] = {'id': u'myBootstrapAction', 'stringValue': bootstrap}
             elif 'myTerminateAfter' in item.values():
                 parameterValues[ii] = {'id': u'myTerminateAfter', 'stringValue': self.deploy_args.get('terminate_after', '180 Minutes')}
+            elif 'myEMRReleaseLabel' in item.values():
+                parameterValues[ii] = {'id': u'myEMRReleaseLabel', 'stringValue': self.emr_version}
 
         # Change steps to include proper path
         setup_command =  's3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://{s3_tmp_path}/setup_master.sh,s3://{s3_tmp_path}'.format(s3_tmp_path=self.package_path_with_bucket) # s3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/setup_master.sh,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/
