@@ -1108,7 +1108,9 @@ class Commandliner():
                 .set("spark.jars", JARS)
         else:
             # Setup above not needed when running from EMR where setup done in spark-submit.
-            conf = SparkConf()
+            conf = SparkConf() \
+                .set("spark.hadoop.fs.s3a.buffer.dir", '/tmp') \
+                .set("spark.hadoop.fs.s3a.fast.upload.active.blocks", '1')
 
         spark = SparkSession.builder \
             .appName(app_name) \
