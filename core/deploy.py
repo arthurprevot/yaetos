@@ -284,27 +284,27 @@ class DeployPySparkScriptOnAws(object):
         :param c: EMR client
         :return:
         """
-        emr_version = "emr-6.3.0" # used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
+        emr_version = "emr-6.1.0" # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0". used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
+        instance_groups = [{
+            'Name': 'EmrMaster',
+            'InstanceRole': 'MASTER',
+            'InstanceType': self.ec2_instance_master,
+            'InstanceCount': 1,
+            }]
+        if self.emr_core_instances != 0:
+            instance_groups += [{
+                'Name': 'EmrCore',
+                'InstanceRole': 'CORE',
+                'InstanceType': self.ec2_instance_slaves,
+                'InstanceCount': self.emr_core_instances,
+                }]
+
         response = c.run_job_flow(
             Name=self.pipeline_name,
             LogUri="s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder),
             ReleaseLabel=emr_version,
             Instances={
-                'InstanceGroups': [{
-                    'Name': 'EmrMaster',
-                    'InstanceRole': 'MASTER',
-                    'InstanceType': self.ec2_instance_master,
-                    'InstanceCount': 1,
-                    },
-                    ## Commenting below allows running on single node cluster.
-                    ## TODO: check to have single node cluster by default when issue with pushing data to redshift with spark connector works.
-                    # {
-                    # 'Name': 'EmrCore',
-                    # 'InstanceRole': 'CORE',
-                    # 'InstanceType': self.ec2_instance_slaves,
-                    # 'InstanceCount': self.emr_core_instances,
-                    # }
-                    ],
+                'InstanceGroups': instance_groups,
                 'Ec2KeyName': self.ec2_key_name,
                 'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
                 'Ec2SubnetId': self.ec2_subnet_id,
@@ -437,7 +437,7 @@ class DeployPySparkScriptOnAws(object):
         client = self.session.client('datapipeline')
         self.deactivate_similar_pipelines(client, self.pipeline_name)
         pipe_id = self.create_data_pipeline(client)
-        parameterValues = self.define_data_pipeline(client, pipe_id)
+        parameterValues = self.define_data_pipeline(client, pipe_id, self.emr_core_instances)
         self.activate_data_pipeline(client, pipe_id, parameterValues)
 
     def create_data_pipeline(self, client):
@@ -450,12 +450,15 @@ class DeployPySparkScriptOnAws(object):
         logger.debug('Pipeline description :' + str(client.describe_pipelines(pipelineIds=[pipe_id])))
         return pipe_id
 
-    def define_data_pipeline(self, client, pipe_id):
+    def define_data_pipeline(self, client, pipe_id, emr_core_instances):
         import awscli.customizations.datapipeline.translator as trans
 
-        ## Changing below to definition_standalone_cluster.json allows running on single node cluster.
-        ## TODO: check to have single node cluster by default when issue with pushing data to redshift with spark connector works.
-        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        if emr_core_instances != 0:
+            definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        else:
+            definition_file = eu.LOCAL_APP_FOLDER+'core/definition_standalone_cluster.json'
+            # TODO: have 1 json for both to avoid having to track duplication.
+
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
 
         pipelineObjects = trans.definition_to_api_objects(definition)
