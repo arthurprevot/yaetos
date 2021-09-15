@@ -298,12 +298,12 @@ class DeployPySparkScriptOnAws(object):
                     },
                     ## Commenting below allows running on single node cluster.
                     ## TODO: check to have single node cluster by default when issue with pushing data to redshift with spark connector works.
-                    {
-                    'Name': 'EmrCore',
-                    'InstanceRole': 'CORE',
-                    'InstanceType': self.ec2_instance_slaves,
-                    'InstanceCount': self.emr_core_instances,
-                    }
+                    # {
+                    # 'Name': 'EmrCore',
+                    # 'InstanceRole': 'CORE',
+                    # 'InstanceType': self.ec2_instance_slaves,
+                    # 'InstanceCount': self.emr_core_instances,
+                    # }
                     ],
                 'Ec2KeyName': self.ec2_key_name,
                 'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
