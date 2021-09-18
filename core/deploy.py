@@ -67,7 +67,7 @@ class DeployPySparkScriptOnAws(object):
         self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
         self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
 
-        spark_version = self.app_args.get('spark_version')
+        spark_version = self.app_args.get('spark_version', '2.4')
         if spark_version == '2.4':
             self.emr_version = "emr-5.26.0"
         elif spark_version == '3.1':
