@@ -67,7 +67,8 @@ class DeployPySparkScriptOnAws(object):
         self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
         self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
 
-        spark_version = self.app_args.get('spark_version', '2.4')
+        spark_version = self.deploy_args.get('spark_version', '2.4')
+        # import ipdb; ipdb.set_trace()
         if spark_version == '2.4':
             self.emr_version = "emr-5.26.0"
         elif spark_version == '3.1':
@@ -262,19 +263,19 @@ class DeployPySparkScriptOnAws(object):
         """
         Move the PySpark + bash scripts to the S3 bucket we use to store temporary files
         """
-        setup_master = '/setup_master.sh' if self.app_args.get('spark_version', '2.4') == '2.4' else '/setup_master_alt.sh'
-        setup_nodes = '/setup_nodes.sh' if self.app_args.get('spark_version', '2.4') == '2.4' else '/setup_nodes_alt.sh'
+        setup_master = 'setup_master.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else '/setup_master_alt.sh'
+        setup_nodes = 'setup_nodes.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else '/setup_nodes_alt.sh'
 
         # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
-          .put(Body=open(self.TMP+'setup_master.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(self.TMP+setup_master, 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_nodes.sh')\
-          .put(Body=open(self.TMP+'setup_nodes.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(self.TMP+setup_nodes, 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/terminate_idle_cluster.sh')\
           .put(Body=open(self.TMP+'terminate_idle_cluster.sh', 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/scripts.tar.gz')\
           .put(Body=open(self.TMP+'scripts.tar.gz', 'rb'), ContentType='application/x-tar')
-        logger.info("Uploaded job files (scripts.tar.gz, setup_master.sh, setup_nodes.sh, terminate_idle_cluster.sh) to bucket path '{}/{}'".format(self.s3_bucket_logs, self.package_path))
+        logger.info("Uploaded job files (scripts.tar.gz, {}, {}, terminate_idle_cluster.sh) to bucket path '{}/{}'".format(setup_master, setup_nodes, self.s3_bucket_logs, self.package_path))
         return True
 
     def remove_temp_files(self, s3):
@@ -416,14 +417,15 @@ class DeployPySparkScriptOnAws(object):
 
         emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
         launcher_file = app_args.get('launcher_file') or app_file
-        package = eu.PACKAGES_EMR if self.app_args.get('spark_version', '2.4') == '2.4' else eu.PACKAGES_EMR_ALT
+        package = eu.PACKAGES_EMR if self.deploy_args.get('spark_version', '2.4') == '2.4' else eu.PACKAGES_EMR_ALT
+        package_str = ','.join(package)
 
         cmd_runner_args = [
             "spark-submit",
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-            "--packages={}".format(package),
+            "--packages={}".format(package_str),
             "--jars={}".format(eu.JARS),
             eu.CLUSTER_APP_FOLDER+launcher_file,
             "--mode={}".format(emr_mode),

@@ -20,9 +20,9 @@ sudo pip3 install jsonschema==3.0.2
 # DB and API libs
 sudo pip3 install soql==1.0.2  # Necessary for simple-salesforce
 sudo pip3 install wheel==0.37.0 # necessary for cryptography
-sudo pip3 install setuptools-rust==0.12.1  # Necessary for simple-salesforce
-sudo pip3 install cryptography==3.4.8  # Necessary for simple-salesforce, to avoid simple-salesforce loading 3.4.4 causing pbs.
-sudo pip3 install simple-salesforce==1.10.1
+# sudo pip3 install setuptools-rust==0.12.1  # Necessary for simple-salesforce
+# sudo pip3 install cryptography==3.4.8  # Necessary for simple-salesforce, to avoid simple-salesforce loading 3.4.4 causing pbs.
+# sudo pip3 install simple-salesforce==1.10.1
 sudo pip3 install pymysql==0.9.3
 sudo pip3 install psycopg2-binary==2.8.5  # necesary for sqlalchemy-redshift, psycopg2==2.8.5 fails installing.
 sudo pip3 install sqlalchemy-redshift==0.7.7
@@ -50,6 +50,6 @@ zip -r scripts.zip .
 # export PYSPARK_AWS_ETL_HOME=`pwd` # TODO: enable later to be avoid hardcoded path in etl_utils.py
 # . setup_oracle.sh  # uncomment if needed.
 
-python --version # ->2.7.18 on emr-5.26.0, 2.7.16 on emr-6.0.0
-python3 --version # ->3.6.10 on emr-5.26.0, 3.7.4 on emr-6.0.0
+python --version # shows in stderr, ->2.7.18 on emr-5.26.0, 2.7.16 on emr-6.0.0
+python3 --version # shows in stdout, ->3.6.10 on emr-5.26.0, 3.7.4 on emr-6.0.0
 echo "Done with setup_master.sh"
