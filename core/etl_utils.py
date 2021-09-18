@@ -49,9 +49,9 @@ LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
 PACKAGES_EMR = ['com.databricks:spark-redshift_2.11:2.0.1', 'org.apache.spark:spark-avro_2.11:2.4.0', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
-PACKAGES_EMR_ALT = ['io.github.spark-redshift-community:spark-redshift_2.12:4.2.0', 'org.apache.spark:spark-avro_2.12:3.1.1', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
-PACKAGES_LOCAL = PACKAGES_EMR + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']  # necessary for reading/writing to S3, redshift, mysql & clickhouse using spark connector.
-PACKAGES_LOCAL_ALT = PACKAGES_EMR_ALT + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']  # necessary for reading/writing to S3, redshift, mysql & clickhouse using spark connector.
+PACKAGES_EMR_ALT = ['io.github.spark-redshift-community:spark-redshift_2.12:5.0.3', 'org.apache.spark:spark-avro_2.12:3.1.1', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # same but compatible with spark 3.
+PACKAGES_LOCAL = PACKAGES_EMR + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']
+PACKAGES_LOCAL_ALT = PACKAGES_EMR_ALT + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']  # will probably need to be moved to hadoop-aws:3.2.1 to work locally.
 JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
 
 

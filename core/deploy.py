@@ -71,9 +71,12 @@ class DeployPySparkScriptOnAws(object):
         # import ipdb; ipdb.set_trace()
         if spark_version == '2.4':
             self.emr_version = "emr-5.26.0"
+            # used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
+            # TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
         elif spark_version == '3.1':
             self.emr_version = "emr-6.1.0"
-            # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0". used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
+            # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0".
+            # see latest supported emr version by AWS Data Pipeline at https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emrcluster.html
 
         try:
             git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
