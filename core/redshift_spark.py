@@ -4,7 +4,7 @@ import core.logger as log
 logger = log.setup_logging('Redshift')
 
 
-def create_table(df, connection_profile, name_tb, schema, creds_or_file, is_incremental, s3_tmp_dir):
+def create_table(df, connection_profile, name_tb, schema, creds_or_file, is_incremental, s3_tmp_dir, spark_version):
     """
     Creates table in redshift, full drop or incremental drop, using spark connector. Implies pushing data to S3 first.
     """

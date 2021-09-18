@@ -557,7 +557,7 @@ class ETL_Base(object):
         connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
-        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir)
+        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '2.4'))
 
     def copy_to_clickhouse(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
@@ -1098,6 +1098,7 @@ class Commandliner():
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
 
+        package = PACKAGES_LOCAL if self.jargs.merged_args.get('spark_version', '2.4') == '2.4' else PACKAGES_LOCAL_ALT
         if mode == 'dev_local' and load_connectors == 'all':
             # S3 access
             session = boto3.Session()
@@ -1106,7 +1107,7 @@ class Commandliner():
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
             # JARs
             conf = SparkConf() \
-                .set("spark.jars.packages", PACKAGES_LOCAL) \
+                .set("spark.jars.packages", package) \
                 .set("spark.jars", JARS)
         else:
             # Setup above not needed when running from EMR where setup done in spark-submit.

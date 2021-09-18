@@ -255,14 +255,17 @@ class DeployPySparkScriptOnAws(object):
         logger.info("Added all files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
-        for item in ['setup_master.sh', 'setup_nodes.sh', 'terminate_idle_cluster.sh']:
+        for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
             copyfile(eu.LOCAL_APP_FOLDER+self.SCRIPTS+item, self.TMP+item)
 
     def upload_temp_files(self, s3):
         """
         Move the PySpark + bash scripts to the S3 bucket we use to store temporary files
         """
-        # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1 below.
+        setup_master = '/setup_master.sh' if self.app_args.get('spark_version', '2.4') == '2.4' else '/setup_master_alt.sh'
+        setup_nodes = '/setup_nodes.sh' if self.app_args.get('spark_version', '2.4') == '2.4' else '/setup_nodes_alt.sh'
+
+        # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
           .put(Body=open(self.TMP+'setup_master.sh', 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_nodes.sh')\
@@ -413,12 +416,14 @@ class DeployPySparkScriptOnAws(object):
 
         emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
         launcher_file = app_args.get('launcher_file') or app_file
+        package = eu.PACKAGES_EMR if self.app_args.get('spark_version', '2.4') == '2.4' else eu.PACKAGES_EMR_ALT
+
         cmd_runner_args = [
             "spark-submit",
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-            "--packages={}".format(eu.PACKAGES_EMR),
+            "--packages={}".format(package),
             "--jars={}".format(eu.JARS),
             eu.CLUSTER_APP_FOLDER+launcher_file,
             "--mode={}".format(emr_mode),
