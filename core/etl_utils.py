@@ -1081,7 +1081,7 @@ class Commandliner():
 
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name
-        sc, sc_sql = self.create_contexts(app_name, job.jargs.mode, job.jargs.load_connectors, job.jargs.merged_args.get('emr_core_instances'))
+        sc, sc_sql = self.create_contexts(app_name, job.jargs.mode, job.jargs.load_connectors, job.jargs.merged_args.get('emr_core_instances'), job.jargs.merged_args.get('spark_version', '2.4'))
         if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:
@@ -1092,13 +1092,15 @@ class Commandliner():
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
-    def create_contexts(self, app_name, mode, load_connectors, emr_core_instances):
+    def create_contexts(self, app_name, mode, load_connectors, emr_core_instances, spark_version):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
 
-        package = PACKAGES_LOCAL if self.jargs.merged_args.get('spark_version', '2.4') == '2.4' else PACKAGES_LOCAL_ALT
+        # import ipdb; ipdb.set_trace()
+        package = PACKAGES_LOCAL if spark_version == '2.4' else PACKAGES_LOCAL_ALT
+
         if mode == 'dev_local' and load_connectors == 'all':
             # S3 access
             session = boto3.Session()
