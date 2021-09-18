@@ -1081,7 +1081,7 @@ class Commandliner():
 
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name
-        sc, sc_sql = self.create_contexts(app_name, job.jargs.mode, job.jargs.load_connectors, job.jargs.merged_args.get('emr_core_instances'), job.jargs.merged_args.get('spark_version', '2.4'))
+        sc, sc_sql = self.create_contexts(app_name, job.jargs.mode, job.jargs.load_connectors, job.jargs.merged_args.get('emr_core_instances'), job.jargs.merged_args.get('spark_version', '2.4'))  # TODO: set spark_version default upstream, remove it from here and from deploy.py.
         if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:
@@ -1100,11 +1100,6 @@ class Commandliner():
 
         package = PACKAGES_LOCAL if spark_version == '2.4' else PACKAGES_LOCAL_ALT
         package_str = ','.join(package)
-
-        logger.info('# ----- "{}" -----'.format(mode))
-        logger.info('# ----- "{}" -----'.format(load_connectors))
-        logger.info('# ----- "{}" -----'.format(package))
-
 
         if mode == 'dev_local' and load_connectors == 'all':
             # S3 access
