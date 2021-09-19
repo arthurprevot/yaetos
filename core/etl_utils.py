@@ -48,8 +48,10 @@ LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_
 LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
-PACKAGES_LOCAL = 'com.amazonaws:aws-java-sdk-pom:1.11.760,org.apache.hadoop:hadoop-aws:2.7.0,com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22,org.postgresql:postgresql:42.2.18'  # necessary for reading/writing to S3, redshift, mysql & clickhouse using spark connector.
-PACKAGES_EMR = 'com.databricks:spark-redshift_2.11:2.0.1,org.apache.spark:spark-avro_2.11:2.4.0,mysql:mysql-connector-java:8.0.22,org.postgresql:postgresql:42.2.18'  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
+PACKAGES_EMR = ['com.databricks:spark-redshift_2.11:2.0.1', 'org.apache.spark:spark-avro_2.11:2.4.0', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
+PACKAGES_EMR_ALT = ['io.github.spark-redshift-community:spark-redshift_2.12:5.0.3', 'org.apache.spark:spark-avro_2.12:3.1.1', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # same but compatible with spark 3.
+PACKAGES_LOCAL = PACKAGES_EMR + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']
+PACKAGES_LOCAL_ALT = PACKAGES_EMR_ALT + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']  # will probably need to be moved to hadoop-aws:3.2.1 to work locally.
 JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar'  # not available in public repo so cannot be put in "packages" var.
 
 
@@ -555,7 +557,7 @@ class ETL_Base(object):
         connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
-        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir)
+        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '2.4'))
 
     def copy_to_clickhouse(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
@@ -740,7 +742,7 @@ class Job_Yml_Parser():
 class Job_Args_Parser():
 
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date',
-                        'email', 'mode', 'deploy', 'terminate_after']
+                        'email', 'mode', 'deploy', 'terminate_after', 'spark_version']
 
     def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
@@ -1079,7 +1081,7 @@ class Commandliner():
 
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name
-        sc, sc_sql = self.create_contexts(app_name, job.jargs.mode, job.jargs.load_connectors)
+        sc, sc_sql = self.create_contexts(app_name, job.jargs.mode, job.jargs.load_connectors, job.jargs.merged_args.get('emr_core_instances'), job.jargs.merged_args.get('spark_version', '2.4'))  # TODO: set spark_version default upstream, remove it from here and from deploy.py.
         if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:
@@ -1090,11 +1092,14 @@ class Commandliner():
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
-    def create_contexts(self, app_name, mode, load_connectors):
+    def create_contexts(self, app_name, mode, load_connectors, emr_core_instances, spark_version):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
+
+        package = PACKAGES_LOCAL if spark_version == '2.4' else PACKAGES_LOCAL_ALT
+        package_str = ','.join(package)
 
         if mode == 'dev_local' and load_connectors == 'all':
             # S3 access
@@ -1104,11 +1109,16 @@ class Commandliner():
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
             # JARs
             conf = SparkConf() \
-                .set("spark.jars.packages", PACKAGES_LOCAL) \
+                .set("spark.jars.packages", package_str) \
                 .set("spark.jars", JARS)
         else:
             # Setup above not needed when running from EMR where setup done in spark-submit.
             conf = SparkConf()
+
+        if emr_core_instances == 0:
+            conf = conf \
+                .set("spark.hadoop.fs.s3a.buffer.dir", '/tmp') \
+                .set("spark.hadoop.fs.s3a.fast.upload.active.blocks", '1')
 
         spark = SparkSession.builder \
             .appName(app_name) \

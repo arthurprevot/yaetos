@@ -18,7 +18,7 @@
       "keyPair": "#{myEC2KeyPair}",
       "masterInstanceType": "#{myMasterInstanceType}",
       "releaseLabel": "#{myEMRReleaseLabel}",
-      "terminateAfter": "300 Minutes",
+      "terminateAfter": "#{myTerminateAfter}",
       "applications": "spark",
       "configuration": {"ref": "spark-env" }
     },
@@ -121,6 +121,13 @@
       "description": "EMR Release Label"
     },
     {
+      "id": "myTerminateAfter",
+      "type": "String",
+      "default": "180 Minutes",
+      "helpText": "Determines the timeout time.",
+      "description": "Time to timeout"
+    },
+    {
       "id": "myTaskInstanceCount",
       "type": "Integer",
       "description": "Task node instance count",
@@ -151,6 +158,7 @@
   ],
   "values": {
     "myEMRReleaseLabel": "emr-5.26.0",
+    "myTerminateAfter": "180 Minutes",
     "myMasterInstanceType": "m5.xlarge",
     "myBootstrapAction": [
       "s3://some_bucket/some_script.sh"

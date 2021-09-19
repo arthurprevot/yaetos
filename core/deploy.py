@@ -67,6 +67,17 @@ class DeployPySparkScriptOnAws(object):
         self.package_path_with_bucket  = self.job_log_path_with_bucket+'/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
         self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
 
+        spark_version = self.deploy_args.get('spark_version', '2.4')
+        # import ipdb; ipdb.set_trace()
+        if spark_version == '2.4':
+            self.emr_version = "emr-5.26.0"
+            # used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
+            # TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
+        elif spark_version == '3.0':
+            self.emr_version = "emr-6.1.0"
+            # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0".
+            # see latest supported emr version by AWS Data Pipeline at https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emrcluster.html
+
         try:
             git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
             Git_Config_Manager().save_yaml(git_yml)
@@ -103,7 +114,7 @@ class DeployPySparkScriptOnAws(object):
         new_cluster = cluster['id'] is None
         if new_cluster:
             print("Starting new cluster")
-            self.start_spark_cluster(c)
+            self.start_spark_cluster(c, self.emr_version)
             print("cluster name: %s, and id: %s"%(self.pipeline_name, self.cluster_id))
             self.step_run_setup_scripts(c)
         else:
@@ -248,23 +259,26 @@ class DeployPySparkScriptOnAws(object):
         logger.info("Added all files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
-        for item in ['setup_master.sh', 'setup_nodes.sh', 'terminate_idle_cluster.sh']:
+        for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
             copyfile(eu.LOCAL_APP_FOLDER+self.SCRIPTS+item, self.TMP+item)
 
     def upload_temp_files(self, s3):
         """
         Move the PySpark + bash scripts to the S3 bucket we use to store temporary files
         """
-        # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1 below.
+        setup_master = 'setup_master.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else '/setup_master_alt.sh'
+        setup_nodes = 'setup_nodes.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else '/setup_nodes_alt.sh'
+
+        # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
-          .put(Body=open(self.TMP+'setup_master.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(self.TMP+setup_master, 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_nodes.sh')\
-          .put(Body=open(self.TMP+'setup_nodes.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(self.TMP+setup_nodes, 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/terminate_idle_cluster.sh')\
           .put(Body=open(self.TMP+'terminate_idle_cluster.sh', 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/scripts.tar.gz')\
           .put(Body=open(self.TMP+'scripts.tar.gz', 'rb'), ContentType='application/x-tar')
-        logger.info("Uploaded job files (scripts.tar.gz, setup_master.sh, setup_nodes.sh, terminate_idle_cluster.sh) to bucket path '{}/{}'".format(self.s3_bucket_logs, self.package_path))
+        logger.info("Uploaded job files (scripts.tar.gz, {}, {}, terminate_idle_cluster.sh) to bucket path '{}/{}'".format(setup_master, setup_nodes, self.s3_bucket_logs, self.package_path))
         return True
 
     def remove_temp_files(self, s3):
@@ -279,32 +293,31 @@ class DeployPySparkScriptOnAws(object):
                 key.delete()
                 logger.info("Removed '{}' from bucket for temporary files".format(key.key))
 
-    def start_spark_cluster(self, c):
+    def start_spark_cluster(self, c, emr_version):
         """
         :param c: EMR client
         :return:
         """
-        emr_version = "emr-5.26.0" # emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge. TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
+        instance_groups = [{
+            'Name': 'EmrMaster',
+            'InstanceRole': 'MASTER',
+            'InstanceType': self.ec2_instance_master,
+            'InstanceCount': 1,
+            }]
+        if self.emr_core_instances != 0:
+            instance_groups += [{
+                'Name': 'EmrCore',
+                'InstanceRole': 'CORE',
+                'InstanceType': self.ec2_instance_slaves,
+                'InstanceCount': self.emr_core_instances,
+                }]
+
         response = c.run_job_flow(
             Name=self.pipeline_name,
             LogUri="s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder),
             ReleaseLabel=emr_version,
             Instances={
-                'InstanceGroups': [{
-                    'Name': 'EmrMaster',
-                    'InstanceRole': 'MASTER',
-                    'InstanceType': self.ec2_instance_master,
-                    'InstanceCount': 1,
-                    },
-                    ## Commenting below allows running on single node cluster.
-                    ## TODO: check to have single node cluster by default when issue with pushing data to redshift with spark connector works.
-                    {
-                    'Name': 'EmrCore',
-                    'InstanceRole': 'CORE',
-                    'InstanceType': self.ec2_instance_slaves,
-                    'InstanceCount': self.emr_core_instances,
-                    }
-                    ],
+                'InstanceGroups': instance_groups,
                 'Ec2KeyName': self.ec2_key_name,
                 'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
                 'Ec2SubnetId': self.ec2_subnet_id,
@@ -407,12 +420,15 @@ class DeployPySparkScriptOnAws(object):
 
         emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
         launcher_file = app_args.get('launcher_file') or app_file
+        package = eu.PACKAGES_EMR if self.deploy_args.get('spark_version', '2.4') == '2.4' else eu.PACKAGES_EMR_ALT
+        package_str = ','.join(package)
+
         cmd_runner_args = [
             "spark-submit",
             "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-            "--packages={}".format(eu.PACKAGES_EMR),
+            "--packages={}".format(package_str),
             "--jars={}".format(eu.JARS),
             eu.CLUSTER_APP_FOLDER+launcher_file,
             "--mode={}".format(emr_mode),
@@ -437,7 +453,7 @@ class DeployPySparkScriptOnAws(object):
         client = self.session.client('datapipeline')
         self.deactivate_similar_pipelines(client, self.pipeline_name)
         pipe_id = self.create_data_pipeline(client)
-        parameterValues = self.define_data_pipeline(client, pipe_id)
+        parameterValues = self.define_data_pipeline(client, pipe_id, self.emr_core_instances)
         self.activate_data_pipeline(client, pipe_id, parameterValues)
 
     def create_data_pipeline(self, client):
@@ -450,12 +466,15 @@ class DeployPySparkScriptOnAws(object):
         logger.debug('Pipeline description :' + str(client.describe_pipelines(pipelineIds=[pipe_id])))
         return pipe_id
 
-    def define_data_pipeline(self, client, pipe_id):
+    def define_data_pipeline(self, client, pipe_id, emr_core_instances):
         import awscli.customizations.datapipeline.translator as trans
 
-        ## Changing below to definition_standalone_cluster.json allows running on single node cluster.
-        ## TODO: check to have single node cluster by default when issue with pushing data to redshift with spark connector works.
-        definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        if emr_core_instances != 0:
+            definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+        else:
+            definition_file = eu.LOCAL_APP_FOLDER+'core/definition_standalone_cluster.json'
+            # TODO: have 1 json for both to avoid having to track duplication.
+
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
 
         pipelineObjects = trans.definition_to_api_objects(definition)
@@ -528,6 +547,8 @@ class DeployPySparkScriptOnAws(object):
                 parameterValues[ii] = {'id': u'myBootstrapAction', 'stringValue': bootstrap}
             elif 'myTerminateAfter' in item.values():
                 parameterValues[ii] = {'id': u'myTerminateAfter', 'stringValue': self.deploy_args.get('terminate_after', '180 Minutes')}
+            elif 'myEMRReleaseLabel' in item.values():
+                parameterValues[ii] = {'id': u'myEMRReleaseLabel', 'stringValue': self.emr_version}
 
         # Change steps to include proper path
         setup_command =  's3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://{s3_tmp_path}/setup_master.sh,s3://{s3_tmp_path}'.format(s3_tmp_path=self.package_path_with_bucket) # s3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/setup_master.sh,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/

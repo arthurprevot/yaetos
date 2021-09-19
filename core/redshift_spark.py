@@ -4,7 +4,7 @@ import core.logger as log
 logger = log.setup_logging('Redshift')
 
 
-def create_table(df, connection_profile, name_tb, schema, creds_or_file, is_incremental, s3_tmp_dir):
+def create_table(df, connection_profile, name_tb, schema, creds_or_file, is_incremental, s3_tmp_dir, spark_version):
     """
     Creates table in redshift, full drop or incremental drop, using spark connector. Implies pushing data to S3 first.
     """
@@ -14,11 +14,13 @@ def create_table(df, connection_profile, name_tb, schema, creds_or_file, is_incr
     dbtable = '{}.{}'.format(schema, name_tb)
 
     logger.info('Sending table "{}" to redshift in schema "{}", load type "{}", size "{}".'.format(name_tb, schema, load_type, df.count()))
+    format = 'io.github.spark_redshift_community.spark.redshift' if spark_version == '3.1' else 'com.databricks.spark.redshift'  # else implies spark_version == '2.4'
 
     df.write \
-        .format('com.databricks.spark.redshift') \
+        .format(format) \
         .option("tempdir", s3_tmp_dir) \
         .option("url", url) \
+        .option("forward_spark_s3_credentials", "true") \
         .option("user", db['user']) \
         .option("password", db['password']) \
         .option("dbtable", dbtable) \
