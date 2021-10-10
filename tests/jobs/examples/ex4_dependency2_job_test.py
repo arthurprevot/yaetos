@@ -3,7 +3,7 @@ from jobs.examples.ex4_dependency2_job import Job
 
 
 class Test_Job(object):
-    def test_transform(self, sc, sc_sql, ss):
+    def test_transform(self, sc, sc_sql, ss, get_pre_jargs):
         some_events = ss.read.json(sc.parallelize([
             {'session_id': 1, 'session_length': 1},
             {'session_id': 12, 'session_length': 2},
@@ -18,5 +18,6 @@ class Test_Job(object):
             {'session_id': 1234, 'session_length': 4, 'doubled_length': 8},
             ]
 
-        actual = Job(args={'mode_no_io':True}).etl_no_io(sc, sc_sql, loaded_inputs={'some_events': some_events}).toPandas().to_dict(orient='records')
+        loaded_inputs={'some_events': some_events}
+        actual = Job(pre_jargs=get_pre_jargs(loaded_inputs)).etl_no_io(sc, sc_sql, loaded_inputs=loaded_inputs)[0].toPandas().to_dict(orient='records')
         assert actual == expected

@@ -79,13 +79,17 @@ class DeployPySparkScriptOnAws(object):
             # see latest supported emr version by AWS Data Pipeline at https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emrcluster.html
 
         try:
-            git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
-            Git_Config_Manager().save_yaml(git_yml)
+            self.git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
+            Git_Config_Manager().save_yaml(self.git_yml)
         except Exception as e:  # TODO: get specific exception
+            self.git_yml = None
             logger.info("Error saving yml file with git info, with error '{}'.".format(e))
 
 
     def run(self):
+        if not self.continue_post_git_check():
+            return False
+
         if self.deploy_args['deploy']=='EMR':
             self.run_direct()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
@@ -94,6 +98,26 @@ class DeployPySparkScriptOnAws(object):
             self.run_push_code()
         else:
             raise Exception("Shouldn't get here.")
+
+    def continue_post_git_check(self):
+        if self.app_args['mode'] != 'prod_EMR':
+            return True
+        elif self.git_yml is None:
+            print('Code not git controled: git check ignored')
+            return True
+        elif self.git_yml['is_dirty_current'] or self.git_yml['is_dirty_yaetos']:
+            git_yml = {key:value for key, value in self.git_yml.items() if key in ('is_dirty_yaetos', 'is_dirty_current', 'branch_current', 'branch_yaetos')}
+            print('Some changes to your git controled files are not committed to git: {}'.format(git_yml))
+            answer = input('Are you sure you want to deploy it ? [y/n] ')
+            if answer == 'y':
+                print('Ok, continuing deployment')
+                return True
+            elif answer == 'n':
+                print('Ok, cancelling deployment')
+                return False
+            else:
+                print('Answer not understood, it should be "y" or "n", cancelling deployment')
+                return False
 
     def run_push_code(self):
         print("Pushing code only")

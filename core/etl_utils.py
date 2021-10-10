@@ -596,7 +596,8 @@ class ETL_Base(object):
         message = """Subject: [Data Pipeline Failure] {name}\n\nA Data pipeline named '{name}' failed.\nError message:\n{error}\n\nPlease check logs in AWS.""".format(name=self.jargs.job_name, error=error_msg)
         self.send_msg(message)
 
-    def check_pk(self, df, pks):
+    @staticmethod
+    def check_pk(df, pks):
         count = df.count()
         count_pk = df.select(pks).dropDuplicates().count()
         if count != count_pk:
