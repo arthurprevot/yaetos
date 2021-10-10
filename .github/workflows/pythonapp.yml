@@ -16,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r core/scripts/requirements.txt
+        pip install -r core/scripts/requirements_alt.txt
     # - name: Lint with flake8
     #   run: |
     #     pip install flake8
