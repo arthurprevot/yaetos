@@ -855,7 +855,9 @@ class FS_Ops_Dispatcher():
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
         fake_handle = StringIO(content)
-        s3c = boto3.client('s3')
+        # s3c = boto3.client('s3')
+        session = boto3.Session(profile_name='default')  # aka AWS IAM profile
+        s3c = session.client('s3')
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
         logger.info("Created file S3: {}".format(fname))
 
@@ -875,7 +877,9 @@ class FS_Ops_Dispatcher():
         fname_parts = fname.split('s3://')[1].split('/')
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
-        s3c = boto3.client('s3')
+        # s3c = boto3.client('s3')
+        session = boto3.Session(profile_name='default')  # aka AWS IAM profile
+        s3c = session.client('s3')
 
         local_path = CLUSTER_APP_FOLDER+'tmp/local_'+fname_parts[-1]
         self.save_file_local(local_path, content)
@@ -897,7 +901,9 @@ class FS_Ops_Dispatcher():
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
         local_path = CLUSTER_APP_FOLDER+'tmp/s3_'+fname_parts[-1]
-        s3c = boto3.client('s3')
+        # s3c = boto3.client('s3')
+        session = boto3.Session(profile_name='default')  # aka AWS IAM profile
+        s3c = session.client('s3')
         s3c.download_file(bucket_name, bucket_fname, local_path)
         logger.info("Copied file from S3 '{}' to local '{}'".format(fname, local_path))
         model = joblib.load(local_path)
@@ -923,7 +929,9 @@ class FS_Ops_Dispatcher():
         fname_parts = path.split(s3_root)[1].split('/')
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
-        client = boto3.client('s3')
+        # client = boto3.client('s3')
+        session = boto3.Session(profile_name='default')  # aka AWS IAM profile
+        client = session.client('s3')
         paginator = client.get_paginator('list_objects')
         objects = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
         paths = [item['Prefix'].split('/')[-2] for item in objects.search('CommonPrefixes')]
@@ -949,7 +957,9 @@ class Cred_Ops_Dispatcher():
 
     @staticmethod
     def retrieve_secrets_cluster():
-        client = boto3.client('secretsmanager')
+        # client = boto3.client('secretsmanager')
+        session = boto3.Session(profile_name='default')  # aka AWS IAM profile
+        client = session.client('secretsmanager')
 
         response = client.get_secret_value(SecretId=AWS_SECRET_ID)
         logger.info('Read aws secret, secret_id:'+AWS_SECRET_ID)
@@ -1104,7 +1114,8 @@ class Commandliner():
 
         if mode == 'dev_local' and load_connectors == 'all':
             # S3 access
-            session = boto3.Session()
+            # session = boto3.Session()
+            session = boto3.Session(profile_name='default')
             credentials = session.get_credentials()
             os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
