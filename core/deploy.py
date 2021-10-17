@@ -589,8 +589,8 @@ class DeployPySparkScriptOnAws(object):
         return parameterValues
 
     def push_secrets(self, creds_or_file):
-        session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
-        client = session.client('secretsmanager')
+        # session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
+        client = self.session.client('secretsmanager')
 
         file = open(creds_or_file, "r")
         content = file.read()
@@ -613,8 +613,8 @@ class DeployPySparkScriptOnAws(object):
 
     def delete_secrets(self):
         """ To be used manually for now to free AWS resources. """
-        session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
-        client = session.client('secretsmanager')
+        # session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
+        client = self.session.client('secretsmanager')
 
         response = client.delete_secret(
             SecretId=eu.AWS_SECRET_ID,
