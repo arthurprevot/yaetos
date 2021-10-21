@@ -454,7 +454,7 @@ class DeployPySparkScriptOnAws(object):
 
         cmd_runner_args = [
             "spark-submit",
-            "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
+            # "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
             "--packages={}".format(package_str),
@@ -470,8 +470,9 @@ class DeployPySparkScriptOnAws(object):
         box = ["--boxed_dependencies"] if app_args.get('boxed_dependencies') else []
         sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else []
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
+        mem = ["--driver-memory={}".format(app_args['driver-memory'])] if app_args.get('driver-memory') else []
 
-        return cmd_runner_args + jop + dep + box + sql + nam
+        return cmd_runner_args + jop + dep + box + sql + nam + mem
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
