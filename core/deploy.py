@@ -87,7 +87,7 @@ class DeployPySparkScriptOnAws(object):
 
 
     def run(self):
-        if not self.continue_post_git_check():
+        if self.continue_post_git_check() is False:
             return False
 
         if self.deploy_args['deploy']=='EMR':
@@ -101,12 +101,14 @@ class DeployPySparkScriptOnAws(object):
 
     def continue_post_git_check(self):
         if self.app_args['mode'] != 'prod_EMR':
+            print('Not pushing as "prod_EMR", so git check ignored')
             return True
         elif self.git_yml is None:
             print('Code not git controled: git check ignored')
             return True
-        elif self.git_yml['is_dirty_current'] or self.git_yml['is_dirty_yaetos']:
-            git_yml = {key:value for key, value in self.git_yml.items() if key in ('is_dirty_yaetos', 'is_dirty_current', 'branch_current', 'branch_yaetos')}
+
+        git_yml = {key:value for key, value in self.git_yml.items() if key in ('is_dirty_yaetos', 'is_dirty_current', 'branch_current', 'branch_yaetos')}
+        if self.git_yml['is_dirty_current'] or self.git_yml['is_dirty_yaetos']:
             print('Some changes to your git controled files are not committed to git: {}'.format(git_yml))
             answer = input('Are you sure you want to deploy it ? [y/n] ')
             if answer == 'y':
@@ -118,6 +120,9 @@ class DeployPySparkScriptOnAws(object):
             else:
                 print('Answer not understood, it should be "y" or "n", cancelling deployment')
                 return False
+        else:
+            print('Git controled files are clean, continuing with push to prod. Git setup: {}'.format(git_yml))
+            return True
 
     def run_push_code(self):
         print("Pushing code only")
