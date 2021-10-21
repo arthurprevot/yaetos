@@ -858,7 +858,6 @@ class FS_Ops_Dispatcher():
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
         fake_handle = StringIO(content)
-        # s3c = boto3.client('s3')
         session = boto3.Session(profile_name='default')  # aka AWS IAM profile
         s3c = session.client('s3')
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
@@ -880,7 +879,6 @@ class FS_Ops_Dispatcher():
         fname_parts = fname.split('s3://')[1].split('/')
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
-        # s3c = boto3.client('s3')
         session = boto3.Session(profile_name='default')  # aka AWS IAM profile
         s3c = session.client('s3')
 
@@ -904,7 +902,6 @@ class FS_Ops_Dispatcher():
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
         local_path = CLUSTER_APP_FOLDER+'tmp/s3_'+fname_parts[-1]
-        # s3c = boto3.client('s3')
         session = boto3.Session(profile_name='default')  # aka AWS IAM profile
         s3c = session.client('s3')
         s3c.download_file(bucket_name, bucket_fname, local_path)
@@ -932,7 +929,6 @@ class FS_Ops_Dispatcher():
         fname_parts = path.split(s3_root)[1].split('/')
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
-        # client = boto3.client('s3')
         session = boto3.Session(profile_name='default')  # aka AWS IAM profile
         client = session.client('s3')
         paginator = client.get_paginator('list_objects')
@@ -960,7 +956,6 @@ class Cred_Ops_Dispatcher():
 
     @staticmethod
     def retrieve_secrets_cluster():
-        # client = boto3.client('secretsmanager')
         session = boto3.Session(profile_name='default')  # aka AWS IAM profile
         client = session.client('secretsmanager')
 
@@ -1117,7 +1112,6 @@ class Commandliner():
 
         if mode == 'dev_local' and load_connectors == 'all':
             # S3 access
-            # session = boto3.Session()
             session = boto3.Session(profile_name='default')
             credentials = session.get_credentials()
             os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
