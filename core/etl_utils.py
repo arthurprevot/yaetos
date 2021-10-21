@@ -547,6 +547,7 @@ class ETL_Base(object):
         df = cast_col(df, types)
         connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb = self.jargs.copy_to_redshift['table'].split('.')
+        schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(df, connection_profile, name_tb, schema, types, creds, self.jargs.is_incremental)
         del(df)
@@ -556,6 +557,7 @@ class ETL_Base(object):
         from core.redshift_spark import create_table
         connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
+        schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '2.4'))
 
@@ -564,6 +566,7 @@ class ETL_Base(object):
         from core.clickhouse import create_table
         connection_profile = self.jargs.copy_to_clickhouse['creds']
         schema, name_tb= self.jargs.copy_to_clickhouse['table'].split('.')
+        schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental)
 
