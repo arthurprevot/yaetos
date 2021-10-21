@@ -125,7 +125,7 @@ class DeployPySparkScriptOnAws(object):
             return True
 
     def run_push_code(self):
-        print("Pushing code only")
+        logger.info("Pushing code only")
         self.s3_ops(self.session)
         if self.deploy_args.get('push_secrets', False):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
