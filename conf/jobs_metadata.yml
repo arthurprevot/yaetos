@@ -91,7 +91,7 @@ jobs:
       some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
       other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex5_copy_to_oracle/{now}/', 'type':'csv'}
-    copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': 'sandbox.test_ex5_pyspark_job'}
+    copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': '{schema}.test_ex5_pyspark_job'}
 
   examples/ex6_mysql_job.py:  # requires mysql instance running
     api_inputs: {'api_creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
@@ -125,7 +125,7 @@ jobs:
     inputs:
       some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex9_redshift/{now}/', 'type':'csv'}
-    copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': 'sandbox.test_ex9_redshift'}
+    copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': '{schema}.test_ex9_redshift'}
 
   examples/ex9_mysql_job.py:
     db_inputs: {'creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
