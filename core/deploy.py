@@ -454,7 +454,6 @@ class DeployPySparkScriptOnAws(object):
 
         cmd_runner_args = [
             "spark-submit",
-            # "--driver-memory=12g", # TODO: this and extra spark config args should be fed through etl_utils.create_contexts()
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
             "--packages={}".format(package_str),
