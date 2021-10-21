@@ -547,6 +547,7 @@ class ETL_Base(object):
         df = cast_col(df, types)
         connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb = self.jargs.copy_to_redshift['table'].split('.')
+        schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(df, connection_profile, name_tb, schema, types, creds, self.jargs.is_incremental)
         del(df)
@@ -556,6 +557,7 @@ class ETL_Base(object):
         from core.redshift_spark import create_table
         connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
+        schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '2.4'))
 
@@ -564,6 +566,7 @@ class ETL_Base(object):
         from core.clickhouse import create_table
         connection_profile = self.jargs.copy_to_clickhouse['creds']
         schema, name_tb= self.jargs.copy_to_clickhouse['table'].split('.')
+        schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental)
 
@@ -855,7 +858,7 @@ class FS_Ops_Dispatcher():
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
         fake_handle = StringIO(content)
-        s3c = boto3.client('s3')
+        s3c = boto3.Session(profile_name='default').client('s3')
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
         logger.info("Created file S3: {}".format(fname))
 
@@ -875,7 +878,7 @@ class FS_Ops_Dispatcher():
         fname_parts = fname.split('s3://')[1].split('/')
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
-        s3c = boto3.client('s3')
+        s3c = boto3.Session(profile_name='default').client('s3')
 
         local_path = CLUSTER_APP_FOLDER+'tmp/local_'+fname_parts[-1]
         self.save_file_local(local_path, content)
@@ -897,7 +900,7 @@ class FS_Ops_Dispatcher():
         bucket_name = fname_parts[0]
         bucket_fname = '/'.join(fname_parts[1:])
         local_path = CLUSTER_APP_FOLDER+'tmp/s3_'+fname_parts[-1]
-        s3c = boto3.client('s3')
+        s3c = boto3.Session(profile_name='default').client('s3')
         s3c.download_file(bucket_name, bucket_fname, local_path)
         logger.info("Copied file from S3 '{}' to local '{}'".format(fname, local_path))
         model = joblib.load(local_path)
@@ -923,7 +926,7 @@ class FS_Ops_Dispatcher():
         fname_parts = path.split(s3_root)[1].split('/')
         bucket_name = fname_parts[0]
         prefix = '/'.join(fname_parts[1:])
-        client = boto3.client('s3')
+        client = boto3.Session(profile_name='default').client('s3')
         paginator = client.get_paginator('list_objects')
         objects = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
         paths = [item['Prefix'].split('/')[-2] for item in objects.search('CommonPrefixes')]
@@ -949,7 +952,7 @@ class Cred_Ops_Dispatcher():
 
     @staticmethod
     def retrieve_secrets_cluster():
-        client = boto3.client('secretsmanager')
+        client = boto3.Session(profile_name='default').client('secretsmanager')
 
         response = client.get_secret_value(SecretId=AWS_SECRET_ID)
         logger.info('Read aws secret, secret_id:'+AWS_SECRET_ID)
@@ -1104,8 +1107,7 @@ class Commandliner():
 
         if mode == 'dev_local' and load_connectors == 'all':
             # S3 access
-            session = boto3.Session()
-            credentials = session.get_credentials()
+            credentials = boto3.Session(profile_name='default').get_credentials()
             os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
             # JARs
