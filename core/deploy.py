@@ -363,7 +363,12 @@ class DeployPySparkScriptOnAws(object):
                 },
                 # { # Section to add jars (redshift...), not used for now, since passed in spark-submit args.
                 # "Classification": "spark-defaults",
-                # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"],
+                # # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"],
+                # "Properties": {
+                #     # "spark.driver.memory": "40G",
+                #     # "spark.driver.cores": "10",
+                #     "maximizeResourceAllocation": "true",
+                #     },
                 # }
             ],
             JobFlowRole='EMR_EC2_DefaultRole',
@@ -452,12 +457,19 @@ class DeployPySparkScriptOnAws(object):
         package = eu.PACKAGES_EMR if self.deploy_args.get('spark_version', '2.4') == '2.4' else eu.PACKAGES_EMR_ALT
         package_str = ','.join(package)
 
-        cmd_runner_args = [
+        cmd_runner_args1 = [
             "spark-submit",
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
             "--packages={}".format(package_str),
             "--jars={}".format(eu.JARS),
+            ]
+        mem = ["--driver-memory={}".format(app_args['driver-memory'])] if app_args.get('driver-memory') else []
+        cor = ["--driver-cores={}".format(app_args['driver-cores'])] if app_args.get('driver-cores') else []
+        me2 = ["--executor-memory={}".format(app_args['executor-memory'])] if app_args.get('executor-memory') else []
+        co2 = ["--executor-cores={}".format(app_args['executor-cores'])] if app_args.get('executor-cores') else []
+
+        cmd_runner_args2 = [
             eu.CLUSTER_APP_FOLDER+launcher_file,
             "--mode={}".format(emr_mode),
             "--deploy=none",
@@ -469,9 +481,8 @@ class DeployPySparkScriptOnAws(object):
         box = ["--boxed_dependencies"] if app_args.get('boxed_dependencies') else []
         sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else []
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
-        mem = ["--driver-memory={}".format(app_args['driver-memory'])] if app_args.get('driver-memory') else []
 
-        return cmd_runner_args + jop + dep + box + sql + nam + mem
+        return cmd_runner_args1 + mem + cor + me2 + co2 + cmd_runner_args2 + jop + dep + box + sql + nam
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
