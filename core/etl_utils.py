@@ -1085,7 +1085,7 @@ class Commandliner():
 
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name
-        sc, sc_sql = self.create_contexts(app_name, job.jargs.mode, job.jargs.load_connectors, job.jargs.merged_args.get('emr_core_instances'), job.jargs.merged_args.get('spark_version', '2.4'))  # TODO: set spark_version default upstream, remove it from here and from deploy.py.
+        sc, sc_sql = self.create_contexts(app_name, job.jargs) # TODO: set spark_version default upstream, remove it from here and from deploy.py.
         if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:
@@ -1096,7 +1096,7 @@ class Commandliner():
         from core.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
-    def create_contexts(self, app_name, mode, load_connectors, emr_core_instances, spark_version):
+    def create_contexts(self, app_name, jargs):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
@@ -1106,20 +1106,23 @@ class Commandliner():
         # TODO: move spark-submit params here since it is more generic than in spark submit, params like "spark.driver.memoryOverhead" cause pb in spark submit.
         # For extra overhead for python in driver (for pandas): .set("spark.driver.memoryOverhead", job.jargs.merged_args.get('driver-memoryOverhead'))
 
-        if mode == 'dev_local' and load_connectors == 'all':
+        if jargs.merged_args.get('driver-memoryOverhead'):  # For extra overhead for python in driver (typically pandas)
+            conf = conf.set("spark.driver.memoryOverhead", job.jargs.merged_args['driver-memoryOverhead'])
+
+        if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
             # Env vars for S3 access
             credentials = boto3.Session(profile_name='default').get_credentials()
             os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
             # JARs
-            package = PACKAGES_LOCAL if spark_version == '2.4' else PACKAGES_LOCAL_ALT
+            package = PACKAGES_LOCAL if jargs.merged_args.get('spark_version', '2.4') == '2.4' else PACKAGES_LOCAL_ALT
             package_str = ','.join(package)
             conf = conf \
                 .set("spark.jars.packages", package_str) \
                 .set("spark.jars", JARS)
             # Setup above not needed when running from EMR where setup done in spark-submit.
 
-        if emr_core_instances == 0:
+        if jargs.merged_args.get('emr_core_instances') == 0:
             conf = conf \
                 .set("spark.hadoop.fs.s3a.buffer.dir", '/tmp') \
                 .set("spark.hadoop.fs.s3a.fast.upload.active.blocks", '1')
