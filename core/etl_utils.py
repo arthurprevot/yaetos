@@ -1105,18 +1105,24 @@ class Commandliner():
         package = PACKAGES_LOCAL if spark_version == '2.4' else PACKAGES_LOCAL_ALT
         package_str = ','.join(package)
 
+        conf = SparkConf()
+        # TODO: move spark-submit params here since it more generic than in spark submit, params like "spark.driver.memoryOverhead" cause pb in spark submit.
+        # For extra overhead for python in driver (for pandas): .set("spark.driver.memoryOverhead", '5g')
+
         if mode == 'dev_local' and load_connectors == 'all':
-            # S3 access
+            # Env vars for S3 access
             credentials = boto3.Session(profile_name='default').get_credentials()
             os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
             # JARs
-            conf = SparkConf() \
+            conf = conf \
                 .set("spark.jars.packages", package_str) \
                 .set("spark.jars", JARS)
-        else:
             # Setup above not needed when running from EMR where setup done in spark-submit.
-            conf = SparkConf()
+        # else:
+        #     # Setup above not needed when running from EMR where setup done in spark-submit.
+        #     conf = SparkConf() \
+        #         .set("spark.driver.memoryOverhead", '5g')
 
         if emr_core_instances == 0:
             conf = conf \
