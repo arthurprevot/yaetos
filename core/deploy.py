@@ -363,12 +363,7 @@ class DeployPySparkScriptOnAws(object):
                 },
                 # { # Section to add jars (redshift...), not used for now, since passed in spark-submit args.
                 # "Classification": "spark-defaults",
-                # # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"],
-                # "Properties": {
-                #     # "spark.driver.memory": "40G",
-                #     # "spark.driver.cores": "10",
-                #     "maximizeResourceAllocation": "true",
-                #     },
+                # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"], "spark.driver.memory": "40G", "maximizeResourceAllocation": "true"},
                 # }
             ],
             JobFlowRole='EMR_EC2_DefaultRole',
