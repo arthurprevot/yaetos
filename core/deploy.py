@@ -589,6 +589,13 @@ class DeployPySparkScriptOnAws(object):
                 parameterValues[ii] = {'id': u'myTerminateAfter', 'stringValue': self.deploy_args.get('terminate_after', '180 Minutes')}
             elif 'myEMRReleaseLabel' in item.values():
                 parameterValues[ii] = {'id': u'myEMRReleaseLabel', 'stringValue': self.emr_version}
+            elif 'myMasterInstanceType' in item.values():
+                parameterValues[ii] = {'id': u'myMasterInstanceType', 'stringValue': self.ec2_instance_master}
+            elif 'myCoreInstanceCount' in item.values():
+                parameterValues[ii] = {'id': u'myCoreInstanceCount', 'stringValue': str(self.emr_core_instances)}
+            elif 'myCoreInstanceType' in item.values():
+                parameterValues[ii] = {'id': u'myCoreInstanceType', 'stringValue': self.ec2_instance_slaves}
+
 
         # Change steps to include proper path
         setup_command =  's3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://{s3_tmp_path}/setup_master.sh,s3://{s3_tmp_path}'.format(s3_tmp_path=self.package_path_with_bucket) # s3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/setup_master.sh,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/
