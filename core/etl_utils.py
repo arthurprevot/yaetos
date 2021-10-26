@@ -1104,7 +1104,6 @@ class Commandliner():
 
         conf = SparkConf()
         # TODO: move spark-submit params here since it is more generic than in spark submit, params like "spark.driver.memoryOverhead" cause pb in spark submit.
-        # For extra overhead for python in driver (for pandas): .set("spark.driver.memoryOverhead", job.jargs.merged_args.get('driver-memoryOverhead'))
 
         if jargs.merged_args.get('driver-memoryOverhead'):  # For extra overhead for python in driver (typically pandas)
             conf = conf.set("spark.driver.memoryOverhead", job.jargs.merged_args['driver-memoryOverhead'])
