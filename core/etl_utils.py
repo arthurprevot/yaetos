@@ -1102,9 +1102,6 @@ class Commandliner():
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
 
-        package = PACKAGES_LOCAL if spark_version == '2.4' else PACKAGES_LOCAL_ALT
-        package_str = ','.join(package)
-
         conf = SparkConf()
         # TODO: move spark-submit params here since it more generic than in spark submit, params like "spark.driver.memoryOverhead" cause pb in spark submit.
         # For extra overhead for python in driver (for pandas): .set("spark.driver.memoryOverhead", '5g')
@@ -1115,14 +1112,12 @@ class Commandliner():
             os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
             # JARs
+            package = PACKAGES_LOCAL if spark_version == '2.4' else PACKAGES_LOCAL_ALT
+            package_str = ','.join(package)
             conf = conf \
                 .set("spark.jars.packages", package_str) \
                 .set("spark.jars", JARS)
             # Setup above not needed when running from EMR where setup done in spark-submit.
-        # else:
-        #     # Setup above not needed when running from EMR where setup done in spark-submit.
-        #     conf = SparkConf() \
-        #         .set("spark.driver.memoryOverhead", '5g')
 
         if emr_core_instances == 0:
             conf = conf \
