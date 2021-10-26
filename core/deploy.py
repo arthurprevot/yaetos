@@ -457,19 +457,19 @@ class DeployPySparkScriptOnAws(object):
         package = eu.PACKAGES_EMR if self.deploy_args.get('spark_version', '2.4') == '2.4' else eu.PACKAGES_EMR_ALT
         package_str = ','.join(package)
 
-        cmd_runner_args1 = [
+        spark_submit_args = [
             "spark-submit",
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
             "--packages={}".format(package_str),
             "--jars={}".format(eu.JARS),
             ]
-        mem = ["--driver-memory={}".format(app_args['driver-memory'])] if app_args.get('driver-memory') else []
-        cor = ["--driver-cores={}".format(app_args['driver-cores'])] if app_args.get('driver-cores') else []
-        me2 = ["--executor-memory={}".format(app_args['executor-memory'])] if app_args.get('executor-memory') else []
-        co2 = ["--executor-cores={}".format(app_args['executor-cores'])] if app_args.get('executor-cores') else []
+        med = ["--driver-memory={}".format(app_args['driver-memory'])] if app_args.get('driver-memory') else []
+        cod = ["--driver-cores={}".format(app_args['driver-cores'])] if app_args.get('driver-cores') else []
+        mee = ["--executor-memory={}".format(app_args['executor-memory'])] if app_args.get('executor-memory') else []
+        coe = ["--executor-cores={}".format(app_args['executor-cores'])] if app_args.get('executor-cores') else []
 
-        cmd_runner_args2 = [
+        spark_app_args = [
             eu.CLUSTER_APP_FOLDER+launcher_file,
             "--mode={}".format(emr_mode),
             "--deploy=none",
@@ -482,7 +482,7 @@ class DeployPySparkScriptOnAws(object):
         sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else []
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
 
-        return cmd_runner_args1 + mem + cor + me2 + co2 + cmd_runner_args2 + jop + dep + box + sql + nam
+        return spark_submit_args + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
