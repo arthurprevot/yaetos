@@ -1,8 +1,8 @@
 """A setuptools based setup module.
 
 See:
-https://packaging.python.org/guides/distributing-packages-using-setuptools/
-https://github.com/pypa/sampleproject
+https://pypi.org/project/yaetos
+https://github.com/arthurprevot/yaetos
 """
 
 # Always prefer setuptools over distutils
