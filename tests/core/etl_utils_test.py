@@ -26,6 +26,16 @@ class Test_ETL_Base(object):
     #     py_job = ETL_Base(pre_jargs=get_pre_jargs({})).set_py_job()
     #     assert py_job == LOCAL_APP_FOLDER+'core/etl_utils.py' # file is the one that starts execution, typically the job python file.
 
+    def test_load_inputs(self, sc, sc_sql, ss, get_pre_jargs):
+        """Confirming load_inputs acts as a passthrough"""
+        sdf = ss.read.json(sc.parallelize([
+            {'id': 1},
+            {'id': 2},
+            {'id': 3}]))
+        loaded_inputs = {'input1':sdf}
+        app_args_expected = loaded_inputs
+        assert ETL_Base(pre_jargs=get_pre_jargs(loaded_inputs)).load_inputs(loaded_inputs) == app_args_expected
+
 
 class Test_Job_Args_Parser(object):
     def test_no_param_override(self):
