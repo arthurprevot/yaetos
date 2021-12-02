@@ -36,6 +36,18 @@ class Test_ETL_Base(object):
         app_args_expected = loaded_inputs
         assert ETL_Base(pre_jargs=get_pre_jargs(loaded_inputs)).load_inputs(loaded_inputs) == app_args_expected
 
+    def test_get_max_timestamp(self, sc, sc_sql, ss, get_pre_jargs):
+        sdf = ss.read.json(sc.parallelize([
+            {'id': 1, 'timestamp': '2020-01-01'},
+            {'id': 2, 'timestamp': '2020-01-02'},
+            {'id': 3, 'timestamp': '2020-01-03'}]))
+        pre_jargs_over = {
+            'defaults_args': {
+                'inputs':{},
+                'output': {'inc_field': 'timestamp', 'type':None}}}
+        max_timestamp_expected = '2020-01-03'
+        assert ETL_Base(pre_jargs=get_pre_jargs(pre_jargs_over=pre_jargs_over)).get_max_timestamp(sdf) == max_timestamp_expected
+
 
 class Test_Job_Args_Parser(object):
     def test_no_param_override(self):
