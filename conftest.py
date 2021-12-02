@@ -18,7 +18,7 @@ def ss(sc):  # TODO: check if sc necessary here since not used downstream
 
 @pytest.fixture
 def get_pre_jargs():
-    def internal_function(loaded_inputs={}, pre_jargs_over={}): #pre_jargs
+    def internal_function(loaded_inputs={}, pre_jargs_over={}):
         """Requires loaded_inputs or pre_jargs_over"""
         inputs  = {key: {'type':None} for key in loaded_inputs.keys()}
         pre_jargs = {
