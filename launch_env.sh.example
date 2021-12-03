@@ -8,7 +8,7 @@
 # --memory 6g \
 
 
-docker build -t pyspark_container .  # '.' matters
+docker build -t pyspark_container .  # builds from Dockerfile
 docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 \
     -v ~/code/pyspark_aws_etl:/mnt/pyspark_aws_etl \
     -h spark \
