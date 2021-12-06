@@ -4,6 +4,9 @@ data/
 extra/
 schemas/
 metastore_db/
+dist/
+build/
+yaetos.egg-info/
 derby.log
 conf/aws_config.cfg
 conf/connections.cfg
