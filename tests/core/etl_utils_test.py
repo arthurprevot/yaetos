@@ -34,7 +34,7 @@ class Test_ETL_Base(object):
             {'id': 3}]))
         loaded_inputs = {'input1':sdf}
         app_args_expected = loaded_inputs
-        assert ETL_Base(pre_jargs=get_pre_jargs(loaded_inputs)).load_inputs(loaded_inputs) == app_args_expected
+        assert ETL_Base(pre_jargs=get_pre_jargs(loaded_inputs.keys())).load_inputs(loaded_inputs) == app_args_expected
 
     def test_get_max_timestamp(self, sc, sc_sql, ss, get_pre_jargs):
         sdf = ss.read.json(sc.parallelize([

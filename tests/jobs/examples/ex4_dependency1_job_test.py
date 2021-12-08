@@ -19,5 +19,5 @@ class Test_Job(object):
             ]
 
         loaded_inputs={'some_events': some_events}
-        actual = Job(pre_jargs=get_pre_jargs(loaded_inputs)).etl_no_io(sc, sc_sql, loaded_inputs=loaded_inputs)[0].toPandas().to_dict(orient='records')
+        actual = Job(pre_jargs=get_pre_jargs(loaded_inputs.keys())).etl_no_io(sc, sc_sql, loaded_inputs=loaded_inputs)[0].toPandas().to_dict(orient='records')
         assert actual == expected
