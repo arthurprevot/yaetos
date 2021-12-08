@@ -75,15 +75,6 @@ class Test_Period_Builder(object):
         assert period_real == period_expected
 
 
-class Test_Job_Args_Parser(object):
-    def test_no_param_override(self):
-        defaults_args = {'mode': 'dev_local', 'deploy':'code', 'output': {'path':'n/a', 'type': 'csv'}}
-        expected_args = {**{'inputs': {}, 'is_incremental': False}, **defaults_args}
-
-        jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={})
-        assert jargs.merged_args == expected_args
-
-
 class Test_Job_Yml_Parser(object):
     def test_set_py_job_from_name(self):
         py_job = Job_Yml_Parser.set_py_job_from_name('some_job_name')
@@ -95,6 +86,18 @@ class Test_Job_Yml_Parser(object):
 
         job_name = Job_Yml_Parser.set_job_name_from_file(LOCAL_APP_FOLDER+'jobs/some/file.py')
         assert job_name == 'some/file.py'
+
+    # def test_set_sql_file_from_name(self) # to be added
+    #     Job_Yml_Parser.set_sql_file_from_name()
+
+
+class Test_Job_Args_Parser(object):
+    def test_no_param_override(self):
+        defaults_args = {'mode': 'dev_local', 'deploy':'code', 'output': {'path':'n/a', 'type': 'csv'}}
+        expected_args = {**{'inputs': {}, 'is_incremental': False}, **defaults_args}
+
+        jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={})
+        assert jargs.merged_args == expected_args
 
 
 def test_get_job_class():
