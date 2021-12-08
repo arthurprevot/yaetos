@@ -5,8 +5,7 @@ class Job(ETL_Base):
     """To run/deploy sql jobs, using --sql_file arg."""
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
-        # Function called only if running the job directly, i.e. "python core/sql_job.py --sql_file=jobs/some_job.sql"
-        job_file = self.set_job_file()
+        # Function called only if running the job directly, i.e. "python core/sql_job.py --sql_file=jobs/some_job.sql", ignored if running from "python jobs/generic/launcher.py --job_name=some_job.sql"
         sql_file=pre_jargs['cmd_args']['sql_file']
         job_name = Job_Yml_Parser.set_job_name_from_file(sql_file)
         pre_jargs['job_args']['job_name'] = job_name
