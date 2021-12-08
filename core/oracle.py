@@ -1,9 +1,9 @@
 """Helper functions for oracle."""
 
 from libs.python_db_connectors.query_oracle import connect
-import core.logger as log
 import numpy as np
-
+from .logger import setup_logging
+logger = setup_logging('Oracle')
 
 def create_table(df, connection_profile, name_tb, types, creds_or_file, is_incremental):
     """
@@ -20,8 +20,6 @@ def create_table(df, connection_profile, name_tb, types, creds_or_file, is_incre
     # TODO: check df.to_sql above for long integers. Noticed long numbers where rounded.
     logger.info("Copied table to oracle '{}', using connection profile '{}'".format(name_tb, connection_profile))
 
-
-logger = log.setup_logging('Oracle')
 
 if __name__ == '__main__':
     from sqlalchemy import types

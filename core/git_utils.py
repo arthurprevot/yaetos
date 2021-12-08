@@ -1,8 +1,8 @@
 import yaml
 import os
 import subprocess
-import core.logger as log
-logger = log.setup_logging('Job')
+from .logger import setup_logging
+logger = setup_logging('Job')
 
 
 class Git_Config_Manager():

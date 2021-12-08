@@ -5,8 +5,8 @@ import pandas as pd
 from sqlalchemy import types as db_types
 from pyspark.sql import types as spk_types
 from datetime import datetime, date
-import core.logger as log
-
+from .logger import setup_logging
+logger = log.setup_logging('DB_Utils')
 
 def cast_rec(rec, output_types):
     new_rec = {}
@@ -102,6 +102,3 @@ def pdf_to_sdf(df, output_types, sc, sc_sql):  # TODO: check suspicion that this
             .map(lambda row: cast_rec(row, output_types))
 
     return sc_sql.createDataFrame(rdd, schema = spark_schema, verifySchema=True)
-
-
-logger = log.setup_logging('DB_Utils')
