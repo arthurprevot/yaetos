@@ -1,6 +1,6 @@
 import pytest
 from core.etl_utils import ETL_Base, Commandliner, \
-    Job_Args_Parser, Job_Yml_Parser, Flow, \
+    Period_Builder, Job_Args_Parser, Job_Yml_Parser, Flow, \
     get_job_class, LOCAL_APP_FOLDER
 
 
@@ -47,6 +47,32 @@ class Test_ETL_Base(object):
                 'output': {'inc_field': 'timestamp', 'type':None}}}
         max_timestamp_expected = '2020-01-03'
         assert ETL_Base(pre_jargs=get_pre_jargs(pre_jargs_over=pre_jargs_over)).get_max_timestamp(sdf) == max_timestamp_expected
+
+
+class Test_Period_Builder(object):
+    def test_get_last_day(self):
+        from datetime import datetime
+        as_of_date = datetime.strptime("2021-01-02", '%Y-%m-%d')
+        last_day_real = Period_Builder.get_last_day(as_of_date)
+        last_day_expected = "2021-01-01"
+        assert last_day_real == last_day_expected
+
+    def test_get_first_to_last_day(self):
+        from datetime import datetime
+        first_day = "2021-01-01"
+        as_of_date = datetime.strptime("2021-01-05", '%Y-%m-%d')
+        period_real = Period_Builder.get_first_to_last_day(first_day, as_of_date)
+        period_expected = ["2021-01-01", "2021-01-02", "2021-01-03", "2021-01-04"]
+        assert period_real == period_expected
+
+    def test_get_last_output_to_last_day(self):
+        from datetime import datetime
+        first_day_input = "2021-01-01"
+        last_run_period = "2021-01-03"
+        as_of_date = datetime.strptime("2021-01-08", '%Y-%m-%d')
+        period_real = Period_Builder().get_last_output_to_last_day(last_run_period, first_day_input, as_of_date)
+        period_expected = ["2021-01-04", "2021-01-05", "2021-01-06", "2021-01-07"]
+        assert period_real == period_expected
 
 
 class Test_Job_Args_Parser(object):

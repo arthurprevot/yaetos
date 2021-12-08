@@ -619,14 +619,14 @@ class ETL_Base(object):
 
 class Period_Builder():
     @staticmethod
-    def get_last_day():
-        last_day_dt = datetime.utcnow() + relativedelta(days=-1)
+    def get_last_day(as_of_date=datetime.utcnow()):
+        last_day_dt = as_of_date + relativedelta(days=-1)
         last_day = last_day_dt.strftime("%Y-%m-%d")
         return last_day
 
     @staticmethod
-    def get_first_to_last_day(first_day):
-        now = datetime.utcnow()
+    def get_first_to_last_day(first_day, as_of_date=datetime.utcnow()):
+        now = as_of_date
         start = datetime.strptime(first_day, "%Y-%m-%d")
         delta = now - start
         number_days = delta.days
@@ -638,8 +638,8 @@ class Period_Builder():
             iter_days = iter_days + relativedelta(days=+1)
         return periods
 
-    def get_last_output_to_last_day(self, last_run_period, first_day_input):
-        periods = self.get_first_to_last_day(first_day_input)
+    def get_last_output_to_last_day(self, last_run_period, first_day_input, as_of_date=datetime.utcnow()):
+        periods = self.get_first_to_last_day(first_day_input, as_of_date)
         if last_run_period:
             periods = [item for item in periods if item > last_run_period]
         # periods = [item for item in periods if item < '2021-01-02']  # TODO: make end period parametrizable from args.
