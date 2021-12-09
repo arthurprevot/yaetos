@@ -1,5 +1,5 @@
 import pytest
-from core.sql_job import Job
+from yaetos.sql_job import Job
 
 
 class Test_Job(object):
