@@ -1,6 +1,6 @@
 # Jobs details below. Common job params listed at the bottom of this file.
 jobs:
-  examples/ex0_extraction_job.py:  # requires mysql instance running
+  examples/ex0_extraction_job.py:
     api_inputs: {'path': 'https://raw.githubusercontent.com/wikimedia-research/Discovery-Hiring-Analyst-2016/master/events_log.csv.gz'}
     output: {'path':'{base_path}/wiki_example/input/{now}/', 'type':'csv'}
 

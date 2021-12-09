@@ -27,7 +27,7 @@ class Test_ETL_Base(object):
 
     # def test_set_py_job(self, get_pre_jargs):  # works locally but not from CI tool, where LOCAL_APP_FOLDER is different.
     #     py_job = ETL_Base(pre_jargs=get_pre_jargs({})).set_py_job()
-    #     assert py_job == LOCAL_APP_FOLDER+'core/etl_utils.py' # file is the one that starts execution, typically the job python file.
+    #     assert py_job == LOCAL_APP_FOLDER+'yaetos/etl_utils.py' # file is the one that starts execution, typically the job python file.
 
     def test_load_inputs(self, sc, sc_sql, ss, get_pre_jargs):
         """Confirming load_inputs acts as a passthrough"""

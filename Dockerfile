@@ -9,7 +9,7 @@ FROM docker.io/bitnami/spark:2.4.5
 USER root
 
 # Pip installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements.txt doesn't change)
-COPY core/scripts/requirements.txt /tmp/requirements.txt
+COPY yaetos/scripts/requirements.txt /tmp/requirements.txt
 WORKDIR /tmp/
 RUN apt-get update && apt-get install -y git
 RUN pip3 install -r requirements.txt

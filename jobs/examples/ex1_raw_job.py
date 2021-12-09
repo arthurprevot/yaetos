@@ -50,4 +50,4 @@ df.write.csv(output)
 sc.stop()
 
 # To run locally, put local i/o paths and run: python jobs/examples/ex1_raw_job.py
-# To run on cluster, put s3 i/o paths and run: python core/deploy.py jobs/examples/ex1_raw_job.py
+# To run on cluster, put s3 i/o paths and run: python yaetos/deploy.py jobs/examples/ex1_raw_job.py
