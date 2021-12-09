@@ -115,30 +115,27 @@ class Test_Flow(object):
         launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
         connection_real = Flow.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
         connection_expected = pd.DataFrame(
+            columns=['source_job', 'destination_job'],
             data=np.array([
                 ['examples/ex3_incremental_prep_job.py', 'examples/ex3_incremental_job.py'],
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency2_job.py'],
                 ['examples/ex4_dependency2_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency3_job.sql'],
-                ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
-                ]),
-            columns=['source_job', 'destination_job'])
+                ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py']]),
+            )
         assert_frame_equal(connection_real, connection_expected)
-        # app_name = 'examples/ex4_dependency2_job.py'
-            # cmd_args > adding: 'boxed_dependencies': True,
-        # connection_real = Flow(sc, sc_sql, launch_jargs, app_name).create_connections_jobs(storage, args)
 
     def test_create_global_graph(self):
         import networkx as nx
         df = pd.DataFrame(
+            columns=['source_job', 'destination_job'],
             data=np.array([
                 ['examples/ex3_incremental_prep_job.py', 'examples/ex3_incremental_job.py'],
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency2_job.py'],
                 ['examples/ex4_dependency2_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency3_job.sql'],
-                ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
-                ]),
-            columns=['source_job', 'destination_job'])
+                ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py']]),
+            )
         nx_real = Flow.create_global_graph(df)
         nx_expected = {
             'examples/ex3_incremental_prep_job.py': {'examples/ex3_incremental_job.py': {}},
