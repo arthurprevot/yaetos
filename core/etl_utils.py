@@ -1150,6 +1150,10 @@ class Flow():
         logger.info('-')
         launch_jargs.cmd_args.pop('job_name', None)  # removing since it should be pulled from yml and not be overriden by cmd_args.
         launch_jargs.job_args.pop('job_name', None)  # same
+        self.run_pipeline(sc, sc_sql, leafs, launch_jargs)
+
+    @staticmethod
+    def run_pipeline(sc, sc_sql, leafs, launch_jargs):
 
         # load all job classes and run them, TODO: put this in separate function.
         df = {}
