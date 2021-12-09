@@ -33,7 +33,7 @@ import smtplib, ssl
 from pyspark.sql.window import Window
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType
-from core.git_utils import Git_Config_Manager
+from yaetos.git_utils import Git_Config_Manager
 from dateutil.relativedelta import relativedelta
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
@@ -541,8 +541,8 @@ class ETL_Base(object):
 
     def copy_to_redshift_using_pandas(self, output, types):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
-        from core.redshift_pandas import create_table
-        from core.db_utils import cast_col
+        from yaetos.redshift_pandas import create_table
+        from yaetos.db_utils import cast_col
         df = output.toPandas()
         df = cast_col(df, types)
         connection_profile = self.jargs.copy_to_redshift['creds']
@@ -554,7 +554,7 @@ class ETL_Base(object):
 
     def copy_to_redshift_using_spark(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
-        from core.redshift_spark import create_table
+        from yaetos.redshift_spark import create_table
         connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
@@ -563,7 +563,7 @@ class ETL_Base(object):
 
     def copy_to_clickhouse(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
-        from core.clickhouse import create_table
+        from yaetos.clickhouse import create_table
         connection_profile = self.jargs.copy_to_clickhouse['creds']
         schema, name_tb= self.jargs.copy_to_clickhouse['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
@@ -1093,7 +1093,7 @@ class Commandliner():
 
     def launch_deploy_mode(self, deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
-        from core.deploy import DeployPySparkScriptOnAws
+        from yaetos.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
     def create_contexts(self, app_name, jargs):
