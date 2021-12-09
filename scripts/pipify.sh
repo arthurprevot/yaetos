@@ -1,3 +1,5 @@
+# Before executing, version needs to be incremented in setup.py
+
 rm -r dist/
 rm -r yaetos.egg-info/
 rm -r build/

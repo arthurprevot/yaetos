@@ -37,7 +37,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version='0.9.1',  # Required
+    version='0.9.2',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
@@ -120,7 +120,7 @@ setup(
 
     # When your source code is in a subdirectory under the project root, e.g.
     # `src/`, it is necessary to specify the `package_dir` argument.
-    package_dir={'yaetos': ''},  # Optional
+    # package_dir={'': ''},  # Optional
 
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
@@ -133,7 +133,7 @@ setup(
     #
     #packages=find_packages(where='core'),  # Required
     packages=[
-        'yaetos.core',
+        'yaetos',
         'yaetos.libs.analysis_toolkit',
         'yaetos.libs.python_db_connectors'
         ],  # Required
