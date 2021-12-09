@@ -1,4 +1,7 @@
 import pytest
+from pandas.testing import assert_frame_equal
+import pandas as pd
+import numpy as np
 from core.etl_utils import ETL_Base, Commandliner, \
     Period_Builder, Job_Args_Parser, Job_Yml_Parser, Flow, \
     get_job_class, LOCAL_APP_FOLDER, JOBS_METADATA_FILE
@@ -102,22 +105,14 @@ class Test_Job_Args_Parser(object):
 
 class Test_Flow(object):
     def test_create_connections_jobs(self, sc, sc_sql):
-        from pandas.testing import assert_frame_equal
-        import pandas as pd
-        import numpy as np
-
         cmd_args = {
             'deploy': 'none',
             'mode': 'dev_local',
             'job_param_file': JOBS_METADATA_FILE,
             'job_name': 'examples/ex4_dependency2_job.py',
             'storage': 'local',
-            'boxed_dependencies': True,
             }
-
         launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
-        # args = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={}).merged_args
-        # app_name = 'examples/ex4_dependency2_job.py'
         connection_real = Flow.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
         connection_expected = pd.DataFrame(
             data=np.array([
@@ -128,10 +123,47 @@ class Test_Flow(object):
                 ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
                 ]),
             columns=['source_job', 'destination_job'])
-        # print('------')
-        # print(connection_real)
         assert_frame_equal(connection_real, connection_expected)
+        # app_name = 'examples/ex4_dependency2_job.py'
+            # cmd_args > adding: 'boxed_dependencies': True,
         # connection_real = Flow(sc, sc_sql, launch_jargs, app_name).create_connections_jobs(storage, args)
+
+    def test_create_global_graph(self):
+        import networkx as nx
+        df = pd.DataFrame(
+            data=np.array([
+                ['examples/ex3_incremental_prep_job.py', 'examples/ex3_incremental_job.py'],
+                ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency2_job.py'],
+                ['examples/ex4_dependency2_job.py', 'examples/ex4_dependency3_job.sql'],
+                ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency3_job.sql'],
+                ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
+                ]),
+            columns=['source_job', 'destination_job'])
+        nx_real = Flow.create_global_graph(df)
+        nx_expected = {
+            'examples/ex3_incremental_prep_job.py': {'examples/ex3_incremental_job.py': {}},
+            'examples/ex3_incremental_job.py': {},
+            'examples/ex4_dependency1_job.py': {'examples/ex4_dependency2_job.py': {}, 'examples/ex4_dependency3_job.sql': {}},
+            'examples/ex4_dependency2_job.py': {'examples/ex4_dependency3_job.sql': {}},
+            'examples/ex4_dependency3_job.sql': {'examples/ex4_dependency4_job.py': {}},
+            'examples/ex4_dependency4_job.py': {}
+            }
+
+        # import networkx.algorithms.isomorphism as iso
+        # print('----1')
+        # print(nx_real)
+        # print('----1b')
+        # print(nx.to_dict_of_dicts(nx_real))
+        # nx_expected = nx.DiGraph()
+        # # nx_expected.add_path([1,2,3,4],weight=1) # for later version
+        # nx.add_path(nx_expected, [0, 1, 2, 3])
+        # print('----2')
+        # print(nx_expected)
+        # print('----2b')
+        # print(nx.to_dict_of_dicts(nx_expected))
+        # assert nx.is_isomorphic(nx_real, nx_expected)
+        assert nx.to_dict_of_dicts(nx_real) == nx_expected
+
 
 
 def test_get_job_class():

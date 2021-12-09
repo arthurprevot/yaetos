@@ -1151,7 +1151,7 @@ class Flow():
         launch_jargs.cmd_args.pop('job_name', None)  # removing since it should be pulled from yml and not be overriden by cmd_args.
         launch_jargs.job_args.pop('job_name', None)  # same
 
-        # load all job classes and run them
+        # load all job classes and run them, TODO: put this in separate function.
         df = {}
         for job_name in leafs:
             logger.info('About to run job_name: {}'.format(job_name))
@@ -1180,7 +1180,8 @@ class Flow():
             logger.info('-'*80)
             logger.info('-')
 
-    def create_connections_jobs(self, storage, args):
+    @staticmethod
+    def create_connections_jobs(storage, args):
         yml = Job_Yml_Parser.load_meta(args['job_param_file'])
 
         connections = []
@@ -1192,7 +1193,8 @@ class Flow():
 
         return pd.DataFrame(connections)
 
-    def create_global_graph(self, df):
+    @staticmethod
+    def create_global_graph(df):
         """ Directed Graph from source to target. df must contain 'source_dataset' and 'target_dataset'.
         All other fields are attributed to target."""
         DG = nx.DiGraph()
