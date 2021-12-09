@@ -2,9 +2,7 @@
 Typically not needed since data is read/written to mysql from framework, as defined in job_metadata.yml.
 May require VPN to access mysql.
 """
-from core.etl_utils import ETL_Base, Commandliner, Cred_Ops_Dispatcher
-import core.logger as log
-logger = log.setup_logging('Job')
+from yaetos.etl_utils import ETL_Base, Commandliner, Cred_Ops_Dispatcher
 
 
 class Job(ETL_Base):
@@ -19,7 +17,7 @@ class Job(ETL_Base):
         # TODO: add example
 
         # Reading from mysql
-        logger.info('Pulling table "{}" from mysql'.format(dbtable))
+        self.logger.info('Pulling table "{}" from mysql'.format(dbtable))
         df = self.sc_sql.read \
             .format('jdbc') \
             .option('driver', "com.mysql.jdbc.Driver") \
@@ -29,10 +27,10 @@ class Job(ETL_Base):
             .option("dbtable", dbtable)\
             .load()
         count = df.count()
-        logger.info('Done pulling table, row count:{}'.format(count))
+        self.logger.info('Done pulling table, row count:{}'.format(count))
         return df
 
 
 if __name__ == "__main__":
-    args = {'job_param_file':   'conf/jobs_metadata.yml'}
+    args = {'job_param_file': 'conf/jobs_metadata.yml'}
     Commandliner(Job, **args)

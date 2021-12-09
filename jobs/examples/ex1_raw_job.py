@@ -7,7 +7,7 @@ from __future__ import print_function
 import sys
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
-from core.etl_utils import Path_Handler
+from yaetos.etl_utils import Path_Handler
 from datetime import datetime
 
 # inputs/output paths

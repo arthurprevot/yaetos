@@ -1,5 +1,5 @@
-from core.etl_utils import ETL_Base, Commandliner, Cred_Ops_Dispatcher, pdf_to_sdf
-from core.db_utils import pdf_to_sdf
+from yaetos.etl_utils import ETL_Base, Commandliner, Cred_Ops_Dispatcher, pdf_to_sdf
+from yaetos.db_utils import pdf_to_sdf
 from libs.python_db_connectors.query_oracle import query as query_oracle
 from sqlalchemy import types
 
@@ -25,5 +25,5 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    args = {'job_param_file':   'conf/jobs_metadata.yml'}
+    args = {'job_param_file': 'conf/jobs_metadata.yml'}
     Commandliner(Job, **args)

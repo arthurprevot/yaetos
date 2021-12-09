@@ -1,5 +1,5 @@
 """ Demo basic extraction job using a public datasource (from wikimedia) """
-from core.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETL_Base, Commandliner
 import requests
 
 class Job(ETL_Base):
