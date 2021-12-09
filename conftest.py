@@ -1,5 +1,5 @@
 import pytest
-from jobs.examples.ex1_frameworked_job import Job
+# from jobs.examples.ex1_frameworked_job import Job
 from pyspark import SparkContext
 from pyspark.sql import SQLContext, SparkSession, Row
 
