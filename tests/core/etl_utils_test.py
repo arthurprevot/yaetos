@@ -1,7 +1,7 @@
 import pytest
 from core.etl_utils import ETL_Base, Commandliner, \
     Period_Builder, Job_Args_Parser, Job_Yml_Parser, Flow, \
-    get_job_class, LOCAL_APP_FOLDER
+    get_job_class, LOCAL_APP_FOLDER, JOBS_METADATA_FILE
 
 
 class Test_ETL_Base(object):
@@ -98,6 +98,40 @@ class Test_Job_Args_Parser(object):
 
         jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={})
         assert jargs.merged_args == expected_args
+
+
+class Test_Flow(object):
+    def test_create_connections_jobs(self, sc, sc_sql):
+        from pandas.testing import assert_frame_equal
+        import pandas as pd
+        import numpy as np
+
+        cmd_args = {
+            'deploy': 'none',
+            'mode': 'dev_local',
+            'job_param_file': JOBS_METADATA_FILE,
+            'job_name': 'examples/ex4_dependency2_job.py',
+            'storage': 'local',
+            'boxed_dependencies': True,
+            }
+
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
+        # args = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={}).merged_args
+        # app_name = 'examples/ex4_dependency2_job.py'
+        connection_real = Flow.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
+        connection_expected = pd.DataFrame(
+            data=np.array([
+                ['examples/ex3_incremental_prep_job.py', 'examples/ex3_incremental_job.py'],
+                ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency2_job.py'],
+                ['examples/ex4_dependency2_job.py', 'examples/ex4_dependency3_job.sql'],
+                ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency3_job.sql'],
+                ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
+                ]),
+            columns=['source_job', 'destination_job'])
+        # print('------')
+        # print(connection_real)
+        assert_frame_equal(connection_real, connection_expected)
+        # connection_real = Flow(sc, sc_sql, launch_jargs, app_name).create_connections_jobs(storage, args)
 
 
 def test_get_job_class():
