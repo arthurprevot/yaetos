@@ -1,20 +1,13 @@
-""" Demo basic extraction job using a public datasource (from wikimedia). 
-No authentication needed here. """
+""" Demo basic extraction job using a public datasource (from wikimedia) """
 from core.etl_utils import ETL_Base, Commandliner
 import requests
-# from io import StringIO
 
 class Job(ETL_Base):
     def transform(self):
-        # import ipdb; ipdb.set_trace()
-
         url = self.jargs.api_inputs['path']
         resp = requests.get(url, allow_redirects=True)
-        # response = urllib.request.urlopen(url)
-        # data = response.read()
-
         local_path = 'tmp/tmp_file.csv.gz'
-        open(local_path, 'wb').write(resp.content)
+        open(local_path, 'wb').write(resp.content)  # creating local copy, necessary for sc_sql.read.csv
         sdf = self.sc_sql.read.csv(local_path, header=True)
         return sdf.repartition(1)
 
