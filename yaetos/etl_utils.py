@@ -35,8 +35,8 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import StructType
 from core.git_utils import Git_Config_Manager
 from dateutil.relativedelta import relativedelta
-import core.logger as log
-logger = log.setup_logging('Job')
+from yaetos.logger import setup_logging
+logger = setup_logging('Job')
 
 
 # User settable params below can be changed from command line or yml or job inputs.

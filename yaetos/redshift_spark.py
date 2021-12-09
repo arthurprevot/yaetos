@@ -1,7 +1,7 @@
 """Helper functions for redshift."""
 
-import core.logger as log
-logger = log.setup_logging('Redshift')
+from yaetos.logger import setup_logging
+logger = setup_logging('Redshift')
 
 
 def create_table(df, connection_profile, name_tb, schema, creds_or_file, is_incremental, s3_tmp_dir, spark_version):

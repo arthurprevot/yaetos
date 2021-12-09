@@ -1,8 +1,9 @@
 """Helper functions for redshift."""
 
 from libs.python_db_connectors.query_redshift import connect
-import core.logger as log
 import numpy as np
+from yaetos.logger import setup_logging
+logger = setup_logging('Redshift')
 
 
 def create_table(df, connection_profile, name_tb, schema, types, creds_or_file, is_incremental):
@@ -18,8 +19,6 @@ def create_table(df, connection_profile, name_tb, schema, types, creds_or_file, 
     # TODO: check df.to_sql above for long integers. Noticed long numbers where rounded.
     logger.info("Copied table to redshift '{}.{}', using connection profile '{}'".format(schema, name_tb, connection_profile))
 
-
-logger = log.setup_logging('Redshift')
 
 if __name__ == '__main__':
     from sqlalchemy import types

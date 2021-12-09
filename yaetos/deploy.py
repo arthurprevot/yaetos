@@ -22,10 +22,10 @@ import json
 from pprint import pformat
 from configparser import ConfigParser
 from shutil import copyfile
-import core.etl_utils as eu
-from core.git_utils import Git_Config_Manager
-import core.logger as log
-logger = log.setup_logging('Deploy')
+import yaetos.etl_utils as eu
+from yaetos.git_utils import Git_Config_Manager
+from yaetos.logger import setup_logging
+logger = setup_logging('Deploy')
 
 
 class DeployPySparkScriptOnAws(object):

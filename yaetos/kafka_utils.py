@@ -5,7 +5,8 @@ import json
 import jsonschema
 import kafka
 import requests
-import logger as log
+from yaetos.logger import setup_logging
+logger = setup_logging('Kafka_push')
 
 
 class KafkaProducer(object):
@@ -70,9 +71,6 @@ class KafkaProducer(object):
 
     def __exit__(self, type, value, traceback):
         self.close()
-
-
-logger = log.setup_logging('Kafka push')
 
 
 if __name__ == '__main__':

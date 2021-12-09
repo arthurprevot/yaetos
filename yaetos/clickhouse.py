@@ -1,7 +1,7 @@
 """Helper functions for clickhouse. Using postgres connector."""
 
-import core.logger as log
-logger = log.setup_logging('Clickhouse')
+from yaetos.logger import setup_logging
+logger = setup_logging('Clickhouse')
 
 
 def create_table(df, connection_profile, name_tb, schema, creds_or_file, is_incremental):
