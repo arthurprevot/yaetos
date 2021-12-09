@@ -619,14 +619,14 @@ class ETL_Base(object):
 
 class Period_Builder():
     @staticmethod
-    def get_last_day():
-        last_day_dt = datetime.utcnow() + relativedelta(days=-1)
+    def get_last_day(as_of_date=datetime.utcnow()):
+        last_day_dt = as_of_date + relativedelta(days=-1)
         last_day = last_day_dt.strftime("%Y-%m-%d")
         return last_day
 
     @staticmethod
-    def get_first_to_last_day(first_day):
-        now = datetime.utcnow()
+    def get_first_to_last_day(first_day, as_of_date=datetime.utcnow()):
+        now = as_of_date
         start = datetime.strptime(first_day, "%Y-%m-%d")
         delta = now - start
         number_days = delta.days
@@ -638,8 +638,8 @@ class Period_Builder():
             iter_days = iter_days + relativedelta(days=+1)
         return periods
 
-    def get_last_output_to_last_day(self, last_run_period, first_day_input):
-        periods = self.get_first_to_last_day(first_day_input)
+    def get_last_output_to_last_day(self, last_run_period, first_day_input, as_of_date=datetime.utcnow()):
+        periods = self.get_first_to_last_day(first_day_input, as_of_date)
         if last_run_period:
             periods = [item for item in periods if item > last_run_period]
         # periods = [item for item in periods if item < '2021-01-02']  # TODO: make end period parametrizable from args.
@@ -1089,7 +1089,7 @@ class Commandliner():
         if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:
-            Flow(sc, sc_sql, job.jargs, app_name)
+            Flow(job.jargs, app_name).run_pipeline(sc, sc_sql)
 
     def launch_deploy_mode(self, deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
@@ -1138,28 +1138,30 @@ class Commandliner():
 
 
 class Flow():
-    def __init__(self, sc, sc_sql, launch_jargs, app_name):
+    def __init__(self, launch_jargs, app_name):
         self.app_name = app_name
         df = self.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
         logger.debug('Flow app_name : {}, connection_table: {}'.format(app_name, df))
         graph = self.create_global_graph(df)  # top to bottom
         tree = self.create_local_tree(graph, nx.DiGraph(), app_name) # bottom to top
-        leafs = self.get_leafs(tree, leafs=[]) # bottom to top
-        logger.info('Sequence of jobs to be run: {}'.format(leafs))
+        self.leafs = self.get_leafs(tree, leafs=[]) # bottom to top
+        logger.info('Sequence of jobs to be run: {}'.format(self.leafs))
         logger.info('-'*80)
         logger.info('-')
         launch_jargs.cmd_args.pop('job_name', None)  # removing since it should be pulled from yml and not be overriden by cmd_args.
         launch_jargs.job_args.pop('job_name', None)  # same
+        self.launch_jargs = launch_jargs
 
-        # load all job classes and run them
+    def run_pipeline(self, sc, sc_sql):
+        """Load all job classes and run them"""
         df = {}
-        for job_name in leafs:
+        for job_name in self.leafs:
             logger.info('About to run job_name: {}'.format(job_name))
             # Get yml
-            yml_args = Job_Yml_Parser(job_name, launch_jargs.job_param_file, launch_jargs.mode).yml_args
+            yml_args = Job_Yml_Parser(job_name, self.launch_jargs.job_param_file, self.launch_jargs.mode).yml_args
             # Get loaded_inputs
             loaded_inputs = {}
-            if not launch_jargs.boxed_dependencies:
+            if not self.launch_jargs.boxed_dependencies:
                 if yml_args.get('inputs', 'no input') == 'no input':
                     raise Exception("Pb with loading job_yml or finding 'inputs' parameter in it. You can work around it by using 'boxed_dependencies' argument.")
                 for in_name, in_properties in yml_args['inputs'].items():
@@ -1167,20 +1169,21 @@ class Flow():
                         loaded_inputs[in_name] = df[in_properties['from']]
 
             # Get jargs
-            jargs = Job_Args_Parser(launch_jargs.defaults_args, yml_args, launch_jargs.job_args, launch_jargs.cmd_args, loaded_inputs=loaded_inputs)
+            jargs = Job_Args_Parser(self.launch_jargs.defaults_args, yml_args, self.launch_jargs.job_args, self.launch_jargs.cmd_args, loaded_inputs=loaded_inputs)
 
             Job = get_job_class(yml_args['py_job'])
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
             df[job_name] = job.etl(sc, sc_sql) # at this point df[job_name] is unpersisted. TODO: keep it persisted.
 
-            if launch_jargs.boxed_dependencies:
+            if self.launch_jargs.boxed_dependencies:
                 df[job_name].unpersist()
                 del df[job_name]
                 gc.collect()
             logger.info('-'*80)
             logger.info('-')
 
-    def create_connections_jobs(self, storage, args):
+    @staticmethod
+    def create_connections_jobs(storage, args):
         yml = Job_Yml_Parser.load_meta(args['job_param_file'])
 
         connections = []
@@ -1192,7 +1195,8 @@ class Flow():
 
         return pd.DataFrame(connections)
 
-    def create_global_graph(self, df):
+    @staticmethod
+    def create_global_graph(df):
         """ Directed Graph from source to target. df must contain 'source_dataset' and 'target_dataset'.
         All other fields are attributed to target."""
         DG = nx.DiGraph()

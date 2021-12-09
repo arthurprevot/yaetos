@@ -1,20 +1,26 @@
 # Jobs details below. Common job params listed at the bottom of this file.
 jobs:
+  examples/ex0_extraction_job.py:  # requires mysql instance running
+    api_inputs: {'path': 'https://raw.githubusercontent.com/wikimedia-research/Discovery-Hiring-Analyst-2016/master/events_log.csv.gz'}
+    output: {'path':'{base_path}/wiki_example/input/{now}/', 'type':'csv'}
+
   examples/ex1_full_sql_job.sql:  # shows 100% sql job, easiest when sql is enough
     py_job: 'core/sql_job.py'
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example_sql/output_ex1_full_sql/{now}/', 'type':'csv'}
+    dependencies: [examples/ex0_extraction_job.py]
     frequency: 1 day
     start_date: "{today}T07:00:00"
     owners: ['some_email@address.com']
 
   examples/ex1_frameworked_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex1_frameworked/{now}/', 'type':'csv'}
+    dependencies: [examples/ex0_extraction_job.py]
     frequency: 1 day
     start_date: "{today}T07:00:00"
     owners: ['some_email@address.com']
@@ -22,9 +28,10 @@ jobs:
   job_using_generic_template:  # to show how to reuse existing job code
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex1_frameworked_p2/{now}/', 'type':'csv'}
+    dependencies: [examples/ex0_extraction_job.py]
 
   examples/ex1_raw_job.py:
     frequency: 24h
@@ -32,8 +39,8 @@ jobs:
 
   examples/ex2_frameworked_job.py:  # more complex version of ex1_frameworked_job
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex2/{now}/', 'type':'csv'}
     frequency: 1 day
     start_date: "{today}T07:00:00"
@@ -49,14 +56,14 @@ jobs:
 
   examples/ex3_incremental_prep_job.py:  # shows computation of dependency as necessary for ex3_incremental_job
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex3_dep/{now}/', 'type':'csv'}
     frequency: 24h
     owners: ['some_email@address.com']
 
   examples/ex4_dependency1_job.py:  # shows dependency
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex4_dep1/{now}/', 'type':'csv'}
 
   examples/ex4_dependency2_job.py:  # shows dependency without specifying inputs path since it is pulled from upstream.
@@ -81,15 +88,15 @@ jobs:
 
   examples/ex5_copy_to_oracle_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex5_copy_to_oracle/{now}/', 'type':'csv'}
     copy_to_oracle: {'creds': 'oracle', 'table': 'sandbox.test_ex5_pyspark_job'}
 
   examples/ex5_copy_to_redshift_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex5_copy_to_oracle/{now}/', 'type':'csv'}
     copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': '{schema}.test_ex5_pyspark_job'}
 
@@ -100,16 +107,16 @@ jobs:
   job_with_no_output:  # shows job with no output (still requiring table as output but not dumped to disk)
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'n/a', 'type':'None'}
 
   job_with_more_resources:
     description: "To show how to size cluster and machines. See ec2_instance_master and emr_core_instances params below"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex1_frameworked_p3/{now}/', 'type':'csv'}
     ec2_instance_master: 'm5.4xlarge'
     ec2_instance_slaves: 'm5.4xlarge'
@@ -117,13 +124,13 @@ jobs:
 
   examples/ex8_koalas_job.py:
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/inputs/{latest}/other_events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex8_koalas/{now}/', 'type':'csv'}
 
   examples/ex9_redshift_job.py:
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/inputs/{latest}/events_log.csv.gz", 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example/output_ex9_redshift/{now}/', 'type':'csv'}
     copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': '{schema}.test_ex9_redshift'}
 
