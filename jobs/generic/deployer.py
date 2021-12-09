@@ -1,4 +1,4 @@
-from core.deploy import deploy_standalone
+from yaetos.deploy import deploy_standalone
 
 
 args = {'job_param_file': 'conf/jobs_metadata.yml',

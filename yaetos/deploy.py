@@ -32,7 +32,7 @@ class DeployPySparkScriptOnAws(object):
     """
     Programmatically deploy a local PySpark script on an AWS cluster
     """
-    SCRIPTS = 'core/scripts/' # TODO: move to etl_utils.py
+    SCRIPTS = 'yaetos/scripts/' # TODO: move to etl_utils.py
     TMP = 'tmp/files_to_ship/'
 
     def __init__(self, deploy_args, app_args):
@@ -249,10 +249,10 @@ class DeployPySparkScriptOnAws(object):
         if os.path.isfile(git_yml):
             t_file.add(git_yml, arcname=git_yml)
 
-        # ./core files
-        files = os.listdir(base+'core/')
+        # ./yaetos files
+        files = os.listdir(base+'yaetos/')
         for f in files:
-            t_file.add(base+'core/' + f, arcname='core/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(base+'yaetos/' + f, arcname='yaetos/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./libs files
         # TODO: get better way to walk down tree (reuse walk from below)
@@ -505,9 +505,9 @@ class DeployPySparkScriptOnAws(object):
         import awscli.customizations.datapipeline.translator as trans
 
         if emr_core_instances != 0:
-            definition_file = eu.LOCAL_APP_FOLDER+'core/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+            definition_file = eu.LOCAL_APP_FOLDER+'yaetos/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
         else:
-            definition_file = eu.LOCAL_APP_FOLDER+'core/definition_standalone_cluster.json'
+            definition_file = eu.LOCAL_APP_FOLDER+'yaetos/definition_standalone_cluster.json'
             # TODO: have 1 json for both to avoid having to track duplication.
 
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
