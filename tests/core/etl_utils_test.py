@@ -148,22 +148,8 @@ class Test_Flow(object):
             'examples/ex4_dependency3_job.sql': {'examples/ex4_dependency4_job.py': {}},
             'examples/ex4_dependency4_job.py': {}
             }
-
-        # import networkx.algorithms.isomorphism as iso
-        # print('----1')
-        # print(nx_real)
-        # print('----1b')
-        # print(nx.to_dict_of_dicts(nx_real))
-        # nx_expected = nx.DiGraph()
-        # # nx_expected.add_path([1,2,3,4],weight=1) # for later version
-        # nx.add_path(nx_expected, [0, 1, 2, 3])
-        # print('----2')
-        # print(nx_expected)
-        # print('----2b')
-        # print(nx.to_dict_of_dicts(nx_expected))
-        # assert nx.is_isomorphic(nx_real, nx_expected)
+        # Other way to check graph equality: nx.is_isomorphic(nx_real, nx_expected)
         assert nx.to_dict_of_dicts(nx_real) == nx_expected
-
 
 
 def test_get_job_class():
