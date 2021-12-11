@@ -137,6 +137,8 @@ setup(
         'yaetos.libs.analysis_toolkit',
         'yaetos.libs.python_db_connectors'
         'yaetos.libs.pytest_utils'
+        'yaetos.libs.generic_jobs'
+        'yaetos.scripts'
         ],  # Required
 
     # Specify which Python versions you support. In contrast to the
