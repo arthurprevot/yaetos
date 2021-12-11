@@ -136,6 +136,7 @@ setup(
         'yaetos',
         'yaetos.libs.analysis_toolkit',
         'yaetos.libs.python_db_connectors'
+        'yaetos.libs.pytest_utils'
         ],  # Required
 
     # Specify which Python versions you support. In contrast to the
@@ -150,7 +151,11 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/discussions/install-requires-vs-requirements/
-    # install_requires=['peppercorn'],  # Optional
+    install_requires=[
+        'pyyaml',
+        'awscli',
+        'boto3',
+        'networkx'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
