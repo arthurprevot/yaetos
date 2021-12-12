@@ -1,0 +1,15 @@
+[dev]
+profile_name         : to_be_filled
+ec2_key_name         : to_be_filled
+user                 : to_be_filled
+s3_bucket_logs       : to_be_filled
+s3_bucket_temp_files : to_be_filled
+s3_region            : to_be_filled
+
+[prod]
+profile_name         : to_be_filled
+ec2_key_name         : to_be_filled
+user                 : to_be_filled
+s3_bucket_logs       : to_be_filled
+s3_bucket_temp_files : to_be_filled
+s3_region            : to_be_filled
