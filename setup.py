@@ -175,7 +175,7 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.
     package_data={  # Optional
-        'yaetos': ['scripts/*.txt'],
+        'yaetos': ['scripts/*'],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
@@ -194,7 +194,7 @@ setup(
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
         'console_scripts': [
-            'yaetos_install=yaetos.scripts.install_env:main',
+            'yaetos=yaetos.scripts.install_env:YaetosCmds',
         ],
     },
 

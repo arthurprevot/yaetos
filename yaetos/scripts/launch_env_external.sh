@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Script to enter the docker container with yaetos setup. It needs to be executed from the repo root folder.
 # Note "-v ~/.aws:/.aws \" is necessary to run jobs in AWS (ad-hoc or scheduled). Requires awcli setup on host (with ~/.aws setup with profile "default").
 

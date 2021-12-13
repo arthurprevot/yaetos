@@ -1,17 +1,64 @@
+#!/usr/bin/env python
 """
 Usage:
  * pip install yaetos
  * cd /path/to/an/empty/folder/that/will/contain/pipeline/code
- * yaetos_install  # -> will create folders and copy files.
+ * yaetos setup  # -> will create sub-folders and setup required files.
+ * yaetos launch_env  # -> To launch docker environment.
 
 Alternative if last step doesn't work (due to unusual python or pip setup):
- * python -c 'from yaetos.scripts.install_env import main; main())'
+ * python -c 'from yaetos.scripts.install_env import YaetosCmds; YaetosCmds())'
 """
 import os
 from shutil import copyfile
 import yaetos
+import argparse
+import sys
 
-def main():
+
+class YaetosCmds(object):
+    # Source: https://chase-seibert.github.io/blog/2014/03/21/python-multilevel-argparse.html
+
+    usage_setup = "Setup yaetos folders and files in current folder."
+    usage_launch_env = "Launching docker container to run jobs."
+
+    usage = f'''
+    yaetos <command> [<args>]
+
+    Yaetos command line arguments are:
+    setup       {usage_setup}
+    launch_env  {usage_launch_env}
+    '''
+
+    def __init__(self):
+        parser = argparse.ArgumentParser(
+            description='Yeatos command lines',
+            usage=self.usage)
+        parser.add_argument('command', help='Subcommand to run')
+        args = parser.parse_args(sys.argv[1:2])
+        if not hasattr(self, args.command):
+            print('Unrecognized command')
+            parser.print_help()
+            exit(1)
+        getattr(self, args.command)() # dispatching according to command line.
+
+    def setup(self):
+        parser = argparse.ArgumentParser(
+            description=self.usage_setup)
+        parser.add_argument('--set_github', action='store_true')
+        args = parser.parse_args(sys.argv[2:])  # ignoring first 2 args (i.e. "yeatos setup")
+        setup_env(args)
+
+    def launch_env(self):
+        parser = argparse.ArgumentParser(
+            description=self.usage_launch_env)
+        # parser.add_argument('--no_aws', action='store_true')
+        args = parser.parse_args(sys.argv[2:])  # ignoring first 2 args (i.e. "yeatos launch_env")
+        launch_env()
+
+
+
+def setup_env(args):
     cwd = os.getcwd()
     print(f'Starting yaetos setup in the current folder ({cwd})')
 
@@ -53,10 +100,17 @@ def main():
     #     check aws
 
     # setup github CI
-    run = False
-    if run:
+    if args.set_github:
         os.system("mkdir -p .github/workflows/")
-        # copyfile(f'{package_path}/.github/workflows/pythonapp.yml', f'{cwd}/.github/workflows/')
+        copyfile(f'{package_path}/scripts/github_pythonapp.yml', f'{cwd}/.github/workflows/pythonapp.yml')
 
     # import sys
     # sys.exit()
+
+def launch_env():
+    import subprocess
+    # print "start"
+    subprocess.call("./launch_env.sh")
+
+# if __name__ == '__main__':
+#     YaetosCmds()
