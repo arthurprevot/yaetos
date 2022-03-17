@@ -9,12 +9,14 @@ Usage:
 Alternative if last step doesn't work (due to unusual python or pip setup):
  * python -c 'from yaetos.scripts.install_env import YaetosCmds; YaetosCmds())'
 """
+
 import os
 from shutil import copyfile
 import yaetos
 import argparse
 import sys
 
+# TODO: replace duplicated files in yaetos/script folder to hard symlinks to avoid duplication.
 
 class YaetosCmds(object):
     # Source: https://chase-seibert.github.io/blog/2014/03/21/python-multilevel-argparse.html
@@ -25,7 +27,7 @@ class YaetosCmds(object):
     usage = f'''
     yaetos <command> [<args>]
 
-    Yaetos command line arguments are:
+    Yaetos top level commands are:
     setup       {usage_setup}
     launch_env  {usage_launch_env}
     '''
@@ -60,13 +62,12 @@ class YaetosCmds(object):
 
 def setup_env(args):
     cwd = os.getcwd()
-    print(f'Starting yaetos setup in the current folder ({cwd})')
+    print(f'Will setup yaetos in the current folder ({cwd})')
 
     paths = yaetos.__path__
-    if len(paths) > 1 :
-        print('Yeatos python package found in several locations. The script will choose one.')
     package_path = paths[0]
-    print(f'Yeatos python package path to be used to pull setup information: {package_path}')
+    if len(paths) > 1 :
+        print(f'Yeatos python package found in several locations. The script will use this one: {package_path}')
 
     # Empty folders necessary for later.
     os.system("mkdir -p tmp/files_to_ship/")
@@ -81,6 +82,7 @@ def setup_env(args):
     copyfile(f'{package_path}/scripts/aws_config.cfg.example', f'{cwd}/conf/aws_config.cfg')
     copyfile(f'{package_path}/scripts/jobs_metadata_external.yml', f'{cwd}/conf/jobs_metadata.yml')
     copyfile(f'{package_path}/scripts/connections.cfg.example', f'{cwd}/conf/connections.cfg')
+    copyfile(f'{package_path}/scripts/requirements_alt.txt', f'{cwd}/conf/requirements.txt')  # TODO: check if needed and check to replace to requirements.txt
 
     # Sample jobs
     os.system("mkdir -p jobs/examples/")
@@ -104,12 +106,11 @@ def setup_env(args):
         os.system("mkdir -p .github/workflows/")
         copyfile(f'{package_path}/scripts/github_pythonapp.yml', f'{cwd}/.github/workflows/pythonapp.yml')
 
-    # import sys
-    # sys.exit()
+    print('Done')
+
 
 def launch_env():
     import subprocess
-    # print "start"
     subprocess.call("./launch_env.sh")
 
 # if __name__ == '__main__':
