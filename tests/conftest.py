@@ -1,6 +1,8 @@
 # from yaetos.libs.pytest_utils.conftest import sc, sc_sql, \
 #     ss, get_pre_jargs
-# TODO renable code above and delete code below (duplicated from yaetos/libs/pytest*/conftest.py) when works in github actions.
+# TODO fix renable code above and delete code below (duplicated from yaetos/libs/pytest*/conftest.py) when works in github actions.
+# code above probably works when getting code from pip install yaetos but not from orig repo, so need to have it work in both cases.
+
 
 import pytest
 from pyspark import SparkContext
