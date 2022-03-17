@@ -25,6 +25,7 @@ sudo pip-3.6 install psycopg2-binary==2.8.5  # necesary for sqlalchemy-redshift,
 sudo pip-3.6 install sqlalchemy-redshift==0.7.7
 sudo pip-3.6 install stripe==2.50.0
 sudo pip-3.6 install requests_oauthlib==1.3.0
+# TODO: check to replace all libs above to "pip-3.6 install yaetos" (to make it more consistent) while allowing bypassing it to quickly test new libs in EMR without having to deploy to pypi.
 
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
