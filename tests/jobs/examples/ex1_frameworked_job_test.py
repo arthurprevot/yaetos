@@ -1,5 +1,8 @@
 import pytest
+import sys  # TODO: remove
+print('-----whole path', sys.path)  # TODO: remove
 from jobs.examples.ex1_frameworked_job import Job
+#from ..jobs.examples.ex1_frameworked_job import Job # TODO: check if should be put that way for running from github action.
 
 
 class Test_Job(object):
