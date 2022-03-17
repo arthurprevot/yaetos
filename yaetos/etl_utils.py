@@ -7,7 +7,6 @@ Helper functions. Setup to run locally and on cluster.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line.
-# - make boxed_dependencies the default, as more conservative.
 
 
 import sys
@@ -1045,7 +1044,8 @@ class Commandliner():
         parser.add_argument("-s", "--storage", choices=set(['local', 's3']), help="Choose 'local' (default) or 's3'.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
         parser.add_argument("-c", "--rerun_criteria", choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
-        parser.add_argument("-b", "--boxed_dependencies", action='store_true', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).")
+        # parser.add_argument("-b", "--boxed_dependencies", action='store_false', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).") # TODO: change to be by default.
+        parser.add_argument("--chain_dependencies", action='store_false', help="Run dependant jobs in a chained way, i.e. passing output to next step without dropping to disk. Only useful if ran with dependencies (-x) and requires output to be dataframes.")
         parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful when mode=dev_local.")
         parser.add_argument("-t", "--output.type", choices=set(['csv', 'parquet']), help="Override output type. Useful for development. Can be ignored otherwise.")
         # Deploy specific
@@ -1065,7 +1065,7 @@ class Commandliner():
                     'storage': 'local',
                     # 'dependencies': False, # only set from commandline
                     'rerun_criteria': 'last_date',
-                    # 'boxed_dependencies': False,  # only set from commandline
+                    # 'chain_dependencies': False,  # only set from commandline
                     'load_connectors': 'all',
                     # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
                     #-- Deploy specific below --
@@ -1161,9 +1161,10 @@ class Flow():
             yml_args = Job_Yml_Parser(job_name, self.launch_jargs.job_param_file, self.launch_jargs.mode).yml_args
             # Get loaded_inputs
             loaded_inputs = {}
-            if not self.launch_jargs.boxed_dependencies:
+            # if False: # disabled for now. TODO change "not self.launch_jargs.boxed_dependencies" from before to "self.launch_jargs.chain_dependencies"
+            if self.launch_jargs.chain_dependencies:
                 if yml_args.get('inputs', 'no input') == 'no input':
-                    raise Exception("Pb with loading job_yml or finding 'inputs' parameter in it. You can work around it by using 'boxed_dependencies' argument.")
+                    raise Exception("Pb with loading job_yml or finding 'inputs' parameter in it, so 'chain_dependencies' argument not useable in this case.")
                 for in_name, in_properties in yml_args['inputs'].items():
                     if in_properties.get('from'):
                         loaded_inputs[in_name] = df[in_properties['from']]
@@ -1175,7 +1176,8 @@ class Flow():
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
             df[job_name] = job.etl(sc, sc_sql) # at this point df[job_name] is unpersisted. TODO: keep it persisted.
 
-            if self.launch_jargs.boxed_dependencies:
+            # if False: # disabled for now. TODO change "self.launch_jargs.boxed_dependencies" from before to "not self.launch_jargs.chain_dependencies"
+            if not self.launch_jargs.chain_dependencies: # disabled for now. TODO change "self.launch_jargs.boxed_dependencies" from before to "not self.launch_jargs.chain_dependencies"
                 df[job_name].unpersist()
                 del df[job_name]
                 gc.collect()
