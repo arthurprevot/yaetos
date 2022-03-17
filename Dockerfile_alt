@@ -36,5 +36,5 @@ EXPOSE 4040 8080 8081
 
 CMD ["/bin/bash"]
 
-# Usage: docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v ~/code/pyspark_aws_etl:/mnt/yaetos -v ~/.aws:/root/.aws -h spark <image_id>
+# Usage: docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v ~/code/yaetos:/mnt/yaetos -v ~/.aws:/root/.aws -h spark <image_id>
 # or update launch_env.sh and execute it.
