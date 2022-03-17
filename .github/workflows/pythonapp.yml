@@ -6,7 +6,10 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    # TODO: try using container (ex below) to have setup consistent with local.
+    # ex at https://github.community/t/cant-set-pythonpath-appropriately-for-pytest-in-github-actions/116931/5
+    # container:
+    #   image: docker://manifoldai/orbyter-ml-dev:2.0 # replace name
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python 3.7
@@ -37,7 +40,7 @@ jobs:
     #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics  # TODO: uncomment when fixed
     - name: set pythonpath
       run: |
-        echo "PYTHONPATH=home/runner/yaetos/yaetos" >> $GITHUB_ENV
+        echo "::set-env name=PYTHONPATH::home/runner/yaetos/yaetos"
     - name: Test with pytest
       run: |
         pip install pytest
