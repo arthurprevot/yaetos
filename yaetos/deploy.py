@@ -250,23 +250,24 @@ class DeployPySparkScriptOnAws(object):
             t_file.add(git_yml, arcname=git_yml)
 
         # ./yaetos files
+        # TODO: check a way to deploy the yaetos code locally for testing.
         files = os.listdir(base+'yaetos/')
         for f in files:
             t_file.add(base+'yaetos/' + f, arcname='yaetos/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./libs files
         # TODO: get better way to walk down tree (reuse walk from below)
-        files = os.listdir(base+'libs/')
+        files = os.listdir(base+'yaetos/libs/')
         for f in files:
-            t_file.add(base+'libs/' + f, arcname='libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(base+'yaetos/libs/' + f, arcname='yaetos/libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir(base+'libs/analysis_toolkit/')
+        files = os.listdir(base+'yaetos/libs/analysis_toolkit/')
         for f in files:
-            t_file.add(base+'libs/analysis_toolkit/' + f, arcname='libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(base+'yaetos/libs/analysis_toolkit/' + f, arcname='yaetos/libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir(base+'libs/python_db_connectors/')
+        files = os.listdir(base+'yaetos/libs/python_db_connectors/')
         for f in files:
-            t_file.add(base+'libs/python_db_connectors/' + f, arcname='libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(base+'yaetos/libs/python_db_connectors/' + f, arcname='yaetos/libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./jobs files and folders
         # TODO: extract code below in external function.
