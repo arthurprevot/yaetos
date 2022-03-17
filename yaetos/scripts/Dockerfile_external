@@ -15,7 +15,7 @@ ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 ###########------
 ## TODO: BELOW for testing for now, remove if not needed after running in EMR
 ###########------
-ENV PYSPARK_AWS_ETL_HOME /mnt/pyspark_aws_etl/
+ENV PYSPARK_AWS_ETL_HOME /mnt/yaetos/
 ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
@@ -24,7 +24,7 @@ ENV PYSPARK_AWS_ETL_JOBS_HOME /mnt/external_pipelines/
 ENV PYTHONPATH $PYSPARK_AWS_ETL_JOBS_HOME:$PYTHONPATH
 ###########------
 ## END TODO
-###########------ 
+###########------
 
 
 # Expose ports for monitoring.
