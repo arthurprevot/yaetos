@@ -3,6 +3,21 @@
 # - option 1: send package to testing pypi server: https://packaging.python.org/guides/using-testpypi/
 # - option 2: "cd (1 level above repo); pip install ./yaetos" will install directly without going through server. Will install shims "yaetos_install"
 
+# Copy files needed in ./yaetos/scripts/ to check later that they are in git.
+# They need to be also in sync with list in yaetos/scripts/install_env.py
+# TODO: find better way to deal with this, avoiding file duplication
+cp conf/connections.cfg.example yaetos/scripts/connections.cfg.example
+cp conf/aws_config.cfg.example yaetos/scripts/aws_config.cfg.example
+cp .github/workflows/pythonapp.yml yaetos/scripts/github_pythonapp.yml
+## Jobs
+cp jobs/generic/copy_job.py yaetos/libs/generic_jobs/copy_job.py
+cp jobs/generic/deployer.py yaetos/libs/generic_jobs/deployer.py
+cp jobs/generic/dummy_job.py yaetos/libs/generic_jobs/dummy_job.py
+cp jobs/generic/launcher.py yaetos/libs/generic_jobs/launcher.py
+cp jobs/examples/ex0_extraction_job.py yaetos/scripts/ex0_extraction_job.py
+cp jobs/examples/ex1_frameworked_job.py yaetos/scripts/ex1_frameworked_job.py
+cp jobs/examples/ex1_full_sql_job.sql yaetos/scripts/ex1_full_sql_job.sql
+cp tests/jobs/examples/ex1_full_sql_job_test.py yaetos/scripts/ex1_full_sql_job_test.py
 
 rm -r dist/
 rm -r yaetos.egg-info/
