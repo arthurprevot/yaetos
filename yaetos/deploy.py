@@ -474,7 +474,6 @@ class DeployPySparkScriptOnAws(object):
             ]
         jop = ['--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE)] if app_args.get('job_param_file') else []
         dep = ["--dependencies"] if app_args.get('dependencies') else []
-        # box = [] # TODO: change following to "chained_dependencies" ["--boxed_dependencies"] if app_args.get('boxed_dependencies') else []
         box = ["--chain_dependencies"] if app_args.get('chain_dependencies') else []
         sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else []
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
@@ -672,7 +671,7 @@ def deploy_all_scheduled():
                    'aws_setup':'dev'}
     app_args = {'deploy':'EMR_Scheduled',
                 'job_param_file': 'conf/jobs_metadata.yml', # TODO: make set-able. Set to external repo for testing.
-                # 'chain_dependencies': True,
+                'chain_dependencies': False,
                 'dependencies': True,
                 'storage': 'local',
                 'jobs_folder': eu.JOB_FOLDER,  # TODO: make set-able

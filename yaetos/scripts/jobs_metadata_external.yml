@@ -1,6 +1,6 @@
 # Jobs details below. Common job params listed at the bottom of this file.
 jobs:
-  # Sample jobs added below just for trying. They can be deleted.
+  # Sample jobs added below. They can be deleted.
   examples/ex0_extraction_job.py:
     api_inputs: {'path': 'https://raw.githubusercontent.com/wikimedia-research/Discovery-Hiring-Analyst-2016/master/events_log.csv.gz'}
     output: {'path':'{base_path}/wiki_example/input/{now}/', 'type':'csv'}
@@ -26,7 +26,7 @@ jobs:
     start_date: "{today}T07:00:00"
     owners: ['some_email@address.com']
 
-  # More jobs to be added here.
+  # Your jobs should be added here.
 
 
 common_params:
@@ -48,7 +48,7 @@ common_params:
       save_schemas: False
       manage_git_info: True
     dev_EMR:
-      base_path: s3://dev-spark2/yaetos  # don't add '/' at the end
+      base_path: s3://dev-spark  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg

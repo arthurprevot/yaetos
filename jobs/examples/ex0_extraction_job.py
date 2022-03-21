@@ -4,6 +4,7 @@ import requests
 import os
 import pandas as pd
 
+
 class Job(ETL_Base):
     def transform(self):
         url = self.jargs.api_inputs['path']
