@@ -44,4 +44,5 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest
-        pytest tests/
+        pytest --ignore=yaetos/scripts/
+    # TODO: change pytest cmdline above to "pytest tests/ --extraargs?" and find if extraargs exists that gets test running from work dir (i.e. not changing to 'tests/')
