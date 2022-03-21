@@ -1,5 +1,4 @@
 # Yaetos
-# TODO: update
 Yaetos is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis is on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. It's name stands for "Yet Another ETL Tool on Spark".
  - In the simplest cases, an ETL job can consist of an SQL file only. No need to know any programming for these.
  - In more complex cases, an ETL job can consist of a python file, giving access to Spark dataframes, RDDs and any python library.
@@ -18,7 +17,7 @@ Run the installation instructions (see lower) and run [this sql example](jobs/ex
 
     python yaetos/sql_job.py  --sql_file=jobs/examples/ex1_full_sql_job.sql
 
-It will run locally, taking the inputs from a job registry file (`jobs_metadata_local.yml`) at [these lines](conf/jobs_metadata_local.yml#L1-L4), transform them based on this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run that same sql example on an AWS cluster, add a `-d` (TODO: check) argument in the command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5) from the jobs_metadata file. If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
+It will run locally, taking the inputs from a job registry file (`jobs_metadata_local.yml`) at [these lines](conf/jobs_metadata_local.yml#L1-L4), transform them based on this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run the same sql example on an AWS cluster, add `--deploy=EMR` to the same command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5) from the jobs_metadata file. If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
 
 To run an ETL that showcases manipulation of a spark dataframes, more flexible than the sql example above, run this frameworked pyspark example [ex1_frameworked_job.py](jobs/examples/ex1_frameworked_job.py) with this:
 
@@ -26,7 +25,7 @@ To run an ETL that showcases manipulation of a spark dataframes, more flexible t
 
 To try an example with job dependencies, run [ex4_dependency4_job.py](jobs/examples/ex4_dependency4_job.py) with this:
 
-    python jobs/examples/ex4_dependency4_job.py -x
+    python jobs/examples/ex4_dependency4_job.py --dependencies
 
 It will run all 3 dependencies defined in [the jobs_metadata registry](conf/jobs_metadata_local.yml#L34-L55). There are other examples in [jobs/examples/](jobs/examples/).
 
@@ -34,11 +33,11 @@ It will run all 3 dependencies defined in [the jobs_metadata registry](conf/jobs
 
 To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run the AWS cluster or in [conf/jobs_metadata_local.yml](conf/jobs_metadata_local.yml) to run locally. To run the jobs, execute the command lines following the same patterns as above:
 
-    python yaetos/sql_job.py  --sql_file=jobs/examples/same_sql_file.sql
+    python yaetos/sql_job.py  --sql_file=jobs/examples/some_sql_file.sql
     # or
     python jobs/examples/ex1_frameworked_job.py
 
-And add the `-d` (TODO: check ) to deploy and run on an AWS cluster.
+And add the `--deploy=EMR` to deploy and run on an AWS cluster.
 
 You can specify dependencies in the job registry, for local jobs or on AWS cluster.
 
