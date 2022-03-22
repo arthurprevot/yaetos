@@ -76,6 +76,7 @@ def setup_env(args):
     # Root folder files
     copyfile(f'{package_path}/scripts/Dockerfile_external', f'{cwd}/Dockerfile')
     copyfile(f'{package_path}/scripts/launch_env_external.sh', f'{cwd}/launch_env.sh')
+    os.chmod(f'{cwd}/launch_env.sh', 0o755)
 
     # Conf
     os.system("mkdir -p conf/")
