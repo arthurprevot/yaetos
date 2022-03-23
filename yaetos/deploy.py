@@ -234,18 +234,7 @@ class DeployPySparkScriptOnAws(object):
         logger.info("S3 bucket for temporary files exists: "+self.s3_bucket_logs)
 
     def tar_python_scripts(self):
-        """
-        :return:
-        """
-        # Set base folder
-        if self.app_args['code_source'] == 'lib':
-            bases = site.getsitepackages()
-            if len(bases)>1:
-                logger.info("There is more than one source of code to ship to EMR '{}'. Will continue with the first one.".format(bases))
-            base = bases[0] + '/'
-        elif self.app_args['code_source'] == 'repo':
-            base = eu.LOCAL_APP_FOLDER
-        logger.info("Source of yaetos code to be shipped: {}".format(base+'yaetos/'))
+        base = self.get_package_path()
         output_path = self.TMP + "scripts.tar.gz"
 
         # Create tar.gz file
@@ -296,11 +285,27 @@ class DeployPySparkScriptOnAws(object):
         for f in t_file.getnames():
             logger.debug("Added %s to tar-file" % f)
         t_file.close()
-        logger.info("Added all files to {}".format(output_path))
+        logger.info("Added all spark app files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
+        base = self.get_package_path()
         for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
-            copyfile(eu.LOCAL_APP_FOLDER+self.SCRIPTS+item, self.TMP+item)
+            copyfile(base+self.SCRIPTS+item, self.TMP+item)
+        logger.info("Added all EMR setup files to {}".format(self.TMP))
+
+    def get_package_path(self):
+        """
+        Getting the package path depending on whether the core code is coding from lib (through pip install) or from local repo (for faster dev iterations).
+        """
+        if self.app_args['code_source'] == 'lib':
+            bases = site.getsitepackages()
+            if len(bases)>1:
+                logger.info("There is more than one source of code to ship to EMR '{}'. Will continue with the first one.".format(bases))
+            base = bases[0] + '/'
+        elif self.app_args['code_source'] == 'repo':
+            base = eu.LOCAL_APP_FOLDER
+        logger.info("Source of yaetos code to be shipped: {}".format(base+'yaetos/'))
+        return base
 
     def upload_temp_files(self, s3):
         """
