@@ -1071,6 +1071,7 @@ class Commandliner():
                     #-- Deploy specific below --
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
+                    'code_source': 'lib', # Other options: 'repo'
                     # 'leave_on': False, # only set from commandline
                     # 'push_secrets': False, # only set from commandline
                     #-- Not added in command line args:
