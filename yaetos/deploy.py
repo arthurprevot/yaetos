@@ -22,6 +22,7 @@ import json
 from pprint import pformat
 from configparser import ConfigParser
 from shutil import copyfile
+import site
 import yaetos.etl_utils as eu
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.logger import setup_logging
@@ -236,22 +237,17 @@ class DeployPySparkScriptOnAws(object):
         """
         :return:
         """
-        ####
+        # Set base folder
         if self.app_args['code_source'] == 'lib':
-            import site
             bases = site.getsitepackages()
             if len(bases)>1:
                 logger.info("There is more than one source of code to ship to EMR '{}'. Will continue with the first one.".format(bases))
             base = bases[0] + '/'
         elif self.app_args['code_source'] == 'repo':
             base = eu.LOCAL_APP_FOLDER
-        # base = '/Users/aprevot/.pyenv/versions/3.10.0/lib/python3.10/site-packages/'
-        # base = '/opt/bitnami/python/lib/python3.6/site-packages/'
         logger.info("Source of yaetos code to be shipped: {}".format(base+'yaetos/'))
-        # import ipdb; ipdb.set_trace()
-
-        ####
         output_path = self.TMP + "scripts.tar.gz"
+
         # Create tar.gz file
         t_file = tarfile.open(output_path, 'w:gz')
 
