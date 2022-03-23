@@ -1,4 +1,6 @@
-
+# List of connections details necessary for the jobs to pull and push data from different sources.
+# It includes secrets that will be kept separate from the job code, and handled separately in the cloud using "AWS Secrets".
+# Below is a list of sources supported by framework. More can be added.
 
 [mysql_db_user_x]
 user: to_be_filled
