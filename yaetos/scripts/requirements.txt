@@ -17,7 +17,7 @@ flake8==3.7.9
 stripe==2.50.0
 soql==1.0.2
 # setuptools-rust==0.11.6
-cryptography==3.3.1
+cryptography==3.3.2
 simple-salesforce==1.10.1
 pymysql==0.9.3
 psycopg2-binary==2.8.5
