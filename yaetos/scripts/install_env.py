@@ -76,7 +76,7 @@ def setup_env(args):
     # Root folder files
     copyfile(f'{package_path}/scripts/Dockerfile_external', f'{cwd}/Dockerfile')
     copyfile(f'{package_path}/scripts/launch_env_external.sh', f'{cwd}/launch_env.sh')
-    os.chmod(f'{cwd}/launch_env.sh', 0o755)
+    os.chmod(f'{cwd}/launch_env.sh', 0o755)  # TODO: use stat.S_IEXEC instead to be cross plateform
 
     # Conf
     os.system("mkdir -p conf/")
@@ -97,10 +97,7 @@ def setup_env(args):
     copyfile(f'{package_path}/scripts/ex1_frameworked_job_test.py', f'{cwd}/tests/jobs/example/ex1_frameworked_job_test.py')
     copyfile(f'{package_path}/scripts/ex1_full_sql_job_test.py', f'{cwd}/tests/jobs/example/ex1_full_sql_job_test.py')
 
-    # setup awscli or make sure it is there.
-    # run = True
-    # if run:
-    #     check aws
+    # TODO: add setup awscli or make sure it is there.
 
     # setup github CI
     if args.set_github:
