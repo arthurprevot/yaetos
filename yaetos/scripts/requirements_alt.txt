@@ -1,5 +1,5 @@
 # For docker env. TODO: use it for AWS setup too, would involve splitting it in 2 req files (master and slave sides).
-pyyaml==5.4.1
+pyyaml==5.4
 ipdb==0.13.4
 awscli==1.20.41  # necessary to deploy to AWS Data Pipeline. Tried 1.19.7 but causes pb with botocore.
 boto3==1.18.41
