@@ -1044,7 +1044,6 @@ class Commandliner():
         parser.add_argument("-s", "--storage", choices=set(['local', 's3']), help="Choose 'local' (default) or 's3'.")
         parser.add_argument("-x", "--dependencies", action='store_true', help="Run the job dependencies and then the job itself")
         parser.add_argument("-c", "--rerun_criteria", choices=set(['last_date', 'output_empty', 'both']), help="Choose criteria to rerun the next increment or not. 'last_date' usefull if we know data goes to a certain date. 'output_empty' not to be used if increment may be empty but later ones not. Only relevant for incremental job.")
-        # parser.add_argument("-b", "--boxed_dependencies", action='store_false', help="Run dependant jobs in a sandboxed way, i.e. without passing output to next step. Only useful if ran with dependencies (-x).") # TODO: change to be by default.
         parser.add_argument("--chain_dependencies", action='store_true', help="Run dependant jobs in a chained way, i.e. passing output to next step without dropping to disk. Only useful if ran with dependencies (-x) and requires output to be dataframes.")
         parser.add_argument("-l", "--load_connectors", choices=set(['all', 'none']), help="Load java packages to enable spark connectors (s3, redshift, mysql). Set to 'none' to have faster spark start time and smaller log when connectors are not necessary. Only useful when mode=dev_local.")
         parser.add_argument("-t", "--output.type", choices=set(['csv', 'parquet']), help="Override output type. Useful for development. Can be ignored otherwise.")

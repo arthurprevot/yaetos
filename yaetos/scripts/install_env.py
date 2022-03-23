@@ -110,6 +110,3 @@ def setup_env(args):
 def launch_env():
     import subprocess
     subprocess.call("./launch_env.sh")
-
-# if __name__ == '__main__':
-#     YaetosCmds()
