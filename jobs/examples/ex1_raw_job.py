@@ -7,7 +7,7 @@ from __future__ import print_function
 import sys
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
-from core.etl_utils import Path_Handler
+from yaetos.etl_utils import Path_Handler
 from datetime import datetime
 
 # inputs/output paths
@@ -50,4 +50,4 @@ df.write.csv(output)
 sc.stop()
 
 # To run locally, put local i/o paths and run: python jobs/examples/ex1_raw_job.py
-# To run on cluster, put s3 i/o paths and run: python core/deploy.py jobs/examples/ex1_raw_job.py
+# To run on cluster, put s3 i/o paths and run: python yaetos/deploy.py jobs/examples/ex1_raw_job.py

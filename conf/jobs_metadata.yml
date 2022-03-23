@@ -1,11 +1,11 @@
 # Jobs details below. Common job params listed at the bottom of this file.
 jobs:
-  examples/ex0_extraction_job.py:  # requires mysql instance running
+  examples/ex0_extraction_job.py:
     api_inputs: {'path': 'https://raw.githubusercontent.com/wikimedia-research/Discovery-Hiring-Analyst-2016/master/events_log.csv.gz'}
     output: {'path':'{base_path}/wiki_example/input/{now}/', 'type':'csv'}
 
   examples/ex1_full_sql_job.sql:  # shows 100% sql job, easiest when sql is enough
-    py_job: 'core/sql_job.py'
+    py_job: 'yaetos/sql_job.py'
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
       other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
@@ -74,7 +74,7 @@ jobs:
     dependencies: [examples/ex4_dependency1_job.py]
 
   examples/ex4_dependency3_job.sql:  # shows dependency with sql
-    py_job: 'core/sql_job.py'
+    py_job: 'yaetos/sql_job.py'
     inputs:
       some_events: {'path':'{base_path}/wiki_example/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
     output: {'path':'{base_path}/wiki_example/output_ex4_dep3/{now}/', 'type':'csv'}
@@ -174,12 +174,12 @@ common_params:
     connection_file:  conf/connections.cfg
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
-    spark_version: '2.4' # options: '2.4' 'or '3.0'
+    spark_version: '3.0' # options: '2.4' 'or '3.0'  # TODO: validate it works in EMR
   mode_specific_params:
     prod_EMR:
       base_path: s3://prod-spark  # don't add '/' at the end
       schema: frontroom
-      emr_core_instances: 1
+      emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
       aws_setup:        dev
       jobs_folder:      jobs/
@@ -190,7 +190,7 @@ common_params:
     dev_EMR:
       base_path: s3://dev-spark  # don't add '/' at the end
       schema: sandbox
-      emr_core_instances: 1
+      emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
       aws_setup:        dev
       jobs_folder:      jobs/

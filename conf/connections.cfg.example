@@ -1,0 +1,32 @@
+# List of connections necessary for the jobs to pull and push data from different sources.
+# It includes secrets that will be kept separate from the job code, and handled separately in the cloud using "AWS Secrets".
+# Below is a list of sources supported by framework. More can be added.
+
+[mysql_db_user_x]
+user: to_be_filled
+password: to_be_filled
+host: to_be_filled
+port: to_be_filled
+service: to_be_filled
+
+[redshift_user_y]
+user: to_be_filled
+password: to_be_filled
+host: to_be_filled
+port: to_be_filled
+service: to_be_filled
+
+[salesforce_api_user_z]
+user: to_be_filled
+password: to_be_filled
+token: to_be_filled
+domain: production
+
+[stripe_api_account]
+token: to_be_filled
+
+[email_sender]
+sender_email: some@email.com
+password: to_be_filled
+smtp_server: to_be_filled
+port: to_be_filled

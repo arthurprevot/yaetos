@@ -1,5 +1,5 @@
 """To show koalas API. Same process as SQL code in ex2_frameworked_job.py"""
-from core.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETL_Base, Commandliner
 import pandas as pd
 import numpy as np
 import databricks.koalas as ks
@@ -22,5 +22,5 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    args = {'job_param_file':   'conf/jobs_metadata.yml'}
+    args = {'job_param_file': 'conf/jobs_metadata.yml'}
     Commandliner(Job, **args)

@@ -9,15 +9,15 @@ FROM docker.io/bitnami/spark:2.4.5
 USER root
 
 # Pip installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements.txt doesn't change)
-COPY core/scripts/requirements.txt /tmp/requirements.txt
+COPY yaetos/scripts/requirements.txt /tmp/requirements.txt
 WORKDIR /tmp/
 RUN apt-get update && apt-get install -y git
 RUN pip3 install -r requirements.txt
 
-WORKDIR /mnt/pyspark_aws_etl
+WORKDIR /mnt/yaetos
 
 # RUN mkdir -p tmp/files_to_ship/  # skipped, causes problems with permissions, whether run from root or jovyan user. Will need to be run manually once.
-ENV PYSPARK_AWS_ETL_HOME /mnt/pyspark_aws_etl/
+ENV PYSPARK_AWS_ETL_HOME /mnt/yaetos/
 ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
@@ -35,5 +35,5 @@ EXPOSE 4040 8080 8081
 
 CMD ["/bin/bash"]
 
-# Usage: docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v ~/code/pyspark_aws_etl:/mnt/pyspark_aws_etl -v ~/.aws:/root/.aws -h spark <image_id>
+# Usage: docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v ~/code/yaetos:/mnt/yaetos -v ~/.aws:/root/.aws -h spark <image_id>
 # or update launch_env.sh and execute it.

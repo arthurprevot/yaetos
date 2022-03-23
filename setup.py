@@ -37,7 +37,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version='0.9.1',  # Required
+    version='0.9.7',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
@@ -120,7 +120,7 @@ setup(
 
     # When your source code is in a subdirectory under the project root, e.g.
     # `src/`, it is necessary to specify the `package_dir` argument.
-    package_dir={'yaetos': ''},  # Optional
+    # package_dir={'': ''},  # Optional
 
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
@@ -133,16 +133,19 @@ setup(
     #
     #packages=find_packages(where='core'),  # Required
     packages=[
-        'yaetos.core',
+        'yaetos',
         'yaetos.libs.analysis_toolkit',
-        'yaetos.libs.python_db_connectors'
+        'yaetos.libs.python_db_connectors',
+        'yaetos.libs.pytest_utils',
+        'yaetos.libs.generic_jobs',
+        'yaetos.scripts',
         ],  # Required
 
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. See
     # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
-    python_requires='>=3.6, <4',
+    python_requires='>=2.7, <4',
 
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
@@ -150,7 +153,11 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/discussions/install-requires-vs-requirements/
-    # install_requires=['peppercorn'],  # Optional
+    install_requires=[
+        'pyyaml',
+        'awscli',
+        'boto3',
+        'networkx'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
@@ -167,9 +174,9 @@ setup(
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
-    # package_data={  # Optional
-    #     'sample': ['package_data.dat'],
-    # },
+    package_data={  # Optional
+        'yaetos': ['scripts/*'],
+    },
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
@@ -185,11 +192,11 @@ setup(
     #
     # For example, the following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
-    # entry_points={  # Optional
-    #     'console_scripts': [
-    #         'sample=sample:main',
-    #     ],
-    # },
+    entry_points={  # Optional
+        'console_scripts': [
+            'yaetos=yaetos.scripts.install_env:YaetosCmds',
+        ],
+    },
 
     # List additional URLs that are relevant to your project as a dict.
     #

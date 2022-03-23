@@ -1,0 +1,68 @@
+# Jobs details below. Common job params listed at the bottom of this file.
+jobs:
+  # Sample jobs added below. They can be deleted.
+  examples/ex0_extraction_job.py:
+    api_inputs: {'path': 'https://raw.githubusercontent.com/wikimedia-research/Discovery-Hiring-Analyst-2016/master/events_log.csv.gz'}
+    output: {'path':'{base_path}/wiki_example/input/{now}/', 'type':'csv'}
+
+  examples/ex1_full_sql_job.sql:  # shows 100% sql job, easiest when sql is enough
+    py_job: 'yaetos/sql_job.py'
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example_sql/output_ex1_full_sql/{now}/', 'type':'csv'}
+    dependencies: [examples/ex0_extraction_job.py]
+    frequency: 1 day
+    start_date: "{today}T07:00:00"
+    owners: ['some_email@address.com']
+
+  examples/ex1_frameworked_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex1_frameworked/{now}/', 'type':'csv'}
+    dependencies: [examples/ex0_extraction_job.py]
+    frequency: 1 day
+    start_date: "{today}T07:00:00"
+    owners: ['some_email@address.com']
+
+  # Your jobs should be added here.
+
+
+common_params:
+  all_mode_params:
+    connection_file:  conf/connections.cfg
+    redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
+    email_cred_section: some_email_cred_section  # Section from "connection_file"
+    spark_version: '3.0' # options: '2.4' 'or '3.0'
+  mode_specific_params:
+    prod_EMR:
+      base_path: s3://prod-spark  # don't add '/' at the end
+      schema: frontroom
+      emr_core_instances: 0
+      aws_config_file:  conf/aws_config.cfg
+      aws_setup:        dev
+      jobs_folder:      jobs/
+      load_connectors: all
+      enable_redshift_push: True
+      save_schemas: False
+      manage_git_info: True
+    dev_EMR:
+      base_path: s3://dev-spark  # don't add '/' at the end
+      schema: sandbox
+      emr_core_instances: 0
+      aws_config_file:  conf/aws_config.cfg
+      aws_setup:        dev
+      jobs_folder:      jobs/
+      load_connectors: all
+      enable_redshift_push: False
+      save_schemas: False
+      manage_git_info: True
+    dev_local:
+      base_path: ./data  # don't add '/' at the end
+      schema: sandbox
+      load_connectors: none
+      aws_config_file:  none
+      enable_redshift_push: False
+      save_schemas: True
+      manage_git_info: False

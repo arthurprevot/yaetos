@@ -2,9 +2,7 @@
 Typically not needed since data is read/written to redshift from framework, as defined in job_metadata.yml.
 Requires VPN to access redshift.
 """
-from core.etl_utils import ETL_Base, Commandliner, Cred_Ops_Dispatcher, REDSHIFT_S3_TMP_DIR
-import core.logger as log
-logger = log.setup_logging('Job')
+from yaetos.etl_utils import ETL_Base, Commandliner, Cred_Ops_Dispatcher, REDSHIFT_S3_TMP_DIR
 
 
 class Job(ETL_Base):
@@ -16,7 +14,7 @@ class Job(ETL_Base):
         dbtable = 'sandbox.test_ex9_redshift'
 
         # Writing to redshift
-        logger.info('Sending table "{}" to redshift, size "{}".'.format(dbtable, some_events.count()))
+        self.logger.info('Sending table "{}" to redshift, size "{}".'.format(dbtable, some_events.count()))
         some_events.write \
             .format('com.databricks.spark.redshift') \
             .option("tempdir", REDSHIFT_S3_TMP_DIR) \
@@ -26,10 +24,10 @@ class Job(ETL_Base):
             .option("dbtable", dbtable) \
             .mode('overwrite') \
             .save()
-        logger.info('Done sending table')
+        self.logger.info('Done sending table')
 
         # Reading from redshift
-        logger.info('Pulling table "{}" from redshift'.format(dbtable))
+        self.logger.info('Pulling table "{}" from redshift'.format(dbtable))
         df = self.sc_sql.read \
             .format('com.databricks.spark.redshift') \
             .option("tempdir", REDSHIFT_S3_TMP_DIR) \
@@ -39,12 +37,12 @@ class Job(ETL_Base):
             .option("dbtable", dbtable)\
             .load()
         count = df.count()
-        logger.info('Done pulling table, row count:{}'.format(count))
+        self.logger.info('Done pulling table, row count:{}'.format(count))
 
         # Output table will also be sent to redshift as required by job_metadata.yml
         return some_events
 
 
 if __name__ == "__main__":
-    args = {'job_param_file':   'conf/jobs_metadata.yml'}
+    args = {'job_param_file': 'conf/jobs_metadata.yml'}
     Commandliner(Job, **args)

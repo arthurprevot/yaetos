@@ -1,4 +1,4 @@
-from core.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETL_Base, Commandliner
 from pyspark.sql.functions import udf, array
 from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import col
@@ -14,5 +14,5 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    args = {'job_param_file':   'conf/jobs_metadata.yml'}
+    args = {'job_param_file': 'conf/jobs_metadata.yml'}
     Commandliner(Job, **args)
