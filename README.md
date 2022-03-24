@@ -17,7 +17,7 @@ Run the installation instructions (see lower) and run [this sql example](jobs/ex
 
     python yaetos/sql_job.py  --sql_file=jobs/examples/ex1_full_sql_job.sql
 
-It will run locally, taking the inputs from a job registry file (`jobs_metadata_local.yml`) at [these lines](conf/jobs_metadata_local.yml#L1-L4), transform them based on this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata_local.yml#L5). To run the same sql example on an AWS cluster, add `--deploy=EMR` to the same command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5) from the jobs_metadata file. If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
+It will run locally, taking the inputs from a job registry file (`jobs_metadata.yml`) at [these lines](conf/jobs_metadata.yml#L7-L11), transform them based on this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata.yml#12). To run the same sql example on an AWS cluster, add `--deploy=EMR` to the same command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5) from the jobs_metadata file. If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
 
 To run an ETL that showcases manipulation of a spark dataframes, more flexible than the sql example above, run this frameworked pyspark example [ex1_frameworked_job.py](jobs/examples/ex1_frameworked_job.py) with this:
 
@@ -27,11 +27,11 @@ To try an example with job dependencies, run [ex4_dependency4_job.py](jobs/examp
 
     python jobs/examples/ex4_dependency4_job.py --dependencies
 
-It will run all 3 dependencies defined in [the jobs_metadata registry](conf/jobs_metadata_local.yml#L34-L55). There are other examples in [jobs/examples/](jobs/examples/).
+It will run all 3 dependencies defined in [the jobs_metadata registry](conf/jobs_metadata.yml#L57-L87). There are other examples in [jobs/examples/](jobs/examples/).
 
 ## Development Flow
 
-To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run the AWS cluster or in [conf/jobs_metadata_local.yml](conf/jobs_metadata_local.yml) to run locally. To run the jobs, execute the command lines following the same patterns as above:
+To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run the AWS cluster or in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run locally. To run the jobs, execute the command lines following the same patterns as above:
 
     python yaetos/sql_job.py  --sql_file=jobs/examples/some_sql_file.sql
     # or
