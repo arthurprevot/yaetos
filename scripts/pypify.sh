@@ -9,18 +9,18 @@
 # They need to be also in sync with list in yaetos/scripts/install_env.py
 # TODO: find better way to deal with this, avoiding file duplication
 # TODO: put duplicated files in subfolder "copy" to make it explicit
-cp conf/connections.cfg.example yaetos/scripts/connections.cfg.example
-cp conf/aws_config.cfg.example yaetos/scripts/aws_config.cfg.example
-cp .github/workflows/pythonapp.yml yaetos/scripts/github_pythonapp.yml
+cp conf/connections.cfg.example yaetos/scripts/copy/connections.cfg.example
+cp conf/aws_config.cfg.example yaetos/scripts/copy/aws_config.cfg.example
+cp .github/workflows/pythonapp.yml yaetos/scripts/copy/github_pythonapp.yml
 ## Jobs
 cp jobs/generic/copy_job.py yaetos/libs/generic_jobs/copy_job.py
 cp jobs/generic/deployer.py yaetos/libs/generic_jobs/deployer.py
 cp jobs/generic/dummy_job.py yaetos/libs/generic_jobs/dummy_job.py
 cp jobs/generic/launcher.py yaetos/libs/generic_jobs/launcher.py
-cp jobs/examples/ex0_extraction_job.py yaetos/scripts/ex0_extraction_job.py
-cp jobs/examples/ex1_frameworked_job.py yaetos/scripts/ex1_frameworked_job.py
-cp jobs/examples/ex1_full_sql_job.sql yaetos/scripts/ex1_full_sql_job.sql
-cp tests/jobs/examples/ex1_full_sql_job_test.py yaetos/scripts/ex1_full_sql_job_test.py
+cp jobs/examples/ex0_extraction_job.py yaetos/scripts/copy/ex0_extraction_job.py
+cp jobs/examples/ex1_frameworked_job.py yaetos/scripts/copy/ex1_frameworked_job.py
+cp jobs/examples/ex1_full_sql_job.sql yaetos/scripts/copy/ex1_full_sql_job.sql
+cp tests/jobs/examples/ex1_full_sql_job_test.py yaetos/scripts/copy/ex1_full_sql_job_test.py
 
 rm -r dist/
 rm -r yaetos.egg-info/
