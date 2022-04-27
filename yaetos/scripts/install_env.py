@@ -102,8 +102,8 @@ def setup_env(args):
     # Sample jobs tests
     os.system("mkdir -p tests/jobs/example/")
     copyfile(f'{package_path}/scripts/copy/conftest.py', f'{cwd}/tests/conftest.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py', f'{cwd}/tests/jobs/example/ex1_frameworked_job_test.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py', f'{cwd}/tests/jobs/example/ex1_full_sql_job_test.py')
+    copyfile(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py', f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py')
+    copyfile(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py', f'{cwd}/tests/jobs/examples/ex1_full_sql_job_test.py')
 
     # TODO: add setup awscli or make sure it is there.
 
