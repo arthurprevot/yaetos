@@ -19,7 +19,6 @@ WORKDIR /mnt/yaetos
 # RUN mkdir -p tmp/files_to_ship/  # skipped, causes problems with permissions, whether run from root or jovyan user. Will need to be run manually once.
 ENV PYSPARK_AWS_ETL_HOME /mnt/yaetos/
 ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
-ENV DEF_PATH_TMP /mnt/yaetos/
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 
