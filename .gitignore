@@ -7,7 +7,7 @@ metastore_db/
 dist/
 build/
 yaetos.egg-info/
-_gitignored/
+_gitignore/
 derby.log
 conf/aws_config.cfg
 conf/connections.cfg

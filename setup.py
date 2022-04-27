@@ -37,7 +37,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version='0.9.7',  # Required
+    version='0.9.12',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
@@ -139,6 +139,7 @@ setup(
         'yaetos.libs.pytest_utils',
         'yaetos.libs.generic_jobs',
         'yaetos.scripts',
+        'yaetos.scripts.copy',
         ],  # Required
 
     # Specify which Python versions you support. In contrast to the
@@ -175,7 +176,7 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.
     package_data={  # Optional
-        'yaetos': ['scripts/*'],
+        'yaetos': ['scripts/*', 'scripts/copy/*', 'definition.json', 'definition_standalone_cluster.json'],  # will grab files from "./scripts/*" and "./*.json"
     },
 
     # Although 'package_data' is the preferred approach, in some case you may

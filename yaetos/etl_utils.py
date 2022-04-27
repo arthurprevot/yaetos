@@ -43,7 +43,7 @@ JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 AWS_CONFIG_FILE = 'conf/aws_config.cfg'
 CONNECTION_FILE = 'conf/connections.cfg'
 CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_HOME set to end with '/'
+LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_HOME set to end with '/', TODO: rename env var to YAETOS_HOME, and check if LOCAL_APP_FOLDER and LOCAL_JOB_REPO_FOLDER are used properly in code. Saw strange cases.
 LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
@@ -603,10 +603,10 @@ class ETL_Base(object):
         count = df.count()
         count_pk = df.select(pks).dropDuplicates().count()
         if count != count_pk:
-            logger.error("PKs not unique. count={}, count_pk={}".format(count, count_pk))
+            logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
             return False
         else:
-            logger.info("Confirmed fields given are PKs (i.e. unique). count=count_pk={}".format(count))
+            logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
             return True
 
     def identify_non_unique_pks(self, df, pks):
@@ -650,7 +650,9 @@ class Schema_Builder():
     def generate_schemas(self, loaded_datasets, output):
         yml = {'inputs':{}}
         for key, value in loaded_datasets.items():
-            yml['inputs'][key] = {fd.name: fd.dataType.__str__() for fd in value.schema.fields}
+            if value:
+                # TODO: make it fail softly in case code below fails, so it doesn't block job, since it is for logging only.
+                yml['inputs'][key] = {fd.name: fd.dataType.__str__() for fd in value.schema.fields}
         yml['output'] = {fd.name: fd.dataType.__str__() for fd in output.schema.fields}
         self.yml = yml
 

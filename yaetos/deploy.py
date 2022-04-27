@@ -490,7 +490,7 @@ class DeployPySparkScriptOnAws(object):
         jop = ['--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE)] if app_args.get('job_param_file') else []
         dep = ["--dependencies"] if app_args.get('dependencies') else []
         box = ["--chain_dependencies"] if app_args.get('chain_dependencies') else []
-        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else []
+        sql = [] # ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else [] # not needed when sql job is run from jobs/generic/launcher.py. TODO: make it work when launching from jobs/generic/sql_job.py 
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
 
         return spark_submit_args + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam
@@ -519,11 +519,12 @@ class DeployPySparkScriptOnAws(object):
 
     def define_data_pipeline(self, client, pipe_id, emr_core_instances):
         import awscli.customizations.datapipeline.translator as trans
+        base = self.get_package_path()
 
         if emr_core_instances != 0:
-            definition_file = eu.LOCAL_APP_FOLDER+'yaetos/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+            definition_file = base+'yaetos/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
         else:
-            definition_file = eu.LOCAL_APP_FOLDER+'yaetos/definition_standalone_cluster.json'
+            definition_file = base+'yaetos/definition_standalone_cluster.json'
             # TODO: have 1 json for both to avoid having to track duplication.
 
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.

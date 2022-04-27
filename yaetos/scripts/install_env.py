@@ -72,30 +72,38 @@ def setup_env(args):
     # Empty folders necessary for later.
     os.system("mkdir -p tmp/files_to_ship/")
     os.system("mkdir -p data/")
+    # TODO: make code above and below compatible with windows OS (no cmd line, no linux only paths).
 
     # Root folder files
-    copyfile(f'{package_path}/scripts/Dockerfile_external', f'{cwd}/Dockerfile')
-    copyfile(f'{package_path}/scripts/launch_env_external.sh', f'{cwd}/launch_env.sh')
+    copyfile(f'{package_path}/scripts/copy/Dockerfile_external', f'{cwd}/Dockerfile')
+    copyfile(f'{package_path}/scripts/copy/launch_env_external.sh', f'{cwd}/launch_env.sh')
     os.chmod(f'{cwd}/launch_env.sh', 0o755)  # TODO: use stat.S_IEXEC instead to be cross plateform
 
     # Conf
     os.system("mkdir -p conf/")
-    copyfile(f'{package_path}/scripts/aws_config.cfg.example', f'{cwd}/conf/aws_config.cfg')
-    copyfile(f'{package_path}/scripts/jobs_metadata_external.yml', f'{cwd}/conf/jobs_metadata.yml')
-    copyfile(f'{package_path}/scripts/connections.cfg.example', f'{cwd}/conf/connections.cfg')
-    copyfile(f'{package_path}/scripts/requirements_alt.txt', f'{cwd}/conf/requirements.txt')  # TODO: check if needed and check to replace to requirements.txt
+    copyfile(f'{package_path}/scripts/copy/aws_config.cfg.example', f'{cwd}/conf/aws_config.cfg')
+    copyfile(f'{package_path}/scripts/copy/jobs_metadata_external.yml', f'{cwd}/conf/jobs_metadata.yml')
+    copyfile(f'{package_path}/scripts/copy/connections.cfg.example', f'{cwd}/conf/connections.cfg')
+    copyfile(f'{package_path}/scripts/copy/requirements_extra.txt', f'{cwd}/conf/requirements_extra.txt')
+
+    # Sample jobs
+    os.system("mkdir -p jobs/generic/")
+    copyfile(f'{package_path}/libs/generic_jobs/copy_job.py', f'{cwd}/jobs/generic/copy_job.py')
+    copyfile(f'{package_path}/libs/generic_jobs/deployer.py', f'{cwd}/jobs/generic/deployer.py')
+    copyfile(f'{package_path}/libs/generic_jobs/dummy_job.py', f'{cwd}/jobs/generic/dummy_job.py')
+    copyfile(f'{package_path}/libs/generic_jobs/launcher.py', f'{cwd}/jobs/generic/launcher.py')
 
     # Sample jobs
     os.system("mkdir -p jobs/examples/")
-    copyfile(f'{package_path}/scripts/ex0_extraction_job.py', f'{cwd}/jobs/examples/ex0_extraction_job.py')
-    copyfile(f'{package_path}/scripts/ex1_frameworked_job.py', f'{cwd}/jobs/examples/ex1_frameworked_job.py')
-    copyfile(f'{package_path}/scripts/ex1_full_sql_job.sql', f'{cwd}/jobs/examples/ex1_full_sql_job.sql')
+    copyfile(f'{package_path}/scripts/copy/ex0_extraction_job.py', f'{cwd}/jobs/examples/ex0_extraction_job.py')
+    copyfile(f'{package_path}/scripts/copy/ex1_frameworked_job.py', f'{cwd}/jobs/examples/ex1_frameworked_job.py')
+    copyfile(f'{package_path}/scripts/copy/ex1_full_sql_job.sql', f'{cwd}/jobs/examples/ex1_full_sql_job.sql')
 
     # Sample jobs tests
     os.system("mkdir -p tests/jobs/example/")
-    copyfile(f'{package_path}/scripts/conftest.py', f'{cwd}/tests/conftest.py')
-    copyfile(f'{package_path}/scripts/ex1_frameworked_job_test.py', f'{cwd}/tests/jobs/example/ex1_frameworked_job_test.py')
-    copyfile(f'{package_path}/scripts/ex1_full_sql_job_test.py', f'{cwd}/tests/jobs/example/ex1_full_sql_job_test.py')
+    copyfile(f'{package_path}/scripts/copy/conftest.py', f'{cwd}/tests/conftest.py')
+    copyfile(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py', f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py')
+    copyfile(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py', f'{cwd}/tests/jobs/examples/ex1_full_sql_job_test.py')
 
     # TODO: add setup awscli or make sure it is there.
 
