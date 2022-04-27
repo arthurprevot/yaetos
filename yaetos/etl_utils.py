@@ -650,7 +650,9 @@ class Schema_Builder():
     def generate_schemas(self, loaded_datasets, output):
         yml = {'inputs':{}}
         for key, value in loaded_datasets.items():
-            yml['inputs'][key] = {fd.name: fd.dataType.__str__() for fd in value.schema.fields}
+            if value:
+                # TODO: make it fail softly in case code below fails, so it doesn't block job, since it is for logging only.
+                yml['inputs'][key] = {fd.name: fd.dataType.__str__() for fd in value.schema.fields}
         yml['output'] = {fd.name: fd.dataType.__str__() for fd in output.schema.fields}
         self.yml = yml
 
