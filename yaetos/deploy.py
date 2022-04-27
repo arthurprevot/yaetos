@@ -521,9 +521,9 @@ class DeployPySparkScriptOnAws(object):
         import awscli.customizations.datapipeline.translator as trans
 
         if emr_core_instances != 0:
-            definition_file = eu.LOCAL_APP_FOLDER+'yaetos/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+            definition_file = eu.LOCAL_APP_FOLDER_TMP+'yaetos/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
         else:
-            definition_file = eu.LOCAL_APP_FOLDER+'yaetos/definition_standalone_cluster.json'
+            definition_file = eu.LOCAL_APP_FOLDER_TMP+'yaetos/definition_standalone_cluster.json'
             # TODO: have 1 json for both to avoid having to track duplication.
 
         definition = json.load(open(definition_file, 'r')) # Note: Data Pipeline doesn't support emr-6.0.0 yet.
