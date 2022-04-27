@@ -14,6 +14,8 @@ class Job(ETL_Base):
     def transform(self, **ignored):
         sql = self.read_sql_file(self.jargs.sql_file)
         df = self.query(sql)
+        if self.jargs.merged_args.get('repartition'):
+            df = df.repartition(self.jargs.merged_args['repartition'])
         return df
 
     @staticmethod
