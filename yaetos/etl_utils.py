@@ -603,10 +603,10 @@ class ETL_Base(object):
         count = df.count()
         count_pk = df.select(pks).dropDuplicates().count()
         if count != count_pk:
-            logger.error("PKs not unique. count={}, count_pk={}".format(count, count_pk))
+            logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
             return False
         else:
-            logger.info("Confirmed fields given are PKs (i.e. unique). count=count_pk={}".format(count))
+            logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
             return True
 
     def identify_non_unique_pks(self, df, pks):
