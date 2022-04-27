@@ -72,6 +72,7 @@ def setup_env(args):
     # Empty folders necessary for later.
     os.system("mkdir -p tmp/files_to_ship/")
     os.system("mkdir -p data/")
+    # TODO: make code above and below compatible with windows OS (no cmd line, no linux only paths).
 
     # Root folder files
     copyfile(f'{package_path}/scripts/copy/Dockerfile_external', f'{cwd}/Dockerfile')
