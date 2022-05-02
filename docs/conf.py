@@ -2,12 +2,12 @@
 
 # -- Project information
 
-project = 'Lumache'
-copyright = '2021, Graziella'
-author = 'Graziella'
+project = 'Yaetos'
+copyright = '2018, Arthur Prevot'
+author = 'Arthur Prevot'
 
-release = '0.1'
-version = '0.1.0'
+release = '0.9'
+version = '0.9.11'
 
 # -- General configuration
 
