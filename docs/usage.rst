@@ -3,32 +3,26 @@ Usage
 
 .. _installation:
 
-Installation
-------------
+Installation to run locally
+---------------------------
 
-To use Lumache, first install it using pip:
+Follow the steps below to install the library, create a job folder and execute them in a docker environment:
 
 .. code-block:: console
 
-   (.venv) $ pip install lumache
+   $ pip install yaetos
+   $ cd /path/to/an/empty/folder/that/will/contain/pipeline/code
+   $ yaetos setup  # to create sub-folders and setup framework files.
+   $ yaetos launch_env # to launch the docker container
+   # From inside the docker container, try a test pipeline with
+   $ python jobs/examples/ex1_frameworked_job.py --dependencies
 
-Creating recipes
-----------------
 
-To retrieve a list of random ingredients,
-you can use the ``lumache.get_random_ingredients()`` function:
 
-.. autofunction:: lumache.get_random_ingredients
+Installation to push jobs to the cloud
+--------------------------------------
 
-The ``kind`` parameter should be either ``"meat"``, ``"fish"``,
-or ``"veggies"``. Otherwise, :py:func:`lumache.get_random_ingredients`
-will raise an exception.
-
-.. autoexception:: lumache.InvalidKindError
-
-For example:
-
->>> import lumache
->>> lumache.get_random_ingredients()
-['shells', 'gorgonzola', 'parsley']
-
+To get jobs executed and/or scheduled in AWS, You need to:
+ * Get permissions setup in AWS to access: S3 (at least 1 bucket), EMR, AWS Secrets, AWS Data Pipeline
+ * fill AWS parameters in `conf/config.cfg`.
+ * have `~/.aws/` folder setup to give access to AWS secret keys. If not, run `pip install  awscli`, and `aws configure`.
