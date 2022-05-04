@@ -1,7 +1,10 @@
-API
-===
+Concepts
+========
 
 .. autosummary::
    :toctree: generated
 
-   lumache
+Definition of a job
+-------------------
+
+.. image:: images/Screenshot_2022-04-05_at_14.09.35.png
