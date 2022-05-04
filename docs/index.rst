@@ -14,5 +14,5 @@ Contents
 
 .. toctree::
 
-   usage
-   api
+   installation
+   concepts
