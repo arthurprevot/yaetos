@@ -4,8 +4,8 @@
 
 <div align="center">
 
-[![Users Documentation](https://img.shields.io/badge/-Users_Docs-lightgreen?style=for-the-badge&logo=readthedocs)](https://yaetos.readthedocs.io/en/latest/)
-[![Medium](https://img.shields.io/badge/_-Medium-yellowgreen?style=for-the-badge&logo=medium)](https://medium.com/@arthurprevot/yaetos-data-framework-description-ddc71caf6ce)
+[![Users Documentation](https://img.shields.io/badge/-Users_Docs-blue?style=plastic&logo=readthedocs)](https://yaetos.readthedocs.io/en/latest/)
+[![Medium](https://img.shields.io/badge/_-Medium-orange?style=plastic&logo=medium)](https://medium.com/@arthurprevot/yaetos-data-framework-description-ddc71caf6ce)
 
 </div>
 
