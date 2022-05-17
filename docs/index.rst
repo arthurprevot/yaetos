@@ -8,6 +8,7 @@ It's name stands for "Yet Another ETL Tool on Spark".
 Check out the :doc:`usage` section for further information, including
 how to :ref:`installation` the project.
 
+This documentation is "Work In Progress". There is more to come.
 
 Contents
 --------
