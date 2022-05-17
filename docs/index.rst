@@ -16,3 +16,4 @@ Contents
 
    installation
    concepts
+   usage
