@@ -1094,6 +1094,7 @@ class Commandliner():
                     'manage_git_info': False,
                     'add_created_at': 'true',  # set as string to be overrideable in cmdline.
                     'no_fw_cache': False,
+                    'engine':'spark', # other option is 'pandas' (experimental).
                     }
         return parser, defaults
 
