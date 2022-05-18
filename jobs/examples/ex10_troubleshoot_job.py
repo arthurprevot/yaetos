@@ -15,7 +15,7 @@ class Job(ETL_Base):
 
         import ipdb; ipdb.set_trace()  # will drop to python terminal here to inspect
 
-        return sdf
+        return df
 
 
 if __name__ == "__main__":
