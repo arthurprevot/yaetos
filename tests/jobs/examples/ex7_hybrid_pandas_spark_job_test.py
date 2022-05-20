@@ -1,5 +1,5 @@
 import pytest
-from jobs.examples.ex7_pandas_inside_job import Job
+from jobs.examples.ex7_hybrid_pandas_spark_job import Job
 
 
 class Test_Job(object):

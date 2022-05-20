@@ -122,7 +122,7 @@ jobs:
     ec2_instance_slaves: 'm5.4xlarge'
     emr_core_instances: 3
 
-  examples/ex7_pandas_all_the_way_job.py:
+  examples/ex7_pandas_job.py:
     description: "job loading and processing data with pandas. No spark involved."
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/part-00000-9451d268-ce36-427c-9393-6797ad90ec73-c000.csv", 'type':'csv'}
@@ -130,7 +130,7 @@ jobs:
     output: {'path':'{base_path}/wiki_example/output_ex7_pandas_all_the_way/output.csv', 'type':'csv'}
     engine: pandas
 
-  examples/ex7_pandas_inside_job.py:
+  examples/ex7_hybrid_pandas_spark_job.py:
     description: "Job processing in pandas, loading and dropping done with spark."
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}

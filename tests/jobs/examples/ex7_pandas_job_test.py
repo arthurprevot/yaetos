@@ -1,5 +1,5 @@
 import pytest
-from jobs.examples.ex7_pandas_all_the_way_job import Job
+from jobs.examples.ex7_pandas_job import Job
 import pandas as pd
 
 
