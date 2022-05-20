@@ -56,12 +56,13 @@ JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/Red
 
 
 class ETL_Base(object):
-    # TABULAR_TYPES = ('csv', 'pandascsv', 'parquet', 'df', 'mysql', 'clickhouse')
+    TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
     SPARK_DF_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
-    PANDAS_DF_TYPES = ('pandascsv')
-    FILE_TYPES = ('csv', 'pandascsv', 'parquet', 'txt')
+    PANDAS_DF_TYPES = ('csv')
+    FILE_TYPES = ('csv', 'parquet', 'txt')
     OTHER_TYPES = ('other', 'None')
-    SUPPORTED_TYPES = set(SPARK_DF_TYPES).union(set(PANDAS_DF_TYPES)).union(set(FILE_TYPES)).union(set(OTHER_TYPES))
+    # SUPPORTED_TYPES = set(SPARK_DF_TYPES).union(set(PANDAS_DF_TYPES)).union(set(FILE_TYPES)).union(set(OTHER_TYPES))
+    SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union(set(OTHER_TYPES))
 
     def __init__(self, pre_jargs={}, jargs=None, loaded_inputs={}):
         self.loaded_inputs = loaded_inputs
@@ -192,7 +193,7 @@ class ETL_Base(object):
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
-        if output is not None and self.jargs.output['type'] in self.SPARK_DF_TYPES:
+        if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark':
             if self.jargs.add_created_at=='true':
                 output = output.withColumn('_created_at', F.lit(self.start_dt))
             output.cache()
@@ -273,7 +274,7 @@ class ETL_Base(object):
         # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.SPARK_DF_TYPES
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if input_is_tabular and inc:
                 max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
@@ -282,7 +283,7 @@ class ETL_Base(object):
 
         # Filter
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.SPARK_DF_TYPES
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -302,7 +303,7 @@ class ETL_Base(object):
         """Filter based on period defined in. Simple but can be a pb if late arriving data or dependencies not run.
         Inputs filtered inside source database will be filtered again."""
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.SPARK_DF_TYPES
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -317,7 +318,7 @@ class ETL_Base(object):
     def sql_register(self, app_args):
         for item in app_args.keys():
             input_is_tabular = hasattr(app_args[item], "rdd")  # assuming DataFrame will keep 'rdd' attribute
-            # ^ better than using self.jargs.inputs[item]['type'] in self.SPARK_DF_TYPES since doesn't require 'type' being defined.
+            # ^ better than using self.jargs.inputs[item]['type'] in self.TABULAR_TYPES since doesn't require 'type' being defined.
             if input_is_tabular:
                 app_args[item].createOrReplaceTempView(item)
 
@@ -335,7 +336,20 @@ class ETL_Base(object):
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
             return rdd
 
-        # Tabular types
+        # Tabular, Pandas
+        if self.jargs.engine == 'pandas':
+            if input_type == 'csv' and self.jargs.engine == 'pandas':
+                # delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
+                # import ipdb; ipdb.set_trace()
+                sdf = pd.read_csv(path)
+                logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            else:
+                raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
+            # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
+            return sdf
+
+
+        # Tabular types, Spark
         if input_type == 'csv':
             delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
             sdf = self.sc_sql.read.option("delimiter", delimiter).csv(path, header=True)
@@ -349,15 +363,10 @@ class ETL_Base(object):
         elif input_type == 'clickhouse':
             sdf = self.load_clickhouse(input_name)
             logger.info("Input '{}' loaded from clickhouse".format(input_name))
-        elif input_type == 'pandascsv':
-            # delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
-            # import ipdb; ipdb.set_trace()
-            sdf = pd.read_csv(path)
-            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         else:
             raise Exception("Unsupported input type '{}' for path '{}'. Supported types are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.SUPPORTED_TYPES))
 
-        # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
+        logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
     def load_data_from_files(self, name, path, type, sc, sc_sql):
@@ -515,6 +524,15 @@ class ETL_Base(object):
         write_mode = 'append' if incremental_type == 'partitioned' or partitionby else 'error'
         partitionby = partitionby.split(',') if partitionby else []
 
+        # Tabular, Pandas
+        if self.jargs.engine == 'pandas':
+            if type == 'csv':
+                save_pandas(output, path)
+            else:
+                raise Exception("Need to specify supported output type for pandas, csv only for now.")
+            logger.info('Wrote output to ' + path)
+            return path
+
         # TODO: deal with cases where "output" is df when expecting rdd, or at least raise issue in a cleaner way.
         if type == 'txt':
             output.saveAsTextFile(path)
@@ -522,8 +540,6 @@ class ETL_Base(object):
             output.write.partitionBy(*partitionby).mode(write_mode).parquet(path)
         elif type == 'csv':
             output.write.partitionBy(*partitionby).mode(write_mode).option("header", "true").csv(path)
-        elif type == 'pandascsv':
-            save_pandas(output, path)
         else:
             raise Exception("Need to specify supported output type, either txt, parquet or csv.")
 
@@ -1084,7 +1100,7 @@ class Commandliner():
                     #-- Deploy specific below --
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
-                    'code_source': 'lib', # Other options: 'repo'
+                    'code_source': 'lib', # Other options: 'repo' TODO: make it automatic so parameter not needed.
                     # 'leave_on': False, # only set from commandline
                     # 'push_secrets': False, # only set from commandline
                     #-- Not added in command line args:
