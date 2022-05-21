@@ -4,10 +4,6 @@ import pandas as pd
 import numpy as np
 from yaetos.pandas_utils import load_multiple_csvs, load_csvs
 
-def tes_load_multiple_csvs():
-    path = 'fixtures/csvs/'
-    df = load_multiple_csvs(path, read_kwargs={})
-
 def test_load_csvs():
     path = 'tests/fixtures/csvs/'
     actual = load_csvs(path, read_kwargs={})
@@ -29,3 +25,6 @@ def test_load_csvs():
         {'uuid':'u3','timestamp':2.0,'session_id':'s3','group': 'g3','action':'checkin','checkin':30,         'page_id':'p3','n_results':np.nan,'result_position':np.nan},
         ])
     assert_frame_equal(actual, expected)
+
+# def test_load_multiple_csvs():
+    # Add test here, for completeness. functionality already tested above..
