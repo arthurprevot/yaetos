@@ -34,7 +34,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import StructType
 from yaetos.git_utils import Git_Config_Manager
 from dateutil.relativedelta import relativedelta
-from yaetos.pandas_utils import save_pandas
+from yaetos.pandas_utils import load_csvs, save_pandas
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
 
@@ -341,12 +341,13 @@ class ETL_Base(object):
             if input_type == 'csv' and self.jargs.engine == 'pandas':
                 # delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
                 # import ipdb; ipdb.set_trace()
-                sdf = pd.read_csv(path)
+                # pdf = pd.read_csv(path)
+                pdf = load_csvs(path, read_kwargs={}) # TODO: pass read_kwargs from parameters.
                 logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
-            return sdf
+            return pdf
 
 
         # Tabular types, Spark
