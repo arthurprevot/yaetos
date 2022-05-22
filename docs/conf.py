@@ -29,7 +29,7 @@ templates_path = ['_templates']
 
 # -- Options for HTML output
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'alabaster' #default: 'sphinx_rtd_theme'
 html_theme_options = {
     'show_powered_by': False,
     'github_user': 'arthurprevot',
