@@ -20,7 +20,7 @@ Welcome to Yaetos's documentation!
 .. image:: https://img.shields.io/pypi/v/yaetos.svg
     :target: https://pypi.python.org/pypi/yaetos
     :alt: Logo
-    :align: left
+    :align: center
 
 
 **Yaetos** is a data framework to simplify the creation
