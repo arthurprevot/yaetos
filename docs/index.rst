@@ -11,7 +11,8 @@ Welcome to Yaetos's documentation!
   [![Twitter Follow](https://img.shields.io/twitter/follow/yaetos.svg?style=social&label=Follow)](https://twitter.com/yaetos)
   comment:: end!
 
-.. image:: ./docs/images/logo_full.jpeg
+.. image:: ./images/logo_full.jpeg
+  :width: 300
 
 .. image:: https://img.shields.io/pypi/v/yaetos.svg
     :target: https://pypi.python.org/pypi/yaetos
