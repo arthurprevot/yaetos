@@ -122,12 +122,18 @@ jobs:
     ec2_instance_slaves: 'm5.4xlarge'
     emr_core_instances: 3
 
+  examples/ex7_extraction_small_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
+    inputs:
+      events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/input_small/{now}/', 'type':'csv'}
+    dependencies: [examples/ex0_extraction_job.py]
+
   examples/ex7_pandas_job.py:
     description: "job loading and processing data with pandas. No spark involved."
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex7_pandas_all_the_way/output.csv', 'type':'csv'}
+      some_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv'}
+      other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/output.csv', 'type':'csv'}
     engine: pandas
 
   examples/ex7_hybrid_pandas_spark_job.py:
@@ -135,7 +141,7 @@ jobs:
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
       other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex7_pandas_inside/{now}/output.csv', 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex7_hybrid_pandas_spark/{now}/output.csv', 'type':'csv'}
 
   examples/ex8_koalas_job.py:
     inputs:

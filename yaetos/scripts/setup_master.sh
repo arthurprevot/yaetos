@@ -14,6 +14,8 @@ sudo pip-3.6 install scikit-learn==0.20.0  # TODO: remove when using req file
 sudo pip-3.6 install statsmodels==0.9.0  # TODO: remove when using req file
 sudo pip-3.6 install kafka-python==1.4.7
 sudo pip-3.6 install jsonschema==3.0.2
+sudo pip-3.6 install cloudpathlib==0.7.0
+# sudo pip-3.6 install s3fs==2022.5.0  # for saving to S3 with pandas. TODO: more validation, impacts boto versions
 # sudo pip-3.6 install koalas==1.3.0  # fails installing now. TODO: check.
 # DB and API libs
 sudo pip-3.6 install soql==1.0.2  # Necessary for simple-salesforce
