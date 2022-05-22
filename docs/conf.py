@@ -35,9 +35,11 @@ html_theme_options = {
     'github_user': 'arthurprevot',
     'github_repo': 'yaetos',
     'github_banner': True,
+    'github_type': 'star',
+    'github_button': True,
     'show_related': False,
     'note_bg': '#FFF59C'
-}
+} # TODO: add "Fork me on github" banner with 'sphinx_rtd_theme' theme, using _template, see https://stackoverflow.com/questions/53327826/how-to-add-fork-me-on-github-ribbon-using-sphinx-and-readthedocs-theme
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
