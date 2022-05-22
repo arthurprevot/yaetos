@@ -9,7 +9,7 @@ from yaetos.logger import setup_logging
 logger = setup_logging('Job')
 
 
-class FS_Ops_Dispatcher2():
+class FS_Ops_Dispatcher_v2():
     # TODO: remove 'storage' var not used anymore accross all functions below, since now infered from path
 
     @staticmethod
