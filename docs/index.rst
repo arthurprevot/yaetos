@@ -22,6 +22,7 @@ Welcome to Yaetos's documentation!
     :alt: Logo
     :align: left
 
+
 **Yaetos** is a data framework to simplify the creation
 of data pipelines in python or SQL, the execution and scheduling in the AWS cloud.
 It's name stands for "Yet Another ETL Tool on Spark".
