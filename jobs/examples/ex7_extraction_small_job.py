@@ -1,7 +1,7 @@
-"""Same as ex1_full_sql_job.sql but allows access to spark for more complex ops (not used here but in ex2_frameworked_job.py)."""
+"""Job to get small version of wiki sample data, to speed up running downstream jobs, for testing purposes."""
 from yaetos.etl_utils import ETL_Base, Commandliner
 
-
+# TODO: move it to .sql job.
 class Job(ETL_Base):
     def transform(self, events):
         df = self.query("""
@@ -13,7 +13,5 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    # args = {'job_param_file': 'conf/jobs_metadata.yml'}
-    args = {'job_param_file': 'conf/jobs_metadata.yml',
-        'base_path': 's3://dev-spark2/yaetos'}
+    args = {'job_param_file': 'conf/jobs_metadata.yml'}
     Commandliner(Job, **args)

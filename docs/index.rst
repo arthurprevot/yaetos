@@ -1,15 +1,5 @@
-Welcome to Yaetos's documentation!
-===================================
-
-..
-  .. image:: https://travis-ci.org/aio-libs/aiobotocore.svg?branch=master
-      :target: https://travis-ci.org/aio-libs/aiobotocore
-  .. image:: https://codecov.io/gh/aio-libs/aiobotocore/branch/master/graph/badge.svg
-      :target: https://codecov.io/gh/aio-libs/aiobotocore
-  [![Medium](https://img.shields.io/badge/_-Medium-orange?style=plastic&logo=medium)](https://medium.com/@arthurprevot/yaetos-data-framework-description-ddc71caf6ce)
-  [![CI](https://github.com/arthurprevot/yaetos/workflows/yaetos%20CI/badge.svg)](https://github.com/arthurprevot/yaetos/actions)
-  [![Twitter Follow](https://img.shields.io/twitter/follow/yaetos.svg?style=social&label=Follow)](https://twitter.com/yaetos)
-  comment:: end!
+Welcome to Yaetos' documentation!
+=================================
 
 .. image:: ./images/logo_full.jpeg
     :width: 300

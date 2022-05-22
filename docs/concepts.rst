@@ -27,10 +27,8 @@ Most parameters can also be defined in the job files. The dependency parameters 
 ..
   .. code:: python
 
-     import asyncio
-     from aiobotocore.session import get_session
+     import yaetos
 
-     AWS_ACCESS_KEY_ID = "xxx"
-     AWS_SECRET_ACCESS_KEY = "xxx"
+     some_code = 1
 
    comment:: add a snapshot of an example or a code block!

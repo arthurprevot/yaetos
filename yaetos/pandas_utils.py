@@ -12,7 +12,6 @@ logger = setup_logging('pandas')
 # --- loading files ----
 
 def load_multiple_csvs(path, read_kwargs):
-    # path = "dir/to/save/to"
     csv_files = glob.glob(os.path.join(path, "*.csv"))
     df = pd.concat((pd.read_csv(f, **read_kwargs) for f in csv_files))
     return df.reset_index(drop=True)
@@ -32,12 +31,10 @@ def load_csvs(path, read_kwargs):
 
 def create_subfolders(path):
     """Creates subfolders if needed. Can take a path with a file."""
-    # Only works in local. TODO: add ability to push to S3
     output_dir = Path(path).parent
     output_dir.mkdir(parents=True, exist_ok=True)
 
 def save_pandas_csv_local(df, path):
-    # Only works in local. TODO: add ability to push to S3
     create_subfolders(path)
     df.to_csv(path)
 

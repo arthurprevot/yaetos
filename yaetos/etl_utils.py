@@ -34,7 +34,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import StructType
 from yaetos.git_utils import Git_Config_Manager
 from dateutil.relativedelta import relativedelta
-from yaetos.env_dispatchers import FS_Ops_Dispatcher2
+from yaetos.env_dispatchers import FS_Ops_Dispatcher_v2  # temp until FS_Ops_Dispatcher class below moved to env_dispatchers.py
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
 
@@ -61,8 +61,11 @@ class ETL_Base(object):
     PANDAS_DF_TYPES = ('csv')
     FILE_TYPES = ('csv', 'parquet', 'txt')
     OTHER_TYPES = ('other', 'None')
-    # SUPPORTED_TYPES = set(SPARK_DF_TYPES).union(set(PANDAS_DF_TYPES)).union(set(FILE_TYPES)).union(set(OTHER_TYPES))
-    SUPPORTED_TYPES = set(TABULAR_TYPES).union(set(FILE_TYPES)).union(set(OTHER_TYPES))
+    SUPPORTED_TYPES = set(TABULAR_TYPES) \
+        .union(set(SPARK_DF_TYPES)) \
+        .union(set(PANDAS_DF_TYPES)) \
+        .union(set(FILE_TYPES)) \
+        .union(set(OTHER_TYPES))
 
     def __init__(self, pre_jargs={}, jargs=None, loaded_inputs={}):
         self.loaded_inputs = loaded_inputs
@@ -155,7 +158,8 @@ class ETL_Base(object):
                 pass
             count = output.count()
             logger.info('Output count: {}'.format(count))
-            # logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
+            if self.jargs.engine=='spark':
+                logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
             self.output_empty = count == 0
 
         self.save_output(output, self.start_dt)
@@ -173,7 +177,8 @@ class ETL_Base(object):
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
-        # output.unpersist()
+        if self.jargs.engine=='spark':
+            output.unpersist()
         end_time = time()
         elapsed = end_time - start_time
         logger.info('Process time to complete job (post db copies if any): {} s'.format(elapsed))
@@ -339,8 +344,8 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.engine == 'pandas':
             if input_type == 'csv' and self.jargs.engine == 'pandas':
-                # delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
-                pdf = FS_Ops_Dispatcher2().load_pandas(path, self.jargs.storage)
+                # TODO: had ability to deal with options, like "delimiter = self.jargs.merged_args.get('csv_delimiter', ',')"
+                pdf = FS_Ops_Dispatcher_v2().load_pandas(path, self.jargs.storage)
                 logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
@@ -526,7 +531,7 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.engine == 'pandas':
             if type == 'csv':
-                FS_Ops_Dispatcher2().save_pandas(output, path, self.jargs.storage)
+                FS_Ops_Dispatcher_v2().save_pandas(output, path, self.jargs.storage)
             else:
                 raise Exception("Need to specify supported output type for pandas, csv only for now.")
             logger.info('Wrote output to ' + path)
@@ -1109,7 +1114,7 @@ class Commandliner():
                     'manage_git_info': False,
                     'add_created_at': 'true',  # set as string to be overrideable in cmdline.
                     'no_fw_cache': False,
-                    'engine':'spark', # other option is 'pandas' (experimental).
+                    'engine':'spark', # options ('spark', 'pandas') (experimental).
                     }
         return parser, defaults
 

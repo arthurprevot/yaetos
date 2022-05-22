@@ -22,5 +22,6 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    args = {'job_param_file': 'conf/jobs_metadata.yml'}
+    args = {'job_param_file': 'conf/jobs_metadata.yml',
+        'base_path': 's3://dev-spark2/yaetos'}
     Commandliner(Job, **args)
