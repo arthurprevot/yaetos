@@ -124,7 +124,9 @@ class Test_Flow(object):
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency2_job.py'],
                 ['examples/ex4_dependency2_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency3_job.sql'],
-                ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py']]),
+                ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
+                ['examples/ex0_extraction_job.py', 'examples/ex7_extraction_small_job.py'],
+                ]),
             )
         assert_frame_equal(connection_real, connection_expected)
 
