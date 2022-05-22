@@ -25,4 +25,12 @@ The job manifest is a yaml file containing the list of jobs, together with the m
 Most parameters can also be defined in the job files. The dependency parameters have to be defined in this file.
 
 ..
+  .. code:: python
+
+     import asyncio
+     from aiobotocore.session import get_session
+
+     AWS_ACCESS_KEY_ID = "xxx"
+     AWS_SECRET_ACCESS_KEY = "xxx"
+
    comment:: add a snapshot of an example or a code block!
