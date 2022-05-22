@@ -12,10 +12,15 @@ Welcome to Yaetos's documentation!
   comment:: end!
 
 .. image:: ./images/logo_full.jpeg
-  :width: 300
+    :width: 300
+    :alt: Logo
+    :align: center
+
 
 .. image:: https://img.shields.io/pypi/v/yaetos.svg
     :target: https://pypi.python.org/pypi/yaetos
+    :alt: Logo
+    :align: left
 
 **Yaetos** is a data framework to simplify the creation
 of data pipelines in python or SQL, the execution and scheduling in the AWS cloud.
