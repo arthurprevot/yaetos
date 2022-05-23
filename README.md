@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![CI](https://github.com/arthurprevot/yaetos/workflows/pythonapp.yml/badge.svg)](https://github.com/arthurprevot/yaetos/actions)
+[![CI](https://github.com/arthurprevot/yaetos/actions/workflows/pythonapp.yml/badge.svg)](https://github.com/arthurprevot/yaetos/actions)
 ![CI2](https://github.com/arthurprevot/yaetos/actions/workflows/main.yml/badge.svg)
 ![example workflow](https://github.com/arthurprevot/yaetos/actions/workflows/pythonapp.yml/badge.svg)
 [![Users Documentation](https://img.shields.io/badge/-Users_Docs-blue?style=plastic&logo=readthedocs)](https://yaetos.readthedocs.io/en/latest/)
