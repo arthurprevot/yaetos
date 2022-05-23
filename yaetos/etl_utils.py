@@ -341,9 +341,9 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.inputs[input_name].get('engine') == 'pandas':
             if input_type == 'csv':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, self.jargs.storage, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}) )
+                pdf = FS_Ops_Dispatcher().load_pandas(path, self.jargs.storage, file_type='csv', read_func='read_csv', read_kwargs=eval(self.jargs.inputs[input_name].get('read_kwargs','{}')))
             elif input_type == 'parquet':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, self.jargs.storage, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, self.jargs.storage, file_type='parquet', read_func='read_parquet', read_kwargs=eval(self.jargs.inputs[input_name].get('read_kwargs','{}')))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
@@ -529,9 +529,9 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.output.get('engine') == 'pandas':
             if type == 'csv':
-                FS_Ops_Dispatcher().save_pandas(output, path, self.jargs.storage, save_method='to_csv', save_kwargs=self.jargs.output.get('save_kwargs',{}))
+                FS_Ops_Dispatcher().save_pandas(output, path, self.jargs.storage, save_method='to_csv', save_kwargs=eval(self.jargs.output.get('save_kwargs','{}')))
             elif type == 'parquet':
-                FS_Ops_Dispatcher().save_pandas(output, path, self.jargs.storage, save_method='to_parquet', save_kwargs=self.jargs.output.get('save_kwargs',{}))
+                FS_Ops_Dispatcher().save_pandas(output, path, self.jargs.storage, save_method='to_parquet', save_kwargs=eval(self.jargs.output.get('save_kwargs','{}')))
             else:
                 raise Exception("Need to specify supported output type for pandas, csv only for now.")
             logger.info('Wrote output to ' + path)
