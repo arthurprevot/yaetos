@@ -131,14 +131,11 @@ jobs:
   examples/ex7_pandas_job.py:
     description: "job loading and processing data with pandas. No spark involved."
     inputs:
-      # some_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas', 'read_kwargs':'{}'} # works
-      # other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas', 'read_kwargs':'{}'} # works
-      some_events: {'path':"{base_path}/wiki_example/input_small_parquet/{latest}/", 'type':'parquet', 'engine':'pandas', 'read_kwargs':'{}'}
-      other_events: {'path':"{base_path}/wiki_example/input_small_parquet/{latest}/", 'type':'parquet', 'engine':'pandas', 'read_kwargs':'{}'}
-    # output: {'path':'{base_path}/wiki_example/output_ex7_pandas/output.csv', 'type':'csv', 'engine':'pandas', 'save_kwargs':"{'sep':'|'}"} # works
-    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/output.parquet', 'type':'parquet', 'engine':'pandas', 'save_kwargs':"{}"}
+      some_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas', 'read_kwargs':'{}'} # works
+      other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas', 'read_kwargs':'{}'} # works
+    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/output.csv', 'type':'csv', 'engine':'pandas', 'save_kwargs':"{'sep':'|'}"} # works
     engine: pandas
-    # dependencies: [examples/ex7_extraction_small_job.py]
+    # dependencies: [examples/ex7_extraction_small_job.py] # Can't mix pandas jobs with non pandas ones. TODO: enable it.
 
   examples/ex7_hybrid_pandas_spark_job.py:
     description: "Job processing in pandas, loading and dropping done with spark."
@@ -213,7 +210,7 @@ common_params:
       save_schemas: False
       manage_git_info: True
     dev_EMR:
-      base_path: s3://dev-spark2/yaetos  # don't add '/' at the end
+      base_path: s3://dev-spark  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
