@@ -55,7 +55,7 @@ JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/Red
 class ETL_Base(object):
     TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
     SPARK_DF_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
-    PANDAS_DF_TYPES = ('csv')
+    PANDAS_DF_TYPES = ('csv', 'parquet', 'df')
     FILE_TYPES = ('csv', 'parquet', 'txt')
     OTHER_TYPES = ('other', 'None')
     SUPPORTED_TYPES = set(TABULAR_TYPES) \
@@ -155,7 +155,7 @@ class ETL_Base(object):
                 pass
             count = output.count()
             logger.info('Output count: {}'.format(count))
-            if self.jargs.output.get('engine', 'spark')=='spark':
+            if self.jargs.output.get('df_type', 'spark')=='spark':
                 logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
             self.output_empty = count == 0
 
@@ -174,7 +174,7 @@ class ETL_Base(object):
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
-        if self.jargs.output.get('engine', 'spark')=='spark':
+        if self.jargs.output.get('df_type', 'spark')=='spark':
             output.unpersist()
         end_time = time()
         elapsed = end_time - start_time
@@ -195,7 +195,7 @@ class ETL_Base(object):
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
-        if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('engine', 'spark')=='spark':
+        if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('df_type', 'spark')=='spark':
             if self.jargs.add_created_at=='true':
                 output = su.add_created_at(output, self.start_dt)
             output.cache()
@@ -276,7 +276,7 @@ class ETL_Base(object):
         # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('engine', 'spark')=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark')=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if input_is_tabular and inc:
                 max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
@@ -285,7 +285,7 @@ class ETL_Base(object):
 
         # Filter
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('engine', 'spark')=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark')=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -305,7 +305,7 @@ class ETL_Base(object):
         """Filter based on period defined in. Simple but can be a pb if late arriving data or dependencies not run.
         Inputs filtered inside source database will be filtered again."""
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('engine', 'spark')=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark')=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -339,7 +339,7 @@ class ETL_Base(object):
             return rdd
 
         # Tabular, Pandas
-        if self.jargs.inputs[input_name].get('engine') == 'pandas':
+        if self.jargs.inputs[input_name].get('df_type') == 'pandas':
             if input_type == 'csv':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, self.jargs.storage, file_type='csv', read_func='read_csv', read_kwargs=eval(self.jargs.inputs[input_name].get('read_kwargs','{}')))
             elif input_type == 'parquet':
@@ -527,7 +527,7 @@ class ETL_Base(object):
         partitionby = partitionby.split(',') if partitionby else []
 
         # Tabular, Pandas
-        if self.jargs.output.get('engine') == 'pandas':
+        if self.jargs.output.get('df_type') == 'pandas':
             if type == 'csv':
                 FS_Ops_Dispatcher().save_pandas(output, path, self.jargs.storage, save_method='to_csv', save_kwargs=eval(self.jargs.output.get('save_kwargs','{}')))
             elif type == 'parquet':
@@ -972,18 +972,17 @@ class Commandliner():
                     'manage_git_info': False,
                     'add_created_at': 'true',  # set as string to be overrideable in cmdline.
                     'no_fw_cache': False,
-                    'engine':'spark', # options ('spark', 'pandas') (experimental).
+                    'spark_boot': True, # options ('spark', 'pandas') (experimental).
                     }
         return parser, defaults
 
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name
-        if job.jargs.engine=='spark':
+        if job.jargs.spark_boot is True:
             sc, sc_sql = self.create_contexts(app_name, job.jargs) # TODO: set spark_version default upstream, remove it from here and from deploy.py.
-        elif job.jargs.engine=='pandas':
-            sc, sc_sql = None, None
         else:
-            raise Exception("Incorrect 'engine' parameter value ({}). It can be only 'spark' or 'pandas'.".format(job.jargs.engine))
+            sc, sc_sql = None, None
+
         if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:
