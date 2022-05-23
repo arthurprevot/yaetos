@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/arthurprevot/yaetos/workflows/yaetos%20CI/badge.svg)](https://github.com/arthurprevot/yaetos/actions)
 ![CI2](https://github.com/arthurprevot/yaetos/actions/workflows/main.yml/badge.svg)
-![example workflow](https://github.com/arthurprevot/yaetos/actions/workflows/pythonapp/badge.svg)
+![example workflow](https://github.com/arthurprevot/yaetos/actions/workflows/build/badge.svg)
 [![Users Documentation](https://img.shields.io/badge/-Users_Docs-blue?style=plastic&logo=readthedocs)](https://yaetos.readthedocs.io/en/latest/)
 [![Medium](https://img.shields.io/badge/_-Medium-orange?style=plastic&logo=medium)](https://medium.com/@arthurprevot/yaetos-data-framework-description-ddc71caf6ce)
 
