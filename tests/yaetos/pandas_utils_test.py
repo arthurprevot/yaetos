@@ -33,7 +33,7 @@ def test_load_csvs():
 def test_load_df():
     # Test multiple file option
     path = 'tests/fixtures/csvs/'
-    actual = load_df(path, file_type='csv', read_func=pd.read_csv, read_kwargs={})
+    actual = load_df(path, file_type='csv', read_func='read_csv', read_kwargs={})
     expected = pd.DataFrame([
         {'uuid':'u1','timestamp':2.0,'session_id':'s1','group': 'g1','action':'searchResultPage','checkin':np.nan,'page_id':'p1','n_results':5.0,'result_position':np.nan},
         {'uuid':'u2','timestamp':2.0,'session_id':'s2','group': 'g2','action':'searchResultPage','checkin':np.nan,'page_id':'p2','n_results':9.0,'result_position':np.nan},
@@ -46,7 +46,7 @@ def test_load_df():
 
     # Test single file option, csv
     path = 'tests/fixtures/csvs/part1.csv'
-    actual = load_df(path, file_type='csv', read_func=pd.read_csv, read_kwargs={})
+    actual = load_df(path, file_type='csv', read_func='read_csv', read_kwargs={})
     expected = pd.DataFrame([
         {'uuid':'u1','timestamp':2.0,'session_id':'s1','group': 'g1','action':'searchResultPage','checkin':np.nan,'page_id':'p1','n_results':5.0,'result_position':np.nan},
         {'uuid':'u2','timestamp':2.0,'session_id':'s2','group': 'g2','action':'searchResultPage','checkin':np.nan,'page_id':'p2','n_results':9.0,'result_position':np.nan},
@@ -56,7 +56,7 @@ def test_load_df():
 
     # Test single file option, parquet
     path = 'tests/fixtures/parquets/part1.parquet'
-    actual = load_df(path, file_type='parquet', read_func=pd.read_parquet, read_kwargs={})
+    actual = load_df(path, file_type='parquet', read_func='read_parquet', read_kwargs={})
     expected = pd.DataFrame([
         {'uuid':'u1','timestamp':2.0,'session_id':'s1','group': 'g1','action':'searchResultPage','checkin':np.nan,'page_id':'p1','n_results':5.0,'result_position':np.nan},
         {'uuid':'u2','timestamp':2.0,'session_id':'s2','group': 'g2','action':'searchResultPage','checkin':np.nan,'page_id':'p2','n_results':9.0,'result_position':np.nan},

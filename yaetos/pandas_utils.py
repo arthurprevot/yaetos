@@ -17,9 +17,10 @@ def load_multiple_csvs(path, read_kwargs):
     df = pd.concat((pd.read_csv(f, **read_kwargs) for f in csv_files))
     return df.reset_index(drop=True)
 
-def load_multiple_files(path, file_type, read_func, read_kwargs):
+def load_multiple_files(path, file_type='csv', read_func='read_csv', read_kwargs={}):
     files = glob.glob(os.path.join(path, "*.{}".format(file_type)))
-    df = pd.concat((read_func(f, **read_kwargs) for f in files))
+    func = getattr(pd, read_func)
+    df = pd.concat((func(f, **read_kwargs) for f in files))
     return df.reset_index(drop=True)
 
 def load_csvs(path, read_kwargs):
@@ -32,10 +33,11 @@ def load_csvs(path, read_kwargs):
     else:
         raise Exception("Path should end with '.csv' or '/'.".format())
 
-def load_df(path, file_type, read_func, read_kwargs):
+def load_df(path, file_type='csv', read_func='read_csv', read_kwargs={}):
     """Loading 1 csv or multiple depending on path"""
     if path.endswith(".{}".format(file_type)):
-        return read_func(path, **read_kwargs)
+        func = getattr(pd, read_func)
+        return func(path, **read_kwargs)
     elif path.endswith('/'):
         return load_multiple_files(path, file_type, read_func, read_kwargs)
     else:
@@ -55,7 +57,8 @@ def save_pandas_csv_local(df, path):
     df.to_csv(path)
 
 def save_pandas_local(df, path, save_method='to_csv', save_kwargs={}):
-    create_subfolders(path)
+    if isinstance(path, str):
+        create_subfolders(path)
     func = getattr(df, save_method)
     func(path, **save_kwargs)
 
