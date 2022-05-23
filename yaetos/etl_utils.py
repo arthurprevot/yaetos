@@ -7,6 +7,7 @@ Helper functions. Setup to run locally and on cluster.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line.
+# - remove dep on spark when loading imports.
 
 
 import sys
@@ -17,26 +18,22 @@ import os
 import boto3
 import argparse
 from time import time
-from io import StringIO
 import networkx as nx
 import random
 import pandas as pd
 import os
 import sys
-from configparser import ConfigParser
 import numpy as np
-#from sklearn.externals import joblib  # TODO: re-enable later after fixing lib versions.
 import gc
 from pprint import pformat
 import smtplib, ssl
-from pyspark.sql.window import Window
-from pyspark.sql import functions as F
-from pyspark.sql.types import StructType
-from yaetos.git_utils import Git_Config_Manager
 from dateutil.relativedelta import relativedelta
-from yaetos.env_dispatchers import FS_Ops_Dispatcher_v2  # temp until FS_Ops_Dispatcher class below moved to env_dispatchers.py
+import yaetos.spark_utils as su
+from yaetos.git_utils import Git_Config_Manager
+from yaetos.env_dispatchers import FS_Ops_Dispatcher, Cred_Ops_Dispatcher
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
+# imports should not include any native spark libs, to enable pandas only mode (running outside docker).
 
 
 # User settable params below can be changed from command line or yml or job inputs.
@@ -58,7 +55,7 @@ JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/Red
 class ETL_Base(object):
     TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
     SPARK_DF_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
-    PANDAS_DF_TYPES = ('csv')
+    PANDAS_DF_TYPES = ('csv', 'parquet', 'df')
     FILE_TYPES = ('csv', 'parquet', 'txt')
     OTHER_TYPES = ('other', 'None')
     SUPPORTED_TYPES = set(TABULAR_TYPES) \
@@ -106,7 +103,7 @@ class ETL_Base(object):
 
                 if len(periods) == 0:
                     logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_run_period, Period_Builder.get_last_day()))
-                    output = sc_sql.createDataFrame([], StructType([]))
+                    output = su.create_empty_sdf(sc_sql)
                     self.final_inc = True  # remove "self." when sandbox job doesn't depend on it.
                 else:
                     logger.info('Periods remaining to load: {}'.format(periods))
@@ -158,7 +155,7 @@ class ETL_Base(object):
                 pass
             count = output.count()
             logger.info('Output count: {}'.format(count))
-            if self.jargs.engine=='spark':
+            if self.jargs.output.get('df_type', 'spark')=='spark':
                 logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
             self.output_empty = count == 0
 
@@ -177,7 +174,7 @@ class ETL_Base(object):
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
-        if self.jargs.engine=='spark':
+        if self.jargs.output.get('df_type', 'spark')=='spark':
             output.unpersist()
         end_time = time()
         elapsed = end_time - start_time
@@ -198,9 +195,9 @@ class ETL_Base(object):
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
-        if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark':
+        if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('df_type', 'spark')=='spark':
             if self.jargs.add_created_at=='true':
-                output = output.withColumn('_created_at', F.lit(self.start_dt))
+                output = su.add_created_at(output, self.start_dt)
             output.cache()
             schemas = Schema_Builder()
             schemas.generate_schemas(loaded_datasets, output)
@@ -279,7 +276,7 @@ class ETL_Base(object):
         # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark')=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if input_is_tabular and inc:
                 max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
@@ -288,7 +285,7 @@ class ETL_Base(object):
 
         # Filter
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark')=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -308,7 +305,7 @@ class ETL_Base(object):
         """Filter based on period defined in. Simple but can be a pb if late arriving data or dependencies not run.
         Inputs filtered inside source database will be filtered again."""
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark')=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -342,13 +339,14 @@ class ETL_Base(object):
             return rdd
 
         # Tabular, Pandas
-        if self.jargs.engine == 'pandas':
-            if input_type == 'csv' and self.jargs.engine == 'pandas':
-                # TODO: had ability to deal with options, like "delimiter = self.jargs.merged_args.get('csv_delimiter', ',')"
-                pdf = FS_Ops_Dispatcher_v2().load_pandas(path, self.jargs.storage)
-                logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+        if self.jargs.inputs[input_name].get('df_type') == 'pandas':
+            if input_type == 'csv':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, self.jargs.storage, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
+            elif input_type == 'parquet':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, self.jargs.storage, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
             # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))  # TODO adapt to pandas
             return pdf
 
@@ -529,9 +527,11 @@ class ETL_Base(object):
         partitionby = partitionby.split(',') if partitionby else []
 
         # Tabular, Pandas
-        if self.jargs.engine == 'pandas':
+        if self.jargs.output.get('df_type') == 'pandas':
             if type == 'csv':
-                FS_Ops_Dispatcher_v2().save_pandas(output, path, self.jargs.storage)
+                FS_Ops_Dispatcher().save_pandas(output, path, self.jargs.storage, save_method='to_csv', save_kwargs=self.jargs.output.get('save_kwargs',{}))
+            elif type == 'parquet':
+                FS_Ops_Dispatcher().save_pandas(output, path, self.jargs.storage, save_method='to_parquet', save_kwargs=self.jargs.output.get('save_kwargs',{}))
             else:
                 raise Exception("Need to specify supported output type for pandas, csv only for now.")
             logger.info('Wrote output to ' + path)
@@ -642,11 +642,7 @@ class ETL_Base(object):
             return True
 
     def identify_non_unique_pks(self, df, pks):
-        windowSpec  = Window.partitionBy([F.col(item) for item in pks])
-        df = df.withColumn('_count_pk', F.count('*').over(windowSpec)) \
-            .where(F.col('_count_pk') >= 2)
-        # Debug: df.repartition(1).write.mode('overwrite').option("header", "true").csv('data/sandbox/non_unique_test/')
-        return df
+        return su.identify_non_unique_pks(df, pks)
 
 class Period_Builder():
     @staticmethod
@@ -867,144 +863,6 @@ class Job_Args_Parser():
         return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
 
 
-class FS_Ops_Dispatcher():
-    # TODO: remove 'storage' var not used anymore accross all functions below, since now infered from path
-
-    @staticmethod
-    def is_s3_path(path):
-        return path.startswith('s3://') or path.startswith('s3a://')
-
-    # --- save_metadata set of functions ----
-    def save_metadata(self, fname, content, storage):
-        self.save_metadata_cluster(fname, content) if self.is_s3_path(fname) else self.save_metadata_local(fname, content)
-
-    @staticmethod
-    def save_metadata_local(fname, content):
-        fh = open(fname, 'w')
-        fh.write(content)
-        fh.close()
-        logger.info("Created file locally: {}".format(fname))
-
-    @staticmethod
-    def save_metadata_cluster(fname, content):
-        fname_parts = fname.split('s3://')[1].split('/')
-        bucket_name = fname_parts[0]
-        bucket_fname = '/'.join(fname_parts[1:])
-        fake_handle = StringIO(content)
-        s3c = boto3.Session(profile_name='default').client('s3')
-        s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
-        logger.info("Created file S3: {}".format(fname))
-
-    # --- save_file set of functions ----
-    def save_file(self, fname, content, storage):
-        self.save_file_cluster(fname, content) if self.is_s3_path(fname) else self.save_file_local(fname, content)
-
-    @staticmethod
-    def save_file_local(fname, content):
-        folder = os.path.dirname(fname)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        joblib.dump(content, fname)
-        logger.info("Saved content to new file locally: {}".format(fname))
-
-    def save_file_cluster(self, fname, content):
-        fname_parts = fname.split('s3://')[1].split('/')
-        bucket_name = fname_parts[0]
-        bucket_fname = '/'.join(fname_parts[1:])
-        s3c = boto3.Session(profile_name='default').client('s3')
-
-        local_path = CLUSTER_APP_FOLDER+'tmp/local_'+fname_parts[-1]
-        self.save_file_local(local_path, content)
-        fh = open(local_path, 'rb')
-        s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fh)
-        logger.info("Pushed local file to S3, from '{}' to '{}' ".format(local_path, fname))
-
-    # --- load_file set of functions ----
-    def load_file(self, fname, storage):
-        return self.load_file_cluster(fname) if self.is_s3_path(fname) else self.load_file_local(fname)
-
-    @staticmethod
-    def load_file_local(fname):
-        return joblib.load(fname)
-
-    @staticmethod
-    def load_file_cluster(fname):
-        fname_parts = fname.split('s3://')[1].split('/')
-        bucket_name = fname_parts[0]
-        bucket_fname = '/'.join(fname_parts[1:])
-        local_path = CLUSTER_APP_FOLDER+'tmp/s3_'+fname_parts[-1]
-        s3c = boto3.Session(profile_name='default').client('s3')
-        s3c.download_file(bucket_name, bucket_fname, local_path)
-        logger.info("Copied file from S3 '{}' to local '{}'".format(fname, local_path))
-        model = joblib.load(local_path)
-        return model
-
-    # --- listdir set of functions ----
-    def listdir(self, path, storage):
-        return self.listdir_cluster(path) if self.is_s3_path(path) else self.listdir_local(path)
-
-    @staticmethod
-    def listdir_local(path):
-        return os.listdir(path)
-
-    @staticmethod
-    def listdir_cluster(path):  # TODO: rename to listdir_s3, same for similar functions from FS_Ops_Dispatcher
-        # TODO: better handle invalid path. Crashes with "TypeError: 'NoneType' object is not iterable" at last line.
-        if path.startswith('s3://'):
-            s3_root = 's3://'
-        elif path.startswith('s3a://'):
-            s3_root = 's3a://'  # necessary when pulling S3 to local automatically from spark.
-        else:
-            raise ValueError('Problem with path. Pulling from s3, it should start with "s3://" or "s3a://". Path is: {}'.format(path))
-        fname_parts = path.split(s3_root)[1].split('/')
-        bucket_name = fname_parts[0]
-        prefix = '/'.join(fname_parts[1:])
-        client = boto3.Session(profile_name='default').client('s3')
-        paginator = client.get_paginator('list_objects')
-        objects = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
-        paths = [item['Prefix'].split('/')[-2] for item in objects.search('CommonPrefixes')]
-        return paths
-
-    # --- dir_exist set of functions ----
-    def dir_exist(self, path, storage):
-        return self.dir_exist_cluster(path) if self.is_s3_path(path) else self.dir_exist_local(path)
-
-    @staticmethod
-    def dir_exist_local(path):
-        return os.path.isdir(path)
-
-    @staticmethod
-    def dir_exist_cluster(path):
-        raise NotImplementedError
-
-
-class Cred_Ops_Dispatcher():
-    def retrieve_secrets(self, storage, creds='conf/connections.cfg'):
-        creds = self.retrieve_secrets_cluster() if storage=='s3' else self.retrieve_secrets_local(creds)
-        return creds
-
-    @staticmethod
-    def retrieve_secrets_cluster():
-        client = boto3.Session(profile_name='default').client('secretsmanager')
-
-        response = client.get_secret_value(SecretId=AWS_SECRET_ID)
-        logger.info('Read aws secret, secret_id:'+AWS_SECRET_ID)
-        logger.debug('get_secret_value response: '+str(response))
-        content = response['SecretString']
-
-        fake_handle = StringIO(content)
-        config = ConfigParser()
-        config.readfp(fake_handle)
-        return config
-
-    @staticmethod
-    def retrieve_secrets_local(creds):
-        config = ConfigParser()
-        assert os.path.isfile(creds)
-        config.read(creds)
-        return config
-
-
 class Path_Handler():
     def __init__(self, path, base_path=None):
         if base_path:
@@ -1114,18 +972,17 @@ class Commandliner():
                     'manage_git_info': False,
                     'add_created_at': 'true',  # set as string to be overrideable in cmdline.
                     'no_fw_cache': False,
-                    'engine':'spark', # options ('spark', 'pandas') (experimental).
+                    'spark_boot': True, # options ('spark', 'pandas') (experimental).
                     }
         return parser, defaults
 
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name
-        if job.jargs.engine=='spark':
+        if job.jargs.spark_boot is True:
             sc, sc_sql = self.create_contexts(app_name, job.jargs) # TODO: set spark_version default upstream, remove it from here and from deploy.py.
-        elif job.jargs.engine=='pandas':
-            sc, sc_sql = None, None
         else:
-            raise Exception("Incorrect 'engine' parameter value ({}). It can be only 'spark' or 'pandas'.".format(job.jargs.engine))
+            sc, sc_sql = None, None
+
         if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:

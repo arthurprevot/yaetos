@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![CI](https://github.com/arthurprevot/yaetos/workflows/yaetos%20CI/badge.svg)](https://github.com/arthurprevot/yaetos/actions)
+![Continuous Integration](https://github.com/arthurprevot/yaetos/actions/workflows/pythonapp.yml/badge.svg)
 [![Users Documentation](https://img.shields.io/badge/-Users_Docs-blue?style=plastic&logo=readthedocs)](https://yaetos.readthedocs.io/en/latest/)
 [![Medium](https://img.shields.io/badge/_-Medium-orange?style=plastic&logo=medium)](https://medium.com/@arthurprevot/yaetos-data-framework-description-ddc71caf6ce)
 
