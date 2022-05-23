@@ -12,6 +12,10 @@ Welcome to Yaetos' documentation!
     :alt: Logo
     :align: center
 
+.. image:: https://github.com/arthurprevot/yaetos/actions/workflows/pythonapp.yml/badge.svg
+    :target: https://github.com/arthurprevot/yaetos/
+    :alt: Continuous Integration
+
 
 **Yaetos** is a data framework to simplify the creation
 of data pipelines in python or SQL, the execution and scheduling in the AWS cloud.
