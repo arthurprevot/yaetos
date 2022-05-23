@@ -132,8 +132,8 @@ jobs:
     description: "job loading and processing data with pandas. No spark involved."
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'df_type':'pandas'}
-      other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':'{}'}
-    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/output.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':"{'sep':'|'}"}
+      other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/output.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     spark_boot: False
     # dependencies: [examples/ex7_extraction_small_job.py] # Need to set engine=spark to enable spark job dependencies.
 
