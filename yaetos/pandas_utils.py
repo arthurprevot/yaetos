@@ -7,7 +7,7 @@ import glob
 import os
 from pathlib import Path
 from yaetos.logger import setup_logging
-logger = setup_logging('pandas')
+logger = setup_logging('Pandas')
 
 # --- loading files ----
 

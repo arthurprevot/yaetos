@@ -4,8 +4,8 @@ Helper functions for spark ops.
 from pyspark.sql.window import Window
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType
-# from yaetos.logger import setup_logging
-# logger = setup_logging('pandas')
+from yaetos.logger import setup_logging
+logger = setup_logging('Spark')
 
 
 def identify_non_unique_pks(df, pks):
