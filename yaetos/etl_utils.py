@@ -27,15 +27,12 @@ import gc
 from pprint import pformat
 import smtplib, ssl
 from dateutil.relativedelta import relativedelta
-# from pyspark.sql.window import Window
-# from pyspark.sql import functions as F
-# from pyspark.sql.types import StructType
-import yaetos.spark_utils as su # import identify_non_unique_pks, add_created_at, create_empty_sdf
+import yaetos.spark_utils as su
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.env_dispatchers import FS_Ops_Dispatcher, Cred_Ops_Dispatcher
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
-# imports should not include any spark direct imports, to work in pandas only mode.
+# imports should not include any native spark libs, to enable pandas only mode (running outside docker).
 
 
 # User settable params below can be changed from command line or yml or job inputs.
@@ -105,7 +102,6 @@ class ETL_Base(object):
 
                 if len(periods) == 0:
                     logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(last_run_period, Period_Builder.get_last_day()))
-                    # output = sc_sql.createDataFrame([], StructType([]))
                     output = su.create_empty_sdf(sc_sql)
                     self.final_inc = True  # remove "self." when sandbox job doesn't depend on it.
                 else:
@@ -200,7 +196,6 @@ class ETL_Base(object):
         output = self.transform(**loaded_datasets)
         if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark':
             if self.jargs.add_created_at=='true':
-                # output = output.withColumn('_created_at', F.lit(self.start_dt))
                 output = su.add_created_at(output, self.start_dt)
             output.cache()
             schemas = Schema_Builder()
@@ -643,11 +638,6 @@ class ETL_Base(object):
             return True
 
     def identify_non_unique_pks(self, df, pks):
-        # windowSpec  = Window.partitionBy([F.col(item) for item in pks])
-        # df = df.withColumn('_count_pk', F.count('*').over(windowSpec)) \
-        #     .where(F.col('_count_pk') >= 2)
-        # # Debug: df.repartition(1).write.mode('overwrite').option("header", "true").csv('data/sandbox/non_unique_test/')
-        # return df
         return su.identify_non_unique_pks(df, pks)
 
 class Period_Builder():
