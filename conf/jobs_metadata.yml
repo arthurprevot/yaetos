@@ -131,9 +131,14 @@ jobs:
   examples/ex7_pandas_job.py:
     description: "job loading and processing data with pandas. No spark involved."
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/output.csv', 'type':'csv'}
+      # some_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas', 'read_kwargs':{}}
+      # other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas', 'read_kwargs':{}}
+      some_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas'}
+      other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas'}
+      # some_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas', 'read_kwargs':{}}
+      # other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'engine':'pandas', 'read_kwargs':{}}
+    # output: {'path':'{base_path}/wiki_example/output_ex7_pandas/output.csv', 'type':'csv', 'engine':'pandas', 'save_kwargs':{'sep'='|'}}
+    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/output.csv', 'type':'csv', 'engine':'pandas'}
     engine: pandas
 
   examples/ex7_hybrid_pandas_spark_job.py:
@@ -209,7 +214,7 @@ common_params:
       save_schemas: False
       manage_git_info: True
     dev_EMR:
-      base_path: s3://dev-spark  # don't add '/' at the end
+      base_path: s3://dev-spark2/yaetos  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
