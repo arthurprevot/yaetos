@@ -1,11 +1,16 @@
 """
 Helper functions for spark ops.
 """
-from pyspark.sql.window import Window
-from pyspark.sql import functions as F
-from pyspark.sql.types import StructType
 from yaetos.logger import setup_logging
-logger = setup_logging('Spark')
+logger = setup_logging('Job')
+try:
+    from pyspark.sql.window import Window
+    from pyspark.sql import functions as F
+    from pyspark.sql.types import StructType
+    SPARK_SETUP = True
+except ModuleNotFoundError or ImportError:
+    logger.warning('Yaetos will work in pandas mode only or to push jobs to AWS, since pyspark is not found.')
+    SPARK_SETUP = False
 
 
 def identify_non_unique_pks(df, pks):

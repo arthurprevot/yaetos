@@ -7,7 +7,6 @@ Helper functions. Setup to run locally and on cluster.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line.
-# - remove dep on spark when loading imports.
 
 
 import sys
@@ -994,7 +993,7 @@ class Commandliner():
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
     def create_contexts(self, app_name, jargs):
-        # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
+        # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws or running pandas job only.
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
         from pyspark import SparkConf

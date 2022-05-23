@@ -160,6 +160,7 @@ setup(
         'pyyaml',
         'awscli',
         'boto3',
+        'cloudpathlib',
         'networkx'],  # Optional
 
     # List additional groups of dependencies here (e.g. development

@@ -6,7 +6,6 @@ import os
 from io import StringIO
 #from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
 from configparser import ConfigParser
-from cloudpathlib import CloudPath
 from yaetos.pandas_utils import load_df, save_pandas_local
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
@@ -141,6 +140,9 @@ class FS_Ops_Dispatcher():
         return load_df(fname, file_type, read_func, read_kwargs)
 
     def load_pandas_cluster(self, fname, file_type, read_func, read_kwargs):
+        # import put here below to avoid loading it when working in local only.
+        from cloudpathlib import CloudPath
+
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
         local_path = 'tmp/s3_copy_'+fname_parts[-1]
         cp = CloudPath(fname)  # TODO: add way to load it with specific profile_name or client, as in "s3c = boto3.Session(profile_name='default').client('s3')"
