@@ -155,7 +155,7 @@ class ETL_Base(object):
                 pass
             count = output.count()
             logger.info('Output count: {}'.format(count))
-            if self.jargs.engine=='spark':
+            if self.jargs.output.get('engine', 'spark')=='spark':
                 logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
             self.output_empty = count == 0
 
@@ -174,7 +174,7 @@ class ETL_Base(object):
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
-        if self.jargs.engine=='spark':
+        if self.jargs.output.get('engine', 'spark')=='spark':
             output.unpersist()
         end_time = time()
         elapsed = end_time - start_time
@@ -195,7 +195,7 @@ class ETL_Base(object):
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
-        if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark':
+        if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('engine', 'spark')=='spark':
             if self.jargs.add_created_at=='true':
                 output = su.add_created_at(output, self.start_dt)
             output.cache()
@@ -276,7 +276,7 @@ class ETL_Base(object):
         # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('engine', 'spark')=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if input_is_tabular and inc:
                 max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
@@ -285,7 +285,7 @@ class ETL_Base(object):
 
         # Filter
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('engine', 'spark')=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
@@ -305,7 +305,7 @@ class ETL_Base(object):
         """Filter based on period defined in. Simple but can be a pb if late arriving data or dependencies not run.
         Inputs filtered inside source database will be filtered again."""
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.engine=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('engine', 'spark')=='spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
