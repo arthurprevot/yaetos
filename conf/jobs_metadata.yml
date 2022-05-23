@@ -125,7 +125,7 @@ jobs:
   examples/ex7_extraction_small_job.py:  # shows frameworked pyspark ops, same as ex1_full_sql_job but gives access to spark ops to expand on sql.
     inputs:
       events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/input_small_parquet/{now}/', 'type':'parquet'}
+    output: {'path':'{base_path}/wiki_example/input_small/{now}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
 
   examples/ex7_pandas_job.py:
@@ -135,7 +135,7 @@ jobs:
       other_events: {'path':"{base_path}/wiki_example/input_small/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
     output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/output.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     spark_boot: False
-    # dependencies: [examples/ex7_extraction_small_job.py] # Need to set engine=spark to enable spark job dependencies.
+    # dependencies: [examples/ex7_extraction_small_job.py] # Need to set boot_spark: True to enable spark job dependencies.
 
   examples/ex7_hybrid_pandas_spark_job.py:
     description: "Job processing in pandas, loading and dropping done with spark."

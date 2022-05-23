@@ -7,8 +7,7 @@ from io import StringIO
 #from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
 from configparser import ConfigParser
 from cloudpathlib import CloudPath
-from yaetos.pandas_utils import load_csvs, save_pandas_csv_local, \
-    load_multiple_files, load_df, save_pandas_local
+from yaetos.pandas_utils import load_df, save_pandas_local
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
 
@@ -134,13 +133,11 @@ class FS_Ops_Dispatcher():
 
 
     # --- load_pandas set of functions ----
-    # TODO: deal with read_kwargs properly
     def load_pandas(self, fname, storage, file_type, read_func, read_kwargs):
         return self.load_pandas_cluster(fname, file_type, read_func, read_kwargs) if self.is_s3_path(fname) else self.load_pandas_local(fname, file_type, read_func, read_kwargs)
 
     @staticmethod
     def load_pandas_local(fname, file_type, read_func, read_kwargs):
-        # return load_csvs(fname, read_kwargs={})
         return load_df(fname, file_type, read_func, read_kwargs)
 
     def load_pandas_cluster(self, fname, file_type, read_func, read_kwargs):
@@ -151,7 +148,6 @@ class FS_Ops_Dispatcher():
         local_pathlib = cp.download_to(local_path)
         local_path = local_path + '/' if local_pathlib.is_dir() else local_path
         logger.info("File copy finished")
-        # df = load_csvs(local_path, read_kwargs={})
         df = load_df(local_path, file_type, read_func, read_kwargs)
         return df
 
@@ -162,15 +158,12 @@ class FS_Ops_Dispatcher():
 
     @staticmethod
     def save_pandas_local(df, fname, save_method, save_kwargs):
-        # return save_pandas_csv_local(df, fname)
         return save_pandas_local(df, fname, save_method, save_kwargs)
 
     def save_pandas_cluster(self, df, fname, save_method, save_kwargs):
-        # code below can be simplified using "df.to_csv(fname, **read_kwargs)", relying on s3fs library, but implies lots of dependencies, that break in cloud run.
+        # code below can be simplified using "df.to_csv(fname, **save_kwargs)", relying on s3fs library, but implies lots of dependencies, that break in cloud run.
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
-        read_kwargs={}  # TODO: integrate later.
         with StringIO() as file_buffer:
-            # df.to_csv(csv_buffer, index=False)
             save_pandas_local(df, file_buffer, save_method, save_kwargs)
             s3c = boto3.Session(profile_name='default').client('s3')
             response = s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=file_buffer.getvalue())
