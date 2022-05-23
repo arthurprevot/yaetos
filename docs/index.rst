@@ -15,7 +15,7 @@ Welcome to Yaetos' documentation!
     :target: https://pypi.python.org/pypi/yaetos
     :alt: Logo
 
-.. image:: https://img.shields.io/badge/_-Medium-orange?style=plastic&logo=medium
+.. image:: https://img.shields.io/badge/_-Medium-orange?style=flat&logo=medium
     :target: https://medium.com/@arthurprevot/yaetos-data-framework-description-ddc71caf6ce
     :alt: Medium
 
