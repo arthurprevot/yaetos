@@ -20,8 +20,8 @@ sudo pip-3.6 install cloudpathlib==0.7.0
 # DB and API libs
 sudo pip-3.6 install soql==1.0.2  # Necessary for simple-salesforce
 # sudo pip-3.6 install setuptools-rust==0.11.6  # Necessary for simple-salesforce
-sudo pip-3.6 install cryptography==3.3.1  # Necessary for simple-salesforce, to avoid simple-salesforce loading 3.4.4 causing pbs.
-sudo pip-3.6 install simple-salesforce==1.10.1
+# sudo pip-3.6 install cryptography==3.3.1  # Necessary for simple-salesforce, to avoid simple-salesforce loading 3.4.4 causing pbs. 3.3.1 now associated to security issues.
+# sudo pip-3.6 install simple-salesforce==1.10.1
 sudo pip-3.6 install pymysql==0.9.3
 sudo pip-3.6 install psycopg2-binary==2.8.5  # necesary for sqlalchemy-redshift, psycopg2==2.8.5 fails installing.
 sudo pip-3.6 install sqlalchemy-redshift==0.7.7
