@@ -2,14 +2,17 @@
 Set of operations that require dispatching between local and cloud environment.
 """
 import boto3
+import os
+from io import StringIO
+#from sklearn.externals import joblib  # TODO: re-enable later after fixing lib versions.
+from configparser import ConfigParser
 from cloudpathlib import CloudPath
-import io
 from yaetos.pandas_utils import load_csvs, save_pandas_csv_local
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
 
 
-class FS_Ops_Dispatcher_v2():
+class FS_Ops_Dispatcher():
     # TODO: remove 'storage' var not used anymore accross all functions below, since now infered from path
 
     @staticmethod
@@ -23,6 +26,110 @@ class FS_Ops_Dispatcher_v2():
         bucket_fname = '/'.join(fname_parts[1:])
         fname_parts = [item for item in fname_parts if item != '']
         return (bucket_name, bucket_fname, fname_parts)
+
+
+    # --- save_metadata set of functions ----
+    def save_metadata(self, fname, content, storage):
+        self.save_metadata_cluster(fname, content) if self.is_s3_path(fname) else self.save_metadata_local(fname, content)
+
+    @staticmethod
+    def save_metadata_local(fname, content):
+        fh = open(fname, 'w')
+        fh.write(content)
+        fh.close()
+        logger.info("Created file locally: {}".format(fname))
+
+    @staticmethod
+    def save_metadata_cluster(fname, content):
+        fname_parts = fname.split('s3://')[1].split('/')
+        bucket_name = fname_parts[0]
+        bucket_fname = '/'.join(fname_parts[1:])
+        fake_handle = StringIO(content)
+        s3c = boto3.Session(profile_name='default').client('s3')
+        s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
+        logger.info("Created file S3: {}".format(fname))
+
+    # --- save_file set of functions ----
+    def save_file(self, fname, content, storage):
+        self.save_file_cluster(fname, content) if self.is_s3_path(fname) else self.save_file_local(fname, content)
+
+    @staticmethod
+    def save_file_local(fname, content):
+        folder = os.path.dirname(fname)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        joblib.dump(content, fname)
+        logger.info("Saved content to new file locally: {}".format(fname))
+
+    def save_file_cluster(self, fname, content):
+        fname_parts = fname.split('s3://')[1].split('/')
+        bucket_name = fname_parts[0]
+        bucket_fname = '/'.join(fname_parts[1:])
+        s3c = boto3.Session(profile_name='default').client('s3')
+
+        local_path = CLUSTER_APP_FOLDER+'tmp/local_'+fname_parts[-1]
+        self.save_file_local(local_path, content)
+        fh = open(local_path, 'rb')
+        s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fh)
+        logger.info("Pushed local file to S3, from '{}' to '{}' ".format(local_path, fname))
+
+    # --- load_file set of functions ----
+    def load_file(self, fname, storage):
+        return self.load_file_cluster(fname) if self.is_s3_path(fname) else self.load_file_local(fname)
+
+    @staticmethod
+    def load_file_local(fname):
+        return joblib.load(fname)
+
+    @staticmethod
+    def load_file_cluster(fname):
+        fname_parts = fname.split('s3://')[1].split('/')
+        bucket_name = fname_parts[0]
+        bucket_fname = '/'.join(fname_parts[1:])
+        local_path = CLUSTER_APP_FOLDER+'tmp/s3_'+fname_parts[-1]
+        s3c = boto3.Session(profile_name='default').client('s3')
+        s3c.download_file(bucket_name, bucket_fname, local_path)
+        logger.info("Copied file from S3 '{}' to local '{}'".format(fname, local_path))
+        model = joblib.load(local_path)
+        return model
+
+    # --- listdir set of functions ----
+    def listdir(self, path, storage):
+        return self.listdir_cluster(path) if self.is_s3_path(path) else self.listdir_local(path)
+
+    @staticmethod
+    def listdir_local(path):
+        return os.listdir(path)
+
+    @staticmethod
+    def listdir_cluster(path):  # TODO: rename to listdir_s3, same for similar functions from FS_Ops_Dispatcher
+        # TODO: better handle invalid path. Crashes with "TypeError: 'NoneType' object is not iterable" at last line.
+        if path.startswith('s3://'):
+            s3_root = 's3://'
+        elif path.startswith('s3a://'):
+            s3_root = 's3a://'  # necessary when pulling S3 to local automatically from spark.
+        else:
+            raise ValueError('Problem with path. Pulling from s3, it should start with "s3://" or "s3a://". Path is: {}'.format(path))
+        fname_parts = path.split(s3_root)[1].split('/')
+        bucket_name = fname_parts[0]
+        prefix = '/'.join(fname_parts[1:])
+        client = boto3.Session(profile_name='default').client('s3')
+        paginator = client.get_paginator('list_objects')
+        objects = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
+        paths = [item['Prefix'].split('/')[-2] for item in objects.search('CommonPrefixes')]
+        return paths
+
+    # --- dir_exist set of functions ----
+    def dir_exist(self, path, storage):
+        return self.dir_exist_cluster(path) if self.is_s3_path(path) else self.dir_exist_local(path)
+
+    @staticmethod
+    def dir_exist_local(path):
+        return os.path.isdir(path)
+
+    @staticmethod
+    def dir_exist_cluster(path):
+        raise NotImplementedError
 
 
     # --- load_pandas set of functions ----
@@ -58,10 +165,37 @@ class FS_Ops_Dispatcher_v2():
         # code below can be simplified using "df.to_csv(fname, **read_kwargs)", relying on s3fs library, but implies lots of dependencies, that break in cloud run.
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
         read_kwargs={}  # TODO: integrate later.
-        with io.StringIO() as csv_buffer:
+        with StringIO() as csv_buffer:
             df.to_csv(csv_buffer, index=False)
             s3c = boto3.Session(profile_name='default').client('s3')
             response = s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=csv_buffer.getvalue())
 
         logger.info("Created file in S3: {}".format(fname))
         return df
+
+
+class Cred_Ops_Dispatcher():
+    def retrieve_secrets(self, storage, creds='conf/connections.cfg'):
+        creds = self.retrieve_secrets_cluster() if storage=='s3' else self.retrieve_secrets_local(creds)
+        return creds
+
+    @staticmethod
+    def retrieve_secrets_cluster():
+        client = boto3.Session(profile_name='default').client('secretsmanager')
+
+        response = client.get_secret_value(SecretId=AWS_SECRET_ID)
+        logger.info('Read aws secret, secret_id:'+AWS_SECRET_ID)
+        logger.debug('get_secret_value response: '+str(response))
+        content = response['SecretString']
+
+        fake_handle = StringIO(content)
+        config = ConfigParser()
+        config.readfp(fake_handle)
+        return config
+
+    @staticmethod
+    def retrieve_secrets_local(creds):
+        config = ConfigParser()
+        assert os.path.isfile(creds)
+        config.read(creds)
+        return config
