@@ -12,7 +12,7 @@ s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
 #RUN apt-get update && apt-get install -y git
 #sudo pip3 install --upgrade pip
 sudo pip3 install awscli==1.20.41 # depends on botocore from 1.12.57
-sudo pip3 install scikit-learn==0.20.0  # TODO: remove when using req file
+# sudo pip3 install scikit-learn==0.20.0  # TODO: remove when using req file, TODO: fix dep and re-enable since needed for joblib
 sudo pip3 install statsmodels==0.9.0  # TODO: remove when using req file
 sudo pip3 install kafka-python==1.4.7
 sudo pip3 install jsonschema==3.0.2
