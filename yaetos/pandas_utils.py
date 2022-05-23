@@ -24,7 +24,7 @@ def load_multiple_files(path, file_type='csv', read_func='read_csv', read_kwargs
     return df.reset_index(drop=True)
 
 def load_csvs(path, read_kwargs):
-    """Loading 1 file or multiple depending on path"""
+    """Loading 1 csv or multiple depending on path"""
     # TODO: to be made obsolete once load_df works
     if path.endswith('.csv'):
         return pd.read_csv(path, **read_kwargs)
@@ -34,7 +34,7 @@ def load_csvs(path, read_kwargs):
         raise Exception("Path should end with '.csv' or '/'.".format())
 
 def load_df(path, file_type='csv', read_func='read_csv', read_kwargs={}):
-    """Loading 1 csv or multiple depending on path"""
+    """Loading 1 file or multiple depending on path"""
     if path.endswith(".{}".format(file_type)):
         func = getattr(pd, read_func)
         return func(path, **read_kwargs)
@@ -57,7 +57,7 @@ def save_pandas_csv_local(df, path):
     df.to_csv(path)
 
 def save_pandas_local(df, path, save_method='to_csv', save_kwargs={}):
-    if isinstance(path, str):
+    if isinstance(path, str):  # to deal with case when path is StringIO
         create_subfolders(path)
     func = getattr(df, save_method)
     func(path, **save_kwargs)
