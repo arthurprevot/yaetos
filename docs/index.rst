@@ -10,7 +10,6 @@ Welcome to Yaetos' documentation!
 .. image:: https://img.shields.io/pypi/v/yaetos.svg
     :target: https://pypi.python.org/pypi/yaetos
     :alt: Logo
-    :align: center
 
 .. image:: https://github.com/arthurprevot/yaetos/actions/workflows/pythonapp.yml/badge.svg
     :target: https://github.com/arthurprevot/yaetos/
