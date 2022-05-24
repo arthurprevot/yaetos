@@ -191,6 +191,7 @@ jobs:
 
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
+# ----- Params -------
 common_params:
   all_mode_params:
     connection_file:  conf/connections.cfg

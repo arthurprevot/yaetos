@@ -7,7 +7,6 @@ Helper functions. Setup to run locally and on cluster.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line.
-# - remove dep on spark when loading imports.
 
 
 import sys
@@ -341,9 +340,9 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.inputs[input_name].get('df_type') == 'pandas':
             if input_type == 'csv':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, self.jargs.storage, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
             elif input_type == 'parquet':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, self.jargs.storage, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
@@ -529,9 +528,9 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.output.get('df_type') == 'pandas':
             if type == 'csv':
-                FS_Ops_Dispatcher().save_pandas(output, path, self.jargs.storage, save_method='to_csv', save_kwargs=self.jargs.output.get('save_kwargs',{}))
+                FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_csv', save_kwargs=self.jargs.output.get('save_kwargs',{}))
             elif type == 'parquet':
-                FS_Ops_Dispatcher().save_pandas(output, path, self.jargs.storage, save_method='to_parquet', save_kwargs=self.jargs.output.get('save_kwargs',{}))
+                FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_parquet', save_kwargs=self.jargs.output.get('save_kwargs',{}))
             else:
                 raise Exception("Need to specify supported output type for pandas, csv only for now.")
             logger.info('Wrote output to ' + path)
@@ -562,7 +561,7 @@ class ETL_Base(object):
             -- github hash: TBD
             -- code: TBD
             """%(self.app_name, self.jargs.job_name, elapsed)
-        FS_Ops_Dispatcher().save_metadata(fname, content, self.jargs.storage)
+        FS_Ops_Dispatcher().save_metadata(fname, content)
 
     def query(self, query_str):
         logger.info('Query string:\n' + query_str)
@@ -873,7 +872,7 @@ class Path_Handler():
         path = self.path
         if '{latest}' in path:
             upstream_path = path.split('{latest}')[0]
-            paths = FS_Ops_Dispatcher().listdir(upstream_path, storage)
+            paths = FS_Ops_Dispatcher().listdir(upstream_path)
             latest_date = max(paths)
             path = path.format(latest=latest_date)
         return path
@@ -994,7 +993,7 @@ class Commandliner():
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
     def create_contexts(self, app_name, jargs):
-        # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws.
+        # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws or running pandas job only.
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
         from pyspark import SparkConf

@@ -6,14 +6,13 @@ import os
 from io import StringIO
 #from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
 from configparser import ConfigParser
-from cloudpathlib import CloudPath
 from yaetos.pandas_utils import load_df, save_pandas_local
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
 
 
 class FS_Ops_Dispatcher():
-    # TODO: remove 'storage' var not used anymore accross all functions below, since now infered from path
+    """Set of functions to dispatch mostly IO methods to local or cloud depending on the path being local or cloud (s3://*)."""
 
     @staticmethod
     def is_s3_path(path):
@@ -29,7 +28,7 @@ class FS_Ops_Dispatcher():
 
 
     # --- save_metadata set of functions ----
-    def save_metadata(self, fname, content, storage):
+    def save_metadata(self, fname, content):
         self.save_metadata_cluster(fname, content) if self.is_s3_path(fname) else self.save_metadata_local(fname, content)
 
     @staticmethod
@@ -50,7 +49,7 @@ class FS_Ops_Dispatcher():
         logger.info("Created file S3: {}".format(fname))
 
     # --- save_file set of functions ----
-    def save_file(self, fname, content, storage):
+    def save_file(self, fname, content):
         self.save_file_cluster(fname, content) if self.is_s3_path(fname) else self.save_file_local(fname, content)
 
     @staticmethod
@@ -74,7 +73,7 @@ class FS_Ops_Dispatcher():
         logger.info("Pushed local file to S3, from '{}' to '{}' ".format(local_path, fname))
 
     # --- load_file set of functions ----
-    def load_file(self, fname, storage):
+    def load_file(self, fname):
         return self.load_file_cluster(fname) if self.is_s3_path(fname) else self.load_file_local(fname)
 
     @staticmethod
@@ -94,7 +93,7 @@ class FS_Ops_Dispatcher():
         return model
 
     # --- listdir set of functions ----
-    def listdir(self, path, storage):
+    def listdir(self, path):
         return self.listdir_cluster(path) if self.is_s3_path(path) else self.listdir_local(path)
 
     @staticmethod
@@ -120,7 +119,7 @@ class FS_Ops_Dispatcher():
         return paths
 
     # --- dir_exist set of functions ----
-    def dir_exist(self, path, storage):
+    def dir_exist(self, path):
         return self.dir_exist_cluster(path) if self.is_s3_path(path) else self.dir_exist_local(path)
 
     @staticmethod
@@ -133,7 +132,7 @@ class FS_Ops_Dispatcher():
 
 
     # --- load_pandas set of functions ----
-    def load_pandas(self, fname, storage, file_type, read_func, read_kwargs):
+    def load_pandas(self, fname, file_type, read_func, read_kwargs):
         return self.load_pandas_cluster(fname, file_type, read_func, read_kwargs) if self.is_s3_path(fname) else self.load_pandas_local(fname, file_type, read_func, read_kwargs)
 
     @staticmethod
@@ -141,6 +140,9 @@ class FS_Ops_Dispatcher():
         return load_df(fname, file_type, read_func, read_kwargs)
 
     def load_pandas_cluster(self, fname, file_type, read_func, read_kwargs):
+        # import put here below to avoid loading it when working in local only.
+        from cloudpathlib import CloudPath
+
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
         local_path = 'tmp/s3_copy_'+fname_parts[-1]
         cp = CloudPath(fname)  # TODO: add way to load it with specific profile_name or client, as in "s3c = boto3.Session(profile_name='default').client('s3')"
@@ -153,7 +155,7 @@ class FS_Ops_Dispatcher():
 
 
     # --- save_pandas set of functions ----
-    def save_pandas(self, df, fname, storage, save_method, save_kwargs):
+    def save_pandas(self, df, fname, save_method, save_kwargs):
         return self.save_pandas_cluster(df, fname, save_method, save_kwargs) if self.is_s3_path(fname) else self.save_pandas_local(df, fname, save_method, save_kwargs)
 
     @staticmethod
