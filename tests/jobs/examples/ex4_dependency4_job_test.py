@@ -24,7 +24,7 @@ def test_job(sc, sc_sql, ss, get_pre_jargs):
         'skip_cmdline': True}
     Commandliner(Job, **args)  # -> drops files to path below
     path = args['base_path'] + 'wiki_example/output_ex4_dep4/{latest}/'
-    path = Path_Handler(path, args['base_path']).expand_later(storage='n/a')
+    path = Path_Handler(path, args['base_path']).expand_later()
     actual = load_csvs(path, read_kwargs={}).to_dict(orient='records')
 
     # Comparing
