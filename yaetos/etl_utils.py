@@ -1058,7 +1058,7 @@ class Flow():
             yml_args = Job_Yml_Parser(job_name, self.launch_jargs.job_param_file, self.launch_jargs.mode).yml_args
             # Get loaded_inputs
             loaded_inputs = {}
-            if self.launch_jargs.chain_dependencies:
+            if self.launch_jargs.merged_args.get('chain_dependencies'):
                 if yml_args.get('inputs', 'no input') == 'no input':
                     raise Exception("Pb with loading job_yml or finding 'inputs' parameter in it, so 'chain_dependencies' argument not useable in this case.")
                 for in_name, in_properties in yml_args['inputs'].items():
@@ -1072,7 +1072,7 @@ class Flow():
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
             df[job_name] = job.etl(sc, sc_sql) # at this point df[job_name] is unpersisted. TODO: keep it persisted.
 
-            if not self.launch_jargs.chain_dependencies:
+            if not self.launch_jargs.merged_args.get('chain_dependencies'):
                 df[job_name].unpersist()
                 del df[job_name]
                 gc.collect()
