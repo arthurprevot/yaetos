@@ -975,17 +975,17 @@ class Runner():
                     'connection_file': CONNECTION_FILE,
                     'jobs_folder': JOB_FOLDER,
                     'storage': 'local',
-                    # 'dependencies': False, # only set from commandline
+                    'dependencies': False, # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
                     'rerun_criteria': 'last_date',
-                    # 'chain_dependencies': False,  # only set from commandline
+                    'chain_dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
                     'load_connectors': 'all',
                     # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
                     #-- Deploy specific below --
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
                     'code_source': 'lib', # Other options: 'repo' TODO: make it automatic so parameter not needed.
-                    # 'leave_on': False, # only set from commandline
-                    # 'push_secrets': False, # only set from commandline
+                    'leave_on': False, # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+                    'push_secrets': False, # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
                     #-- Not added in command line args:
                     'enable_redshift_push': True,
                     'base_path': '',
