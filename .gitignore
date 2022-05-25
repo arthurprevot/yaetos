@@ -14,3 +14,4 @@ conf/connections.cfg
 conf/git_config.yml
 libs/python_db_connectors/credentials.cfg
 launch_env.sh
+.ipynb_checkpoints/

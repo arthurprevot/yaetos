@@ -17,4 +17,6 @@ if [ $run_docker = 1 ]; then
 else
   export PYSPARK_AWS_ETL_HOME=$PWD'/'
   export PYTHONPATH=$PYSPARK_AWS_ETL_HOME:$PYTHONPATH
+  echo 'Yaetos setup to work from OS repo (not in docker), if sent as "source launch_env.sh"'
+  # Export above implies using source launch_env.sh or export won't overwrite previous value.
 fi
