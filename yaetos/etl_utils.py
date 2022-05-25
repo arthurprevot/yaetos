@@ -896,10 +896,23 @@ class Path_Handler():
             return self.path
 
 
-class Commandliner():
+def Commandliner(Job, **job_args):
+    Runner(Job, **job_args).parse_cmdline_and_run()
+
+class Runner():
     def __init__(self, Job, **job_args):
+        self.Job = Job
+        self.job_args = job_args
+
+    def parse_cmdline_and_run(self):
+        self.job_args['parse_cmdline'] = True
+        return self.run()
+
+    def run(self):
+        Job = self.Job
+        job_args = self.job_args
         parser, defaults_args = self.define_commandline_args()
-        cmd_args = self.set_commandline_args(parser) if not job_args.get('skip_cmdline') else {}
+        cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
         # Building "job", which will include all job args.
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
@@ -927,7 +940,8 @@ class Commandliner():
 
     @staticmethod
     def define_commandline_args():
-        # Defined here separatly for overridability.
+        # Defined here separatly from parsing for overridability.
+        # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
