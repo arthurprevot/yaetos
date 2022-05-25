@@ -10,7 +10,7 @@ def load_excel(jargs, input_name, output_types, sc, sc_sql, **xls_args):
     path = jargs.inputs[input_name]['path']
     path = path.replace('s3://', 's3a://') if jargs.mode == 'dev_local' else path
     logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-    path = Path_Handler(path, jargs.base_path).expand_later(jargs.storage)
+    path = Path_Handler(path, jargs.base_path).expand_later()
     logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
 
     pdf = pd.read_excel(io=path, engine='openpyxl', **xls_args)
