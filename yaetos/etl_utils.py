@@ -896,7 +896,7 @@ class Path_Handler():
 class Commandliner():
     def __init__(self, Job, **job_args):
         parser, defaults_args = self.define_commandline_args()
-        cmd_args = self.set_commandline_args(parser)
+        cmd_args = self.set_commandline_args(parser) if not job_args.get('skip_cmdline') else {}
 
         # Building "job", which will include all job args.
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
@@ -911,6 +911,7 @@ class Commandliner():
             self.launch_run_mode(job)
         elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
+        # TODO: check to return output path or df.
 
     @staticmethod
     def set_commandline_args(parser):
