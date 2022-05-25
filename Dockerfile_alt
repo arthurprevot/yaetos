@@ -32,9 +32,10 @@ ENV PYTHONPATH $PYSPARK_AWS_ETL_JOBS_HOME:$PYTHONPATH
 # SparkContext web UI on 4040 -- only available for the duration of the application.
 # Spark master’s web UI on 8080.
 # Spark worker web UI on 8081.
-EXPOSE 4040 8080 8081
+# Jupyter web UI on 8888.
+EXPOSE 4040 8080 8081 8888
 
-CMD ["/bin/bash"]
+# CMD ["/bin/bash"] # commented so the command can be sent by docker run
 
 # Usage: docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -v ~/code/yaetos:/mnt/yaetos -v ~/.aws:/root/.aws -h spark <image_id>
 # or update launch_env.sh and execute it.

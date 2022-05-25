@@ -15,7 +15,8 @@ if [ $run_docker = 1 ]; then
       -v $HOME/.aws:/.aws \
       -h spark \
       -w /mnt/yaetos_jobs/ \
-      pyspark_container
+      pyspark_container \
+      bash
 else
   # Set variables to run outside of docker. Main use case: running pandas jobs.
   export PYSPARK_AWS_ETL_HOME=$PWD'/'

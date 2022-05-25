@@ -13,7 +13,8 @@ if [ $run_docker = 1 ]; then
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 \
       -v ~/code/yaetos:/mnt/yaetos \
       -h spark \
-      pyspark_container
+      pyspark_container \
+      bash
 else
   export PYSPARK_AWS_ETL_HOME=$PWD'/'
   export PYTHONPATH=$PYSPARK_AWS_ETL_HOME:$PYTHONPATH
