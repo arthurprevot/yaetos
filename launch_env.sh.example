@@ -1,23 +1,44 @@
-# Copy this file, remove ".example", and make changes like:
-# replace ~/code/yaetos below by location of your yaetos repo.
-# add : "-v ~/path/to/your/repo/pipelines:/mnt/yaetos_jobs \" if putting the pipelines in an external repo.
-# add : "-v ~/.aws:/.aws \" to use the tool to run jobs in AWS (ad-hoc or scheduled). Requires awcli setup on host (with ~/.aws setup with profile "default").
-# other options to be added if necessary:
-# --cpu-shares \
-# --cpus 6 \
-# --memory 6g \
+# Script to setup the environment for yaetos. It needs to be executed from the repo root folder.
+#
+# Copy this file, remove ".example", and make the following changes:
+#  - set yaetos_home to the location of your yaetos repo.
+#  - add : "-v ~/path/to/your/repo/pipelines:/mnt/external_pipelines \" if putting the pipelines in an external repo, while using the yaetos repo as the framework.
+#  - add : "-v ~/.aws:/.aws \" to use the tool to run jobs in AWS (ad-hoc or scheduled). Requires awcli setup on host (with ~/.aws setup with profile "default").
+# Usage once above done:
+# - "./launch_env.sh" -> no docker container, can be used to run pandas jobs or to run jobs on AWS.
+# - "./launch_env.sh 1" -> goes in docker bash, can be used to run all jobs in command line (incl. spark jobs)
+# - "./launch_env.sh 2" -> sets up jupyter in docker, can be used to run all jobs in jupyter. Open UI in host OS at http://localhost:8888/
 
-run_docker=0  # values: 0 or 1
+
+yaetos_home=/Users/aprevot/code/code_perso/yaetos
+
+run_docker=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
 if [ $run_docker = 1 ]; then
+  echo 'About to run docker with bash'
+  cd $yaetos_home
   docker build -t pyspark_container -f Dockerfile_alt .
-  docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 \
-      -v ~/code/yaetos:/mnt/yaetos \
+  docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
+      -v $yaetos_home:/mnt/yaetos \
+      -v $HOME/.aws:/.aws \
       -h spark \
+      -w /mnt/yaetos/ \
       pyspark_container \
       bash
+elif [ $run_docker = 2 ]; then
+  echo 'About to run docker with jupyter notebooks'
+  cd $yaetos_home
+  docker build -t pyspark_container -f Dockerfile_alt .
+  docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
+      -v $yaetos_home:/mnt/yaetos \
+      -v $HOME/.aws:/.aws \
+      -h spark \
+      -w /mnt/yaetos/ \
+      pyspark_container \
+      jupyter notebook --ip 0.0.0.0 --port 8888 --no-browser --allow-root
 else
+  # Set variables to run outside of docker. Main use case: running pandas jobs.
   export PYSPARK_AWS_ETL_HOME=$PWD'/'
   export PYTHONPATH=$PYSPARK_AWS_ETL_HOME:$PYTHONPATH
-  echo 'Yaetos setup to work from OS repo (not in docker), if sent as "source launch_env.sh"'
-  # Export above implies using source launch_env.sh or export won't overwrite previous value.
+  echo 'Yaetos setup to work from OS repo (not in docker), if sent as "source launch_env.sh"' # export won't work if run as ./launch_env.sh (due to subshell).
+  # Spark jobs can also be run outside of docker but it will require setting more variables.
 fi
