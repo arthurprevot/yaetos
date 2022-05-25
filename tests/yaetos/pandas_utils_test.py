@@ -8,7 +8,7 @@ from yaetos.pandas_utils import load_multiple_csvs, load_csvs, \
 
 def test_load_csvs():
     # Test multiple file option
-    path = 'tests/fixtures/csvs/'
+    path = 'tests/fixtures/data_sample/wiki_example/input/'
     actual = load_csvs(path, read_kwargs={})
     expected = pd.DataFrame([
         {'uuid':'u1','timestamp':2.0,'session_id':'s1','group': 'g1','action':'searchResultPage','checkin':np.nan,'page_id':'p1','n_results':5.0,'result_position':np.nan},
@@ -21,7 +21,7 @@ def test_load_csvs():
     assert_frame_equal(actual, expected)
 
     # Test single file option
-    path = 'tests/fixtures/csvs/part1.csv'
+    path = 'tests/fixtures/data_sample/wiki_example/input/part1.csv'
     actual = load_csvs(path, read_kwargs={})
     expected = pd.DataFrame([
         {'uuid':'u1','timestamp':2.0,'session_id':'s1','group': 'g1','action':'searchResultPage','checkin':np.nan,'page_id':'p1','n_results':5.0,'result_position':np.nan},
@@ -32,7 +32,7 @@ def test_load_csvs():
 
 def test_load_df():
     # Test multiple file option
-    path = 'tests/fixtures/csvs/'
+    path = 'tests/fixtures/data_sample/wiki_example/input/'
     actual = load_df(path, file_type='csv', read_func='read_csv', read_kwargs={})
     expected = pd.DataFrame([
         {'uuid':'u1','timestamp':2.0,'session_id':'s1','group': 'g1','action':'searchResultPage','checkin':np.nan,'page_id':'p1','n_results':5.0,'result_position':np.nan},
@@ -45,7 +45,7 @@ def test_load_df():
     assert_frame_equal(actual, expected)
 
     # Test single file option, csv
-    path = 'tests/fixtures/csvs/part1.csv'
+    path = 'tests/fixtures/data_sample/wiki_example/input/part1.csv'
     actual = load_df(path, file_type='csv', read_func='read_csv', read_kwargs={})
     expected = pd.DataFrame([
         {'uuid':'u1','timestamp':2.0,'session_id':'s1','group': 'g1','action':'searchResultPage','checkin':np.nan,'page_id':'p1','n_results':5.0,'result_position':np.nan},
@@ -55,7 +55,7 @@ def test_load_df():
     assert_frame_equal(actual, expected)
 
     # Test single file option, parquet
-    path = 'tests/fixtures/parquets/part1.parquet'
+    path = 'tests/fixtures/data_sample/wiki_example/input_parquet/part1.parquet'
     actual = load_df(path, file_type='parquet', read_func='read_parquet', read_kwargs={})
     expected = pd.DataFrame([
         {'uuid':'u1','timestamp':2.0,'session_id':'s1','group': 'g1','action':'searchResultPage','checkin':np.nan,'page_id':'p1','n_results':5.0,'result_position':np.nan},
