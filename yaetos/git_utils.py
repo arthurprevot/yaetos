@@ -59,7 +59,7 @@ class Git_Config_Manager():
         fname = cluster_app_folder+self.FNAME
         if os.path.isfile(fname):
             with open(fname, 'r') as stream:
-                yml = yaml.load(stream)
+                yml = yaml.load(stream, Loader=yaml.FullLoader)
             return yml
         else:
             return False

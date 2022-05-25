@@ -774,7 +774,7 @@ class Job_Yml_Parser():
     @staticmethod
     def load_meta(fname):
         with open(fname, 'r') as stream:
-            yml = yaml.load(stream)
+            yml = yaml.load(stream, Loader=yaml.FullLoader)
         return yml
 
 
