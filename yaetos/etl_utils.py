@@ -87,6 +87,7 @@ class ETL_Base(object):
             if self.jargs.mode in ('prod_EMR') and self.jargs.merged_args.get('owners'):
                 self.send_job_failure_email(err)
             raise Exception("Job failed, error: \n{}".format(err))
+        self.out_df = output
         return output
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
@@ -331,6 +332,7 @@ class ETL_Base(object):
             path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
             path = Path_Handler(path, self.jargs.base_path).expand_later()
+            self.jargs.inputs[input_name]['path_expanded'] = path
 
         # Unstructured type
         if input_type == 'txt':
@@ -380,6 +382,7 @@ class ETL_Base(object):
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
         logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
         path = Path_Handler(path, self.jargs.base_path).expand_later()
+        self.jargs.inputs[input_name]['path_expanded'] = path
 
         if input_type == 'txt':
             rdd = self.sc.textFile(path)
@@ -512,6 +515,7 @@ class ETL_Base(object):
     def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
         path = Path_Handler(path, base_path).expand_now(now_dt)
+        self.jargs.output['path_expanded'] = path
 
         if type == 'None':
             logger.info('Did not write output to disk')
@@ -924,10 +928,10 @@ class Runner():
 
         # Executing or deploying
         if job.jargs.deploy in ('none'):  # when executing job code
-            self.launch_run_mode(job)
+            job = self.launch_run_mode(job)
         elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
-        # TODO: check to return output path or df.
+        return job
 
     @staticmethod
     def set_commandline_args(parser):
@@ -1003,7 +1007,8 @@ class Runner():
         if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:
-            Flow(job.jargs, app_name).run_pipeline(sc, sc_sql)
+            job = Flow(job.jargs, app_name).run_pipeline(sc, sc_sql)  # 'job' is the last job object one in pipeline.
+        return job
 
     def launch_deploy_mode(self, deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
@@ -1089,12 +1094,13 @@ class Flow():
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
             df[job_name] = job.etl(sc, sc_sql) # at this point df[job_name] is unpersisted. TODO: keep it persisted.
 
-            if not self.launch_jargs.merged_args.get('chain_dependencies'):
+            if not self.launch_jargs.merged_args.get('chain_dependencies'): # or self.launch_jargs.merged_args.get('keep_df', True): TODO: check if it works in pipeline.
                 df[job_name].unpersist()
                 del df[job_name]
                 gc.collect()
             logger.info('-'*80)
             logger.info('-')
+        return job
 
     @staticmethod
     def create_connections_jobs(storage, args):
