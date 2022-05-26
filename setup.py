@@ -198,7 +198,7 @@ setup(
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
         'console_scripts': [
-            'yaetos=yaetos.scripts.install_env:YaetosCmds',
+            'yaetos=yaetos.scripts.yaetos_cmdline:YaetosCmds',
         ],
     },
 

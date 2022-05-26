@@ -8,7 +8,7 @@ Usage:
 
 For dev:
  * To use lib without publishing it: "pip install ."
- * Alternative if last step doesn't work (due to unusual python or pip setup): "python -c 'from yaetos.scripts.install_env import YaetosCmds; YaetosCmds()'"
+ * Alternative if last step doesn't work (due to unusual python or pip setup): "python -c 'from yaetos.scripts.yaetos_cmdline import YaetosCmds; YaetosCmds()'"
 """
 
 import os
