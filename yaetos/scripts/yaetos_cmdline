@@ -3,12 +3,12 @@
 Usage:
  * pip install yaetos
  * cd /path/to/an/empty/folder/that/will/contain/pipeline/code
- * yaetos setup  # -> will create sub-folders and setup required files.
- * yaetos launch_env  # -> To launch docker environment.
+ * yaetos --help   # to get the options
 
 For dev:
  * To use lib without publishing it: "pip install ."
  * Alternative if last step doesn't work (due to unusual python or pip setup): "python -c 'from yaetos.scripts.yaetos_cmdline import YaetosCmds; YaetosCmds()'"
+ * This feeds into setup.py
 """
 
 import os
@@ -31,10 +31,10 @@ class YaetosCmds(object):
     yaetos <command> [<args>]
 
     Yaetos top level commands are:
-    setup       {usage_setup}
-    launch_docker_bash  {usage_docker_bash}
-    launch_docker_jupyter  {usage_docker_jupyter}
-    launch_host_terminal  {usage_host_terminal}
+    setup                : {usage_setup}
+    launch_docker_bash   : {usage_docker_bash}
+    launch_docker_jupyter: {usage_docker_jupyter}
+    launch_host_terminal : {usage_host_terminal}
     '''
 
     def __init__(self):
