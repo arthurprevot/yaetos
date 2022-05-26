@@ -6,7 +6,7 @@ Usage:
  * yaetos --help   # to get the options
 
 For dev:
- * To use lib without publishing it: "pip install ."
+ * To use lib without publishing it: "cd path/to/repo/yeatos; pip install ." # TODO: check why changes are not always picked up.
  * Alternative if last step doesn't work (due to unusual python or pip setup): "python -c 'from yaetos.scripts.yaetos_cmdline import YaetosCmds; YaetosCmds()'"
  * This feeds into setup.py
 """
@@ -73,7 +73,7 @@ class YaetosCmds(object):
         parser = argparse.ArgumentParser(
             description=self.usage_host_terminal)
         import subprocess
-        subprocess.call("./launch_env.sh", shell=True)
+        subprocess.call("source launch_env.sh", shell=True)
 
 
 def setup_env(args):
