@@ -44,7 +44,7 @@ setup(
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='Data Pipelines with Spark on AWS',  # Optional
+    description='Cloudification of Data Pipelines in Spark and Pandas for AWS',  # Optional
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -80,7 +80,7 @@ setup(
 
     # This should be a valid email address corresponding to the author listed
     # above.
-    author_email='prevota@gmail.com',  # Optional
+    author_email='arthrprevot@gmail.com',  # Optional
 
     # Classifiers help users find your project by categorizing it.
     #

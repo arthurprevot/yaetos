@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """
+Script to setup commandline for yaetos when installed with pip install.
+
 Usage:
  * pip install yaetos
  * cd /path/to/an/empty/folder/that/will/contain/pipeline/code
