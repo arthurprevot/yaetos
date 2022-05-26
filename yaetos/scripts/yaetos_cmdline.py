@@ -129,8 +129,3 @@ def setup_env(args):
         copyfile(f'{package_path}/scripts/github_pythonapp.yml', f'{cwd}/.github/workflows/pythonapp.yml')
 
     print('Done')
-
-
-# def launch_env():
-#     import subprocess
-#     subprocess.call("./launch_env.sh")
