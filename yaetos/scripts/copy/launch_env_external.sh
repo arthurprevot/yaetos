@@ -12,7 +12,7 @@
 # Note "-v ~/.aws:/.aws \" is necessary to run jobs in AWS (ad-hoc or scheduled). Requires awcli setup on host (with ~/.aws setup with profile "default").
 
 
-yaetos_jobs_home=$PWD
+yaetos_jobs_home=$PWD  # location of folder with jobs. In that config, framework is pip installed, and available in path.
 
 run_docker=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
 if [[ $run_docker = 1 ]]; then
@@ -36,9 +36,10 @@ elif [[ $run_docker = 2 ]]; then
       pyspark_container \
       jupyter notebook --ip 0.0.0.0 --port 8888 --no-browser --allow-root
 else
-  # Set variables to run outside of docker. Main use case: running pandas jobs.
-  export PYSPARK_AWS_ETL_HOME=$PWD'/'
-  export PYTHONPATH=$PYSPARK_AWS_ETL_HOME:$PYTHONPATH
-  echo 'Yaetos setup to work from OS repo (not in docker)' # may need to be run as "source launch_env.sh". export may not work if run as ./launch_env.sh (due to subshell).
-  # Spark jobs can also be run outside of docker but it will require setting more variables.
+  echo 'Uncorrect argument, command ignored'
+#   # Set variables to run outside of docker. Main use case: running pandas jobs.
+#   export YAETOS_FRAMEWORK_HOME=$PWD'/'
+#   export PYTHONPATH=$PYSPARK_AWS_ETL_HOME:$PYTHONPATH
+#   echo 'Yaetos setup to work from OS repo (not in docker)' # may need to be run as "source launch_env.sh". export may not work if run as ./launch_env.sh (due to subshell).
+#   # Spark jobs can also be run outside of docker but it will require setting more variables.
 fi

@@ -27,7 +27,7 @@ class YaetosCmds(object):
     usage_setup = "Setup yaetos folders and files in current folder."
     usage_docker_bash = "Launching docker container to run jobs from bash."
     usage_docker_jupyter = "Launching docker container to run jobs from jupyter notebook."
-    usage_host_terminal = "Launching docker container to run jobs on host OS (assuming it has libraries installed spark and/or pandas). If spark is not setup on host OS, this options is still useful to run pandas jobs or to interact with AWS."
+    # usage_host_terminal = "Launching docker container to run jobs on host OS (assuming it has libraries installed spark and/or pandas). If spark is not setup on host OS, this options is still useful to run pandas jobs or to interact with AWS."
 
     usage = f'''
     yaetos <command> [<args>]
@@ -36,7 +36,8 @@ class YaetosCmds(object):
     setup                : {usage_setup}
     launch_docker_bash   : {usage_docker_bash}
     launch_docker_jupyter: {usage_docker_jupyter}
-    launch_host_terminal : {usage_host_terminal}
+
+    Note: yaetos can also be used locally, outside of docker, using "python some/job.py --some_args"
     '''
 
     def __init__(self):
@@ -71,11 +72,12 @@ class YaetosCmds(object):
         import subprocess
         subprocess.call("./launch_env.sh 2", shell=True)
 
-    def launch_host_terminal(self):
-        parser = argparse.ArgumentParser(
-            description=self.usage_host_terminal)
-        import subprocess
-        subprocess.call("source launch_env.sh", shell=True)
+    # def launch_host_terminal(self):
+    #     parser = argparse.ArgumentParser(
+    #         description=self.usage_host_terminal)
+    #     import subprocess
+    #     print('#####')
+    #     subprocess.call("source launch_env.sh", shell=True)
 
 
 def setup_env(args):

@@ -80,7 +80,7 @@ class DeployPySparkScriptOnAws(object):
             # see latest supported emr version by AWS Data Pipeline at https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emrcluster.html
 
         try:
-            self.git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_APP_FOLDER)
+            self.git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_FRAMEWORK_FOLDER)
             Git_Config_Manager().save_yaml(self.git_yml)
         except Exception as e:  # TODO: get specific exception
             self.git_yml = None
@@ -303,7 +303,7 @@ class DeployPySparkScriptOnAws(object):
                 logger.info("There is more than one source of code to ship to EMR '{}'. Will continue with the first one.".format(bases))
             base = bases[0] + '/'
         elif self.app_args['code_source'] == 'repo':
-            base = eu.LOCAL_APP_FOLDER
+            base = eu.LOCAL_FRAMEWORK_FOLDER
         logger.info("Source of yaetos code to be shipped: {}".format(base+'yaetos/'))
         return base
 

@@ -39,10 +39,10 @@ logger = setup_logging('Job')
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 AWS_CONFIG_FILE = 'conf/aws_config.cfg'
 CONNECTION_FILE = 'conf/connections.cfg'
-CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-CI_APP_FOLDER = '/home/runner/work/yaetos/yaetos/'
-LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_HOME set to end with '/', TODO: rename env var to YAETOS_HOME, and check if LOCAL_APP_FOLDER and LOCAL_JOB_REPO_FOLDER are used properly in code. Saw strange cases.
-LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
+CLUSTER_APP_FOLDER = '/home/hadoop/app/' # TODO: check to remove it and replace it by LOCAL_JOB_FOLDER in code, now that LOCAL_JOB_FOLDER uses 'os.getcwd()'
+CI_APP_FOLDER = '/home/runner/work/yaetos/yaetos/'  # TODO: check to remove it now that LOCAL_JOB_FOLDER uses 'os.getcwd()'
+LOCAL_FRAMEWORK_FOLDER = os.environ.get('YAETOS_FRAMEWORK_HOME', '') # YAETOS_FRAMEWORK_HOME should end with '/'. Only useful when using job folder separate from framework folder and framework folder is yaetos repo (no pip installed).
+LOCAL_JOB_FOLDER = (os.getcwd() + '/') or os.environ.get('YAETOS_JOBS_HOME', '')  # location of folder with jobs, regardless of where framework code is (in main repo or pip installed). It will be the same as LOCAL_FRAMEWORK_FOLDER when the jobs are in the main repo.
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
 PACKAGES_EMR = ['com.databricks:spark-redshift_2.11:2.0.1', 'org.apache.spark:spark-avro_2.11:2.4.0', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
@@ -68,7 +68,7 @@ class ETL_Base(object):
         self.loaded_inputs = loaded_inputs
         self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
         if self.jargs.manage_git_info:
-            git_yml = Git_Config_Manager().get_config(mode=self.jargs.mode, local_app_folder=LOCAL_APP_FOLDER, cluster_app_folder=CLUSTER_APP_FOLDER)
+            git_yml = Git_Config_Manager().get_config(mode=self.jargs.mode, local_app_folder=LOCAL_FRAMEWORK_FOLDER, cluster_app_folder=CLUSTER_APP_FOLDER)
             [git_yml.pop(key, None) for key in ('diffs_current', 'diffs_yaetos') if git_yml]
             logger.info('Git info {}'.format(git_yml))
 
@@ -714,10 +714,10 @@ class Job_Yml_Parser():
             job_name = job_file[len(CLUSTER_APP_FOLDER+'scripts.zip/jobs/'):]
         elif job_file.startswith(CI_APP_FOLDER+'jobs/'):
             job_name = job_file[len(CI_APP_FOLDER+'jobs/'):]
-        elif job_file.startswith(LOCAL_APP_FOLDER+'jobs/'):
-            job_name = job_file[len(LOCAL_APP_FOLDER+'jobs/'):]
-        elif job_file.startswith(LOCAL_JOB_REPO_FOLDER+'jobs/'):  # when run from external repo.
-            job_name = job_file[len(LOCAL_JOB_REPO_FOLDER+'jobs/'):]
+        # elif job_file.startswith(LOCAL_FRAMEWORK_FOLDER+'jobs/'):
+        #     job_name = job_file[len(LOCAL_FRAMEWORK_FOLDER+'jobs/'):]
+        elif job_file.startswith(LOCAL_JOB_FOLDER+'jobs/'):  # when run from external repo.
+            job_name = job_file[len(LOCAL_JOB_FOLDER+'jobs/'):]
         elif job_file.startswith('jobs/'):
             job_name = job_file[len('jobs/'):]
         elif job_file.__contains__('/scripts.zip/jobs/'):

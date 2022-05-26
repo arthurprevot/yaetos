@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from yaetos.etl_utils import ETL_Base, Commandliner, \
     Period_Builder, Job_Args_Parser, Job_Yml_Parser, Flow, \
-    get_job_class, LOCAL_APP_FOLDER, JOBS_METADATA_FILE
+    get_job_class, LOCAL_JOB_FOLDER, JOBS_METADATA_FILE
 
 
 class Test_ETL_Base(object):
@@ -25,9 +25,9 @@ class Test_ETL_Base(object):
         pks = ['id']
         assert ETL_Base.check_pk(sdf, pks) is False
 
-    # def test_set_py_job(self, get_pre_jargs):  # works locally but not from CI tool, where LOCAL_APP_FOLDER is different.
-    #     py_job = ETL_Base(pre_jargs=get_pre_jargs({})).set_py_job()
-    #     assert py_job == LOCAL_APP_FOLDER+'yaetos/etl_utils.py' # file is the one that starts execution, typically the job python file.
+    def test_set_py_job(self, get_pre_jargs):
+        py_job = ETL_Base(pre_jargs=get_pre_jargs({})).set_py_job()
+        assert py_job == LOCAL_JOB_FOLDER+'yaetos/etl_utils.py' # file is the one that starts execution, typically the job python file.
 
     def test_load_inputs(self, sc, sc_sql, ss, get_pre_jargs):
         """Confirming load_inputs acts as a passthrough"""
@@ -87,7 +87,7 @@ class Test_Job_Yml_Parser(object):
         job_name = Job_Yml_Parser.set_job_name_from_file('jobs/some/file.py')
         assert job_name == 'some/file.py'
 
-        job_name = Job_Yml_Parser.set_job_name_from_file(LOCAL_APP_FOLDER+'jobs/some/file.py')
+        job_name = Job_Yml_Parser.set_job_name_from_file(LOCAL_JOB_FOLDER+'jobs/some/file.py')
         assert job_name == 'some/file.py'
 
     # def test_set_sql_file_from_name(self) # to be added
