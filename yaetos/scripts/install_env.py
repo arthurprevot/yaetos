@@ -6,8 +6,9 @@ Usage:
  * yaetos setup  # -> will create sub-folders and setup required files.
  * yaetos launch_env  # -> To launch docker environment.
 
-Alternative if last step doesn't work (due to unusual python or pip setup):
- * python -c 'from yaetos.scripts.install_env import YaetosCmds; YaetosCmds())'
+For dev:
+ * To use lib without publishing it: "pip install ."
+ * Alternative if last step doesn't work (due to unusual python or pip setup): "python -c 'from yaetos.scripts.install_env import YaetosCmds; YaetosCmds()'"
 """
 
 import os
@@ -15,21 +16,25 @@ from shutil import copyfile
 import yaetos
 import argparse
 import sys
+# import subprocess
 
-# TODO: replace duplicated files in yaetos/script folder to hard symlinks to avoid duplication.
 
 class YaetosCmds(object):
     # Source: https://chase-seibert.github.io/blog/2014/03/21/python-multilevel-argparse.html
 
     usage_setup = "Setup yaetos folders and files in current folder."
-    usage_launch_env = "Launching docker container to run jobs."
+    usage_docker_bash = "Launching docker container to run jobs from bash."
+    usage_docker_jupyter = "Launching docker container to run jobs from jupyter notebook."
+    usage_host_terminal = "Launching docker container to run jobs on host OS (assuming it has libraries installed spark and/or pandas). If spark is not setup on host OS, this options is still useful to run pandas jobs or to interact with AWS."
 
     usage = f'''
     yaetos <command> [<args>]
 
     Yaetos top level commands are:
     setup       {usage_setup}
-    launch_env  {usage_launch_env}
+    launch_docker_bash  {usage_docker_bash}
+    launch_docker_jupyter  {usage_docker_jupyter}
+    launch_host_terminal  {usage_host_terminal}
     '''
 
     def __init__(self):
@@ -51,13 +56,25 @@ class YaetosCmds(object):
         args = parser.parse_args(sys.argv[2:])  # ignoring first 2 args (i.e. "yeatos setup")
         setup_env(args)
 
-    def launch_env(self):
+    def launch_docker_bash(self):
         parser = argparse.ArgumentParser(
-            description=self.usage_launch_env)
+            description=self.usage_docker_bash)
         # parser.add_argument('--no_aws', action='store_true')
-        args = parser.parse_args(sys.argv[2:])  # ignoring first 2 args (i.e. "yeatos launch_env")
-        launch_env()
+        import subprocess
+        subprocess.call("./launch_env.sh 1", shell=True)
 
+    def launch_docker_jupyter(self):
+        parser = argparse.ArgumentParser(
+            description=self.usage_docker_jupyter)
+        # parser.add_argument('--no_aws', action='store_true')
+        import subprocess
+        subprocess.call("./launch_env.sh 2", shell=True)
+
+    def launch_host_terminal(self):
+        parser = argparse.ArgumentParser(
+            description=self.usage_host_terminal)
+        import subprocess
+        subprocess.call("./launch_env.sh", shell=True)
 
 
 def setup_env(args):
@@ -115,6 +132,6 @@ def setup_env(args):
     print('Done')
 
 
-def launch_env():
-    import subprocess
-    subprocess.call("./launch_env.sh")
+# def launch_env():
+#     import subprocess
+#     subprocess.call("./launch_env.sh")

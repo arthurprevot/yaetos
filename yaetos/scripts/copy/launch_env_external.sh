@@ -15,7 +15,7 @@
 yaetos_jobs_home=$PWD
 
 run_docker=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
-if [ $run_docker = 1 ]; then
+if [[ $run_docker = 1 ]]; then
   echo 'About to run docker with bash'
   docker build -t pyspark_container . # builds from Dockerfile
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
@@ -25,7 +25,7 @@ if [ $run_docker = 1 ]; then
       -w /mnt/yaetos_jobs/ \
       pyspark_container \
       bash
-elif [ $run_docker = 2 ]; then
+elif [[ $run_docker = 2 ]]; then
   echo 'About to run docker with jupyter notebooks'
   docker build -t pyspark_container . # builds from Dockerfile
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \

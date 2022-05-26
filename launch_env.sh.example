@@ -13,7 +13,7 @@
 yaetos_home=/Users/aprevot/code/code_perso/yaetos
 
 run_docker=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
-if [ $run_docker = 1 ]; then
+if [[ $run_docker = 1 ]]; then
   echo 'About to run docker with bash'
   cd $yaetos_home
   docker build -t pyspark_container -f Dockerfile_alt .
@@ -24,7 +24,7 @@ if [ $run_docker = 1 ]; then
       -w /mnt/yaetos/ \
       pyspark_container \
       bash
-elif [ $run_docker = 2 ]; then
+elif [[ $run_docker = 2 ]]; then
   echo 'About to run docker with jupyter notebooks'
   cd $yaetos_home
   docker build -t pyspark_container -f Dockerfile_alt .
