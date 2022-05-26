@@ -39,6 +39,6 @@ else
   # Set variables to run outside of docker. Main use case: running pandas jobs.
   export PYSPARK_AWS_ETL_HOME=$PWD'/'
   export PYTHONPATH=$PYSPARK_AWS_ETL_HOME:$PYTHONPATH
-  echo 'Yaetos setup to work from OS repo (not in docker), if sent as "source launch_env.sh"' # export won't work if run as ./launch_env.sh (due to subshell).
+  echo 'Yaetos setup to work from OS repo (not in docker)' # may need to be run as "source launch_env.sh". export may not work if run as ./launch_env.sh (due to subshell).
   # Spark jobs can also be run outside of docker but it will require setting more variables.
 fi

@@ -61,12 +61,11 @@ class YaetosCmds(object):
             description=self.usage_docker_bash)
         # parser.add_argument('--no_aws', action='store_true')
         import subprocess
-        subprocess.call("./launch_env.sh 1", shell=True)
+        subprocess.call("./launch_env.sh 1", shell=True) # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
 
     def launch_docker_jupyter(self):
         parser = argparse.ArgumentParser(
             description=self.usage_docker_jupyter)
-        # parser.add_argument('--no_aws', action='store_true')
         import subprocess
         subprocess.call("./launch_env.sh 2", shell=True)
 
