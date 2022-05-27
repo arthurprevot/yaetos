@@ -714,8 +714,6 @@ class Job_Yml_Parser():
             job_name = job_file[len(CLUSTER_APP_FOLDER+'scripts.zip/jobs/'):]
         elif job_file.startswith(CI_APP_FOLDER+'jobs/'):
             job_name = job_file[len(CI_APP_FOLDER+'jobs/'):]
-        # elif job_file.startswith(LOCAL_FRAMEWORK_FOLDER+'jobs/'):
-        #     job_name = job_file[len(LOCAL_FRAMEWORK_FOLDER+'jobs/'):]
         elif job_file.startswith(LOCAL_JOB_FOLDER+'jobs/'):  # when run from external repo.
             job_name = job_file[len(LOCAL_JOB_FOLDER+'jobs/'):]
         elif job_file.startswith('jobs/'):
@@ -900,7 +898,7 @@ class Path_Handler():
             return self.path
 
 
-def Commandliner(Job, **job_args):
+def Commandliner(Job, **job_args):  # TODO: change name to reflect fact it is not a class anymore
     Runner(Job, **job_args).parse_cmdline_and_run()
 
 class Runner():
