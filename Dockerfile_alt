@@ -17,16 +17,13 @@ RUN pip3 install -r requirements.txt
 
 WORKDIR /mnt/yaetos
 
-# RUN mkdir -p tmp/files_to_ship/  # skipped, causes problems with permissions, whether run from root or jovyan user. Will need to be run manually once.
-ENV PYSPARK_AWS_ETL_HOME /mnt/yaetos/
-ENV PYTHONPATH $PYSPARK_AWS_ETL_HOME:$PYTHONPATH
+ENV YAETOS_FRAMEWORK_HOME /mnt/yaetos/
+ENV PYTHONPATH $YAETOS_FRAMEWORK_HOME:$PYTHONPATH
 # ENV SPARK_HOME /usr/local/spark # already set in base docker image
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
 
-ENV PYSPARK_AWS_ETL_JOBS_HOME /mnt/external_pipelines/
-ENV PYTHONPATH $PYSPARK_AWS_ETL_JOBS_HOME:$PYTHONPATH
-# or replace "/mnt/external_pipelines/" by the name of your external repo to make it match.
-# TODO: fix external shared folders that can't be access from mac with current version of docker, but works from ubuntu.
+ENV YAETOS_JOBS_HOME /mnt/yaetos_jobs/
+ENV PYTHONPATH $YAETOS_JOBS_HOME:$PYTHONPATH
 
 # Expose ports for monitoring.
 # SparkContext web UI on 4040 -- only available for the duration of the application.

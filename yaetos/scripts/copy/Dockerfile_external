@@ -13,6 +13,7 @@ RUN pip3 install -r /opt/bitnami/python/lib/python3.6/site-packages/yaetos/scrip
 
 # Setup environment variables
 ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
+ENV YAETOS_JOBS_HOME /mnt/yaetos_jobs/
 
 # Expose ports for monitoring.
 # SparkContext web UI on 4040 -- only available for the duration of the application.
