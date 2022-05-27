@@ -35,11 +35,8 @@ elif [[ $run_docker = 2 ]]; then
       -w /mnt/yaetos_jobs/ \
       pyspark_container \
       jupyter notebook --ip 0.0.0.0 --port 8888 --no-browser --allow-root
+elif [[ $run_docker = 3 ]]; then
+  echo 'Running job in docker, not implemented yet. The code needs to be added in launch_env.sh'
 else
   echo 'Uncorrect argument, command ignored'
-#   # Set variables to run outside of docker. Main use case: running pandas jobs.
-#   export YAETOS_FRAMEWORK_HOME=$PWD'/'
-#   export PYTHONPATH=$PYSPARK_AWS_ETL_HOME:$PYTHONPATH
-#   echo 'Yaetos setup to work from OS repo (not in docker)' # may need to be run as "source launch_env.sh". export may not work if run as ./launch_env.sh (due to subshell).
-#   # Spark jobs can also be run outside of docker but it will require setting more variables.
 fi

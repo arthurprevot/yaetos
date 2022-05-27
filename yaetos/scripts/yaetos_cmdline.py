@@ -18,7 +18,7 @@ from shutil import copyfile
 import yaetos
 import argparse
 import sys
-# import subprocess
+import subprocess
 
 
 class YaetosCmds(object):
@@ -27,7 +27,7 @@ class YaetosCmds(object):
     usage_setup = "Setup yaetos folders and files in current folder."
     usage_docker_bash = "Launching docker container to run jobs from bash."
     usage_docker_jupyter = "Launching docker container to run jobs from jupyter notebook."
-    # usage_host_terminal = "Launching docker container to run jobs on host OS (assuming it has libraries installed spark and/or pandas). If spark is not setup on host OS, this options is still useful to run pandas jobs or to interact with AWS."
+    usage_run = "Run job through docker (experimental)" # TODO: remove experimental after testing
 
     usage = f'''
     yaetos <command> [<args>]
@@ -36,6 +36,7 @@ class YaetosCmds(object):
     setup                : {usage_setup}
     launch_docker_bash   : {usage_docker_bash}
     launch_docker_jupyter: {usage_docker_jupyter}
+    run_dockerized       : {usage_run}
 
     Note: yaetos can also be used locally, outside of docker, using "python some/job.py --some_args"
     '''
@@ -62,22 +63,23 @@ class YaetosCmds(object):
     def launch_docker_bash(self):
         parser = argparse.ArgumentParser(
             description=self.usage_docker_bash)
-        # parser.add_argument('--no_aws', action='store_true')
-        import subprocess
+        # parser.add_argument('--no_aws', action='store_true')  # TODO: implement
         subprocess.call("./launch_env.sh 1", shell=True) # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
 
     def launch_docker_jupyter(self):
         parser = argparse.ArgumentParser(
             description=self.usage_docker_jupyter)
-        import subprocess
         subprocess.call("./launch_env.sh 2", shell=True)
 
-    # def launch_host_terminal(self):
-    #     parser = argparse.ArgumentParser(
-    #         description=self.usage_host_terminal)
-    #     import subprocess
-    #     print('#####')
-    #     subprocess.call("source launch_env.sh", shell=True)
+    def run_dockerized(self):
+        parser = argparse.ArgumentParser(
+            description=self.usage_run)
+        ignored, cmd_unknown_args = parser.parse_known_args()
+        cmd_str = 'python '+' '.join(cmd_unknown_args[1:])
+        cmd_delegated = "./launch_env.sh 3 "+cmd_str
+        # print("Command line to be sent "+cmd_delegated)
+        subprocess.call(cmd_delegated, shell=True)
+
 
 
 def setup_env(args):
