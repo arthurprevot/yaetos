@@ -21,6 +21,7 @@ sudo pip3 install cloudpathlib==0.7.0
 sudo pip3 install pyarrow==6.0.1  # latest 8.0.0 not available in env
 # sudo pip3 install koalas==1.3.0  # fails installing now. TODO: check.
 # DB and API libs
+sudo pip3 install openpyxl==3.0.9  # used to open excel files. TODO: put in a new requirement_extra.txt, since optional.
 sudo pip3 install soql==1.0.2  # Necessary for simple-salesforce
 sudo pip3 install wheel==0.37.0 # necessary for cryptography
 # sudo pip3 install setuptools-rust==0.12.1  # Necessary for simple-salesforce

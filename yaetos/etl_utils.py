@@ -53,10 +53,10 @@ JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/Red
 
 
 class ETL_Base(object):
-    TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
-    SPARK_DF_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
-    PANDAS_DF_TYPES = ('csv', 'parquet', 'df')
-    FILE_TYPES = ('csv', 'parquet', 'txt')
+    TABULAR_TYPES = ('csv', 'parquet', 'excel', 'df', 'mysql', 'clickhouse')
+    SPARK_DF_TYPES = ('csv', 'parquet', 'excel', 'df', 'mysql', 'clickhouse')
+    PANDAS_DF_TYPES = ('csv', 'parquet', 'excel', 'df')
+    FILE_TYPES = ('csv', 'parquet', 'excel', 'txt')
     OTHER_TYPES = ('other', 'None')
     SUPPORTED_TYPES = set(TABULAR_TYPES) \
         .union(set(SPARK_DF_TYPES)) \
@@ -346,6 +346,8 @@ class ETL_Base(object):
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
             elif input_type == 'parquet':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
+            elif input_type == 'excel':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='excel', read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
