@@ -53,18 +53,6 @@ class Job(ETL_Base):
         )
         return output
 
-    @staticmethod
-    def format_datetime(wiki_dt_str: str) -> str:
-        """
-        Converts a string date to a datetime to then parse to a target format.
-        """
-        wiki_dt = datetime.strptime(wiki_dt_str, "%Y%m%d%H%M%S")
-        return wiki_dt.strftime("%Y-%m-%d %H:%M:%S")
-
-    @staticmethod
-    def date_diff_sec(start_dt: datetime, end_dt: datetime) -> int:
-        return int((end_dt - start_dt).total_seconds())
-
 
 if __name__ == "__main__":
     args = {"job_param_file": "conf/jobs_metadata.yml"}
