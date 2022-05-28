@@ -21,10 +21,13 @@ class Git_Config_Manager():
 
     def get_config_from_git(self, local_app_folder):
 
+        # Current directory, i.e. yeatos job folder
         branch = subprocess.check_output(["git", "describe", '--all']).strip().decode('ascii')  # to get if dirty, add '--dirty'.
         last_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('ascii')
         diffs = subprocess.check_output(['git', 'diff', 'HEAD']).strip().decode('ascii')
         is_dirty = True if diffs else False
+
+        # Yaetos directory, i.e. framework folder. TODO: check how to handle when framework code is pulled from pip installed lib.
         branch_yaetos = subprocess.check_output(['git', 'describe', '--all'], cwd=local_app_folder).strip().decode('ascii')
         last_commit_yaetos = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=local_app_folder).strip().decode('ascii')
         diffs_yaetos = subprocess.check_output(['git', 'diff', 'HEAD'], cwd=local_app_folder).strip().decode('ascii')
@@ -59,7 +62,7 @@ class Git_Config_Manager():
         fname = cluster_app_folder+self.FNAME
         if os.path.isfile(fname):
             with open(fname, 'r') as stream:
-                yml = yaml.load(stream)
+                yml = yaml.load(stream, Loader=yaml.FullLoader)
             return yml
         else:
             return False

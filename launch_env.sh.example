@@ -1,20 +1,56 @@
-# Copy this file, remove ".example", and make changes like:
-# replace ~/code/yaetos below by location of your yaetos repo.
-# add : "-v ~/path/to/your/repo/pipelines:/mnt/yaetos_jobs \" if putting the pipelines in an external repo.
-# add : "-v ~/.aws:/.aws \" to use the tool to run jobs in AWS (ad-hoc or scheduled). Requires awcli setup on host (with ~/.aws setup with profile "default").
-# other options to be added if necessary:
-# --cpu-shares \
-# --cpus 6 \
-# --memory 6g \
+# Script to setup the environment for yaetos. It needs to be executed from the repo root folder.
+#
+# Copy this file, remove ".example", and make the following changes:
+#  - set 'yaetos_jobs_home' below to the location of your yaetos repo (if your yaetos repo contains both jobs and framework, the default) or of your yaetos jobs repo if repo with jobs is separate from framework repo.
+#  - add : "-v ~/path/to/your/repo/yaetos:/mnt/yaetos \" if 'yaetos_jobs_home' only contains the jobs and not the framework, while using the yaetos repo as the framework.
+#  - add : "-v ~/.aws:/.aws \" to use the tool to run jobs in AWS (ad-hoc or scheduled). Requires awcli setup on host (with ~/.aws setup with profile "default").
+# Usage once above done:
+# - "./launch_env.sh 1" -> goes in docker bash, can be used to run all jobs in command line (incl. spark jobs)
+# - "./launch_env.sh 2" -> sets up jupyter in docker, can be used to run all jobs in jupyter. Open UI in host OS at http://localhost:8888/
+# - "./launch_env.sh 3 python somejob.py --some_arg" -> sets up jupyter in docker, can be used to run all jobs in jupyter. Open UI in host OS at http://localhost:8888/
 
-run_docker=0  # values: 0 or 1
-if [ $run_docker = 1 ]; then
+
+yaetos_jobs_home=/path/to/repo/yaetos/
+
+run_mode=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
+if [[ $run_mode = 1 ]]; then
+  echo 'Starting docker with bash'
+  cd $yaetos_jobs_home
   docker build -t pyspark_container -f Dockerfile_alt .
-  docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 \
-      -v ~/code/yaetos:/mnt/yaetos \
+  docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
+      -v $yaetos_jobs_home:/mnt/yaetos_jobs \
+      -v $HOME/.aws:/.aws \
       -h spark \
-      pyspark_container
+      -w /mnt/yaetos_jobs/ \
+      pyspark_container \
+      bash
+elif [[ $run_mode = 2 ]]; then
+  echo 'Starting docker with jupyter notebooks'
+  cd $yaetos_jobs_home
+  docker build -t pyspark_container -f Dockerfile_alt .
+  docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
+      -v $yaetos_jobs_home:/mnt/yaetos_jobs \
+      -v $HOME/.aws:/.aws \
+      -h spark \
+      -w /mnt/yaetos_jobs/ \
+      pyspark_container \
+      jupyter notebook --ip 0.0.0.0 --port 8888 --no-browser --allow-root
+elif [[ $run_mode = 3 ]]; then
+  cmd_str="${@:2}"
+  echo "Starting the following job in docker: $cmd_str"
+  cd $yaetos_jobs_home
+  docker build -t pyspark_container -f Dockerfile_alt .
+  docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
+      -v $yaetos_jobs_home:/mnt/yaetos_jobs \
+      -v $HOME/.aws:/.aws \
+      -h spark \
+      -w /mnt/yaetos_jobs/ \
+      pyspark_container \
+      $cmd_str
+elif [[ $run_mode = 4 ]]; then
+  cmd_str="${@:2}"
+  echo "Executing command: $cmd_str"
+  $cmd_str
 else
-  export PYSPARK_AWS_ETL_HOME=$PWD'/'
-  export PYTHONPATH=$PYSPARK_AWS_ETL_HOME:$PYTHONPATH
+  echo 'Incorrect argument, command ignored'
 fi

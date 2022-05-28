@@ -39,9 +39,10 @@ logger = setup_logging('Job')
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 AWS_CONFIG_FILE = 'conf/aws_config.cfg'
 CONNECTION_FILE = 'conf/connections.cfg'
-CLUSTER_APP_FOLDER = '/home/hadoop/app/'
-LOCAL_APP_FOLDER = os.environ.get('PYSPARK_AWS_ETL_HOME', '') # PYSPARK_AWS_ETL_HOME set to end with '/', TODO: rename env var to YAETOS_HOME, and check if LOCAL_APP_FOLDER and LOCAL_JOB_REPO_FOLDER are used properly in code. Saw strange cases.
-LOCAL_JOB_REPO_FOLDER = os.environ.get('PYSPARK_AWS_ETL_JOBS_HOME', '')
+CLUSTER_APP_FOLDER = '/home/hadoop/app/' # TODO: check to remove it and replace it by LOCAL_JOB_FOLDER in code, now that LOCAL_JOB_FOLDER uses 'os.getcwd()'
+CI_APP_FOLDER = '/home/runner/work/yaetos/yaetos/'  # TODO: check to remove it now that LOCAL_JOB_FOLDER uses 'os.getcwd()'
+LOCAL_FRAMEWORK_FOLDER = os.environ.get('YAETOS_FRAMEWORK_HOME', '') # YAETOS_FRAMEWORK_HOME should end with '/'. Only useful when using job folder separate from framework folder and framework folder is yaetos repo (no pip installed).
+LOCAL_JOB_FOLDER = (os.getcwd() + '/') or os.environ.get('YAETOS_JOBS_HOME', '')  # location of folder with jobs, regardless of where framework code is (in main repo or pip installed). It will be the same as LOCAL_FRAMEWORK_FOLDER when the jobs are in the main repo.
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
 PACKAGES_EMR = ['com.databricks:spark-redshift_2.11:2.0.1', 'org.apache.spark:spark-avro_2.11:2.4.0', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
@@ -52,10 +53,10 @@ JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/Red
 
 
 class ETL_Base(object):
-    TABULAR_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
-    SPARK_DF_TYPES = ('csv', 'parquet', 'df', 'mysql', 'clickhouse')
-    PANDAS_DF_TYPES = ('csv', 'parquet', 'df')
-    FILE_TYPES = ('csv', 'parquet', 'txt')
+    TABULAR_TYPES = ('csv', 'parquet', 'excel', 'df', 'mysql', 'clickhouse')
+    SPARK_DF_TYPES = ('csv', 'parquet', 'excel', 'df', 'mysql', 'clickhouse')
+    PANDAS_DF_TYPES = ('csv', 'parquet', 'excel', 'df')
+    FILE_TYPES = ('csv', 'parquet', 'excel', 'txt')
     OTHER_TYPES = ('other', 'None')
     SUPPORTED_TYPES = set(TABULAR_TYPES) \
         .union(set(SPARK_DF_TYPES)) \
@@ -67,7 +68,7 @@ class ETL_Base(object):
         self.loaded_inputs = loaded_inputs
         self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
         if self.jargs.manage_git_info:
-            git_yml = Git_Config_Manager().get_config(mode=self.jargs.mode, local_app_folder=LOCAL_APP_FOLDER, cluster_app_folder=CLUSTER_APP_FOLDER)
+            git_yml = Git_Config_Manager().get_config(mode=self.jargs.mode, local_app_folder=LOCAL_FRAMEWORK_FOLDER, cluster_app_folder=CLUSTER_APP_FOLDER)
             [git_yml.pop(key, None) for key in ('diffs_current', 'diffs_yaetos') if git_yml]
             logger.info('Git info {}'.format(git_yml))
 
@@ -86,6 +87,7 @@ class ETL_Base(object):
             if self.jargs.mode in ('prod_EMR') and self.jargs.merged_args.get('owners'):
                 self.send_job_failure_email(err)
             raise Exception("Job failed, error: \n{}".format(err))
+        self.out_df = output
         return output
 
     def etl_multi_pass(self, sc, sc_sql, loaded_inputs={}):
@@ -329,7 +331,8 @@ class ETL_Base(object):
             path = self.jargs.inputs[input_name]['path']
             path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-            path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
+            path = Path_Handler(path, self.jargs.base_path).expand_later()
+            self.jargs.inputs[input_name]['path_expanded'] = path
 
         # Unstructured type
         if input_type == 'txt':
@@ -343,6 +346,8 @@ class ETL_Base(object):
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
             elif input_type == 'parquet':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
+            elif input_type == 'excel':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='excel', read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
@@ -378,7 +383,8 @@ class ETL_Base(object):
         input_name = name
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
         logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
-        path = Path_Handler(path, self.jargs.base_path).expand_later(self.jargs.storage)
+        path = Path_Handler(path, self.jargs.base_path).expand_later()
+        self.jargs.inputs[input_name]['path_expanded'] = path
 
         if input_type == 'txt':
             rdd = self.sc.textFile(path)
@@ -511,6 +517,7 @@ class ETL_Base(object):
     def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
         path = Path_Handler(path, base_path).expand_now(now_dt)
+        self.jargs.output['path_expanded'] = path
 
         if type == 'None':
             logger.info('Did not write output to disk')
@@ -707,10 +714,10 @@ class Job_Yml_Parser():
             job_name = job_file[len(CLUSTER_APP_FOLDER+'jobs/'):]
         elif job_file.startswith(CLUSTER_APP_FOLDER+'scripts.zip/jobs/'):
             job_name = job_file[len(CLUSTER_APP_FOLDER+'scripts.zip/jobs/'):]
-        elif job_file.startswith(LOCAL_APP_FOLDER+'jobs/'):
-            job_name = job_file[len(LOCAL_APP_FOLDER+'jobs/'):]
-        elif job_file.startswith(LOCAL_JOB_REPO_FOLDER+'jobs/'):  # when run from external repo.
-            job_name = job_file[len(LOCAL_JOB_REPO_FOLDER+'jobs/'):]
+        elif job_file.startswith(CI_APP_FOLDER+'jobs/'):
+            job_name = job_file[len(CI_APP_FOLDER+'jobs/'):]
+        elif job_file.startswith(LOCAL_JOB_FOLDER+'jobs/'):  # when run from external repo.
+            job_name = job_file[len(LOCAL_JOB_FOLDER+'jobs/'):]
         elif job_file.startswith('jobs/'):
             job_name = job_file[len('jobs/'):]
         elif job_file.__contains__('/scripts.zip/jobs/'):
@@ -767,7 +774,7 @@ class Job_Yml_Parser():
     @staticmethod
     def load_meta(fname):
         with open(fname, 'r') as stream:
-            yml = yaml.load(stream)
+            yml = yaml.load(stream, Loader=yaml.FullLoader)
         return yml
 
 
@@ -868,7 +875,7 @@ class Path_Handler():
             path = path.format(base_path=base_path, latest='{latest}', now='{now}')
         self.path = path
 
-    def expand_later(self, storage):
+    def expand_later(self):
         path = self.path
         if '{latest}' in path:
             upstream_path = path.split('{latest}')[0]
@@ -893,10 +900,23 @@ class Path_Handler():
             return self.path
 
 
-class Commandliner():
+def Commandliner(Job, **job_args):  # TODO: change name to reflect fact it is not a class anymore
+    Runner(Job, **job_args).parse_cmdline_and_run()
+
+class Runner():
     def __init__(self, Job, **job_args):
+        self.Job = Job
+        self.job_args = job_args
+
+    def parse_cmdline_and_run(self):
+        self.job_args['parse_cmdline'] = True
+        return self.run()
+
+    def run(self):
+        Job = self.Job
+        job_args = self.job_args
         parser, defaults_args = self.define_commandline_args()
-        cmd_args = self.set_commandline_args(parser)
+        cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
         # Building "job", which will include all job args.
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
@@ -908,9 +928,10 @@ class Commandliner():
 
         # Executing or deploying
         if job.jargs.deploy in ('none'):  # when executing job code
-            self.launch_run_mode(job)
+            job = self.launch_run_mode(job)
         elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
+        return job
 
     @staticmethod
     def set_commandline_args(parser):
@@ -923,7 +944,8 @@ class Commandliner():
 
     @staticmethod
     def define_commandline_args():
-        # Defined here separatly for overridability.
+        # Defined here separatly from parsing for overridability.
+        # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
@@ -953,17 +975,17 @@ class Commandliner():
                     'connection_file': CONNECTION_FILE,
                     'jobs_folder': JOB_FOLDER,
                     'storage': 'local',
-                    # 'dependencies': False, # only set from commandline
+                    'dependencies': False, # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
                     'rerun_criteria': 'last_date',
-                    # 'chain_dependencies': False,  # only set from commandline
+                    'chain_dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
                     'load_connectors': 'all',
                     # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
                     #-- Deploy specific below --
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
                     'code_source': 'lib', # Other options: 'repo' TODO: make it automatic so parameter not needed.
-                    # 'leave_on': False, # only set from commandline
-                    # 'push_secrets': False, # only set from commandline
+                    'leave_on': False, # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+                    'push_secrets': False, # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
                     #-- Not added in command line args:
                     'enable_redshift_push': True,
                     'base_path': '',
@@ -985,7 +1007,8 @@ class Commandliner():
         if not job.jargs.dependencies:
             job.etl(sc, sc_sql)
         else:
-            Flow(job.jargs, app_name).run_pipeline(sc, sc_sql)
+            job = Flow(job.jargs, app_name).run_pipeline(sc, sc_sql)  # 'job' is the last job object one in pipeline.
+        return job
 
     def launch_deploy_mode(self, deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
@@ -1057,7 +1080,7 @@ class Flow():
             yml_args = Job_Yml_Parser(job_name, self.launch_jargs.job_param_file, self.launch_jargs.mode).yml_args
             # Get loaded_inputs
             loaded_inputs = {}
-            if self.launch_jargs.chain_dependencies:
+            if self.launch_jargs.merged_args.get('chain_dependencies'):
                 if yml_args.get('inputs', 'no input') == 'no input':
                     raise Exception("Pb with loading job_yml or finding 'inputs' parameter in it, so 'chain_dependencies' argument not useable in this case.")
                 for in_name, in_properties in yml_args['inputs'].items():
@@ -1071,12 +1094,13 @@ class Flow():
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
             df[job_name] = job.etl(sc, sc_sql) # at this point df[job_name] is unpersisted. TODO: keep it persisted.
 
-            if not self.launch_jargs.chain_dependencies:
+            if not self.launch_jargs.merged_args.get('chain_dependencies'): # or self.launch_jargs.merged_args.get('keep_df', True): TODO: check if it works in pipeline.
                 df[job_name].unpersist()
                 del df[job_name]
                 gc.collect()
             logger.info('-'*80)
             logger.info('-')
+        return job
 
     @staticmethod
     def create_connections_jobs(storage, args):

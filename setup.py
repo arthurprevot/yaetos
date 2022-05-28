@@ -14,7 +14,7 @@ here = pathlib.Path(__file__).parent.resolve()
 
 # Get the long description from the README file
 long_description = (here / 'README.md').read_text(encoding='utf-8')
-long_description = '\n'.join(long_description.split('\n')[3:])  # To remove header image that doesn't load in pypi. TODO: remove need for hardcoding '3'.
+long_description = '\n'.join(long_description.split('\n')[3:])  # To remove header image that doesn't load in pypi. TODO: get image pulled from web, or remove need for hardcoding '3'.
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
@@ -39,12 +39,12 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version='0.9.15',  # Required
+    version='0.9.17',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='Data Pipelines with Spark on AWS',  # Optional
+    description='Cloudification of Data Pipelines in Spark and Pandas for AWS',  # Optional
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -80,7 +80,7 @@ setup(
 
     # This should be a valid email address corresponding to the author listed
     # above.
-    author_email='prevota@gmail.com',  # Optional
+    author_email='arthrprevot@gmail.com',  # Optional
 
     # Classifiers help users find your project by categorizing it.
     #
@@ -198,7 +198,7 @@ setup(
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
         'console_scripts': [
-            'yaetos=yaetos.scripts.install_env:YaetosCmds',
+            'yaetos=yaetos.scripts.yaetos_cmdline:YaetosCmds',
         ],
     },
 

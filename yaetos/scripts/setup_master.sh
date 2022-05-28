@@ -19,6 +19,7 @@ sudo pip-3.6 install cloudpathlib==0.7.0
 sudo pip-3.6 install pyarrow  # latest 8.0.0 not available in env
 # sudo pip-3.6 install koalas==1.3.0  # fails installing now. TODO: check.
 # DB and API libs
+sudo pip-3.6 install openpyxl==3.0.9  # used to open excel files. TODO: put in a new requirement_extra.txt, since optional.
 sudo pip-3.6 install soql==1.0.2  # Necessary for simple-salesforce
 # sudo pip-3.6 install setuptools-rust==0.11.6  # Necessary for simple-salesforce
 # sudo pip-3.6 install cryptography==3.3.1  # Necessary for simple-salesforce, to avoid simple-salesforce loading 3.4.4 causing pbs. 3.3.1 now associated to security issues.
