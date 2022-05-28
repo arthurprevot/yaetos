@@ -16,7 +16,7 @@ yaetos_jobs_home=$PWD  # location of folder with jobs. In that config, framework
 
 run_mode=$1  # values: 1 (docker bash), 2 (docker jupyter), 3 (exec in docker), 4 (exec in terminal)
 if [[ $run_mode = 1 ]]; then
-  echo 'About to run docker with bash'
+  echo 'Starting docker with bash'
   docker build -t pyspark_container . # builds from Dockerfile
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
       -v $yaetos_jobs_home:/mnt/yaetos_jobs \
@@ -26,7 +26,7 @@ if [[ $run_mode = 1 ]]; then
       pyspark_container \
       bash
 elif [[ $run_mode = 2 ]]; then
-  echo 'About to run docker with jupyter notebooks'
+  echo 'Starting docker with jupyter notebooks'
   docker build -t pyspark_container . # builds from Dockerfile
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
       -v $yaetos_jobs_home:/mnt/yaetos_jobs \
@@ -36,9 +36,20 @@ elif [[ $run_mode = 2 ]]; then
       pyspark_container \
       jupyter notebook --ip 0.0.0.0 --port 8888 --no-browser --allow-root
 elif [[ $run_mode = 3 ]]; then
-  echo 'Running job in docker, not implemented yet. The code needs to be added in launch_env.sh'
+  cmd_str="${@:2}"
+  echo "Starting the following job in docker: $cmd_str"
+  docker build -t pyspark_container . # builds from Dockerfile
+  docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
+      -v $yaetos_jobs_home:/mnt/yaetos_jobs \
+      -v $HOME/.aws:/.aws \
+      -h spark \
+      -w /mnt/yaetos_jobs/ \
+      pyspark_container \
+      $cmd_str
 elif [[ $run_mode = 4 ]]; then
-  echo 'Running job in terminal, not implemented yet. The code needs to be added in launch_env.sh'
+  cmd_str="${@:2}"
+  echo "Executing command: $cmd_str"
+  $cmd_str
 else
-  echo 'Uncorrect argument, command ignored'
+  echo 'Incorrect argument, command ignored'
 fi
