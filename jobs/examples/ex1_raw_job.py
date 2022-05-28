@@ -22,14 +22,14 @@ output = Path_Handler(output).expand_now(now_dt)
 
 
 # Start SparkContext
-sc = SparkContext(appName='ex1_raw_job')
+sc = SparkContext(appName="ex1_raw_job")
 sc_sql = SQLContext(sc)
 
 # Load data from S3 bucket
 some_events = sc_sql.read.csv(input_some_events, header=True)
-some_events.createOrReplaceTempView('some_events')
+some_events.createOrReplaceTempView("some_events")
 other_events = sc_sql.read.csv(input_other_events, header=True)
-other_events.createOrReplaceTempView('other_events')
+other_events.createOrReplaceTempView("other_events")
 
 # Calculate word counts
 query_str = """
