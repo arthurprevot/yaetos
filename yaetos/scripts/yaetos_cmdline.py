@@ -28,7 +28,7 @@ class YaetosCmds(object):
     usage_docker_bash = "Launching docker container to run jobs from bash."
     usage_docker_jupyter = "Launching docker container to run jobs from jupyter notebook."
     usage_run_dockerized = "Run job through docker (experimental)" # TODO: remove experimental after testing
-    usage_run = "Run job in terminal (experimental)" # TODO: remove experimental after testing
+    usage_run = "Run job in terminal (experimental). 'yaetos run some/job.py --some=arg' is the same as running 'python some/job.py --some=arg'" # TODO: remove experimental after testing
 
     usage = f'''
     yaetos <command> [<args>]
@@ -39,8 +39,6 @@ class YaetosCmds(object):
     launch_docker_jupyter: {usage_docker_jupyter}
     run_dockerized       : {usage_run_dockerized}
     run                  : {usage_run}
-
-    Note: yaetos can also be used locally, outside of docker, using "python some/job.py --some_args"
     '''
 
     def __init__(self):
