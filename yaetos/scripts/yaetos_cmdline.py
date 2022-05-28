@@ -27,7 +27,8 @@ class YaetosCmds(object):
     usage_setup = "Setup yaetos folders and files in current folder."
     usage_docker_bash = "Launching docker container to run jobs from bash."
     usage_docker_jupyter = "Launching docker container to run jobs from jupyter notebook."
-    usage_run = "Run job through docker (experimental)" # TODO: remove experimental after testing
+    usage_run_dockerized = "Run job through docker (experimental)" # TODO: remove experimental after testing
+    usage_run = "Run job in terminal (experimental)" # TODO: remove experimental after testing
 
     usage = f'''
     yaetos <command> [<args>]
@@ -36,7 +37,8 @@ class YaetosCmds(object):
     setup                : {usage_setup}
     launch_docker_bash   : {usage_docker_bash}
     launch_docker_jupyter: {usage_docker_jupyter}
-    run_dockerized       : {usage_run}
+    run_dockerized       : {usage_run_dockerized}
+    run                  : {usage_run}
 
     Note: yaetos can also be used locally, outside of docker, using "python some/job.py --some_args"
     '''
@@ -73,13 +75,20 @@ class YaetosCmds(object):
 
     def run_dockerized(self):
         parser = argparse.ArgumentParser(
-            description=self.usage_run)
+            description=self.usage_run_dockerized)
         ignored, cmd_unknown_args = parser.parse_known_args()
         cmd_str = 'python '+' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 3 "+cmd_str
         # print("Command line to be sent "+cmd_delegated)
         subprocess.call(cmd_delegated, shell=True)
 
+    def run(self):
+        parser = argparse.ArgumentParser(
+            description=self.usage_run)
+        ignored, cmd_unknown_args = parser.parse_known_args()
+        cmd_str = 'python '+' '.join(cmd_unknown_args[1:])
+        cmd_delegated = "./launch_env.sh 4 "+cmd_str
+        subprocess.call(cmd_delegated, shell=True)
 
 
 def setup_env(args):

@@ -14,8 +14,8 @@
 
 yaetos_jobs_home=$PWD  # location of folder with jobs. In that config, framework is pip installed, and available in path.
 
-run_docker=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
-if [[ $run_docker = 1 ]]; then
+run_mode=$1  # values: 1 (docker bash), 2 (docker jupyter), 3 (exec in docker), 4 (exec in terminal)
+if [[ $run_mode = 1 ]]; then
   echo 'About to run docker with bash'
   docker build -t pyspark_container . # builds from Dockerfile
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
@@ -25,7 +25,7 @@ if [[ $run_docker = 1 ]]; then
       -w /mnt/yaetos_jobs/ \
       pyspark_container \
       bash
-elif [[ $run_docker = 2 ]]; then
+elif [[ $run_mode = 2 ]]; then
   echo 'About to run docker with jupyter notebooks'
   docker build -t pyspark_container . # builds from Dockerfile
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
@@ -35,8 +35,10 @@ elif [[ $run_docker = 2 ]]; then
       -w /mnt/yaetos_jobs/ \
       pyspark_container \
       jupyter notebook --ip 0.0.0.0 --port 8888 --no-browser --allow-root
-elif [[ $run_docker = 3 ]]; then
+elif [[ $run_mode = 3 ]]; then
   echo 'Running job in docker, not implemented yet. The code needs to be added in launch_env.sh'
+elif [[ $run_mode = 4 ]]; then
+  echo 'Running job in terminal, not implemented yet. The code needs to be added in launch_env.sh'
 else
   echo 'Uncorrect argument, command ignored'
 fi

@@ -12,8 +12,8 @@
 
 yaetos_jobs_home=/path/to/repo/yaetos/
 
-run_docker=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
-if [[ $run_docker = 1 ]]; then
+run_mode=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
+if [[ $run_mode = 1 ]]; then
   echo 'About to run docker with bash'
   cd $yaetos_jobs_home
   docker build -t pyspark_container -f Dockerfile_alt .
@@ -24,7 +24,7 @@ if [[ $run_docker = 1 ]]; then
       -w /mnt/yaetos_jobs/ \
       pyspark_container \
       bash
-elif [[ $run_docker = 2 ]]; then
+elif [[ $run_mode = 2 ]]; then
   echo 'About to run docker with jupyter notebooks'
   cd $yaetos_jobs_home
   docker build -t pyspark_container -f Dockerfile_alt .
@@ -35,8 +35,10 @@ elif [[ $run_docker = 2 ]]; then
       -w /mnt/yaetos_jobs/ \
       pyspark_container \
       jupyter notebook --ip 0.0.0.0 --port 8888 --no-browser --allow-root
-elif [[ $run_docker = 3 ]]; then
+elif [[ $run_mode = 3 ]]; then
   echo 'Running job in docker, not implemented yet. The code needs to be added in launch_env.sh'
+elif [[ $run_mode = 4 ]]; then
+  echo 'Running job in terminal, not implemented yet. The code needs to be added in launch_env.sh'
 else
   echo 'Uncorrect argument, command ignored'
 fi
