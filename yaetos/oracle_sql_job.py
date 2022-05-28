@@ -19,7 +19,7 @@ class Job(ETL_Base):
         self.OUTPUT_TYPES = self.get_output_types_from_sql(sql)
         cred_profiles = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage)
 
-        print "Running query: \n", sql
+        print("Running query: \n", sql)
         pdf = query_oracle(sql, db=self.db_creds, connection_type='sqlalchemy', creds_or_file=cred_profiles) # for testing locally: from libs.analysis_toolkit.query_helper import process_and_cache; pdf = process_and_cache('test', 'data/', lambda : query_oracle(sql, db=self.db_creds, connection_type='sqlalchemy', creds_or_file=cred_profiles), force_rerun=False)
         # TODO: Check to get OUTPUT_TYPES from query_oracle, so not required here.
         sdf = pdf_to_sdf(pdf, self.OUTPUT_TYPES, self.sc, self.sc_sql)
