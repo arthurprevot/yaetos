@@ -11,22 +11,24 @@
 </div>
 
 # Yaetos
-Yaetos is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis is on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. It's name stands for "Yet Another ETL Tool on Spark".
+Yaetos is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) or pandas and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis is on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. It's name stands for "Yet Another ETL Tool on Spark"... although it can now also use pandas as an engine.
  - In the simplest cases, an ETL job can consist of an SQL file only. No need to know any programming for these.
  - In more complex cases, an ETL job can consist of a python file, giving access to Spark dataframes, RDDs and any python library.
 
 Some features:
- * Running locally and on cluster
- * Support dependencies across jobs
- * Support incremental loading and processing
- * Create AWS cluster when needed or piggy back on an existing cluster.
- * ETL code git control-able and unit-testable
- * Can integrate with any python library or spark-ml to build machine learning applications or other.
+ * The ability to run jobs locally and on cluster without any changes.
+ * The support of dependencies across jobs
+ * The support of incremental loading and processing
+ * The automatic creation of AWS clusters when needed.
+ * The support for git and unit-tests
+ * The integration with any python library or spark-ml to build machine learning or other pipelines.
 
 ## To try it
 
 Run the installation instructions (see lower) and run [this sql example](jobs/examples/ex1_full_sql_job.sql) with:
 
+		yaetos launch_docker_bash
+		# From inside the docker container
     python yaetos/sql_job.py  --sql_file=jobs/examples/ex1_full_sql_job.sql
 
 It will run locally, taking the inputs from a job registry file (`jobs_metadata.yml`) at [these lines](conf/jobs_metadata.yml#L7-L11), transform them based on this [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata.yml#12). To run the same sql example on an AWS cluster, add `--deploy=EMR` to the same command line above. In that case, inputs and outputs will be taken from S3 at [these locations](conf/jobs_metadata.yml#L1-L5) from the jobs_metadata file. If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
@@ -40,6 +42,12 @@ To try an example with job dependencies, run [ex4_dependency4_job.py](jobs/examp
     python jobs/examples/ex4_dependency4_job.py --dependencies
 
 It will run all 3 dependencies defined in [the jobs_metadata registry](conf/jobs_metadata.yml#L57-L87). There are other examples in [jobs/examples/](jobs/examples/).
+
+To explore jobs in jupyter notebooks:
+
+    yaetos launch_docker_jupyter  # from the host OS
+		# open a browser on the host OS, and go to `http://localhost:8888/tree/notebooks`
+		# navigate to sample notebooks, such as [inspect_ex4_dependencies4_job.ipynb](notebooks/inspect_ex4_dependencies4_job.ipynb)
 
 ## Development Flow
 
@@ -58,25 +66,34 @@ Jobs can be unit-tested using `py.test`. For a given job, create a corresponding
 ## Unit-testing
 ... is done using `py.test`. Run them with:
 
+		yaetos launch_docker_bash
+		# From inside the docker container
     py.test tests/*  # for all tests
     py.test tests/jobs/examples/ex1_frameworked_job.py  # for tests for a specific file
 
 ## Installation instructions
 
-To avoid installing dependencies on your machine manually, you can run the job from a docker container, with spark and python libraries already setup. The docker setup is included.
+To install the library and create a folder with all necessary files and folders:
 
     pip install yaetos
     cd /path/to/an/empty/folder/that/will/contain/pipeline/code
     yaetos setup  # to create sub-folders and setup framework files.
-    yaetos launch_env # to launch the docker container
-    # From inside the docker container, try a test pipeline with
-    python jobs/examples/ex1_frameworked_job.py --dependencies
+
+The setup comes with a docker environment with all libraries necessary (python and spark). It also comes with sample jobs pulling public data. To test running one of the sample job locally, in docker:
+
+		yaetos run_dockerized jobs/examples/ex1_frameworked_job.py --dependencies
 
 The docker container is setup to share the current folder with the host, so ETL jobs can be written from your host machine, using any IDE, and run from the container directly.
 
 To get jobs executed and/or scheduled in AWS, You need to:
  * fill AWS parameters in `conf/config.cfg`.
  * have `~/.aws/` folder setup to give access to AWS secret keys. If not, run `pip install  awscli`, and `aws configure`.
+
+To check running the same job in the cloud works:
+
+ 		yaetos run_dockerized jobs/examples/ex1_frameworked_job.py --dependencies --deploy=EMR
+
+The status of the job can be monitored in AWS in the EMR section.
 
 ## Potential improvements
 
