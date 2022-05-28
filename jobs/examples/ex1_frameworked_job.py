@@ -4,7 +4,9 @@ from pyspark import sql
 
 
 class Job(ETL_Base):
-    def transform(self, some_events, other_events) -> sql.DataFrame:
+    def transform(
+        self, some_events="some_events", other_events="other_events"
+    ) -> sql.DataFrame:
         return self.query(
             f"""
             SELECT se.session_id, count(*) as count_events
