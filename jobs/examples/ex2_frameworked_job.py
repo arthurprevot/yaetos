@@ -2,29 +2,34 @@ from yaetos.etl_utils import ETL_Base, Commandliner
 from pyspark.sql.functions import udf, array
 from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import col
+from pyspark import sql
+from datetime import datetime
 
 
 class Job(ETL_Base):
-    def transform(self, some_events, other_events):
+    def transform(self, some_events, other_events) -> sql.DataFrame:
         """For demo only. Functional but no specific business logic."""
 
-        df = self.query("""
+        df = self.query(
+            """
             SELECT se.timestamp, se.session_id, se.group, se.action
             FROM some_events se
             JOIN other_events oe on se.session_id=oe.session_id
             WHERE se.action='searchResultPage' and se.n_results>0
-            """)
+            """
+        )
 
         udf_format_datetime = udf(self.format_datetime, StringType())
 
-        events_cleaned = df \
-            .withColumn('timestamp_obj', udf_format_datetime(df.timestamp).cast("timestamp")) \
-            .where(col('timestamp').like("%2.016%") == False)
+        events_cleaned = df.withColumn(
+            "timestamp_obj", udf_format_datetime(df.timestamp).cast("timestamp")
+        ).where(col("timestamp").like("%2.016%") == False)
 
         events_cleaned.createOrReplaceTempView("events_cleaned")
 
         self.sc_sql.registerFunction("date_diff_sec", self.date_diff_sec, IntegerType())
-        output = self.query("""
+        output = self.query(
+            """
             WITH
             session_times as (
                 SELECT timestamp, timestamp_obj, session_id, group, action,
@@ -44,25 +49,23 @@ class Job(ETL_Base):
             select *
             from session_grouped
             order by delta_sec desc, first_timestamp
-            """)
+            """
+        )
         return output
 
     @staticmethod
-    def format_datetime(wiki_dt):
-        dt = {}
-        dt['year'] = wiki_dt[:4]
-        dt['month'] = wiki_dt[4:6]
-        dt['day'] = wiki_dt[6:8]
-        dt['hour'] = wiki_dt[8:10]
-        dt['minute'] = wiki_dt[10:12]
-        dt['sec'] = wiki_dt[12:14]
-        return '{year}-{month}-{day} {hour}:{minute}:{sec}'.format(**dt)
+    def format_datetime(wiki_dt_str: str) -> str:
+        """
+        Converts a string date to a datetime to then parse to a target format.
+        """
+        wiki_dt = datetime.strptime(wiki_dt_str, "%Y%m%d%H%M%S")
+        return wiki_dt.strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod
-    def date_diff_sec(x,y):
-        return int((y-x).total_seconds())
+    def date_diff_sec(start_dt: datetime, end_dt: datetime) -> int:
+        return int((end_dt - start_dt).total_seconds())
 
 
 if __name__ == "__main__":
-    args = {'job_param_file': 'conf/jobs_metadata.yml'}
+    args = {"job_param_file": "conf/jobs_metadata.yml"}
     Commandliner(Job, **args)
