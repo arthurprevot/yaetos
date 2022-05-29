@@ -11,7 +11,7 @@
 </div>
 
 # Yaetos
-Yaetos is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) or pandas and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis is on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. It's name stands for "Yet Another ETL Tool on Spark"... although it can now also use pandas as an engine.
+Yaetos is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) or pandas and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis is on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. It's name stands for "Yet Another ETL Tool on Spark".
  - In the simplest cases, an ETL job can consist of an SQL file only. No need to know any programming for these.
  - In more complex cases, an ETL job can consist of a python file, giving access to Spark dataframes, RDDs and any python library.
 
@@ -25,7 +25,7 @@ Some features:
 
 ## To try it
 
-Run the installation instructions (see lower) and run [this sql example](jobs/examples/ex1_full_sql_job.sql) locally with:
+Run the commands from the "installation instructions" section below. Then run [this sql example](jobs/examples/ex1_full_sql_job.sql) locally with:
 
 		yaetos run_dockerized jobs/generic/launcher.py --job_name=examples/ex1_full_sql_job.sql
 
@@ -37,27 +37,29 @@ For the rest of the documentation, we will go in the docker environment with the
 
 To run an ETL that showcases manipulation of a spark dataframes, more flexible than the sql example above, run this frameworked pyspark example [ex1_frameworked_job.py](jobs/examples/ex1_frameworked_job.py) with this:
 
-    python jobs/examples/ex1_frameworked_job.py
+		python jobs/examples/ex1_frameworked_job.py
 
 To try an example with job dependencies, run [ex4_dependency4_job.py](jobs/examples/ex4_dependency4_job.py) with this:
 
-    python jobs/examples/ex4_dependency4_job.py --dependencies
+		python jobs/examples/ex4_dependency4_job.py --dependencies
 
 It will run all 3 dependencies defined in [the jobs_metadata registry](conf/jobs_metadata.yml#L57-L87). There are other examples in [jobs/examples/](jobs/examples/).
 
-To explore jobs in jupyter notebooks:
+To explore jobs in jupyter notebooks, from the host OS:
 
-    yaetos launch_docker_jupyter  # from the host OS
-		# open a browser on the host OS, and go to `http://localhost:8888/tree/notebooks`
-		# navigate to sample notebooks, such as [inspect_ex4_dependencies4_job.ipynb](notebooks/inspect_ex4_dependencies4_job.ipynb)
+		yaetos launch_docker_jupyter
+
+Then, open a browser on the host OS, go to `http://localhost:8888/tree/notebooks`, navigate to notebooks, like [inspect_ex4_dependencies4_job.ipynb](notebooks/inspect_ex4_dependencies4_job.ipynb). It will look like this:
+
+![jupyter demo](docs/images/Screenshot_2022-05-30_at_12.03.14.png)
 
 ## Development Flow
 
 To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run the AWS cluster or in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run locally. To run the jobs, execute the command lines following the same patterns as above:
 
-    python jobs/generic/launcher.py --job_name=examples/some_sql_file.sql
-    # or
-    python jobs/examples/some_python_file.py
+		python jobs/generic/launcher.py --job_name=examples/some_sql_file.sql
+		# or
+		python jobs/examples/some_python_file.py
 
 And add the `--deploy=EMR` to deploy and run on an AWS cluster.
 
@@ -70,16 +72,17 @@ Jobs can be unit-tested using `py.test`. For a given job, create a corresponding
 
 		yaetos launch_docker_bash
 		# From inside the docker container
-    py.test tests/*  # for all tests
-    py.test tests/jobs/examples/ex1_frameworked_job.py  # for tests for a specific file
+		pytest tests/*
 
 ## Installation instructions
 
 To install the library and create a folder with all necessary files and folders:
 
-    pip install yaetos
-    cd /path/to/an/empty/folder/that/will/contain/pipeline/code
-    yaetos setup  # to create sub-folders and setup framework files.
+		pip install yaetos
+		cd /path/to/an/empty/folder/that/will/contain/pipeline/code
+		yaetos setup  # to create sub-folders and setup framework files.
+
+An example of the folder structure is available at [github.com/arthurprevot/yaetos_jobs](https://github.com/arthurprevot/yaetos_jobs) with more sample jobs. The tool can also be used by cloning this repository, mostly for people interested in contributing to the framework itself. Feel free to contact the author if you need more details on setting it up that way.
 
 The setup comes with a docker environment with all libraries necessary (python and spark). It also comes with sample jobs pulling public data. To test running one of the sample job locally, in docker:
 
