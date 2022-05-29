@@ -27,11 +27,9 @@ Some features:
 
 Run the installation instructions (see lower) and run [this sql example](jobs/examples/ex1_full_sql_job.sql) locally with:
 
-		yaetos launch_docker_bash
-		# From inside the docker container
-    python jobs/generic/launcher.py --job_name=examples/ex1_full_sql_job.sql
+		yaetos run_dockerized jobs/generic/launcher.py --job_name=examples/ex1_full_sql_job.sql
 
-It will open the manifesto file (`jobs_metadata.yml`), find the job called `examples/ex1_full_sql_job.sql`, i.e. [these lines](conf/jobs_metadata.yml#L7-L16), get the job parameters from there (input paths, output path...), execute the transform defined in the job [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata.yml#L12). To run the same sql example on an AWS cluster, add `--deploy=EMR` to the same command line above. In that case, inputs and outputs will be taken from S3, as defined in the `common_params/mode_specific_params/dev_EMR/base_path` from the manifesto. If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
+It will open the manifesto file (`jobs_metadata.yml`), find the job called `examples/ex1_full_sql_job.sql`, i.e. [these lines](conf/jobs_metadata.yml#L7-L16), get the job parameters from there (input paths, output path...), execute the transform defined in the job [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata.yml#L12). To run the same sql example on an AWS cluster, add `--deploy=EMR` to the same command line above. In that case, inputs and outputs will be taken from S3, as defined by the `base_path` param in the manifesto [here](conf/jobs_metadata.yml#L214). If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
 
 To run an ETL that showcases manipulation of a spark dataframes, more flexible than the sql example above, run this frameworked pyspark example [ex1_frameworked_job.py](jobs/examples/ex1_frameworked_job.py) with this:
 
@@ -42,6 +40,17 @@ To try an example with job dependencies, run [ex4_dependency4_job.py](jobs/examp
     python jobs/examples/ex4_dependency4_job.py --dependencies
 
 It will run all 3 dependencies defined in [the jobs_metadata registry](conf/jobs_metadata.yml#L57-L87). There are other examples in [jobs/examples/](jobs/examples/).
+
+As for the use of the yaetos command lines, note that executing:
+
+	  yaetos run_dockerized some/job.py --some=args
+
+is the same as executing:
+
+		yaetos launch_docker_bash
+		# and from inside the docker container:
+		python some/job.py --some=args
+
 
 To explore jobs in jupyter notebooks:
 
