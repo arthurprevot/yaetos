@@ -1,6 +1,7 @@
 from ConfigParser import ConfigParser
 import os
 
+
 def get_user_pass(cred_profile, fpath=None):
     config = ConfigParser()
     if not fpath:
