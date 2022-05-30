@@ -25,7 +25,8 @@ import sys
 import numpy as np
 import gc
 from pprint import pformat
-import smtplib, ssl
+import smtplib
+import ssl
 from dateutil.relativedelta import relativedelta
 import yaetos.spark_utils as su
 from yaetos.git_utils import Git_Config_Manager
@@ -39,9 +40,9 @@ logger = setup_logging('Job')
 JOBS_METADATA_FILE = 'conf/jobs_metadata.yml'
 AWS_CONFIG_FILE = 'conf/aws_config.cfg'
 CONNECTION_FILE = 'conf/connections.cfg'
-CLUSTER_APP_FOLDER = '/home/hadoop/app/' # TODO: check to remove it and replace it by LOCAL_JOB_FOLDER in code, now that LOCAL_JOB_FOLDER uses 'os.getcwd()'
+CLUSTER_APP_FOLDER = '/home/hadoop/app/'  # TODO: check to remove it and replace it by LOCAL_JOB_FOLDER in code, now that LOCAL_JOB_FOLDER uses 'os.getcwd()'
 CI_APP_FOLDER = '/home/runner/work/yaetos/yaetos/'  # TODO: check to remove it now that LOCAL_JOB_FOLDER uses 'os.getcwd()'
-LOCAL_FRAMEWORK_FOLDER = os.environ.get('YAETOS_FRAMEWORK_HOME', '') # YAETOS_FRAMEWORK_HOME should end with '/'. Only useful when using job folder separate from framework folder and framework folder is yaetos repo (no pip installed).
+LOCAL_FRAMEWORK_FOLDER = os.environ.get('YAETOS_FRAMEWORK_HOME', '')  # YAETOS_FRAMEWORK_HOME should end with '/'. Only useful when using job folder separate from framework folder and framework folder is yaetos repo (no pip installed).
 LOCAL_JOB_FOLDER = (os.getcwd() + '/') or os.environ.get('YAETOS_JOBS_HOME', '')  # location of folder with jobs, regardless of where framework code is (in main repo or pip installed). It will be the same as LOCAL_FRAMEWORK_FOLDER when the jobs are in the main repo.
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
@@ -95,7 +96,7 @@ class ETL_Base(object):
         ii = 0
         while needs_run:  # TODO: check to rewrite as for loop. Simpler and avoiding potential infinite loops.
             # TODO: isolate code below into separate functions.
-            ii+=1
+            ii += 1
             if self.jargs.merged_args.get('job_increment') == 'daily':
                 if ii == 1:
                     first_day = self.jargs.merged_args['first_day']
@@ -111,7 +112,7 @@ class ETL_Base(object):
                     period = periods[0]
                     logger.info('Period to be loaded in this run: {}'.format(period))
                     self.period = period  # to be captured in etl_one_pass, needed for in database filtering.
-                    self.period_next = periods[1] if len(periods)>=2 else None  # same
+                    self.period_next = periods[1] if len(periods) >= 2 else None  # same
                     self.jargs.merged_args['file_tag'] = period
                     output = self.etl_one_pass(sc, sc_sql, loaded_inputs)
                     self.final_inc = period == periods[-1]
@@ -136,7 +137,7 @@ class ETL_Base(object):
         """ Main etl function, loads inputs, runs transform, and saves output."""
         logger.info("-------Starting running job '{}'--------".format(self.jargs.job_name))
         start_time = time()
-        self.start_dt = datetime.utcnow() # attached to self so available within "transform()" func.
+        self.start_dt = datetime.utcnow()  # attached to self so available within "transform()" func.
         output, schemas = self.etl_no_io(sc, sc_sql, loaded_inputs)
         if output is None:
             if self.jargs.is_incremental:
@@ -156,7 +157,7 @@ class ETL_Base(object):
                 pass
             count = output.count()
             logger.info('Output count: {}'.format(count))
-            if self.jargs.output.get('df_type', 'spark')=='spark':
+            if self.jargs.output.get('df_type', 'spark') == 'spark':
                 logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
             self.output_empty = count == 0
 
@@ -175,7 +176,7 @@ class ETL_Base(object):
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
 
-        if self.jargs.output.get('df_type', 'spark')=='spark':
+        if self.jargs.output.get('df_type', 'spark') == 'spark':
             output.unpersist()
         end_time = time()
         elapsed = end_time - start_time
@@ -196,8 +197,8 @@ class ETL_Base(object):
 
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
-        if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('df_type', 'spark')=='spark':
-            if self.jargs.add_created_at=='true':
+        if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('df_type', 'spark') == 'spark':
+            if self.jargs.add_created_at == 'true':
                 output = su.add_created_at(output, self.start_dt)
             output.cache()
             schemas = Schema_Builder()
@@ -223,7 +224,7 @@ class ETL_Base(object):
 
     def get_last_run_period_daily(self, sc, sc_sql):
         previous_output_max_timestamp = self.get_previous_output_max_timestamp(sc, sc_sql)
-        last_run_period  = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else None  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
+        last_run_period = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else None  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
         return last_run_period
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
@@ -277,21 +278,21 @@ class ETL_Base(object):
         # Get latest timestamp in common across incremental inputs
         maxes = []
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark')=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark') == 'spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if input_is_tabular and inc:
                 max_dt = app_args[item].agg({inc: "max"}).collect()[0][0]
                 maxes.append(max_dt)
-        max_dt = min(maxes) if len(maxes)>0 else None
+        max_dt = min(maxes) if len(maxes) > 0 else None
 
         # Filter
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark')=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark') == 'spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
                     # TODO: add limit to amount of input data, and set self.final_inc=False
-                    inc_type = {k:v for k, v in app_args[item].dtypes}[inc]
+                    inc_type = {k: v for k, v in app_args[item].dtypes}[inc]
                     logger.info("Input dataset '{}' will be filtered for min_dt={} max_dt={}".format(item, min_dt, max_dt))
                     if min_dt:
                         # min_dt = to_date(lit(s)).cast(TimestampType()  # TODO: deal with dt type, as coming from parquet
@@ -306,12 +307,12 @@ class ETL_Base(object):
         """Filter based on period defined in. Simple but can be a pb if late arriving data or dependencies not run.
         Inputs filtered inside source database will be filtered again."""
         for item in app_args.keys():
-            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark')=='spark'
+            input_is_tabular = self.jargs.inputs[item]['type'] in self.TABULAR_TYPES and self.jargs.inputs[item]('df_type', 'spark') == 'spark'
             inc = self.jargs.inputs[item].get('inc_field', None)
             if inc:
                 if input_is_tabular:
                     # TODO: add limit to amount of input data, and set self.final_inc=False
-                    inc_type = {k:v for k, v in app_args[item].dtypes}[inc]
+                    inc_type = {k: v for k, v in app_args[item].dtypes}[inc]
                     logger.info("Input dataset '{}' will be filtered for {}='{}'".format(item, inc, self.period))
                     app_args[item] = app_args[item].filter(app_args[item][inc] == self.period)
                 else:
@@ -343,17 +344,16 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.inputs[input_name].get('df_type') == 'pandas':
             if input_type == 'csv':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'parquet':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'excel':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='excel', read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs',{}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='excel', read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
             # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))  # TODO adapt to pandas
             return pdf
-
 
         # Tabular types, Spark
         if input_type == 'csv':
@@ -415,7 +415,7 @@ class ETL_Base(object):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         creds_section = self.jargs.inputs[input_name]['creds']
         db = creds[creds_section]
-        extra_params = '' # can use '?zeroDateTimeBehavior=CONVERT_TO_NULL' to help solve "java.sql.SQLException: Zero date value prohibited" but leads to other error msg.
+        extra_params = ''  # can use '?zeroDateTimeBehavior=CONVERT_TO_NULL' to help solve "java.sql.SQLException: Zero date value prohibited" but leads to other error msg.
         url = 'jdbc:mysql://{host}:{port}/{service}{extra_params}'.format(host=db['host'], port=db['port'], service=db['service'], extra_params=extra_params)
         dbtable = self.jargs.inputs[input_name]['db_table']
         inc_field = self.jargs.inputs[input_name].get('inc_field')
@@ -489,7 +489,7 @@ class ETL_Base(object):
 
     def get_previous_output_max_timestamp(self, sc, sc_sql):
         path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
-        path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else '' # '*' to go into output subfolders.
+        path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else ''  # '*' to go into output subfolders.
         try:
             df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql)
         except Exception as e:  # TODO: don't catch all
@@ -505,14 +505,14 @@ class ETL_Base(object):
 
     def save_output(self, output, now_dt=None):
         self.path = self.save(output=output,
-                  path=self.jargs.output['path'],
-                  base_path=self.jargs.base_path,
-                  type=self.jargs.output['type'],
-                  now_dt=now_dt,
-                  is_incremental=self.jargs.is_incremental,
-                  incremental_type=self.jargs.merged_args.get('incremental_type', 'no_schema'),
-                  partitionby=self.jargs.output.get('inc_field') or self.jargs.merged_args.get('partitionby'),
-                  file_tag=self.jargs.merged_args.get('file_tag'))  # TODO: make param standard in cmd_args ?
+                              path=self.jargs.output['path'],
+                              base_path=self.jargs.base_path,
+                              type=self.jargs.output['type'],
+                              now_dt=now_dt,
+                              is_incremental=self.jargs.is_incremental,
+                              incremental_type=self.jargs.merged_args.get('incremental_type', 'no_schema'),
+                              partitionby=self.jargs.output.get('inc_field') or self.jargs.merged_args.get('partitionby'),
+                              file_tag=self.jargs.merged_args.get('file_tag'))  # TODO: make param standard in cmd_args ?
 
     def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
@@ -535,9 +535,9 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.output.get('df_type') == 'pandas':
             if type == 'csv':
-                FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_csv', save_kwargs=self.jargs.output.get('save_kwargs',{}))
+                FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_csv', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             elif type == 'parquet':
-                FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_parquet', save_kwargs=self.jargs.output.get('save_kwargs',{}))
+                FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_parquet', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             else:
                 raise Exception("Need to specify supported output type for pandas, csv only for now.")
             logger.info('Wrote output to ' + path)
@@ -567,12 +567,12 @@ class ETL_Base(object):
             -- output folder : TBD
             -- github hash: TBD
             -- code: TBD
-            """%(self.app_name, self.jargs.job_name, elapsed)
+            """ % (self.app_name, self.jargs.job_name, elapsed)
         FS_Ops_Dispatcher().save_metadata(fname, content)
 
     def query(self, query_str):
         logger.info('Query string:\n' + query_str)
-        df =  self.sc_sql.sql(query_str)
+        df = self.sc_sql.sql(query_str)
         df.cache()
         return df
 
@@ -593,7 +593,7 @@ class ETL_Base(object):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
         from yaetos.redshift_spark import create_table
         connection_profile = self.jargs.copy_to_redshift['creds']
-        schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
+        schema, name_tb = self.jargs.copy_to_redshift['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '2.4'))
@@ -602,7 +602,7 @@ class ETL_Base(object):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
         from yaetos.clickhouse import create_table
         connection_profile = self.jargs.copy_to_clickhouse['creds']
-        schema, name_tb= self.jargs.copy_to_clickhouse['table'].split('.')
+        schema, name_tb = self.jargs.copy_to_clickhouse['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental)
@@ -650,6 +650,7 @@ class ETL_Base(object):
     def identify_non_unique_pks(self, df, pks):
         return su.identify_non_unique_pks(df, pks)
 
+
 class Period_Builder():
     @staticmethod
     def get_last_day(as_of_date=datetime.utcnow()):
@@ -681,8 +682,9 @@ class Period_Builder():
 
 class Schema_Builder():
     TYPES_FOLDER = 'schemas/'
+
     def generate_schemas(self, loaded_datasets, output):
-        yml = {'inputs':{}}
+        yml = {'inputs': {}}
         for key, value in loaded_datasets.items():
             if value:
                 # TODO: make it fail softly in case code below fails, so it doesn't block job, since it is for logging only.
@@ -692,7 +694,7 @@ class Schema_Builder():
 
     def save_yaml(self, job_name):
         job_name = job_name.replace('.py', '')
-        fname = self.TYPES_FOLDER + job_name+'.yaml'
+        fname = self.TYPES_FOLDER + job_name + '.yaml'
         os.makedirs(os.path.dirname(fname), exist_ok=True)
         with open(fname, 'w') as file:
             ignored = yaml.dump(self.yml, file)
@@ -710,19 +712,19 @@ class Job_Yml_Parser():
     @staticmethod
     def set_job_name_from_file(job_file):
         # when run from Flow(), job_file is full path. When run from ETL directly, job_file is "jobs/..." .
-        if job_file.startswith(CLUSTER_APP_FOLDER+'jobs/'):
-            job_name = job_file[len(CLUSTER_APP_FOLDER+'jobs/'):]
-        elif job_file.startswith(CLUSTER_APP_FOLDER+'scripts.zip/jobs/'):
-            job_name = job_file[len(CLUSTER_APP_FOLDER+'scripts.zip/jobs/'):]
-        elif job_file.startswith(CI_APP_FOLDER+'jobs/'):
-            job_name = job_file[len(CI_APP_FOLDER+'jobs/'):]
-        elif job_file.startswith(LOCAL_JOB_FOLDER+'jobs/'):  # when run from external repo.
-            job_name = job_file[len(LOCAL_JOB_FOLDER+'jobs/'):]
+        if job_file.startswith(CLUSTER_APP_FOLDER + 'jobs/'):
+            job_name = job_file[len(CLUSTER_APP_FOLDER + 'jobs/'):]
+        elif job_file.startswith(CLUSTER_APP_FOLDER + 'scripts.zip/jobs/'):
+            job_name = job_file[len(CLUSTER_APP_FOLDER + 'scripts.zip/jobs/'):]
+        elif job_file.startswith(CI_APP_FOLDER + 'jobs/'):
+            job_name = job_file[len(CI_APP_FOLDER + 'jobs/'):]
+        elif job_file.startswith(LOCAL_JOB_FOLDER + 'jobs/'):  # when run from external repo.
+            job_name = job_file[len(LOCAL_JOB_FOLDER + 'jobs/'):]
         elif job_file.startswith('jobs/'):
             job_name = job_file[len('jobs/'):]
         elif job_file.__contains__('/scripts.zip/jobs/'):
             # To deal with cases like job_file = '/mnt/tmp/spark-48e465ad-cca8-4216-a77f-ce069d04766f/userFiles-b1dad8aa-76ea-4adf-97da-dc9273666263/scripts.zip/jobs/infojobs/churn_prediction/users_inscriptions_daily.py' that appeared in new emr version.
-            job_name = job_file[job_file.find('/scripts.zip/jobs/')+len('/scripts.zip/jobs/'):]
+            job_name = job_file[job_file.find('/scripts.zip/jobs/') + len('/scripts.zip/jobs/'):]
         else:
             # To deal with case when job is defined outside of this repo (and not in jobs/ folder in external folder), i.e. isn't located in 'jobs/' folder. In this case, job name in metadata file should include full path (inc job base path).
             job_name = job_file
@@ -731,7 +733,7 @@ class Job_Yml_Parser():
 
     @staticmethod
     def set_py_job_from_name(job_name):
-        py_job='jobs/{}'.format(job_name)
+        py_job = 'jobs/{}'.format(job_name)
         logger.info("py_job: '{}', from job_name: '{}'".format(py_job, job_name))
         return py_job
 
@@ -741,9 +743,9 @@ class Job_Yml_Parser():
             return None
 
         if mode in ('dev_EMR', 'prod_EMR'):
-            sql_file=CLUSTER_APP_FOLDER+'jobs/{}'.format(job_name)
+            sql_file = CLUSTER_APP_FOLDER + 'jobs/{}'.format(job_name)
         elif mode == 'dev_local':
-            sql_file='jobs/{}'.format(job_name)
+            sql_file = 'jobs/{}'.format(job_name)
         else:
             raise Exception("Mode not supported in set_sql_file_from_name(): {}".format(mode))
 
@@ -798,7 +800,7 @@ class Job_Args_Parser():
             args = defaults_args.copy()
             args.update(job_args)
             args.update(cmd_args)
-            args.update({'job_name':job_name} if job_name else {})
+            args.update({'job_name': job_name} if job_name else {})
             args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled') else args['mode']
             assert 'job_name' in args.keys()
             yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
@@ -825,7 +827,7 @@ class Job_Args_Parser():
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
 
     def get_app_args(self):
-        return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST or key=='mode'}
+        return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST or key == 'mode'}
 
     def update_args(self, args, loaded_inputs):
         """ Updating params or adding new ones, according to execution environment (local, prod...)"""
@@ -903,6 +905,7 @@ class Path_Handler():
 def Commandliner(Job, **job_args):  # TODO: change name to reflect fact it is not a class anymore
     Runner(Job, **job_args).parse_cmdline_and_run()
 
+
 class Runner():
     def __init__(self, Job, **job_args):
         self.Job = Job
@@ -924,7 +927,7 @@ class Runner():
             Job = get_job_class(jargs.py_job)
             job = Job(jargs=jargs)
         else:  # when job run from "python some_job.py"
-            job = Job(pre_jargs={'defaults_args':defaults_args, 'job_args': job_args, 'cmd_args':cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
+            job = Job(pre_jargs={'defaults_args': defaults_args, 'job_args': job_args, 'cmd_args': cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
 
         # Executing or deploying
         if job.jargs.deploy in ('none'):  # when executing job code
@@ -967,40 +970,40 @@ class Runner():
         parser.add_argument("-p", "--push_secrets", action='store_true', help="Pushing secrets to cluster. Only relevant if choosing to deploy to a cluster.")
         # --inputs and --output args can be set from job or commandline too, just not set here.
         defaults = {
-                    'deploy': 'none',
-                    'mode': 'dev_local',
+            'deploy': 'none',
+            'mode': 'dev_local',
                     'job_param_file': JOBS_METADATA_FILE,
                     'job_name': None,
                     'sql_file': None,
                     'connection_file': CONNECTION_FILE,
                     'jobs_folder': JOB_FOLDER,
                     'storage': 'local',
-                    'dependencies': False, # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+                    'dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
                     'rerun_criteria': 'last_date',
                     'chain_dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
                     'load_connectors': 'all',
                     # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
-                    #-- Deploy specific below --
+                    # -- Deploy specific below --
                     'aws_config_file': AWS_CONFIG_FILE,
                     'aws_setup': 'dev',
-                    'code_source': 'lib', # Other options: 'repo' TODO: make it automatic so parameter not needed.
-                    'leave_on': False, # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    'push_secrets': False, # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    #-- Not added in command line args:
+                    'code_source': 'lib',  # Other options: 'repo' TODO: make it automatic so parameter not needed.
+                    'leave_on': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+                    'push_secrets': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+                    # -- Not added in command line args:
                     'enable_redshift_push': True,
                     'base_path': '',
                     'save_schemas': False,
                     'manage_git_info': False,
                     'add_created_at': 'true',  # set as string to be overrideable in cmdline.
                     'no_fw_cache': False,
-                    'spark_boot': True, # options ('spark', 'pandas') (experimental).
-                    }
+                    'spark_boot': True,  # options ('spark', 'pandas') (experimental).
+        }
         return parser, defaults
 
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name
         if job.jargs.spark_boot is True:
-            sc, sc_sql = self.create_contexts(app_name, job.jargs) # TODO: set spark_version default upstream, remove it from here and from deploy.py.
+            sc, sc_sql = self.create_contexts(app_name, job.jargs)  # TODO: set spark_version default upstream, remove it from here and from deploy.py.
         else:
             sc, sc_sql = None, None
 
@@ -1062,10 +1065,10 @@ class Flow():
         df = self.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
         logger.debug('Flow app_name : {}, connection_table: {}'.format(app_name, df))
         graph = self.create_global_graph(df)  # top to bottom
-        tree = self.create_local_tree(graph, nx.DiGraph(), app_name) # bottom to top
-        self.leafs = self.get_leafs(tree, leafs=[]) # bottom to top
+        tree = self.create_local_tree(graph, nx.DiGraph(), app_name)  # bottom to top
+        self.leafs = self.get_leafs(tree, leafs=[])  # bottom to top
         logger.info('Sequence of jobs to be run: {}'.format(self.leafs))
-        logger.info('-'*80)
+        logger.info('-' * 80)
         logger.info('-')
         launch_jargs.cmd_args.pop('job_name', None)  # removing since it should be pulled from yml and not be overriden by cmd_args.
         launch_jargs.job_args.pop('job_name', None)  # same
@@ -1092,13 +1095,13 @@ class Flow():
 
             Job = get_job_class(yml_args['py_job'])
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
-            df[job_name] = job.etl(sc, sc_sql) # at this point df[job_name] is unpersisted. TODO: keep it persisted.
+            df[job_name] = job.etl(sc, sc_sql)  # at this point df[job_name] is unpersisted. TODO: keep it persisted.
 
-            if not self.launch_jargs.merged_args.get('chain_dependencies'): # or self.launch_jargs.merged_args.get('keep_df', True): TODO: check if it works in pipeline.
+            if not self.launch_jargs.merged_args.get('chain_dependencies'):  # or self.launch_jargs.merged_args.get('keep_df', True): TODO: check if it works in pipeline.
                 df[job_name].unpersist()
                 del df[job_name]
                 gc.collect()
-            logger.info('-'*80)
+            logger.info('-' * 80)
             logger.info('-')
         return job
 
@@ -1124,10 +1127,10 @@ class Flow():
             item = item.to_dict()
             source_dataset = item.pop('source_job')
             target_dataset = item.pop('destination_job')
-            item.update({'name':target_dataset})
+            item.update({'name': target_dataset})
 
             DG.add_edge(source_dataset, target_dataset)
-            DG.add_node(source_dataset, name=source_dataset) # (source_dataset, **{'name':source_dataset})
+            DG.add_node(source_dataset, name=source_dataset)  # (source_dataset, **{'name':source_dataset})
             DG.add_node(target_dataset, **item)
         return DG
 
@@ -1146,7 +1149,7 @@ class Flow():
         """Recursive function to extract all leafs in order out of tree.
         Each pass, jobs are moved from "tree" to "leafs" variables until done.
         """
-        cur_leafs = [node for node in tree.nodes() if tree.in_degree(node)!=0 and tree.out_degree(node)==0]
+        cur_leafs = [node for node in tree.nodes() if tree.in_degree(node) != 0 and tree.out_degree(node) == 0]
         leafs += cur_leafs
 
         for leaf in cur_leafs:
@@ -1158,11 +1161,12 @@ class Flow():
 
 
 def get_job_class(py_job):
-    name_import = py_job.replace('/','.').replace('.py','')
+    name_import = py_job.replace('/', '.').replace('.py', '')
     import_cmd = "from {} import Job".format(name_import)
     namespace = {}
     exec(import_cmd, namespace)
     return namespace['Job']
+
 
 def send_email(message, receiver_email, sender_email, password, smtp_server, port):
     context = ssl.create_default_context()
