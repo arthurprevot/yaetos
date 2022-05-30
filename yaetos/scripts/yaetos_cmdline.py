@@ -51,7 +51,7 @@ class YaetosCmds(object):
             print('Unrecognized command')
             parser.print_help()
             exit(1)
-        getattr(self, args.command)() # dispatching according to command line.
+        getattr(self, args.command)()  # dispatching according to command line.
 
     def setup(self):
         parser = argparse.ArgumentParser(
@@ -64,7 +64,7 @@ class YaetosCmds(object):
         parser = argparse.ArgumentParser(
             description=self.usage_docker_bash)
         # parser.add_argument('--no_aws', action='store_true')  # TODO: implement
-        subprocess.call("./launch_env.sh 1", shell=True) # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
+        subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
 
     def launch_docker_jupyter(self):
         parser = argparse.ArgumentParser(
@@ -75,8 +75,8 @@ class YaetosCmds(object):
         parser = argparse.ArgumentParser(
             description=self.usage_run_dockerized)
         ignored, cmd_unknown_args = parser.parse_known_args()
-        cmd_str = 'python '+' '.join(cmd_unknown_args[1:])
-        cmd_delegated = "./launch_env.sh 3 "+cmd_str
+        cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
+        cmd_delegated = "./launch_env.sh 3 " + cmd_str
         # print("Command line to be sent "+cmd_delegated)
         subprocess.call(cmd_delegated, shell=True)
 
@@ -84,8 +84,8 @@ class YaetosCmds(object):
         parser = argparse.ArgumentParser(
             description=self.usage_run)
         ignored, cmd_unknown_args = parser.parse_known_args()
-        cmd_str = 'python '+' '.join(cmd_unknown_args[1:])
-        cmd_delegated = "./launch_env.sh 4 "+cmd_str
+        cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
+        cmd_delegated = "./launch_env.sh 4 " + cmd_str
         subprocess.call(cmd_delegated, shell=True)
 
 
@@ -95,7 +95,7 @@ def setup_env(args):
 
     paths = yaetos.__path__
     package_path = paths[0]
-    if len(paths) > 1 :
+    if len(paths) > 1:
         print(f'Yeatos python package found in several locations. The script will use this one: {package_path}')
 
     # Empty folders necessary for later.
