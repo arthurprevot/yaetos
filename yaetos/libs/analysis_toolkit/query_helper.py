@@ -188,13 +188,13 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
         try:
             df_joined['_delta_' + item1] = df_joined.apply(lambda row: (row[item1] if not pd.isna(row[item1]) else 0.0) - (row[item2] if not pd.isna(row[item2]) else 0.0), axis=1)  # need to deal with case where df1 and df2 have same col name and merge adds suffix _1 and _2
             df_joined['_delta_' + item1 + '_%'] = df_joined.apply(check_delta, axis=1)
-            df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] == True and row['_delta_' + item1 + '_%'] < threshold, axis=1)
+            df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1 + '_%'] < threshold, axis=1)
         except Exception as err:
             raise Exception("Failed item={}, error: \n{}".format(item1, err))
 
     np.seterr(divide='raise')
     if filter_deltas:
-        df_joined = df_joined[df_joined.apply(lambda row: row['_no_deltas'] == False, axis=1)].reset_index()
+        df_joined = df_joined[df_joined.apply(lambda row: row['_no_deltas'] is False, axis=1)].reset_index()
     df_joined.sort_values(by=['_merge'] + pks1, inplace=True)
     return df_joined
 

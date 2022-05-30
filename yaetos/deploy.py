@@ -556,7 +556,7 @@ class DeployPySparkScriptOnAws(object):
     def list_data_pipeline(self, client):
         out = client.list_pipelines(marker='')
         pipelines = out['pipelineIdList']
-        while out['hasMoreResults'] == True:
+        while out['hasMoreResults'] is True:
             out = client.list_pipelines(marker=out['marker'])
             pipelines += out['pipelineIdList']
         return pipelines
