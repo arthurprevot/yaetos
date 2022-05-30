@@ -71,7 +71,7 @@ def diff_dfs(df1, df2):
         hash1 = hashlib.sha256(pd.util.hash_pandas_object(df1, index=True).values).hexdigest()
         hash2 = hashlib.sha256(pd.util.hash_pandas_object(df2, index=True).values).hexdigest()
         is_identical = hash1 == hash2
-    except:
+    except Exception as err:
         print("Diff computation failed so assuming files are not similar.")
         return False
 

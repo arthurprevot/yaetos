@@ -20,8 +20,6 @@ from time import time
 import networkx as nx
 import random
 import pandas as pd
-import os
-import sys
 import numpy as np
 import gc
 from pprint import pformat
