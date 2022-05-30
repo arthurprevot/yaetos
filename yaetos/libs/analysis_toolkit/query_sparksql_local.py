@@ -20,7 +20,7 @@ def query_sparksql_local(query_str, fnames_in=None, dfs_in=None, **kwargs):
             print("Input {}, data types: {}".format(name, [(fd.name, fd.dataType) for fd in df.schema.fields]))
 
     if dfs_in:
-        ## Input dfs may require enforced standard types in pandas dfs (no "object"), so they are compatible with spark dfs.
+        # Input dfs may require enforced standard types in pandas dfs (no "object"), so they are compatible with spark dfs.
         for name, df in dfs_in.items():
             df = sc_sql.createDataFrame(df)
             df.createOrReplaceTempView(name)

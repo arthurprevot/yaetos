@@ -2,6 +2,8 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
 
 # TODO: move it to .sql job.
+
+
 class Job(ETL_Base):
     def transform(self, events):
         df = self.query("""

@@ -4,7 +4,7 @@ Set of operations that require dispatching between local and cloud environment.
 import boto3
 import os
 from io import StringIO
-#from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
+# from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
 from configparser import ConfigParser
 from yaetos.pandas_utils import load_df, save_pandas_local
 from yaetos.logger import setup_logging
@@ -26,8 +26,8 @@ class FS_Ops_Dispatcher():
         fname_parts = [item for item in fname_parts if item != '']
         return (bucket_name, bucket_fname, fname_parts)
 
-
     # --- save_metadata set of functions ----
+
     def save_metadata(self, fname, content):
         self.save_metadata_cluster(fname, content) if self.is_s3_path(fname) else self.save_metadata_local(fname, content)
 
@@ -48,8 +48,8 @@ class FS_Ops_Dispatcher():
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
         logger.info("Created file S3: {}".format(fname))
 
-    ## --- save_file set of functions ----
-    ## Disabled until joblib enabled. Will be useful for ML use case.
+    # --- save_file set of functions ----
+    # Disabled until joblib enabled. Will be useful for ML use case.
     # def save_file(self, fname, content):
     #     self.save_file_cluster(fname, content) if self.is_s3_path(fname) else self.save_file_local(fname, content)
     #
@@ -133,8 +133,8 @@ class FS_Ops_Dispatcher():
     def dir_exist_cluster(path):
         raise NotImplementedError
 
-
     # --- load_pandas set of functions ----
+
     def load_pandas(self, fname, file_type, read_func, read_kwargs):
         return self.load_pandas_cluster(fname, file_type, read_func, read_kwargs) if self.is_s3_path(fname) else self.load_pandas_local(fname, file_type, read_func, read_kwargs)
 
@@ -147,7 +147,7 @@ class FS_Ops_Dispatcher():
         from cloudpathlib import CloudPath
 
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
-        local_path = 'tmp/s3_copy_'+fname_parts[-1]
+        local_path = 'tmp/s3_copy_' + fname_parts[-1]
         cp = CloudPath(fname)  # TODO: add way to load it with specific profile_name or client, as in "s3c = boto3.Session(profile_name='default').client('s3')"
         logger.info("Copying files from S3 '{}' to local '{}'. May take some time.".format(fname, local_path))
         local_pathlib = cp.download_to(local_path)
@@ -156,8 +156,8 @@ class FS_Ops_Dispatcher():
         df = load_df(local_path, file_type, read_func, read_kwargs)
         return df
 
-
     # --- save_pandas set of functions ----
+
     def save_pandas(self, df, fname, save_method, save_kwargs):
         return self.save_pandas_cluster(df, fname, save_method, save_kwargs) if self.is_s3_path(fname) else self.save_pandas_local(df, fname, save_method, save_kwargs)
 
@@ -179,7 +179,7 @@ class FS_Ops_Dispatcher():
 
 class Cred_Ops_Dispatcher():
     def retrieve_secrets(self, storage, aws_creds='/yaetos/connections', local_creds='conf/connections.cfg'):
-        creds = self.retrieve_secrets_cluster(aws_creds) if storage=='s3' else self.retrieve_secrets_local(local_creds)
+        creds = self.retrieve_secrets_cluster(aws_creds) if storage == 's3' else self.retrieve_secrets_local(local_creds)
         return creds
 
     @staticmethod
@@ -187,8 +187,8 @@ class Cred_Ops_Dispatcher():
         client = boto3.Session(profile_name='default').client('secretsmanager')
 
         response = client.get_secret_value(SecretId=creds)
-        logger.info('Read aws secret, secret_id:'+creds)
-        logger.debug('get_secret_value response: '+str(response))
+        logger.info('Read aws secret, secret_id:' + creds)
+        logger.debug('get_secret_value response: ' + str(response))
         content = response['SecretString']
 
         fake_handle = StringIO(content)

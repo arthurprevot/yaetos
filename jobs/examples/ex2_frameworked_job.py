@@ -19,7 +19,7 @@ class Job(ETL_Base):
 
         events_cleaned = df \
             .withColumn('timestamp_obj', udf_format_datetime(df.timestamp).cast("timestamp")) \
-            .where(col('timestamp').like("%2.016%") == False)
+            .where(col('timestamp').like("%2.016%") is False)
 
         events_cleaned.createOrReplaceTempView("events_cleaned")
 
@@ -59,8 +59,8 @@ class Job(ETL_Base):
         return '{year}-{month}-{day} {hour}:{minute}:{sec}'.format(**dt)
 
     @staticmethod
-    def date_diff_sec(x,y):
-        return int((y-x).total_seconds())
+    def date_diff_sec(x, y):
+        return int((y - x).total_seconds())
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ def connect(creds_section, creds_or_file='conf/connections.cfg'):
     domain = None if config.get(creds_section, 'domain') == 'production' else config.get(creds_section, 'domain')
     return Salesforce(username=user, password=pwd, security_token=token, domain=domain)
 
+
 def query(query_str, **connect_args):
     sf = connect(**connect_args)
     resp = sf.query_all(query_str)
@@ -26,6 +27,7 @@ def query(query_str, **connect_args):
         row.__delitem__('attributes')
     df = pd.DataFrame.from_dict(rows)
     return df
+
 
 if __name__ == "__main__":
     df = query('SELECT Account.Name FROM Account', creds_section='name_of_connection_from_credentials_file')

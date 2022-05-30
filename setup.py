@@ -133,7 +133,7 @@ setup(
     #
     #   py_modules=["my_module"],
     #
-    #packages=find_packages(where='core'),  # Required
+    # packages=find_packages(where='core'),  # Required
     packages=[
         'yaetos',
         'yaetos.libs.analysis_toolkit',
@@ -142,7 +142,7 @@ setup(
         'yaetos.libs.generic_jobs',
         'yaetos.scripts',
         'yaetos.scripts.copy',
-        ],  # Required
+    ],  # Required
 
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this

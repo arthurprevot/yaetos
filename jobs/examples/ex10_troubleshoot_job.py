@@ -13,7 +13,7 @@ class Job(ETL_Base):
             order by count(*) desc
             """)
 
-        import ipdb; ipdb.set_trace()  # will drop to python terminal here to inspect
+        import ipdb; ipdb.set_trace()  # will drop to python terminal here to inspect  # noqa: E702
 
         return df
 

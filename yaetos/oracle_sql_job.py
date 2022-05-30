@@ -8,7 +8,7 @@ class Job(ETL_Base):
     """To run/deploy sql jobs, requires --sql_file arg."""
 
     def set_job_file(self):
-        job_file=self.jargs.cmd_args['sql_file']
+        job_file = self.jargs.cmd_args['sql_file']
         # logger.info("job_file: '{}'".format(job_file))
         return job_file
 
@@ -20,7 +20,7 @@ class Job(ETL_Base):
         cred_profiles = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage)
 
         print("Running query: \n", sql)
-        pdf = query_oracle(sql, db=self.db_creds, connection_type='sqlalchemy', creds_or_file=cred_profiles) # for testing locally: from libs.analysis_toolkit.query_helper import process_and_cache; pdf = process_and_cache('test', 'data/', lambda : query_oracle(sql, db=self.db_creds, connection_type='sqlalchemy', creds_or_file=cred_profiles), force_rerun=False)
+        pdf = query_oracle(sql, db=self.db_creds, connection_type='sqlalchemy', creds_or_file=cred_profiles)  # for testing locally: from libs.analysis_toolkit.query_helper import process_and_cache; pdf = process_and_cache('test', 'data/', lambda : query_oracle(sql, db=self.db_creds, connection_type='sqlalchemy', creds_or_file=cred_profiles), force_rerun=False)
         # TODO: Check to get OUTPUT_TYPES from query_oracle, so not required here.
         sdf = pdf_to_sdf(pdf, self.OUTPUT_TYPES, self.sc, self.sc_sql)
         return sdf
@@ -34,13 +34,13 @@ class Job(ETL_Base):
 
     def update_sql_file(self, sql):
         for var_name, table_name in self.INPUTS.iteritems():
-            sql = sql.replace(var_name+' ', table_name+' ')  # TODO: don't require extra space.
+            sql = sql.replace(var_name + ' ', table_name + ' ')  # TODO: don't require extra space.
         return sql
 
     @staticmethod
     def get_output_types_from_sql(sql):
         type_lines = [item.split('-----')[1].split(':') for item in sql.split('\n') if item.startswith('----- ')]
-        output_types = {eval(item[0]):eval('types.'+item[1]) for item in type_lines}
+        output_types = {eval(item[0]): eval('types.' + item[1]) for item in type_lines}
         return output_types
 
 

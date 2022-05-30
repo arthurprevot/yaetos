@@ -28,7 +28,7 @@ class KafkaProducer(object):
         schema = response.json()
         logger.info("Producer schema uri to pull schema data: {}".format(schema_uri))
         logger.info("Producer schema data pulled from schema service: {}.".format(schema))
-        schema["$schema"] = self.__SCHEMA_URI # DIRTY FIX
+        schema["$schema"] = self.__SCHEMA_URI  # DIRTY FIX
         self.__schema = schema
 
     def build_message(self, **rec):
@@ -45,7 +45,7 @@ class KafkaProducer(object):
         # Actual send part
         if to_send:
             msg_in = bytes(bytearray(json.dumps(message), "UTF-8"))
-            msg_out = self.__producer.send( self.__TOPIC, msg_in )
+            msg_out = self.__producer.send(self.__TOPIC, msg_in)
 
             # Post send
             msg_out.get(timeout=self.__send_timeout)

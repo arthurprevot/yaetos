@@ -47,8 +47,7 @@ def query(query_str, **connect_args):
     connection = connect(**connect_args)
 
     if (
-        connection.__class__.__doc__ is not None
-        and connection.__class__.__doc__.__contains__("sqlalchemy")
+        connection.__class__.__doc__ is not None and connection.__class__.__doc__.__contains__("sqlalchemy")
     ):  # hasattr(connection, '__class__')
         df = pd.read_sql(query_str, connection, coerce_float=True)
         return df

@@ -31,5 +31,5 @@ class Job(ETL_Base):
 if __name__ == "__main__":
     args = {'job_param_file': 'conf/jobs_metadata.yml',
             'load_connectors': 'all',
-    }
+            }
     Commandliner(Job, **args)

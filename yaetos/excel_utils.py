@@ -10,6 +10,7 @@ def load_excel(jargs, input_name, output_types, sc, sc_sql, **xls_args):
     sdf = pdf_to_sdf(pdf, output_types, sc, sc_sql)
     return sdf
 
+
 def load_excel_pandas(jargs, input_name, **xls_args):
 
     path = jargs.inputs[input_name]['path']
