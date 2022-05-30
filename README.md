@@ -49,7 +49,7 @@ To explore jobs in jupyter notebooks, from the host OS:
 
 		yaetos launch_docker_jupyter
 
-Then, open a browser on the host OS, go to `http://localhost:8888/tree/notebooks`, navigate to notebooks, like [inspect_ex4_dependencies4_job.ipynb](notebooks/inspect_ex4_dependencies4_job.ipynb). It will look like this:
+Then, open a browser, go to `http://localhost:8888/tree/notebooks`, open  [inspect_ex4_dependencies4_job.ipynb](notebooks/inspect_ex4_dependencies4_job.ipynb). It will look like this:
 
 ![jupyter demo](docs/images/Screenshot_2022-05-30_at_12.03.14.png)
 
