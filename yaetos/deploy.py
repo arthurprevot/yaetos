@@ -159,6 +159,7 @@ class DeployPySparkScriptOnAws(object):
         if new_cluster and not self.deploy_args.get('leave_on') and self.app_args.get('clean_post_run'):  # TODO: add clean_post_run in input options.
             logger.info("New cluster setup to be deleted after job finishes.")
             self.describe_status_until_terminated(c)
+            s3 = self.session.resource('s3')
             self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
 
     def s3_ops(self, session):
@@ -665,7 +666,7 @@ def deploy_all_scheduled():
     ### TODO: also need to remove "dependency" run for the ones with no dependencies.
     def get_yml(args):
         meta_file = args.get('job_param_file', 'repo')
-        if meta_file is 'repo':
+        if meta_file == 'repo':
             meta_file = eu.CLUSTER_APP_FOLDER+eu.JOBS_METADATA_FILE if args['storage']=='s3' else eu.JOBS_METADATA_LOCAL_FILE
         yml = eu.Job_Args_Parser.load_meta(meta_file)
         logger.info('Loaded job param file: ' + meta_file)

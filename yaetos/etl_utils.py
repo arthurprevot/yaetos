@@ -412,7 +412,7 @@ class ETL_Base(object):
         return sdf
 
     def load_mysql(self, input_name):
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         creds_section = self.jargs.inputs[input_name]['creds']
         db = creds[creds_section]
         extra_params = '' # can use '?zeroDateTimeBehavior=CONVERT_TO_NULL' to help solve "java.sql.SQLException: Zero date value prohibited" but leads to other error msg.
@@ -454,7 +454,7 @@ class ETL_Base(object):
         return sdf
 
     def load_clickhouse(self, input_name):
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         creds_section = self.jargs.inputs[input_name]['creds']
         db = creds[creds_section]
         url = 'jdbc:postgresql://{host}/{service}'.format(host=db['host'], service=db['service'])
@@ -585,7 +585,7 @@ class ETL_Base(object):
         connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb = self.jargs.copy_to_redshift['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         create_table(df, connection_profile, name_tb, schema, types, creds, self.jargs.is_incremental)
         del(df)
 
@@ -595,7 +595,7 @@ class ETL_Base(object):
         connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb= self.jargs.copy_to_redshift['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '2.4'))
 
     def copy_to_clickhouse(self, sdf):
@@ -604,7 +604,7 @@ class ETL_Base(object):
         connection_profile = self.jargs.copy_to_clickhouse['creds']
         schema, name_tb= self.jargs.copy_to_clickhouse['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental)
 
     def push_to_kafka(self, output, types):
@@ -620,7 +620,7 @@ class ETL_Base(object):
             logger.error("Email can't be sent since no recipient set in {}, .\nMessage : \n{}".format(self.jargs.job_param_file, msg))
             return None
 
-        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, creds=self.jargs.connection_file)
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         creds_section = self.jargs.email_cred_section
 
         sender_email = creds.get(creds_section, 'sender_email')

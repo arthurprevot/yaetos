@@ -6,13 +6,11 @@ from yaetos.logger import setup_logging
 logger = setup_logging('Oracle')
 
 
-def create_table(df, connection_profile, name_tb, types, creds_or_file, is_incremental):
+def create_table(df, connection_profile, name_tb, schema, types, creds_or_file, is_incremental):
     """
     Creates table in oracle, full drop or incremental drop.
     types should be of sqlalchemy type. Ex: types.Date(), types.Integer()
     """
-    user = creds.get(connection_profile, 'user')
-    assert schema == user
     if_exist = 'replace' if not is_incremental else 'append'
     connection = connect(db=connection_profile, connection_type='sqlalchemy', creds_or_file=creds_or_file)
     chunksize = 500000
