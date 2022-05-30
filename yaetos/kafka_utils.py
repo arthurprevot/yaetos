@@ -55,7 +55,7 @@ class KafkaProducer(object):
         try:
             jsonschema.validate(instance=message, schema=self.__schema)
             return True
-        except(jsonschema.exceptions.ValidationError, e):
+        except jsonschema.exceptions.ValidationError as e:
             logger.error(u"Validation error pre kafka send: {}.".format(str(e)))
             return False
 

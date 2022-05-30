@@ -43,7 +43,7 @@ def cast_value(value, required_type, field_name):
         elif isinstance(required_type, type(db_types.INT())):
             return None if pd.isnull(value) else int(float(value))
         elif isinstance(required_type, type(db_types.BIGINT())):
-            return None if pd.isnull(value) else long(value)
+            return None if pd.isnull(value) else int(value)
         elif isinstance(required_type, type(db_types.FLOAT())):
             return None if pd.isnull(value) else float(value)
         else:

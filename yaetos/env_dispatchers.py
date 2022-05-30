@@ -48,49 +48,52 @@ class FS_Ops_Dispatcher():
         s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fake_handle.read())
         logger.info("Created file S3: {}".format(fname))
 
-    # --- save_file set of functions ----
-    def save_file(self, fname, content):
-        self.save_file_cluster(fname, content) if self.is_s3_path(fname) else self.save_file_local(fname, content)
-
-    @staticmethod
-    def save_file_local(fname, content):
-        folder = os.path.dirname(fname)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        joblib.dump(content, fname)
-        logger.info("Saved content to new file locally: {}".format(fname))
-
-    def save_file_cluster(self, fname, content):
-        fname_parts = fname.split('s3://')[1].split('/')
-        bucket_name = fname_parts[0]
-        bucket_fname = '/'.join(fname_parts[1:])
-        s3c = boto3.Session(profile_name='default').client('s3')
-
-        local_path = CLUSTER_APP_FOLDER+'tmp/local_'+fname_parts[-1]
-        self.save_file_local(local_path, content)
-        fh = open(local_path, 'rb')
-        s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fh)
-        logger.info("Pushed local file to S3, from '{}' to '{}' ".format(local_path, fname))
-
-    # --- load_file set of functions ----
-    def load_file(self, fname):
-        return self.load_file_cluster(fname) if self.is_s3_path(fname) else self.load_file_local(fname)
-
-    @staticmethod
-    def load_file_local(fname):
-        return joblib.load(fname)
-
-    @staticmethod
-    def load_file_cluster(fname):
-        fname_parts = fname.split('s3://')[1].split('/')
-        bucket_name = fname_parts[0]
-        bucket_fname = '/'.join(fname_parts[1:])
-        local_path = CLUSTER_APP_FOLDER+'tmp/s3_'+fname_parts[-1]
-        s3c = boto3.Session(profile_name='default').client('s3')
-        s3c.download_file(bucket_name, bucket_fname, local_path)
-        logger.info("Copied file from S3 '{}' to local '{}'".format(fname, local_path))
-        model = joblib.load(local_path)
-        return model
+    ## --- save_file set of functions ----
+    ## Disabled until joblib enabled. Will be useful for ML use case.
+    # def save_file(self, fname, content):
+    #     self.save_file_cluster(fname, content) if self.is_s3_path(fname) else self.save_file_local(fname, content)
+    #
+    # @staticmethod
+    # def save_file_local(fname, content):
+    #     folder = os.path.dirname(fname)
+    #     if not os.path.exists(folder):
+    #         os.makedirs(folder)
+    #     joblib.dump(content, fname)
+    #     logger.info("Saved content to new file locally: {}".format(fname))
+    #
+    # def save_file_cluster(self, fname, content):
+    #     fname_parts = fname.split('s3://')[1].split('/')
+    #     bucket_name = fname_parts[0]
+    #     bucket_fname = '/'.join(fname_parts[1:])
+    #     s3c = boto3.Session(profile_name='default').client('s3')
+    #
+    #     # local_path = CLUSTER_APP_FOLDER+'tmp/local_'+fname_parts[-1]
+    #     local_path = 'tmp/local_'+fname_parts[-1]
+    #     self.save_file_local(local_path, content)
+    #     fh = open(local_path, 'rb')
+    #     s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=fh)
+    #     logger.info("Pushed local file to S3, from '{}' to '{}' ".format(local_path, fname))
+    #
+    # # --- load_file set of functions ----
+    # def load_file(self, fname):
+    #     return self.load_file_cluster(fname) if self.is_s3_path(fname) else self.load_file_local(fname)
+    #
+    # @staticmethod
+    # def load_file_local(fname):
+    #     return joblib.load(fname)
+    #
+    # @staticmethod
+    # def load_file_cluster(fname):
+    #     fname_parts = fname.split('s3://')[1].split('/')
+    #     bucket_name = fname_parts[0]
+    #     bucket_fname = '/'.join(fname_parts[1:])
+    #     # local_path = CLUSTER_APP_FOLDER+'tmp/s3_'+fname_parts[-1]
+    #     local_path = 'tmp/s3_'+fname_parts[-1]
+    #     s3c = boto3.Session(profile_name='default').client('s3')
+    #     s3c.download_file(bucket_name, bucket_fname, local_path)
+    #     logger.info("Copied file from S3 '{}' to local '{}'".format(fname, local_path))
+    #     model = joblib.load(local_path)
+    #     return model
 
     # --- listdir set of functions ----
     def listdir(self, path):
@@ -175,16 +178,16 @@ class FS_Ops_Dispatcher():
 
 
 class Cred_Ops_Dispatcher():
-    def retrieve_secrets(self, storage, creds='conf/connections.cfg'):
-        creds = self.retrieve_secrets_cluster() if storage=='s3' else self.retrieve_secrets_local(creds)
+    def retrieve_secrets(self, storage, aws_creds='/yaetos/connections', local_creds='conf/connections.cfg'):
+        creds = self.retrieve_secrets_cluster(aws_creds) if storage=='s3' else self.retrieve_secrets_local(local_creds)
         return creds
 
     @staticmethod
-    def retrieve_secrets_cluster():
+    def retrieve_secrets_cluster(creds):
         client = boto3.Session(profile_name='default').client('secretsmanager')
 
-        response = client.get_secret_value(SecretId=AWS_SECRET_ID)
-        logger.info('Read aws secret, secret_id:'+AWS_SECRET_ID)
+        response = client.get_secret_value(SecretId=creds)
+        logger.info('Read aws secret, secret_id:'+creds)
         logger.debug('get_secret_value response: '+str(response))
         content = response['SecretString']
 

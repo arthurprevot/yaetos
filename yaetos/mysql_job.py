@@ -20,4 +20,4 @@ class Mysql_Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    Commandliner(Job)
+    Commandliner(Mysql_Job)
