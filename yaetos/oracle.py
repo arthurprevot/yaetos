@@ -23,12 +23,12 @@ def create_table(df, connection_profile, name_tb, schema, types, creds_or_file, 
 if __name__ == '__main__':
     from sqlalchemy import types
     import pandas as pd
-    data = [['aaa',10],['bbb',12],['ccc',3]]
-    df = pd.DataFrame(data,columns=['session_id','count_events'])
+    data = [['aaa', 10], ['bbb', 12], ['ccc', 3]]
+    df = pd.DataFrame(data, columns=['session_id', 'count_events'])
     types = {
         'session_id': types.VARCHAR(16),
         'count_events': types.Integer(),
-        }
+    }
     connection_profile = 'some_connection_profile'
     name_tb = 'test_table'
     create_table(df, connection_profile, name_tb, types)

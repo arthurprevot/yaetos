@@ -33,14 +33,14 @@ class Git_Config_Manager():
         diffs_yaetos = subprocess.check_output(['git', 'diff', 'HEAD'], cwd=local_app_folder).strip().decode('ascii')
         is_dirty_yaetos = True if diffs_yaetos else False
 
-        config = {'branch_current':branch,
-                  'last_commit_current':last_commit,
-                  'diffs_current':diffs,
-                  'is_dirty_current':is_dirty,
-                  'branch_yaetos':branch_yaetos,
-                  'last_commit_yaetos':last_commit_yaetos,
-                  'diffs_yaetos':diffs_yaetos,
-                  'is_dirty_yaetos':is_dirty_yaetos
+        config = {'branch_current': branch,
+                  'last_commit_current': last_commit,
+                  'diffs_current': diffs,
+                  'is_dirty_current': is_dirty,
+                  'branch_yaetos': branch_yaetos,
+                  'last_commit_yaetos': last_commit_yaetos,
+                  'diffs_yaetos': diffs_yaetos,
+                  'is_dirty_yaetos': is_dirty_yaetos
                   }
         return config
 
@@ -59,7 +59,7 @@ class Git_Config_Manager():
 
     def get_config_from_file(self, cluster_app_folder):
         """Meant to work in EMR"""
-        fname = cluster_app_folder+self.FNAME
+        fname = cluster_app_folder + self.FNAME
         if os.path.isfile(fname):
             with open(fname, 'r') as stream:
                 yml = yaml.load(stream, Loader=yaml.FullLoader)
