@@ -25,8 +25,8 @@ def query(query_str, **kwarg):
 
     try:
         cursor.execute(query_str)
-    except Exception as e:
-        raise Exception('Failed running hive query, with error: {}'.format(traceback.format_exc()))
+    except Exception as err:
+        raise Exception('Failed running hive query, with error: {}'.format(err))
 
     columns = [col[0] for col in cursor.description]
     df = pd.DataFrame.from_records(cursor.fetchall(), columns=columns)
