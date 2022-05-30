@@ -2,7 +2,6 @@
 More integration-test than unit-test. This runs pipeline with 4 jobs, loading data from file system and dropping to file system for each one.
 Code here reusable directly in jupyter notebooks.
 """
-import pytest
 from jobs.examples.ex4_dependency4_job import Job
 from yaetos.etl_utils import Runner
 from yaetos.pandas_utils import load_csvs

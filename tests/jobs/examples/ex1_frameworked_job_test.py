@@ -7,7 +7,7 @@ class Test_Job(object):
             {'session_id': 1234, 'action': 'searchResultPage', 'n_results': 1},
             {'session_id': 1234, 'action': 'searchResultPage', 'n_results': 1},
             {'session_id': 1235, 'action': 'searchResultPage', 'n_results': 1},
-            {'session_id': 1236, 'action': 'other',            'n_results': 1},
+            {'session_id': 1236, 'action': 'other',            'n_results': 1},  # noqa: E241
         ]))
 
         other_events = ss.read.json(sc.parallelize([

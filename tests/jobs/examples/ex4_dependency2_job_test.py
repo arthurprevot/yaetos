@@ -1,4 +1,3 @@
-import pytest
 from jobs.examples.ex4_dependency2_job import Job
 
 
@@ -12,9 +11,9 @@ class Test_Job(object):
         ]))
 
         expected = [
-            {'session_id': 1, 'session_length': 1, 'doubled_length': 2},
-            {'session_id': 12, 'session_length': 2, 'doubled_length': 4},
-            {'session_id': 123, 'session_length': 3, 'doubled_length': 6},
+            {'session_id': 1,    'session_length': 1, 'doubled_length': 2},  # noqa: E241
+            {'session_id': 12,   'session_length': 2, 'doubled_length': 4},  # noqa: E241
+            {'session_id': 123,  'session_length': 3, 'doubled_length': 6},  # noqa: E241
             {'session_id': 1234, 'session_length': 4, 'doubled_length': 8},
         ]
 
