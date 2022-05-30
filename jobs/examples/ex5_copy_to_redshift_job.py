@@ -6,7 +6,7 @@ class Job(ETL_Base):
     OUTPUT_TYPES = {
         'session_id': types.VARCHAR(16),
         'count_events': types.INT(),
-        }
+    }
 
     def transform(self, some_events, other_events):
         df = self.query("""

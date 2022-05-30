@@ -18,10 +18,10 @@ class Job(ETL_Base):
 
         # Transformation in pandas
         some_events_pd = some_events_pd[:1000]
-        df1 = some_events_pd[some_events_pd.apply(lambda row: row['action'] == 'searchResultPage' and float(row['n_results'])>0, axis=1)]
-        df2 = pd.merge(left=df1, right=other_events_pd, how='inner', left_on='session_id', right_on='session_id', indicator = True, suffixes=('_1', '_2'))
+        df1 = some_events_pd[some_events_pd.apply(lambda row: row['action'] == 'searchResultPage' and float(row['n_results']) > 0, axis=1)]
+        df2 = pd.merge(left=df1, right=other_events_pd, how='inner', left_on='session_id', right_on='session_id', indicator=True, suffixes=('_1', '_2'))
         df3 = df2.groupby(by=['session_id']).agg({'_merge': np.count_nonzero})
-        df3.rename(columns={'_merge':'count_events'}, inplace=True)
+        df3.rename(columns={'_merge': 'count_events'}, inplace=True)
         df3.sort_values('count_events', ascending=False, inplace=True)
         df3.reset_index(drop=False, inplace=True)
         self.logger.info('Post filter length: {}'.format(len(df1)))

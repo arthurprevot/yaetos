@@ -13,8 +13,8 @@ class Job(ETL_Base):
 
         # Save to local
         tmp_dir = 'tmp'
-        os.makedirs(tmp_dir, exist_ok = True)
-        local_path = tmp_dir+'/tmp_file.csv.gz'
+        os.makedirs(tmp_dir, exist_ok=True)
+        local_path = tmp_dir + '/tmp_file.csv.gz'
         open(local_path, 'wb').write(resp.content)  # creating local copy, necessary for sc_sql.read.csv, TODO: check to remove local copy step.
         self.logger.info('Copied file locally at {}.'.format(local_path))
 

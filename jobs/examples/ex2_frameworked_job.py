@@ -59,8 +59,8 @@ class Job(ETL_Base):
         return '{year}-{month}-{day} {hour}:{minute}:{sec}'.format(**dt)
 
     @staticmethod
-    def date_diff_sec(x,y):
-        return int((y-x).total_seconds())
+    def date_diff_sec(x, y):
+        return int((y - x).total_seconds())
 
 
 if __name__ == "__main__":
