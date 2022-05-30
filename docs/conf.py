@@ -29,7 +29,7 @@ templates_path = ['_templates']
 
 # -- Options for HTML output
 
-html_theme = 'alabaster' #default: 'sphinx_rtd_theme'
+html_theme = 'alabaster'  # default: 'sphinx_rtd_theme'
 html_theme_options = {
     'show_powered_by': False,
     'github_user': 'arthurprevot',
@@ -39,7 +39,7 @@ html_theme_options = {
     'github_button': True,
     'show_related': False,
     'note_bg': '#FFF59C'
-} # TODO: add "Fork me on github" banner with 'sphinx_rtd_theme' theme, using _template, see https://stackoverflow.com/questions/53327826/how-to-add-fork-me-on-github-ribbon-using-sphinx-and-readthedocs-theme
+}  # TODO: add "Fork me on github" banner with 'sphinx_rtd_theme' theme, using _template, see https://stackoverflow.com/questions/53327826/how-to-add-fork-me-on-github-ribbon-using-sphinx-and-readthedocs-theme
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
