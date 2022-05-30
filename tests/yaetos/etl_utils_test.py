@@ -27,7 +27,7 @@ class Test_ETL_Base(object):
 
     def test_set_py_job(self, get_pre_jargs):
         py_job = ETL_Base(pre_jargs=get_pre_jargs({})).set_py_job()
-        assert py_job == LOCAL_JOB_FOLDER+'yaetos/etl_utils.py' # file is the one that starts execution, typically the job python file.
+        assert py_job == LOCAL_JOB_FOLDER + 'yaetos/etl_utils.py'  # file is the one that starts execution, typically the job python file.
 
     def test_load_inputs(self, sc, sc_sql, ss, get_pre_jargs):
         """Confirming load_inputs acts as a passthrough"""
@@ -35,7 +35,7 @@ class Test_ETL_Base(object):
             {'id': 1},
             {'id': 2},
             {'id': 3}]))
-        loaded_inputs = {'input1':sdf}
+        loaded_inputs = {'input1': sdf}
         app_args_expected = loaded_inputs
         assert ETL_Base(pre_jargs=get_pre_jargs(loaded_inputs.keys())).load_inputs(loaded_inputs) == app_args_expected
 
@@ -46,8 +46,8 @@ class Test_ETL_Base(object):
             {'id': 3, 'timestamp': '2020-01-03'}]))
         pre_jargs_over = {
             'defaults_args': {
-                'inputs':{},
-                'output': {'inc_field': 'timestamp', 'type':None}}}
+                'inputs': {},
+                'output': {'inc_field': 'timestamp', 'type': None}}}
         max_timestamp_expected = '2020-01-03'
         assert ETL_Base(pre_jargs=get_pre_jargs(pre_jargs_over=pre_jargs_over)).get_max_timestamp(sdf) == max_timestamp_expected
 
@@ -87,7 +87,7 @@ class Test_Job_Yml_Parser(object):
         job_name = Job_Yml_Parser.set_job_name_from_file('jobs/some/file.py')
         assert job_name == 'some/file.py'
 
-        job_name = Job_Yml_Parser.set_job_name_from_file(LOCAL_JOB_FOLDER+'jobs/some/file.py')
+        job_name = Job_Yml_Parser.set_job_name_from_file(LOCAL_JOB_FOLDER + 'jobs/some/file.py')
         assert job_name == 'some/file.py'
 
     # def test_set_sql_file_from_name(self) # to be added
@@ -96,7 +96,7 @@ class Test_Job_Yml_Parser(object):
 
 class Test_Job_Args_Parser(object):
     def test_no_param_override(self):
-        defaults_args = {'mode': 'dev_local', 'deploy':'code', 'output': {'path':'n/a', 'type': 'csv'}}
+        defaults_args = {'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
         expected_args = {**{'inputs': {}, 'is_incremental': False}, **defaults_args}
 
         jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={})
@@ -111,7 +111,7 @@ class Test_Flow(object):
             'job_param_file': JOBS_METADATA_FILE,
             'job_name': 'examples/ex4_dependency2_job.py',
             'storage': 'local',
-            }
+        }
         launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
         connection_real = Flow.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
         connection_expected = pd.DataFrame(
@@ -126,8 +126,8 @@ class Test_Flow(object):
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
                 ['examples/ex0_extraction_job.py', 'examples/ex7_extraction_small_job.py'],
-                ]),
-            )
+            ]),
+        )
         assert_frame_equal(connection_real, connection_expected)
 
     def test_create_global_graph(self):
@@ -140,7 +140,7 @@ class Test_Flow(object):
                 ['examples/ex4_dependency2_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py']]),
-            )
+        )
         nx_real = Flow.create_global_graph(df)
         nx_expected = {
             'examples/ex3_incremental_prep_job.py': {'examples/ex3_incremental_job.py': {}},
@@ -149,7 +149,7 @@ class Test_Flow(object):
             'examples/ex4_dependency2_job.py': {'examples/ex4_dependency3_job.sql': {}},
             'examples/ex4_dependency3_job.sql': {'examples/ex4_dependency4_job.py': {}},
             'examples/ex4_dependency4_job.py': {}
-            }
+        }
         # Other way to check graph equality: nx.is_isomorphic(nx_real, nx_expected)
         assert nx.to_dict_of_dicts(nx_real) == nx_expected
 

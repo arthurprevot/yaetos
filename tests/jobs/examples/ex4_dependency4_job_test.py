@@ -19,7 +19,7 @@ def test_job(sc, sc_sql, ss, get_pre_jargs):
         'job_param_file': 'conf/jobs_metadata.yml',
         'base_path': './tests/fixtures/data_sample/',
         'dependencies': True,
-        'add_created_at':False,
+        'add_created_at': False,
         'parse_cmdline': False}
     job = Runner(Job, **args).run()
     path = job.jargs.output['path_expanded']
