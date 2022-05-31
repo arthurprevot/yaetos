@@ -1,7 +1,4 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
-from pyspark.sql.functions import udf, array
-from pyspark.sql.types import StringType, IntegerType
-from pyspark.sql.functions import col
 
 
 class Job(ETL_Base):

@@ -9,7 +9,6 @@ Helper functions. Setup to run locally and on cluster.
 # - way to run all jobs from 1 cmd line.
 
 
-import sys
 import inspect
 import yaml
 from datetime import datetime
@@ -18,9 +17,7 @@ import boto3
 import argparse
 from time import time
 import networkx as nx
-import random
 import pandas as pd
-import numpy as np
 import gc
 from pprint import pformat
 import smtplib

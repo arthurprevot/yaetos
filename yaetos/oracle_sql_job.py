@@ -1,7 +1,6 @@
 from yaetos.etl_utils import ETL_Base, Commandliner, Cred_Ops_Dispatcher
 from yaetos.db_utils import pdf_to_sdf
 from libs.python_db_connectors.query_oracle import query as query_oracle
-from sqlalchemy import types
 
 
 class Job(ETL_Base):

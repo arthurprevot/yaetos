@@ -10,13 +10,11 @@ Borrows from https://github.com/thomhopmans/themarketingtechnologist/tree/master
 # - check that bucket where output will be is available (to avoid loosing time before crashing)
 
 import os
-import sys
 from datetime import datetime
 import time
 import tarfile
 import boto3
 import botocore
-from botocore.exceptions import ClientError
 import uuid
 import json
 from pprint import pformat

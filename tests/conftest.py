@@ -6,7 +6,7 @@
 
 import pytest
 from pyspark import SparkContext
-from pyspark.sql import SQLContext, SparkSession, Row
+from pyspark.sql import SQLContext, SparkSession
 
 
 @pytest.fixture(scope="session")

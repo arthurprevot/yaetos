@@ -1,5 +1,4 @@
 from __future__ import print_function
-import sys
 from operator import add
 from pyspark import SparkContext
 from yaetos.etl_utils import Path_Handler

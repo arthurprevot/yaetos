@@ -44,7 +44,7 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # enforce all rules except these below
         echo 'Code formatting not compliant, enforced'
-        flake8 . --count --ignore=E501,C901,E402,W605,F401,F841 --max-complexity=10 --max-line-length=127 --statistics  # TODO: check to remove "--ignore" codes.
+        flake8 . --count --ignore=E501,C901,E402,W605,F841 --max-complexity=10 --max-line-length=127 --statistics  # TODO: check to remove "--ignore" codes.
         # info about non-enforced checks. exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         echo 'Rest of formatting not pep8 compliant, not enforced'
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics  # --exit-zero to not block merging if not compliant.

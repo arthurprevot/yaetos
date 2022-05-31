@@ -1,10 +1,8 @@
-import pytest
 import os
 from pandas.testing import assert_frame_equal
 import pandas as pd
 import numpy as np
-from yaetos.pandas_utils import load_multiple_csvs, load_csvs, \
-    load_multiple_files, load_df, save_pandas_local
+from yaetos.pandas_utils import load_csvs, load_df, save_pandas_local
 
 
 def test_load_csvs():

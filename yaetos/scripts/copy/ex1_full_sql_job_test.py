@@ -1,4 +1,3 @@
-import pytest
 from yaetos.sql_job import Job
 
 

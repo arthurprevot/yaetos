@@ -1,7 +1,6 @@
 """Helper functions for oracle."""
 
 from libs.python_db_connectors.query_oracle import connect
-import numpy as np
 from yaetos.logger import setup_logging
 logger = setup_logging('Oracle')
 
