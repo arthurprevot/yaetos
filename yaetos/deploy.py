@@ -393,7 +393,7 @@ class DeployPySparkScriptOnAws(object):
         )
         # Process response to determine if Spark cluster was started, and if so, the JobFlowId of the cluster
         response_code = response['ResponseMetadata']['HTTPStatusCode']
-        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        if response_code == 200:
             self.cluster_id = response['JobFlowId']
         else:
             terminate("Could not create EMR cluster (status code {})".format(response_code))
@@ -435,7 +435,11 @@ class DeployPySparkScriptOnAws(object):
                 }
             }]
         )
-        logger.info("Added step")
+        response_code = response['ResponseMetadata']['HTTPStatusCode']
+        if response_code == 200:
+            logger.info("Added step")
+        else:
+            raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
 
     def step_spark_submit(self, c, app_file, app_args):
@@ -456,7 +460,11 @@ class DeployPySparkScriptOnAws(object):
                 }
             }]
         )
-        logger.info("Added step 'spark-submit' with command line '{}'".format(cmd_runner_args))
+        response_code = response['ResponseMetadata']['HTTPStatusCode']
+        if response_code == 200:
+            logger.info("Added step 'spark-submit' with command line '{}'".format(cmd_runner_args))
+        else:
+            raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
 
     def get_spark_submit_args(self, app_file, app_args):
