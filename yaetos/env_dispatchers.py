@@ -3,6 +3,7 @@ Set of operations that require dispatching between local and cloud environment.
 """
 import boto3
 import os
+from time import time
 from io import StringIO
 # from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
 from configparser import ConfigParser
