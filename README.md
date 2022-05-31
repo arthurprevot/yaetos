@@ -106,6 +106,7 @@ The status of the job can be monitored in AWS in the EMR section.
  * more unit-testing
  * integration with other scheduling tools (airflow...)
  * integration with other resource provisioning tools (kubernetes...)
+ * adding type annotations to code and type checks to CI
  * automatic pulling/pushing data from s3 to local (sampled) for local development
  * easier dataset reconciliation
  * ...
