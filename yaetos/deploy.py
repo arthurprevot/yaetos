@@ -573,7 +573,11 @@ class DeployPySparkScriptOnAws(object):
             job_name = self.get_job_name(item['name'])
             if job_name == self.app_args['job_name']:
                 response = client.deactivate_pipeline(pipelineId=item['id'], cancelActive=True)
-                logger.info('Deactivated pipeline {}, {}, {}'.format(job_name, item['name'], item['id']))
+                response_code = response['ResponseMetadata']['HTTPStatusCode']
+                if response_code == 200:
+                    logger.info('Deactivated pipeline {}, {}, {}'.format(job_name, item['name'], item['id']))
+                else:
+                    raise Exception("Pipeline couldn't be deactivated. Error message: {}".format(response))
 
     def update_params(self, parameterValues):
         # TODO: check if easier/simpler to change values at the source json instead of a processed one.
