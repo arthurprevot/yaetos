@@ -1,7 +1,8 @@
-from yaetos.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETLBase, Commandliner
 from pyspark import sql
 
-class Job(ETL_Base):
+
+class Job(ETLBase):
     def transform(self, processed_events="processed_events") -> sql.DataFrame:
         df = self.query(
             f"""

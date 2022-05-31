@@ -1,9 +1,9 @@
 """Same as ex1_full_sql_job.sql but allows access to spark for more complex ops (not used here but in ex2_frameworked_job.py)."""
-from yaetos.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETLBase, Commandliner
 from pyspark import sql
 
 
-class Job(ETL_Base):
+class Job(ETLBase):
     def transform(
         self, some_events="some_events", other_events="other_events"
     ) -> sql.DataFrame:

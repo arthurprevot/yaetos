@@ -28,8 +28,8 @@ from pprint import pformat
 import smtplib, ssl
 from dateutil.relativedelta import relativedelta
 import yaetos.spark_utils as su
-from yaetos.git_utils import Git_Config_Manager
-from yaetos.env_dispatchers import FS_Ops_Dispatcher, Cred_Ops_Dispatcher
+from yaetos.git_utils import GitConfigManager
+from yaetos.env_dispatchers import FSOpsDispatcher, Cred_Ops_Dispatcher
 from yaetos.logger import setup_logging
 
 logger = setup_logging("Job")
@@ -70,7 +70,7 @@ PACKAGES_LOCAL_ALT = PACKAGES_EMR_ALT + [
 JARS = "https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.41.1065/RedshiftJDBC42-no-awssdk-1.2.41.1065.jar"  # not available in public repo so cannot be put in "packages" var.
 
 
-class ETL_Base(object):
+class ETLBase:
     TABULAR_TYPES = ("csv", "parquet", "df", "mysql", "clickhouse")
     SPARK_DF_TYPES = ("csv", "parquet", "df", "mysql", "clickhouse")
     PANDAS_DF_TYPES = ("csv", "parquet", "df")
@@ -88,7 +88,7 @@ class ETL_Base(object):
         self.loaded_inputs = loaded_inputs
         self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
         if self.jargs.manage_git_info:
-            git_yml = Git_Config_Manager().get_config(
+            git_yml = GitConfigManager().get_config(
                 mode=self.jargs.mode,
                 local_app_folder=LOCAL_APP_FOLDER,
                 cluster_app_folder=CLUSTER_APP_FOLDER,
@@ -482,14 +482,14 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.inputs[input_name].get("df_type") == "pandas":
             if input_type == "csv":
-                pdf = FS_Ops_Dispatcher().load_pandas(
+                pdf = FSOpsDispatcher().load_pandas(
                     path,
                     file_type="csv",
                     read_func="read_csv",
                     read_kwargs=self.jargs.inputs[input_name].get("read_kwargs", {}),
                 )
             elif input_type == "parquet":
-                pdf = FS_Ops_Dispatcher().load_pandas(
+                pdf = FSOpsDispatcher().load_pandas(
                     path,
                     file_type="parquet",
                     read_func="read_parquet",
@@ -779,14 +779,14 @@ class ETL_Base(object):
         # Tabular, Pandas
         if self.jargs.output.get("df_type") == "pandas":
             if type == "csv":
-                FS_Ops_Dispatcher().save_pandas(
+                FSOpsDispatcher().save_pandas(
                     output,
                     path,
                     save_method="to_csv",
                     save_kwargs=self.jargs.output.get("save_kwargs", {}),
                 )
             elif type == "parquet":
-                FS_Ops_Dispatcher().save_pandas(
+                FSOpsDispatcher().save_pandas(
                     output,
                     path,
                     save_method="to_parquet",
@@ -832,7 +832,7 @@ class ETL_Base(object):
             self.jargs.job_name,
             elapsed,
         )
-        FS_Ops_Dispatcher().save_metadata(fname, content)
+        FSOpsDispatcher().save_metadata(fname, content)
 
     def query(self, query_str):
         logger.info("Query string:\n" + query_str)
@@ -1278,7 +1278,7 @@ class Path_Handler:
         path = self.path
         if "{latest}" in path:
             upstream_path = path.split("{latest}")[0]
-            paths = FS_Ops_Dispatcher().listdir(upstream_path)
+            paths = FSOpsDispatcher().listdir(upstream_path)
             latest_date = max(paths)
             path = path.format(latest=latest_date)
         return path

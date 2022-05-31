@@ -1,41 +1,53 @@
 """OBSOLETE. Will be deleted."""
 
-from yaetos.etl_utils import ETL_Base
+from yaetos.etl_utils import ETLBase
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 
 
-class ETL_Daily_Incremental_Base(ETL_Base):
+class ETL_Daily_Incremental_Base(ETLBase):
     def __init__(self, pre_jargs={}, jargs=None, loaded_inputs={}):
-        super(ETL_Daily_Incremental_Base, self).__init__(pre_jargs, jargs, loaded_inputs)
+        super(ETL_Daily_Incremental_Base, self).__init__(
+            pre_jargs, jargs, loaded_inputs
+        )
         self.last_attempted_period = None
 
     def transform(self, **loaded_datasets):
         return self.get_transform_inc_from_last_days(**loaded_datasets)
 
     def transform_inc(self, period, **loaded_datasets):
-        """ The function that needs to be overriden by each specific job."""
+        """The function that needs to be overriden by each specific job."""
         raise NotImplementedError
 
     def get_transform_inc_from_last_days(self, **loaded_datasets):
-        """ Incremental assumes last available month from the previous output was fully loaded."""
-        first_day = self.jargs.merged_args['first_day']
+        """Incremental assumes last available month from the previous output was fully loaded."""
+        first_day = self.jargs.merged_args["first_day"]
         if not self.last_attempted_period:
             previous_output_max_timestamp = self.get_previous_output_max_timestamp()
-            self.last_attempted_period  = previous_output_max_timestamp.strftime("%Y-%m-%d") if previous_output_max_timestamp else first_day  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
+            self.last_attempted_period = (
+                previous_output_max_timestamp.strftime("%Y-%m-%d")
+                if previous_output_max_timestamp
+                else first_day
+            )  # TODO: if get_output_max_timestamp()=None, means new build, so should delete instance in DBs.
 
-        periods = self.get_last_output_to_last_day(self.last_attempted_period, first_day)
+        periods = self.get_last_output_to_last_day(
+            self.last_attempted_period, first_day
+        )
         if len(periods) == 0:
-            self.logger.info('Output up to date. Nothing to run. last processed period={} and last period from now={}'.format(self.last_attempted_period, self.get_last_day()))
+            self.logger.info(
+                "Output up to date. Nothing to run. last processed period={} and last period from now={}".format(
+                    self.last_attempted_period, self.get_last_day()
+                )
+            )
             self.final_inc = True
             return None
 
-        self.logger.info('Periods remaining to load: {}'.format(periods))
+        self.logger.info("Periods remaining to load: {}".format(periods))
         period = periods[0]
-        self.logger.info('Period to be loaded in this run: {}'.format(period))
+        self.logger.info("Period to be loaded in this run: {}".format(period))
         self.final_inc = period == periods[-1]
         self.last_attempted_period = period
-        self.jargs.merged_args['file_tag'] = period
+        self.jargs.merged_args["file_tag"] = period
 
         df = self.transform_inc(period, **loaded_datasets)
         return df

@@ -9,7 +9,7 @@ from yaetos.logger import setup_logging
 logger = setup_logging('Kafka_push')
 
 
-class KafkaProducer(object):
+class KafkaProducer:
 
     def __init__(self, broker_address, topic, send_timeout, check_schema=False, schema_uri=None, connect_kafka=True):
         # TODO: add schema validation to only do message validation in the later stage (send()) to avoid validating schema for every record.

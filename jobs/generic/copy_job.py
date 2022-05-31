@@ -1,8 +1,7 @@
-from yaetos.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETLBase, Commandliner
 
 
-class Job(ETL_Base):
-
+class Job(ETLBase):
     def transform(self, table_to_copy):
         table_to_copy.cache()
         if table_to_copy.count() < 500000:
@@ -11,5 +10,5 @@ class Job(ETL_Base):
 
 
 if __name__ == "__main__":
-    args = {'job_param_file': 'conf/jobs_metadata.yml'}
+    args = {"job_param_file": "conf/jobs_metadata.yml"}
     Commandliner(Job, **args)

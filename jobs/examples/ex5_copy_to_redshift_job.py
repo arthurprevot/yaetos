@@ -1,25 +1,27 @@
-from yaetos.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETLBase, Commandliner
 from sqlalchemy import types
 
 
-class Job(ETL_Base):
+class Job(ETLBase):
     OUTPUT_TYPES = {
-        'session_id': types.VARCHAR(16),
-        'count_events': types.INT(),
-        }
+        "session_id": types.VARCHAR(16),
+        "count_events": types.INT(),
+    }
 
     def transform(self, some_events, other_events):
-        df = self.query("""
+        df = self.query(
+            """
             SELECT se.session_id, count(*) as count_events
             FROM some_events se
             JOIN other_events oe on se.session_id=oe.session_id
             WHERE se.action='searchResultPage' and se.n_results>0
             group by se.session_id
             order by count(*) desc
-            """)
+            """
+        )
         return df
 
 
 if __name__ == "__main__":
-    args = {'job_param_file': 'conf/jobs_metadata.yml'}
+    args = {"job_param_file": "conf/jobs_metadata.yml"}
     Commandliner(Job, **args)

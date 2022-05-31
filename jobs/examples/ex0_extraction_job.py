@@ -1,12 +1,12 @@
 """ Demo basic extraction job using a public datasource (from wikimedia) """
-from yaetos.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETLBase, Commandliner
 import requests
 import os
 import pandas as pd
 from pyspark import sql
 
 
-class Job(ETL_Base):
+class Job(ETLBase):
     def transform(self) -> sql.DataFrame:
         url = self.jargs.api_inputs["path"]
         resp = requests.get(url, allow_redirects=True)

@@ -1,4 +1,4 @@
-from yaetos.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETLBase, Commandliner
 from pyspark.sql.functions import udf, array
 from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import col
@@ -6,7 +6,7 @@ from pyspark import sql
 from datetime import datetime
 
 
-class Job(ETL_Base):
+class Job(ETLBase):
     def transform(self, some_events, other_events) -> sql.DataFrame:
         """For demo only. Functional but no specific business logic."""
 
