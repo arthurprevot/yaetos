@@ -47,10 +47,9 @@ class FSOpsDispatcher:
         ) else self.save_metadata_local(fname, content)
 
     @staticmethod
-    def save_metadata_local(fname, content):
-        fh = open(fname, "w")
-        fh.write(content)
-        fh.close()
+    def save_metadata_local(fname: str, content) -> None:
+        with open(fname, "w") as fh:
+            fh.write(content)
         logger.info("Created file locally: {}".format(fname))
 
     @staticmethod
