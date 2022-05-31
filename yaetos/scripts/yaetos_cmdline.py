@@ -41,6 +41,9 @@ class YaetosCmds(object):
     launch_docker_jupyter: {usage_docker_jupyter}
     run_dockerized       : {usage_run_dockerized}
     run                  : {usage_run}
+
+    For more details, see:
+    - https://yaetos.readthedocs.io/en/latest/
     '''
 
     def __init__(self):
