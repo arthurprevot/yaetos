@@ -24,11 +24,11 @@ import subprocess
 class YaetosCmds(object):
     # Source: https://chase-seibert.github.io/blog/2014/03/21/python-multilevel-argparse.html
 
-    usage_setup = "Setup yaetos folders and files in current folder."
+    usage_setup = "Setup yaetos folders and files in current folder. This will overwrite files if any."
     usage_docker_bash = "Launching docker container to run jobs from bash."
     usage_docker_jupyter = "Launching docker container to run jobs from jupyter notebook."
-    usage_run_dockerized = "Run job through docker"
-    usage_run = "Run job in terminal. 'yaetos run some/job.py --some=arg' is the same as running 'python some/job.py --some=arg'"
+    usage_run_dockerized = "Run job through docker. Running 'yaetos run_dockerized some/job.py --some=arg' is the same as running 'yaetos usage_docker_bash; python some/job.py --some=arg'"
+    usage_run = "Run job in terminal. Running 'yaetos run some/job.py --some=arg' is the same as running 'python some/job.py --some=arg'"
 
     usage = f'''
     yaetos <command> [<args>]
@@ -55,7 +55,8 @@ class YaetosCmds(object):
 
     def setup(self):
         parser = argparse.ArgumentParser(description=self.usage_setup)
-        parser.add_argument('--set_github', action='store_true')
+        parser.add_argument('--set_github', action='store_true', help="Identify registry job to use.")
+        parser.add_argument('--project_name', help="Set the name of the project, i.e. the name of the folder that will contain the job files.")
         args = parser.parse_args(sys.argv[2:])  # ignoring first 2 args (i.e. "yeatos setup")
         setup_env(args)
 
@@ -63,10 +64,12 @@ class YaetosCmds(object):
         argparse.ArgumentParser(description=self.usage_docker_bash)
         # parser.add_argument('--no_aws', action='store_true')  # TODO: implement
         subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
+        self.print_error(out)
 
     def launch_docker_jupyter(self):
         argparse.ArgumentParser(description=self.usage_docker_jupyter)
         subprocess.call("./launch_env.sh 2", shell=True)
+        self.print_error(out)
 
     def run_dockerized(self):
         parser = argparse.ArgumentParser(
@@ -75,6 +78,7 @@ class YaetosCmds(object):
         cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 3 " + cmd_str
         subprocess.call(cmd_delegated, shell=True)
+        self.print_error(out)
 
     def run(self):
         parser = argparse.ArgumentParser(
@@ -82,12 +86,30 @@ class YaetosCmds(object):
         ignored, cmd_unknown_args = parser.parse_known_args()
         cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 4 " + cmd_str
-        subprocess.call(cmd_delegated, shell=True)
+        # import ipdb; ipdb.set_trace()
+        out = subprocess.call(cmd_delegated, shell=True)
+        self.print_error(out)
+        # if out == 127:
+        #     print('Error: this command needs to be run from the project root, where launch_env.sh is.')
 
+    def print_error(self, out):
+        if out == 127:  # 127 associated to error "/bin/sh: ./launch_env.sh: No such file or directory"
+            print('Error: this command needs to be run from the project root, where launch_env.sh is.')
+
+
+def main():
+    # Necessary for setup.py entry_points to point to a function instead of a class (to avoid printing class repr in terminal)
+    YaetosCmds()
 
 def setup_env(args):
     cwd = os.getcwd()
-    print(f'Will setup yaetos in the current folder ({cwd})')
+    if args.project_name:
+        os.system("mkdir -p " + args.project_name)
+        os.chdir(args.project_name)
+        cwd = os.getcwd()
+        print(f'Created the folder "{args.project_name}"')
+
+    print(f'Will setup yaetos in "{cwd}"')
 
     paths = yaetos.__path__
     package_path = paths[0]
