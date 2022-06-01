@@ -1,8 +1,8 @@
 # Script to setup the environment for yaetos. It needs to be executed from the repo root folder.
 #
 # Copy this file, remove ".example", and make the following changes:
-#  - set 'yaetos_jobs_home' below to the location of your yaetos repo (if your yaetos repo contains both jobs and framework, the default) or of your yaetos jobs repo if repo with jobs is separate from framework repo.
-#  - add : "-v ~/path/to/your/repo/yaetos:/mnt/yaetos \" if 'yaetos_jobs_home' only contains the jobs and not the framework, while using the yaetos repo as the framework.
+#  - set 'yaetos_home' below to the location of your yaetos repo.
+#  - set 'yaetos_jobs_home' below to the location of 1) your yaetos jobs repo if separate from the yaetos_home or 2) your yaetos repo if jobs and framework are both in the same repo.
 #  - add : "-v ~/.aws:/.aws \" to use the tool to run jobs in AWS (ad-hoc or scheduled). Requires awcli setup on host (with ~/.aws setup with profile "default").
 # Usage once above done:
 # - "./launch_env.sh 1" -> goes in docker bash, can be used to run all jobs in command line (incl. spark jobs)
@@ -10,7 +10,8 @@
 # - "./launch_env.sh 3 python somejob.py --some_arg" -> sets up jupyter in docker, can be used to run all jobs in jupyter. Open UI in host OS at http://localhost:8888/
 
 
-yaetos_jobs_home=/path/to/repo/yaetos/
+yaetos_jobs_home=/path/to/repo/yaetos_or_yaetos_jobs_if_separate/
+yaetos_home=/path/to/repo/yaetos/
 
 run_mode=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
 if [[ $run_mode = 1 ]]; then
@@ -19,6 +20,7 @@ if [[ $run_mode = 1 ]]; then
   docker build -t pyspark_container -f Dockerfile_alt .
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
       -v $yaetos_jobs_home:/mnt/yaetos_jobs \
+      -v $yaetos_home:/mnt/yaetos \
       -v $HOME/.aws:/.aws \
       -h spark \
       -w /mnt/yaetos_jobs/ \
@@ -30,6 +32,7 @@ elif [[ $run_mode = 2 ]]; then
   docker build -t pyspark_container -f Dockerfile_alt .
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
       -v $yaetos_jobs_home:/mnt/yaetos_jobs \
+      -v $yaetos_home:/mnt/yaetos \
       -v $HOME/.aws:/.aws \
       -h spark \
       -w /mnt/yaetos_jobs/ \
@@ -42,6 +45,7 @@ elif [[ $run_mode = 3 ]]; then
   docker build -t pyspark_container -f Dockerfile_alt .
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
       -v $yaetos_jobs_home:/mnt/yaetos_jobs \
+      -v $yaetos_home:/mnt/yaetos \
       -v $HOME/.aws:/.aws \
       -h spark \
       -w /mnt/yaetos_jobs/ \

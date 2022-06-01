@@ -232,7 +232,7 @@ class DeployPySparkScriptOnAws(object):
         logger.info("S3 bucket for temporary files exists: " + self.s3_bucket_logs)
 
     def tar_python_scripts(self):
-        base = self.get_package_path()
+        package = self.get_package_path()
         output_path = self.TMP + "scripts.tar.gz"
 
         # Create tar.gz file
@@ -248,23 +248,23 @@ class DeployPySparkScriptOnAws(object):
 
         # ./yaetos files
         # TODO: check a way to deploy the yaetos code locally for testing.
-        files = os.listdir(base + 'yaetos/')
+        files = os.listdir(package + 'yaetos/')
         for f in files:
-            t_file.add(base + 'yaetos/' + f, arcname='yaetos/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package + 'yaetos/' + f, arcname='yaetos/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./libs files
         # TODO: get better way to walk down tree (reuse walk from below)
-        files = os.listdir(base + 'yaetos/libs/')
+        files = os.listdir(package + 'yaetos/libs/')
         for f in files:
-            t_file.add(base + 'yaetos/libs/' + f, arcname='yaetos/libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package + 'yaetos/libs/' + f, arcname='yaetos/libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir(base + 'yaetos/libs/analysis_toolkit/')
+        files = os.listdir(package + 'yaetos/libs/analysis_toolkit/')
         for f in files:
-            t_file.add(base + 'yaetos/libs/analysis_toolkit/' + f, arcname='yaetos/libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package + 'yaetos/libs/analysis_toolkit/' + f, arcname='yaetos/libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir(base + 'yaetos/libs/python_db_connectors/')
+        files = os.listdir(package + 'yaetos/libs/python_db_connectors/')
         for f in files:
-            t_file.add(base + 'yaetos/libs/python_db_connectors/' + f, arcname='yaetos/libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package + 'yaetos/libs/python_db_connectors/' + f, arcname='yaetos/libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./jobs files and folders
         # TODO: extract code below in external function.
@@ -286,9 +286,9 @@ class DeployPySparkScriptOnAws(object):
         logger.info("Added all spark app files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
-        base = self.get_package_path()
+        package = self.get_package_path()
         for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
-            copyfile(base + self.SCRIPTS + item, self.TMP + item)
+            copyfile(package + self.SCRIPTS + item, self.TMP + item)
         logger.info("Added all EMR setup files to {}".format(self.TMP))
 
     def get_package_path(self):
