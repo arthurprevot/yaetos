@@ -7,7 +7,7 @@ https://github.com/arthurprevot/yaetos
 """
 
 # Always prefer setuptools over distutils
-from setuptools import setup, find_packages
+from setuptools import setup
 import pathlib
 
 here = pathlib.Path(__file__).parent.resolve()

@@ -54,21 +54,18 @@ class YaetosCmds(object):
         getattr(self, args.command)()  # dispatching according to command line.
 
     def setup(self):
-        parser = argparse.ArgumentParser(
-            description=self.usage_setup)
+        parser = argparse.ArgumentParser(description=self.usage_setup)
         parser.add_argument('--set_github', action='store_true')
         args = parser.parse_args(sys.argv[2:])  # ignoring first 2 args (i.e. "yeatos setup")
         setup_env(args)
 
     def launch_docker_bash(self):
-        parser = argparse.ArgumentParser(
-            description=self.usage_docker_bash)
+        argparse.ArgumentParser(description=self.usage_docker_bash)
         # parser.add_argument('--no_aws', action='store_true')  # TODO: implement
         subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
 
     def launch_docker_jupyter(self):
-        parser = argparse.ArgumentParser(
-            description=self.usage_docker_jupyter)
+        argparse.ArgumentParser(description=self.usage_docker_jupyter)
         subprocess.call("./launch_env.sh 2", shell=True)
 
     def run_dockerized(self):
@@ -77,7 +74,6 @@ class YaetosCmds(object):
         ignored, cmd_unknown_args = parser.parse_known_args()
         cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 3 " + cmd_str
-        # print("Command line to be sent "+cmd_delegated)
         subprocess.call(cmd_delegated, shell=True)
 
     def run(self):

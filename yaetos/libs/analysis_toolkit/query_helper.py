@@ -14,6 +14,7 @@ def query_and_cache(query_str, name, folder, to_csv_args={}, dbargs={}, db_type=
         df = query(query_str, **dbargs)
         end_time = time()
         elapsed = end_time - start_time
+        print("Ran in {} s".format(elapsed))
         if show:
             print(df)
         drop_if_needed(df, name, folder, to_csv_args, db_type, elapsed, query_str, force_rerun)
@@ -32,6 +33,7 @@ def process_and_cache(name, folder, func, to_csv_args={}, force_rerun=False, sho
         df = func(**func_args)
         end_time = time()
         elapsed = end_time - start_time
+        print("Ran in {} s".format(elapsed))
         if show:
             print(df)
         drop_if_needed(df, name, folder, to_csv_args, force_rerun=force_rerun)
@@ -71,7 +73,7 @@ def diff_dfs(df1, df2):
         hash1 = hashlib.sha256(pd.util.hash_pandas_object(df1, index=True).values).hexdigest()
         hash2 = hashlib.sha256(pd.util.hash_pandas_object(df2, index=True).values).hexdigest()
         is_identical = hash1 == hash2
-    except Exception as err:
+    except Exception:
         print("Diff computation failed so assuming files are not similar.")
         return False
 

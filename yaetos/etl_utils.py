@@ -9,7 +9,6 @@ Helper functions. Setup to run locally and on cluster.
 # - way to run all jobs from 1 cmd line.
 
 
-import sys
 import inspect
 import yaml
 from datetime import datetime
@@ -18,9 +17,7 @@ import boto3
 import argparse
 from time import time
 import networkx as nx
-import random
 import pandas as pd
-import numpy as np
 import gc
 from pprint import pformat
 import smtplib
@@ -205,17 +202,6 @@ class ETL_Base(object):
             schemas = None
         return output, schemas
 
-    def etl_no_io_function(self, sc, sc_sql, transform=None, transform_args={}, loaded_inputs={}):
-        """ Used for testing internal functions"""
-        # self.jargs = jargs
-        self.sc = sc
-        self.sc_sql = sc_sql
-        self.app_name = sc.appName
-        self.logger = logger
-        loaded_datasets = self.load_inputs(loaded_inputs)
-        output = transform(**transform_args)
-        return output
-
     def transform(self, **app_args):
         """ The function that needs to be overriden by each specific job."""
         raise NotImplementedError
@@ -290,7 +276,7 @@ class ETL_Base(object):
             if inc:
                 if input_is_tabular:
                     # TODO: add limit to amount of input data, and set self.final_inc=False
-                    inc_type = {k: v for k, v in app_args[item].dtypes}[inc]
+                    # inc_type = {k: v for k, v in app_args[item].dtypes}[inc]  # TODO: add check that inc_type is timestamp
                     logger.info("Input dataset '{}' will be filtered for min_dt={} max_dt={}".format(item, min_dt, max_dt))
                     if min_dt:
                         # min_dt = to_date(lit(s)).cast(TimestampType()  # TODO: deal with dt type, as coming from parquet
@@ -310,7 +296,7 @@ class ETL_Base(object):
             if inc:
                 if input_is_tabular:
                     # TODO: add limit to amount of input data, and set self.final_inc=False
-                    inc_type = {k: v for k, v in app_args[item].dtypes}[inc]
+                    # inc_type = {k: v for k, v in app_args[item].dtypes}[inc]  # TODO: add check that inc_type is timestamp
                     logger.info("Input dataset '{}' will be filtered for {}='{}'".format(item, inc, self.period))
                     app_args[item] = app_args[item].filter(app_args[item][inc] == self.period)
                 else:
@@ -429,7 +415,6 @@ class ETL_Base(object):
                 .load()
         else:
             inc_field = self.jargs.inputs[input_name]['inc_field']
-            period = self.period
             # query_str = "select * from {} where {} = '{}'".format(dbtable, inc_field, period)
             higher_limit = "AND {inc_field} < '{period_next}'".format(inc_field=inc_field, period_next=self.period_next) if self.period_next else ''
             query_str = "select * from {dbtable} where {inc_field} >= '{period}' {higher_limit}".format(dbtable=dbtable, inc_field=inc_field, period=self.period, higher_limit=higher_limit)
@@ -695,7 +680,7 @@ class Schema_Builder():
         fname = self.TYPES_FOLDER + job_name + '.yaml'
         os.makedirs(os.path.dirname(fname), exist_ok=True)
         with open(fname, 'w') as file:
-            ignored = yaml.dump(self.yml, file)
+            yaml.dump(self.yml, file)
 
 
 class Job_Yml_Parser():

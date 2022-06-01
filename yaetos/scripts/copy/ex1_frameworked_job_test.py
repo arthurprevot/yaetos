@@ -1,4 +1,3 @@
-import pytest
 from jobs.examples.ex1_frameworked_job import Job
 
 

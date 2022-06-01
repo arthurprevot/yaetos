@@ -1,8 +1,7 @@
-import pytest
 from pandas.testing import assert_frame_equal
 import pandas as pd
 import numpy as np
-from yaetos.etl_utils import ETL_Base, Commandliner, \
+from yaetos.etl_utils import ETL_Base, \
     Period_Builder, Job_Args_Parser, Job_Yml_Parser, Flow, \
     get_job_class, LOCAL_JOB_FOLDER, JOBS_METADATA_FILE
 

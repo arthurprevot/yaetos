@@ -4,7 +4,6 @@ The script is responsible for creating and closing spark context, defining paths
 """
 
 from __future__ import print_function
-import sys
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
 from yaetos.etl_utils import Path_Handler

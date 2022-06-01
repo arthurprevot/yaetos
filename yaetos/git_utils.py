@@ -54,7 +54,7 @@ class Git_Config_Manager():
     def save_yaml(self, config):
         os.makedirs(os.path.dirname(self.FNAME), exist_ok=True)
         with open(self.FNAME, 'w') as file:
-            ignored = yaml.dump(config, file)
+            yaml.dump(config, file)
         logger.info('Saved yml with git info: {}'.format(self.FNAME))
 
     def get_config_from_file(self, cluster_app_folder):

@@ -3,6 +3,7 @@ Set of operations that require dispatching between local and cloud environment.
 """
 import boto3
 import os
+from time import time
 from io import StringIO
 # from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
 from configparser import ConfigParser
@@ -173,7 +174,12 @@ class FS_Ops_Dispatcher():
             s3c = boto3.Session(profile_name='default').client('s3')
             response = s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=file_buffer.getvalue())
 
-        logger.info("Created file in S3: {}".format(fname))
+        response_code = response['ResponseMetadata']['HTTPStatusCode']
+        if response_code == 200:
+            logger.info("Created file in S3: {}".format(fname))
+        else:
+            raise Exception("S3 couldn't be sent to S3")
+        time.sleep(1)  # Prevent ThrottlingException
         return df
 
 

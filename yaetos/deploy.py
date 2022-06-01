@@ -10,13 +10,11 @@ Borrows from https://github.com/thomhopmans/themarketingtechnologist/tree/master
 # - check that bucket where output will be is available (to avoid loosing time before crashing)
 
 import os
-import sys
 from datetime import datetime
 import time
 import tarfile
 import boto3
 import botocore
-from botocore.exceptions import ClientError
 import uuid
 import json
 from pprint import pformat
@@ -234,7 +232,7 @@ class DeployPySparkScriptOnAws(object):
         logger.info("S3 bucket for temporary files exists: " + self.s3_bucket_logs)
 
     def tar_python_scripts(self):
-        base = self.get_package_path()
+        package = self.get_package_path()
         output_path = self.TMP + "scripts.tar.gz"
 
         # Create tar.gz file
@@ -250,23 +248,23 @@ class DeployPySparkScriptOnAws(object):
 
         # ./yaetos files
         # TODO: check a way to deploy the yaetos code locally for testing.
-        files = os.listdir(base + 'yaetos/')
+        files = os.listdir(package + 'yaetos/')
         for f in files:
-            t_file.add(base + 'yaetos/' + f, arcname='yaetos/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package + 'yaetos/' + f, arcname='yaetos/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./libs files
         # TODO: get better way to walk down tree (reuse walk from below)
-        files = os.listdir(base + 'yaetos/libs/')
+        files = os.listdir(package + 'yaetos/libs/')
         for f in files:
-            t_file.add(base + 'yaetos/libs/' + f, arcname='yaetos/libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package + 'yaetos/libs/' + f, arcname='yaetos/libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir(base + 'yaetos/libs/analysis_toolkit/')
+        files = os.listdir(package + 'yaetos/libs/analysis_toolkit/')
         for f in files:
-            t_file.add(base + 'yaetos/libs/analysis_toolkit/' + f, arcname='yaetos/libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package + 'yaetos/libs/analysis_toolkit/' + f, arcname='yaetos/libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir(base + 'yaetos/libs/python_db_connectors/')
+        files = os.listdir(package + 'yaetos/libs/python_db_connectors/')
         for f in files:
-            t_file.add(base + 'yaetos/libs/python_db_connectors/' + f, arcname='yaetos/libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package + 'yaetos/libs/python_db_connectors/' + f, arcname='yaetos/libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./jobs files and folders
         # TODO: extract code below in external function.
@@ -288,9 +286,9 @@ class DeployPySparkScriptOnAws(object):
         logger.info("Added all spark app files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
-        base = self.get_package_path()
+        package = self.get_package_path()
         for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
-            copyfile(base + self.SCRIPTS + item, self.TMP + item)
+            copyfile(package + self.SCRIPTS + item, self.TMP + item)
         logger.info("Added all EMR setup files to {}".format(self.TMP))
 
     def get_package_path(self):
@@ -395,7 +393,7 @@ class DeployPySparkScriptOnAws(object):
         )
         # Process response to determine if Spark cluster was started, and if so, the JobFlowId of the cluster
         response_code = response['ResponseMetadata']['HTTPStatusCode']
-        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        if response_code == 200:
             self.cluster_id = response['JobFlowId']
         else:
             terminate("Could not create EMR cluster (status code {})".format(response_code))
@@ -437,7 +435,11 @@ class DeployPySparkScriptOnAws(object):
                 }
             }]
         )
-        logger.info("Added step")
+        response_code = response['ResponseMetadata']['HTTPStatusCode']
+        if response_code == 200:
+            logger.info("Added step")
+        else:
+            raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
 
     def step_spark_submit(self, c, app_file, app_args):
@@ -458,7 +460,11 @@ class DeployPySparkScriptOnAws(object):
                 }
             }]
         )
-        logger.info("Added step 'spark-submit' with command line '{}'".format(cmd_runner_args))
+        response_code = response['ResponseMetadata']['HTTPStatusCode']
+        if response_code == 200:
+            logger.info("Added step 'spark-submit' with command line '{}'".format(cmd_runner_args))
+        else:
+            raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
 
     def get_spark_submit_args(self, app_file, app_args):
@@ -567,7 +573,11 @@ class DeployPySparkScriptOnAws(object):
             job_name = self.get_job_name(item['name'])
             if job_name == self.app_args['job_name']:
                 response = client.deactivate_pipeline(pipelineId=item['id'], cancelActive=True)
-                logger.info('Deactivated pipeline {}, {}, {}'.format(job_name, item['name'], item['id']))
+                response_code = response['ResponseMetadata']['HTTPStatusCode']
+                if response_code == 200:
+                    logger.info('Deactivated pipeline {}, {}, {}'.format(job_name, item['name'], item['id']))
+                else:
+                    raise Exception("Pipeline couldn't be deactivated. Error message: {}".format(response))
 
     def update_params(self, parameterValues):
         # TODO: check if easier/simpler to change values at the source json instead of a processed one.

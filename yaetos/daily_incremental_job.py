@@ -1,7 +1,7 @@
 """OBSOLETE. Will be deleted."""
 
 from yaetos.etl_utils import ETL_Base
-from datetime import datetime, date
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 

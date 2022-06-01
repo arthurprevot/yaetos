@@ -1,7 +1,5 @@
 """To show koalas API. Same process as SQL code in ex2_frameworked_job.py"""
 from yaetos.etl_utils import ETL_Base, Commandliner
-import pandas as pd
-import numpy as np
 import databricks.koalas as ks
 
 
