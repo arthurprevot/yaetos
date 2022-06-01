@@ -63,12 +63,12 @@ class YaetosCmds(object):
     def launch_docker_bash(self):
         argparse.ArgumentParser(description=self.usage_docker_bash)
         # parser.add_argument('--no_aws', action='store_true')  # TODO: implement
-        subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
+        out = subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
         self.print_error(out)
 
     def launch_docker_jupyter(self):
         argparse.ArgumentParser(description=self.usage_docker_jupyter)
-        subprocess.call("./launch_env.sh 2", shell=True)
+        out = subprocess.call("./launch_env.sh 2", shell=True)
         self.print_error(out)
 
     def run_dockerized(self):
@@ -77,7 +77,7 @@ class YaetosCmds(object):
         ignored, cmd_unknown_args = parser.parse_known_args()
         cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 3 " + cmd_str
-        subprocess.call(cmd_delegated, shell=True)
+        out = subprocess.call(cmd_delegated, shell=True)
         self.print_error(out)
 
     def run(self):
@@ -86,11 +86,8 @@ class YaetosCmds(object):
         ignored, cmd_unknown_args = parser.parse_known_args()
         cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 4 " + cmd_str
-        # import ipdb; ipdb.set_trace()
         out = subprocess.call(cmd_delegated, shell=True)
         self.print_error(out)
-        # if out == 127:
-        #     print('Error: this command needs to be run from the project root, where launch_env.sh is.')
 
     def print_error(self, out):
         if out == 127:  # 127 associated to error "/bin/sh: ./launch_env.sh: No such file or directory"
