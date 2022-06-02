@@ -98,6 +98,7 @@ def main():
     # Necessary for setup.py entry_points to point to a function instead of a class (to avoid printing class repr in terminal)
     YaetosCmds()
 
+
 def setup_env(args):
     cwd = os.getcwd()
     if args.project_name:
