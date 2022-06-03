@@ -61,40 +61,29 @@ class YaetosCmds(object):
         setup_env(args)
 
     def launch_docker_bash(self):
-        parser = argparse.ArgumentParser(description=self.usage_docker_bash)
-        parser.add_argument('--path', help="Path to the project folder, where the 'launch_env.sh' file is.")
+        argparse.ArgumentParser(description=self.usage_docker_bash)
         # parser.add_argument('--no_aws', action='store_true')  # TODO: implement
         args = parser.parse_args(sys.argv[2:])
-        if args.path:
-            os.chdir(args.path)
         out = subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
         self.print_error(out)
 
     def launch_docker_jupyter(self):
-        parser = argparse.ArgumentParser(description=self.usage_docker_jupyter)
-        parser.add_argument('--path', help="Path to the project folder, where the 'launch_env.sh' file is.")
+        argparse.ArgumentParser(description=self.usage_docker_jupyter)
         args = parser.parse_args(sys.argv[2:])
-        if args.path:
-            os.chdir(args.path)
         out = subprocess.call("./launch_env.sh 2", shell=True)
         self.print_error(out)
 
     def run_dockerized(self):
         argparse.ArgumentParser(description=self.usage_run_dockerized)
         ignored, cmd_unknown_args = parser.parse_known_args()
-        # if args.path:
-        #     os.chdir(args.path)
         cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 3 " + cmd_str
         out = subprocess.call(cmd_delegated, shell=True)
         self.print_error(out)
 
     def run(self):
-        parser = argparse.ArgumentParser(
-            description=self.usage_run)
+        parser = argparse.ArgumentParser(description=self.usage_run)
         ignored, cmd_unknown_args = parser.parse_known_args()
-        # if args.path:
-        #     os.chdir(args.path)
         cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 4 " + cmd_str
         out = subprocess.call(cmd_delegated, shell=True)
