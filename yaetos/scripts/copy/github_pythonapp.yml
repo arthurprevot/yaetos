@@ -29,13 +29,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r conf/requirements_extra.txt
         pip install yaetos
-        pip install pandas  # TODO: remove when integrated pulling from 0.9.18
-        pip install sqlalchemy  # TODO: same
     - name: Test with pytest
       run: |
         pip install pytest
         export YAETOS_JOBS_HOME=/home/runner/work/yaetos_jobs/yaetos_jobs  # TODO: find cleaner way
-        export PYTHONPATH=$YAETOS_JOBS_HOME:$PYTHONPATH  # TODO: same
+        export PYTHONPATH=$YAETOS_JOBS_HOME:$PYTHONPATH
         pytest
     - name: Lint with flake8
       run: |

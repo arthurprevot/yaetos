@@ -161,6 +161,8 @@ setup(
         'awscli',
         'boto3',
         'cloudpathlib',
+        'pandas',
+        'sqlalchemy',
         'networkx'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
