@@ -72,7 +72,7 @@ class YaetosCmds(object):
         self.print_error(out)
 
     def run_dockerized(self):
-        argparse.ArgumentParser(description=self.usage_run_dockerized)
+        parser = argparse.ArgumentParser(description=self.usage_run_dockerized)
         ignored, cmd_unknown_args = parser.parse_known_args()
         cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 3 " + cmd_str
