@@ -155,6 +155,6 @@ def setup_env(args):
     # setup github CI
     if args.set_github:
         os.system("mkdir -p .github/workflows/")
-        copyfile(f'{package_path}/scripts/github_pythonapp.yml', f'{cwd}/.github/workflows/pythonapp.yml')
+        copyfile(f'{package_path}/scripts/copy/github_pythonapp.yml', f'{cwd}/.github/workflows/pythonapp.yml')
 
     print('Done')
