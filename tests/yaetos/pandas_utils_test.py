@@ -3,6 +3,7 @@ from pandas.testing import assert_frame_equal
 import pandas as pd
 import numpy as np
 from yaetos.pandas_utils import load_csvs, load_df, save_pandas_local
+# TODO: check to remove .reset_index(drop=True), using assert_frame_equal(d1, d2, check_index_type=False) instead
 
 
 def test_load_csvs():
