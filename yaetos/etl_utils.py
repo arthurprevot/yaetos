@@ -28,7 +28,7 @@ from yaetos.git_utils import Git_Config_Manager
 from yaetos.env_dispatchers import FS_Ops_Dispatcher, Cred_Ops_Dispatcher
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
-# imports should not include any native spark libs, to enable pandas only mode (running outside docker).
+# imports should not include any native spark libs, to work in pandas without spark.
 
 
 # User settable params below can be changed from command line or yml or job inputs.
