@@ -39,7 +39,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version='0.9.17',  # Required
+    version='0.9.18',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
@@ -161,6 +161,8 @@ setup(
         'awscli',
         'boto3',
         'cloudpathlib',
+        'pandas',
+        'sqlalchemy',
         'networkx'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
@@ -198,7 +200,7 @@ setup(
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
         'console_scripts': [
-            'yaetos=yaetos.scripts.yaetos_cmdline:YaetosCmds',
+            'yaetos=yaetos.scripts.yaetos_cmdline:main',
         ],
     },
 

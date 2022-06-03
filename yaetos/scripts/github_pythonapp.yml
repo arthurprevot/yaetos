@@ -1,0 +1,49 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    # Spark setup as per https://github.com/marketplace/actions/setup-apache-spark
+    - uses: actions/setup-java@v1
+      with:
+        java-version: '11'
+
+    - uses: vemonet/setup-spark@v1
+      with:
+        spark-version: '3.1.2'
+        hadoop-version: '3.2'
+
+    - run: spark-submit --version
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r conf/requirements_extra.txt
+        pip install yaetos
+    - name: Test with pytest
+      run: |
+        pip install pytest
+        export YAETOS_JOBS_HOME=/home/runner/work/yaetos_jobs/yaetos_jobs  # TODO: find cleaner way
+        export PYTHONPATH=$YAETOS_JOBS_HOME:$PYTHONPATH
+        pytest
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # stop the build if there are Python syntax errors or undefined names
+        echo 'Syntax errors or undefined names, enforced'
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # enforce all rules except these below
+        echo 'Code formatting not compliant, enforced'
+        flake8 . --count --ignore=E501,C901,E402,W605 --max-complexity=10 --max-line-length=127 --statistics  # TODO: check to remove "--ignore" codes.
+        # info about non-enforced checks. exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        echo 'Rest of formatting not pep8 compliant, not enforced'
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics  # --exit-zero to not block merging if not compliant.
