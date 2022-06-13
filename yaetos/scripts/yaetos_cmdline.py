@@ -65,7 +65,7 @@ class YaetosCmds(object):
     def launch_docker_bash(self):
         argparse.ArgumentParser(description=self.usage_docker_bash)
         # parser.add_argument('--no_aws', action='store_true')  # TODO: implement
-        out = subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
+        out = subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1']) # TODO: make it cross plateform (check using "sh launch_env.sh 1" for windows)
         self.print_error(out)
 
     def launch_docker_jupyter(self):
