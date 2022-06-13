@@ -131,7 +131,7 @@ def setup_env(args):
 
     # Conf
     # os.system("mkdir -p conf/")
-    os.makedirs('conf/', exist_ok=True)
+    os.makedirs(Pt('conf/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/aws_config.cfg.example'), Pt(f'{cwd}/conf/aws_config.cfg'))
     copyfile(Pt(f'{package_path}/scripts/copy/jobs_metadata_external.yml'), Pt(f'{cwd}/conf/jobs_metadata.yml'))
     copyfile(Pt(f'{package_path}/scripts/copy/connections.cfg.example'), Pt(f'{cwd}/conf/connections.cfg'))
@@ -139,7 +139,7 @@ def setup_env(args):
 
     # Sample jobs
     # os.system("mkdir -p jobs/generic/")
-    os.makedirs('jobs/generic/', exist_ok=True)
+    os.makedirs(Pt('jobs/generic/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/libs/generic_jobs/copy_job.py'), Pt(f'{cwd}/jobs/generic/copy_job.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/deployer.py'), Pt(f'{cwd}/jobs/generic/deployer.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/dummy_job.py'), Pt(f'{cwd}/jobs/generic/dummy_job.py'))
@@ -147,14 +147,14 @@ def setup_env(args):
 
     # Sample jobs
     # os.system("mkdir -p jobs/examples/")
-    os.makedirs('jobs/examples/', exist_ok=True)
+    os.makedirs(Pt('jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/ex0_extraction_job.py'), Pt(f'{cwd}/jobs/examples/ex0_extraction_job.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job.py'), Pt(f'{cwd}/jobs/examples/ex1_frameworked_job.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_full_sql_job.sql'))
 
     # Sample jobs tests
     # os.system("mkdir -p tests/jobs/examples/")
-    os.makedirs('tests/jobs/examples/', exist_ok=True)
+    os.makedirs(Pt('tests/jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/conftest.py'), Pt(f'{cwd}/tests/conftest.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_full_sql_job_test.py'))
@@ -164,7 +164,7 @@ def setup_env(args):
     # setup github CI
     if args.set_github:
         # os.system("mkdir -p .github/workflows/")
-        os.makedirs('.github/workflows/', exist_ok=True)
+        os.makedirs(Pt('.github/workflows/'), exist_ok=True)
         copyfile(Pt(f'{package_path}/scripts/github_pythonapp.yml'), Pt(f'{cwd}/.github/workflows/pythonapp.yml'))
 
     print('Done')
