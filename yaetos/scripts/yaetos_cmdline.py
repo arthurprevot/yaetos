@@ -15,6 +15,7 @@ For dev:
 
 import os
 import stat
+from pathlib import Path as Pt
 from shutil import copyfile
 import yaetos
 import argparse
@@ -103,8 +104,8 @@ def setup_env(args):
     if args.project_name:
         # os.system("mkdir -p " + args.project_name)
         # os.mkdir(args.project_name, mode=0755)
-        os.makedirs(args.project_name, exist_ok=True)
-        os.chdir(args.project_name)
+        os.makedirs(Pt(args.project_name), exist_ok=True)
+        os.chdir(Pt(args.project_name))
         cwd = os.getcwd()
         print(f'Created the folder "{args.project_name}"')
 
@@ -117,46 +118,46 @@ def setup_env(args):
 
     # Empty folders necessary for later.
     # os.system("mkdir -p tmp/files_to_ship/")
-    os.makedirs('tmp/files_to_ship/', exist_ok=True)
+    os.makedirs(Pt('tmp/files_to_ship/'), exist_ok=True)
     # os.system("mkdir -p data/")
-    os.makedirs('data/', exist_ok=True)
+    os.makedirs(Pt('data/'), exist_ok=True)
     # TODO: make code above and below compatible with windows OS (no cmd line, no linux only paths).
 
     # Root folder files
-    copyfile(f'{package_path}/scripts/copy/Dockerfile_external', f'{cwd}/Dockerfile')
-    copyfile(f'{package_path}/scripts/copy/launch_env_external.sh', f'{cwd}/launch_env.sh')
+    copyfile(Pt(f'{package_path}/scripts/copy/Dockerfile_external'), Pt(f'{cwd}/Dockerfile'))
+    copyfile(Pt(f'{package_path}/scripts/copy/launch_env_external.sh'), Pt(f'{cwd}/launch_env.sh'))
     # os.chmod(f'{cwd}/launch_env.sh', 0o755)  # TODO: use stat.S_IEXEC instead to be cross plateform
     os.chmod(Pt(f'{cwd}/launch_env.sh'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)  # equ to 0o755
 
     # Conf
     # os.system("mkdir -p conf/")
     os.makedirs('conf/', exist_ok=True)
-    copyfile(f'{package_path}/scripts/copy/aws_config.cfg.example', f'{cwd}/conf/aws_config.cfg')
-    copyfile(f'{package_path}/scripts/copy/jobs_metadata_external.yml', f'{cwd}/conf/jobs_metadata.yml')
-    copyfile(f'{package_path}/scripts/copy/connections.cfg.example', f'{cwd}/conf/connections.cfg')
-    copyfile(f'{package_path}/scripts/copy/requirements_extra.txt', f'{cwd}/conf/requirements_extra.txt')
+    copyfile(Pt(f'{package_path}/scripts/copy/aws_config.cfg.example'), Pt(f'{cwd}/conf/aws_config.cfg'))
+    copyfile(Pt(f'{package_path}/scripts/copy/jobs_metadata_external.yml'), Pt(f'{cwd}/conf/jobs_metadata.yml'))
+    copyfile(Pt(f'{package_path}/scripts/copy/connections.cfg.example'), Pt(f'{cwd}/conf/connections.cfg'))
+    copyfile(Pt(f'{package_path}/scripts/copy/requirements_extra.txt'), Pt(f'{cwd}/conf/requirements_extra.txt'))
 
     # Sample jobs
     # os.system("mkdir -p jobs/generic/")
     os.makedirs('jobs/generic/', exist_ok=True)
-    copyfile(f'{package_path}/libs/generic_jobs/copy_job.py', f'{cwd}/jobs/generic/copy_job.py')
-    copyfile(f'{package_path}/libs/generic_jobs/deployer.py', f'{cwd}/jobs/generic/deployer.py')
-    copyfile(f'{package_path}/libs/generic_jobs/dummy_job.py', f'{cwd}/jobs/generic/dummy_job.py')
-    copyfile(f'{package_path}/libs/generic_jobs/launcher.py', f'{cwd}/jobs/generic/launcher.py')
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/copy_job.py'), Pt(f'{cwd}/jobs/generic/copy_job.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/deployer.py'), Pt(f'{cwd}/jobs/generic/deployer.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/dummy_job.py'), Pt(f'{cwd}/jobs/generic/dummy_job.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/launcher.py'), Pt(f'{cwd}/jobs/generic/launcher.py'))
 
     # Sample jobs
     # os.system("mkdir -p jobs/examples/")
     os.makedirs('jobs/examples/', exist_ok=True)
-    copyfile(f'{package_path}/scripts/copy/ex0_extraction_job.py', f'{cwd}/jobs/examples/ex0_extraction_job.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_frameworked_job.py', f'{cwd}/jobs/examples/ex1_frameworked_job.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_full_sql_job.sql', f'{cwd}/jobs/examples/ex1_full_sql_job.sql')
+    copyfile(Pt(f'{package_path}/scripts/copy/ex0_extraction_job.py'), Pt(f'{cwd}/jobs/examples/ex0_extraction_job.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job.py'), Pt(f'{cwd}/jobs/examples/ex1_frameworked_job.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_full_sql_job.sql'))
 
     # Sample jobs tests
     # os.system("mkdir -p tests/jobs/examples/")
     os.makedirs('tests/jobs/examples/', exist_ok=True)
-    copyfile(f'{package_path}/scripts/copy/conftest.py', f'{cwd}/tests/conftest.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py', f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py', f'{cwd}/tests/jobs/examples/ex1_full_sql_job_test.py')
+    copyfile(Pt(f'{package_path}/scripts/copy/conftest.py'), Pt(f'{cwd}/tests/conftest.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_full_sql_job_test.py'))
 
     # TODO: add setup awscli or make sure it is there.
 
@@ -164,6 +165,6 @@ def setup_env(args):
     if args.set_github:
         # os.system("mkdir -p .github/workflows/")
         os.makedirs('.github/workflows/', exist_ok=True)
-        copyfile(f'{package_path}/scripts/github_pythonapp.yml', f'{cwd}/.github/workflows/pythonapp.yml')
+        copyfile(Pt(f'{package_path}/scripts/github_pythonapp.yml'), Pt(f'{cwd}/.github/workflows/pythonapp.yml'))
 
     print('Done')
