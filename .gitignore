@@ -15,3 +15,4 @@ conf/git_config.yml
 libs/python_db_connectors/credentials.cfg
 launch_env.sh
 .ipynb_checkpoints/
+.DS_Store
