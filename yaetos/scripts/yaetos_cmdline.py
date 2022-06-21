@@ -102,8 +102,6 @@ def main():
 def setup_env(args):
     cwd = os.getcwd()
     if args.project_name:
-        # os.system("mkdir -p " + args.project_name)
-        # os.mkdir(args.project_name, mode=0755)
         os.makedirs(Pt(args.project_name), exist_ok=True)
         os.chdir(Pt(args.project_name))
         cwd = os.getcwd()
@@ -117,20 +115,16 @@ def setup_env(args):
         print(f'Yeatos python package found in several locations. The script will use this one: {package_path}')
 
     # Empty folders necessary for later.
-    # os.system("mkdir -p tmp/files_to_ship/")
     os.makedirs(Pt('tmp/files_to_ship/'), exist_ok=True)
-    # os.system("mkdir -p data/")
     os.makedirs(Pt('data/'), exist_ok=True)
     # TODO: make code above and below compatible with windows OS (no cmd line, no linux only paths).
 
     # Root folder files
     copyfile(Pt(f'{package_path}/scripts/copy/Dockerfile_external'), Pt(f'{cwd}/Dockerfile'))
     copyfile(Pt(f'{package_path}/scripts/copy/launch_env_external.sh'), Pt(f'{cwd}/launch_env.sh'))
-    # os.chmod(f'{cwd}/launch_env.sh', 0o755)  # TODO: use stat.S_IEXEC instead to be cross plateform
     os.chmod(Pt(f'{cwd}/launch_env.sh'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)  # equ to 0o755
 
     # Conf
-    # os.system("mkdir -p conf/")
     os.makedirs(Pt('conf/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/aws_config.cfg.example'), Pt(f'{cwd}/conf/aws_config.cfg'))
     copyfile(Pt(f'{package_path}/scripts/copy/jobs_metadata_external.yml'), Pt(f'{cwd}/conf/jobs_metadata.yml'))
@@ -138,7 +132,6 @@ def setup_env(args):
     copyfile(Pt(f'{package_path}/scripts/copy/requirements_extra.txt'), Pt(f'{cwd}/conf/requirements_extra.txt'))
 
     # Sample jobs
-    # os.system("mkdir -p jobs/generic/")
     os.makedirs(Pt('jobs/generic/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/libs/generic_jobs/copy_job.py'), Pt(f'{cwd}/jobs/generic/copy_job.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/deployer.py'), Pt(f'{cwd}/jobs/generic/deployer.py'))
@@ -146,14 +139,12 @@ def setup_env(args):
     copyfile(Pt(f'{package_path}/libs/generic_jobs/launcher.py'), Pt(f'{cwd}/jobs/generic/launcher.py'))
 
     # Sample jobs
-    # os.system("mkdir -p jobs/examples/")
     os.makedirs(Pt('jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/ex0_extraction_job.py'), Pt(f'{cwd}/jobs/examples/ex0_extraction_job.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job.py'), Pt(f'{cwd}/jobs/examples/ex1_frameworked_job.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_full_sql_job.sql'))
 
     # Sample jobs tests
-    # os.system("mkdir -p tests/jobs/examples/")
     os.makedirs(Pt('tests/jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/conftest.py'), Pt(f'{cwd}/tests/conftest.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py'))
@@ -163,7 +154,6 @@ def setup_env(args):
 
     # setup github CI
     if args.set_github:
-        # os.system("mkdir -p .github/workflows/")
         os.makedirs(Pt('.github/workflows/'), exist_ok=True)
         copyfile(Pt(f'{package_path}/scripts/github_pythonapp.yml'), Pt(f'{cwd}/.github/workflows/pythonapp.yml'))
 
