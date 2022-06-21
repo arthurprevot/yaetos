@@ -26,11 +26,11 @@ Some features:
 
 ## To try it
 
-Run the commands from the "installation instructions" section below. Then run [this sql example](jobs/examples/ex1_full_sql_job.sql) locally with:
+Run the commands from the "installation instructions" section below. Then run [this sql example](jobs/examples/ex1_sql_job.sql) locally with:
 
-    yaetos run_dockerized jobs/generic/launcher.py --job_name=examples/ex1_full_sql_job.sql
+    yaetos run_dockerized jobs/generic/launcher.py --job_name=examples/ex1_sql_job.sql
 
-It will open the manifesto file (`jobs_metadata.yml`), find the job called `examples/ex1_full_sql_job.sql`, i.e. [these lines](conf/jobs_metadata.yml#L7-L16), get the job parameters from there (input paths, output path...), execute the transform defined in the job [ex1_full_sql_job.sql](jobs/examples/ex1_full_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata.yml#L12). To run the same sql example on an AWS cluster, add `--deploy=EMR` to the same command line above. In that case, inputs and outputs will be taken from S3, as defined by the `base_path` param in the manifesto [here](conf/jobs_metadata.yml#L214). If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
+It will open the manifesto file (`jobs_metadata.yml`), find the job called `examples/ex1_sql_job.sql`, i.e. [these lines](conf/jobs_metadata.yml#L7-L16), get the job parameters from there (input paths, output path...), execute the transform defined in the job [ex1_sql_job.sql](jobs/examples/ex1_sql_job.sql) using sparkSQL engine, and dump the output [here](conf/jobs_metadata.yml#L12). To run the same sql example on an AWS cluster, add `--deploy=EMR` to the same command line above. In that case, inputs and outputs will be taken from S3, as defined by the `base_path` param in the manifesto [here](conf/jobs_metadata.yml#L214). If you don't have a cluster available, it will create one and terminate it after the job is finished. You can see the status on the job process in the "steps" tab of your AWS EMR web page.
 
 For the rest of the documentation, we will go in the docker environment with the following command, and will execute the commands from there.
 

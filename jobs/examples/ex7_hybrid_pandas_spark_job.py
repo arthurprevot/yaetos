@@ -1,4 +1,4 @@
-"""Same transformation as ex1_full_sql_job.sql, done in pandas"""
+"""Same transformation as ex1_sql_job.sql, done in pandas"""
 from yaetos.etl_utils import ETL_Base, Commandliner
 from yaetos.db_utils import pdf_to_sdf
 from sqlalchemy import types

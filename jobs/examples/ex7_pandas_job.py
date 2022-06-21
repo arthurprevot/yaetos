@@ -1,7 +1,7 @@
 """
 Job to showcase loading file as pandas dataframe instead of spark dataframe.
 This allows for faster run for small datasets but looses some of the benefits of spark dataframes (support for SQL, better field type management, etc.).
-Transformation is the same as ex1_full_sql_job.sql
+Transformation is the same as ex1_sql_job.sql
 """
 from yaetos.etl_utils import ETL_Base, Commandliner
 import pandas as pd
