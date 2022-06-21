@@ -20,7 +20,6 @@ class Job(ETL_Base):
 
         # Save as dataframe
         pdf = pd.read_csv(local_path)
-        pdf = pdf[:10000]  # just to speed up job
         sdf = self.sc_sql.createDataFrame(pdf)
         return sdf.repartition(1)
 
