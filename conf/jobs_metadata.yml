@@ -151,7 +151,7 @@ jobs:
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
       other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex7_hybrid_pandas_spark/{now}/output.csv', 'type':'csv'}
+    output: {'path':'{base_path}/wiki_example/output_ex7_hybrid_pandas_spark/{now}/', 'type':'csv'}
 
   examples/ex8_koalas_job.py:
     inputs:
