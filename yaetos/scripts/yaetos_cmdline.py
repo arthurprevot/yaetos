@@ -14,6 +14,8 @@ For dev:
 """
 
 import os
+import stat
+from pathlib import Path as Pt
 from shutil import copyfile
 import yaetos
 import argparse
@@ -63,7 +65,7 @@ class YaetosCmds(object):
     def launch_docker_bash(self):
         argparse.ArgumentParser(description=self.usage_docker_bash)
         # parser.add_argument('--no_aws', action='store_true')  # TODO: implement
-        out = subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1'])
+        out = subprocess.call("./launch_env.sh 1", shell=True)  # TODO: make it work with better: subprocess.call(["./launch_env.sh", '1']) # TODO: make it cross plateform (check using "sh launch_env.sh 1" for windows)
         self.print_error(out)
 
     def launch_docker_jupyter(self):
@@ -100,8 +102,8 @@ def main():
 def setup_env(args):
     cwd = os.getcwd()
     if args.project_name:
-        os.system("mkdir -p " + args.project_name)
-        os.chdir(args.project_name)
+        os.makedirs(Pt(args.project_name), exist_ok=True)
+        os.chdir(Pt(args.project_name))
         cwd = os.getcwd()
         print(f'Created the folder "{args.project_name}"')
 
@@ -113,46 +115,46 @@ def setup_env(args):
         print(f'Yeatos python package found in several locations. The script will use this one: {package_path}')
 
     # Empty folders necessary for later.
-    os.system("mkdir -p tmp/files_to_ship/")
-    os.system("mkdir -p data/")
+    os.makedirs(Pt('tmp/files_to_ship/'), exist_ok=True)
+    os.makedirs(Pt('data/'), exist_ok=True)
     # TODO: make code above and below compatible with windows OS (no cmd line, no linux only paths).
 
     # Root folder files
-    copyfile(f'{package_path}/scripts/copy/Dockerfile_external', f'{cwd}/Dockerfile')
-    copyfile(f'{package_path}/scripts/copy/launch_env_external.sh', f'{cwd}/launch_env.sh')
-    os.chmod(f'{cwd}/launch_env.sh', 0o755)  # TODO: use stat.S_IEXEC instead to be cross plateform
+    copyfile(Pt(f'{package_path}/scripts/copy/Dockerfile_external'), Pt(f'{cwd}/Dockerfile'))
+    copyfile(Pt(f'{package_path}/scripts/copy/launch_env_external.sh'), Pt(f'{cwd}/launch_env.sh'))
+    os.chmod(Pt(f'{cwd}/launch_env.sh'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)  # equ to 0o755
 
     # Conf
-    os.system("mkdir -p conf/")
-    copyfile(f'{package_path}/scripts/copy/aws_config.cfg.example', f'{cwd}/conf/aws_config.cfg')
-    copyfile(f'{package_path}/scripts/copy/jobs_metadata_external.yml', f'{cwd}/conf/jobs_metadata.yml')
-    copyfile(f'{package_path}/scripts/copy/connections.cfg.example', f'{cwd}/conf/connections.cfg')
-    copyfile(f'{package_path}/scripts/copy/requirements_extra.txt', f'{cwd}/conf/requirements_extra.txt')
+    os.makedirs(Pt('conf/'), exist_ok=True)
+    copyfile(Pt(f'{package_path}/scripts/copy/aws_config.cfg.example'), Pt(f'{cwd}/conf/aws_config.cfg'))
+    copyfile(Pt(f'{package_path}/scripts/copy/jobs_metadata_external.yml'), Pt(f'{cwd}/conf/jobs_metadata.yml'))
+    copyfile(Pt(f'{package_path}/scripts/copy/connections.cfg.example'), Pt(f'{cwd}/conf/connections.cfg'))
+    copyfile(Pt(f'{package_path}/scripts/copy/requirements_extra.txt'), Pt(f'{cwd}/conf/requirements_extra.txt'))
 
     # Sample jobs
-    os.system("mkdir -p jobs/generic/")
-    copyfile(f'{package_path}/libs/generic_jobs/copy_job.py', f'{cwd}/jobs/generic/copy_job.py')
-    copyfile(f'{package_path}/libs/generic_jobs/deployer.py', f'{cwd}/jobs/generic/deployer.py')
-    copyfile(f'{package_path}/libs/generic_jobs/dummy_job.py', f'{cwd}/jobs/generic/dummy_job.py')
-    copyfile(f'{package_path}/libs/generic_jobs/launcher.py', f'{cwd}/jobs/generic/launcher.py')
+    os.makedirs(Pt('jobs/generic/'), exist_ok=True)
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/copy_job.py'), Pt(f'{cwd}/jobs/generic/copy_job.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/deployer.py'), Pt(f'{cwd}/jobs/generic/deployer.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/dummy_job.py'), Pt(f'{cwd}/jobs/generic/dummy_job.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/launcher.py'), Pt(f'{cwd}/jobs/generic/launcher.py'))
 
     # Sample jobs
-    os.system("mkdir -p jobs/examples/")
-    copyfile(f'{package_path}/scripts/copy/ex0_extraction_job.py', f'{cwd}/jobs/examples/ex0_extraction_job.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_frameworked_job.py', f'{cwd}/jobs/examples/ex1_frameworked_job.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_full_sql_job.sql', f'{cwd}/jobs/examples/ex1_full_sql_job.sql')
+    os.makedirs(Pt('jobs/examples/'), exist_ok=True)
+    copyfile(Pt(f'{package_path}/scripts/copy/ex0_extraction_job.py'), Pt(f'{cwd}/jobs/examples/ex0_extraction_job.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job.py'), Pt(f'{cwd}/jobs/examples/ex1_frameworked_job.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_full_sql_job.sql'))
 
     # Sample jobs tests
-    os.system("mkdir -p tests/jobs/examples/")
-    copyfile(f'{package_path}/scripts/copy/conftest.py', f'{cwd}/tests/conftest.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py', f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py')
-    copyfile(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py', f'{cwd}/tests/jobs/examples/ex1_full_sql_job_test.py')
+    os.makedirs(Pt('tests/jobs/examples/'), exist_ok=True)
+    copyfile(Pt(f'{package_path}/scripts/copy/conftest.py'), Pt(f'{cwd}/tests/conftest.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_full_sql_job_test.py'))
 
     # TODO: add setup awscli or make sure it is there.
 
     # setup github CI
     if args.set_github:
-        os.system("mkdir -p .github/workflows/")
-        copyfile(f'{package_path}/scripts/github_pythonapp.yml', f'{cwd}/.github/workflows/pythonapp.yml')
+        os.makedirs(Pt('.github/workflows/'), exist_ok=True)
+        copyfile(Pt(f'{package_path}/scripts/github_pythonapp.yml'), Pt(f'{cwd}/.github/workflows/pythonapp.yml'))
 
     print('Done')
