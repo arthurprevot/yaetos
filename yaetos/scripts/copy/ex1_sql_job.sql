@@ -1,5 +1,5 @@
 -- Path of 'some_events' and 'other_events' tables can be found in conf/jobs_metadata.yml or conf/jobs_metadata_local.yml
--- to run: python jobs/generic/launcher.py --job_name=examples/ex1_full_sql_job.sql
+-- to run: python jobs/generic/launcher.py --job_name=examples/ex1_sql_job.sql
 
 SELECT se.session_id, count(*) as count_events
 FROM some_events se
