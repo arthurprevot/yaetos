@@ -116,7 +116,7 @@ class Test_Flow(object):
         connection_expected = pd.DataFrame(
             columns=['source_job', 'destination_job'],
             data=np.array([
-                ['examples/ex0_extraction_job.py', 'examples/ex1_full_sql_job.sql'],
+                ['examples/ex0_extraction_job.py', 'examples/ex1_sql_job.sql'],
                 ['examples/ex0_extraction_job.py', 'examples/ex1_frameworked_job.py'],
                 ['examples/ex0_extraction_job.py', 'job_using_generic_template'],
                 ['examples/ex3_incremental_prep_job.py', 'examples/ex3_incremental_job.py'],
