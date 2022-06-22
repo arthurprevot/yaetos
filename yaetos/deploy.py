@@ -82,7 +82,7 @@ class DeployPySparkScriptOnAws(object):
             Git_Config_Manager().save_yaml(self.git_yml)
         except Exception as e:  # TODO: get specific exception
             self.git_yml = None
-            logger.info("Error saving yml file with git info, with error '{}'.".format(e))
+            logger.info("Couldn't save yml file with git info, normal if running for the pip installed library. message '{}'.".format(e))
 
     def run(self):
         if self.continue_post_git_check() is False:
@@ -547,7 +547,7 @@ class DeployPySparkScriptOnAws(object):
             parameterObjects=parameterObjects,
             parameterValues=parameterValues
         )
-        logger.info('put_pipeline_definition response: ' + str(response))
+        logger.debug('put_pipeline_definition response: ' + str(response))
         return parameterValues
 
     def activate_data_pipeline(self, client, pipe_id, parameterValues):
@@ -556,7 +556,7 @@ class DeployPySparkScriptOnAws(object):
             parameterValues=parameterValues,  # optional. If set, need to specify all params as per json.
             # startTimestamp=datetime(2018, 12, 1)  # optional
         )
-        logger.info('activate_pipeline response: ' + str(response))
+        logger.debug('activate_pipeline response: ' + str(response))
         logger.info('Activated pipeline ' + pipe_id)
 
     def list_data_pipeline(self, client):
@@ -629,7 +629,7 @@ class DeployPySparkScriptOnAws(object):
                 parameterValues[ii] = {'id': u'myEmrStep', 'stringValue': commands[mm]}
                 mm += 1
 
-        logger.info('parameterValues after changes: ' + str(parameterValues))
+        logger.debug('parameterValues after changes: ' + str(parameterValues))
         return parameterValues
 
     def push_secrets(self, creds_or_file):

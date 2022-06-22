@@ -143,17 +143,29 @@ class ETL_Base(object):
             # TODO: add process time in that case.
             return None
 
+        # import ipdb; ipdb.set_trace()
         if not self.jargs.no_fw_cache or (self.jargs.is_incremental and self.jargs.rerun_criteria == 'output_empty'):
-            logger.info('Output sample:')
-            try:
-                output.show()
-            except Exception as e:
-                logger.info("Warning: Failed showing table sample with error '{}'.".format(e))
-                pass
-            count = output.count()
+            if self.jargs.output.get('df_type', 'spark') == 'spark':
+                logger.info('Output sample:')
+                try:
+                    output.show()
+                except Exception as e:
+                    logger.info("Warning: Failed showing table sample with error '{}'.".format(e))
+                    pass
+                count = output.count()
+            elif self.jargs.output.get('df_type') == 'pandas':
+                logger.info('Output sample:')
+                logger.info(output)
+                count = len(output)
+            else:
+                raise "shouldn't get here"
+            # import ipdb; ipdb.set_trace()
             logger.info('Output count: {}'.format(count))
             if self.jargs.output.get('df_type', 'spark') == 'spark':
-                logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
+                logger.info("Output data types: \n{}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
+            elif self.jargs.output.get('df_type') == 'pandas':
+                # import ipdb; ipdb.set_trace()
+                logger.info("Output data types: \n{}".format(output.dtypes))
             self.output_empty = count == 0
 
         self.save_output(output, self.start_dt)

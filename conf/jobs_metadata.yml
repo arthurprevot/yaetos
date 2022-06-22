@@ -14,6 +14,7 @@ jobs:
       other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/wiki_example_sql/output_ex1_sql/{now}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
+    repartition: 1
     frequency: 1 day
     start_date: "{today}T07:00:00"
     owners: ['some_email@address.com']
