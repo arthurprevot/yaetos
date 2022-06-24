@@ -145,13 +145,13 @@ def setup_env(args):
     os.makedirs(Pt('jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/ex0_extraction_job.py'), Pt(f'{cwd}/jobs/examples/ex0_extraction_job.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job.py'), Pt(f'{cwd}/jobs/examples/ex1_frameworked_job.py'))
-    copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_full_sql_job.sql'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_sql_job.sql'))
 
     # Sample jobs tests
     os.makedirs(Pt('tests/jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/conftest.py'), Pt(f'{cwd}/tests/conftest.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py'))
-    copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_full_sql_job_test.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_sql_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_sql_job_test.py'))
 
     # TODO: add setup awscli or make sure it is there.
 
