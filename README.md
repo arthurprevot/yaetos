@@ -26,6 +26,8 @@ Some features:
 
 ## To try it
 
+https://user-images.githubusercontent.com/3277100/175438217-2e109a4e-26ef-41bb-b406-1087359183ca.mp4
+
 Run the commands from the "installation instructions" section below. Then run [this sql example](jobs/examples/ex1_sql_job.sql) locally with:
 
     yaetos run_dockerized jobs/generic/launcher.py --job_name=examples/ex1_sql_job.sql
