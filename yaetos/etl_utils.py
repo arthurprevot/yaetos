@@ -913,7 +913,7 @@ class Runner():
     def run(self):
         Job = self.Job
         job_args = self.job_args
-        parser, defaults_args = self.define_commandline_args()
+        parser, defaults_args, categories = self.define_commandline_args()  # TODO: use categories below to remove non applicable params.
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
         # Building "job", which will include all job args.
@@ -993,7 +993,26 @@ class Runner():
             'no_fw_cache': False,
             'spark_boot': True,  # options ('spark', 'pandas') (experimental).
         }
-        return parser, defaults
+        redshift = ['enable_redshift_push', 'schema', 'redshift_s3_tmp_dir', 'redshift_s3_tmp_dir']
+        spark = ['no_fw_cache', 'spark_boot', 'spark_version']
+        aws = ['aws_config_file', 'aws_setup', 'emr_core_instances', 'jobs_folder', 'push_secrets', 'ec2_instance_master', 'ec2_instance_slaves']
+        emr_deploy = ['leave_on'] + aws
+        emr_schedule = ['frequency', 'start_date'] + aws
+        local = ['load_connectors']
+        sql = ['sql_file']
+        dev = ['code_source', 'parse_cmdline']
+        inc =['rerun_criteria', 'is_incremental']
+        categories = {
+            'redshift': redshift,
+            'spark': spark,
+            'aws': aws,
+            'emr_deploy': emr_deploy,
+            'emr_schedule': emr_schedule,
+            'local': local,
+            'sql': sql,
+            'dev': dev,
+            'inc': inc}
+        return parser, defaults, categories
 
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name
