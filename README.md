@@ -26,7 +26,7 @@ Some features:
 
 ## To try it
 
-https://user-images.githubusercontent.com/3277100/175438217-2e109a4e-26ef-41bb-b406-1087359183ca.mp4
+https://user-images.githubusercontent.com/3277100/175531451-1931086d-866a-40a8-8b1d-0417f8928b66.mp4
 
 Run the commands from the "installation instructions" section below. Then run [this sql example](jobs/examples/ex1_sql_job.sql) locally with:
 
@@ -78,6 +78,8 @@ Jobs can be unit-tested using `py.test`. For a given job, create a corresponding
     pytest tests/*
 
 ## Installation instructions
+
+https://user-images.githubusercontent.com/3277100/175531551-02d8606e-8d2c-4cd9-ad8c-759711810fd7.mp4
 
 To install the library and create a folder with all necessary files and folders:
 
