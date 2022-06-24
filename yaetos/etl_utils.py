@@ -1001,7 +1001,7 @@ class Runner():
         local = ['load_connectors']
         sql = ['sql_file']
         dev = ['code_source', 'parse_cmdline']
-        inc =['rerun_criteria', 'is_incremental']
+        inc = ['rerun_criteria', 'is_incremental']
         categories = {
             'redshift': redshift,
             'spark': spark,
