@@ -967,31 +967,31 @@ class Runner():
         defaults = {
             'deploy': 'none',
             'mode': 'dev_local',
-                    'job_param_file': JOBS_METADATA_FILE,
-                    'job_name': None,
-                    'sql_file': None,
-                    'connection_file': CONNECTION_FILE,
-                    'jobs_folder': JOB_FOLDER,
-                    'storage': 'local',
-                    'dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    'rerun_criteria': 'last_date',
-                    'chain_dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    'load_connectors': 'all',
-                    # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
-                    # -- Deploy specific below --
-                    'aws_config_file': AWS_CONFIG_FILE,
-                    'aws_setup': 'dev',
-                    'code_source': 'lib',  # Other options: 'repo' TODO: make it automatic so parameter not needed.
-                    'leave_on': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    'push_secrets': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    # -- Not added in command line args:
-                    'enable_redshift_push': True,
-                    'base_path': '',
-                    'save_schemas': False,
-                    'manage_git_info': False,
-                    'add_created_at': 'true',  # set as string to be overrideable in cmdline.
-                    'no_fw_cache': False,
-                    'spark_boot': True,  # options ('spark', 'pandas') (experimental).
+            'job_param_file': JOBS_METADATA_FILE,
+            'job_name': None,
+            'sql_file': None,
+            'connection_file': CONNECTION_FILE,
+            'jobs_folder': JOB_FOLDER,
+            'storage': 'local',
+            'dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+            'rerun_criteria': 'last_date',
+            'chain_dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+            'load_connectors': 'all',
+            # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
+            # -- Deploy specific below --
+            'aws_config_file': AWS_CONFIG_FILE,
+            'aws_setup': 'dev',
+            'code_source': 'lib',  # Other options: 'repo' TODO: make it automatic so parameter not needed.
+            'leave_on': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+            'push_secrets': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+            # -- Not added in command line args:
+            'enable_redshift_push': True,
+            'base_path': '',
+            'save_schemas': False,
+            'manage_git_info': False,
+            'add_created_at': 'true',  # set as string to be overrideable in cmdline.
+            'no_fw_cache': False,
+            'spark_boot': True,  # options ('spark', 'pandas') (experimental).
         }
         return parser, defaults
 
