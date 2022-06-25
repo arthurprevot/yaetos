@@ -19,7 +19,10 @@ cp jobs/generic/launcher.py yaetos/libs/generic_jobs/launcher.py
 cp jobs/examples/ex0_extraction_job.py yaetos/scripts/copy/ex0_extraction_job.py
 cp jobs/examples/ex1_frameworked_job.py yaetos/scripts/copy/ex1_frameworked_job.py
 cp jobs/examples/ex1_sql_job.sql yaetos/scripts/copy/ex1_sql_job.sql
+cp jobs/examples/ex7_pandas_job.py yaetos/scripts/copy/ex1_pandas_job.py
 cp tests/jobs/examples/ex1_sql_job_test.py yaetos/scripts/copy/ex1_sql_job_test.py
+cp tests/jobs/examples/ex1_sql_job_test.py yaetos/scripts/copy/ex1_sql_job_test.py
+cp tests/jobs/examples/ex7_pandas_job_test.py yaetos/scripts/copy/ex1_pandas_job_test.py
 # Other files not to be copied exactly but close:
 #  - cp .github/workflows/pythonapp.yml yaetos/scripts/github_pythonapp.yml
 
