@@ -110,7 +110,7 @@ def setup_env(args):
         cwd = os.getcwd()
         print(f'Created the folder "{args.project_name}"')
 
-    print(f'Will setup yaetos in "{cwd}"')
+    cwd_leaf = cwd.split('/')[-1]
 
     paths = yaetos.__path__
     package_path = paths[0]
@@ -146,6 +146,7 @@ def setup_env(args):
     copyfile(Pt(f'{package_path}/scripts/copy/ex0_extraction_job.py'), Pt(f'{cwd}/jobs/examples/ex0_extraction_job.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job.py'), Pt(f'{cwd}/jobs/examples/ex1_frameworked_job.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_sql_job.sql'))
+    # copyfile(Pt(f'{package_path}/scripts/copy/ex1_pandas_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_sql_job.sql'))
 
     # Sample jobs tests
     os.makedirs(Pt('tests/jobs/examples/'), exist_ok=True)
@@ -160,4 +161,8 @@ def setup_env(args):
         os.makedirs(Pt('.github/workflows/'), exist_ok=True)
         copyfile(Pt(f'{package_path}/scripts/github_pythonapp.yml'), Pt(f'{cwd}/.github/workflows/pythonapp.yml'))
 
-    print('Done')
+    print("""Filled the folder with:
+     * sample jobs, ready for local execution,
+     * a docker environment setup with spark,
+     * a configuration file for cloud execution,
+     * job unit-tests.""".format(cwd_leaf))
