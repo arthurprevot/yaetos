@@ -21,7 +21,7 @@ class Test_Job(object):
             {'session_id': 1235, 'count_events': 1},
         ]
 
-        sql_file = 'jobs/examples/ex1_full_sql_job.sql'
+        sql_file = 'jobs/examples/ex1_sql_job.sql'
 
         loaded_inputs = {'some_events': some_events, 'other_events': other_events}
         pre_jargs = get_pre_jargs(loaded_inputs.keys())

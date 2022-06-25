@@ -41,6 +41,9 @@ class YaetosCmds(object):
     launch_docker_jupyter: {usage_docker_jupyter}
     run_dockerized       : {usage_run_dockerized}
     run                  : {usage_run}
+
+    For more details, see:
+    - https://yaetos.readthedocs.io/en/latest/
     '''
 
     def __init__(self):
@@ -107,7 +110,7 @@ def setup_env(args):
         cwd = os.getcwd()
         print(f'Created the folder "{args.project_name}"')
 
-    print(f'Will setup yaetos in "{cwd}"')
+    cwd_leaf = cwd.split('/')[-1]
 
     paths = yaetos.__path__
     package_path = paths[0]
@@ -142,13 +145,15 @@ def setup_env(args):
     os.makedirs(Pt('jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/ex0_extraction_job.py'), Pt(f'{cwd}/jobs/examples/ex0_extraction_job.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job.py'), Pt(f'{cwd}/jobs/examples/ex1_frameworked_job.py'))
-    copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_full_sql_job.sql'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_sql_job.sql'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_pandas_job.py'), Pt(f'{cwd}/jobs/examples/ex1_pandas_job.py'))
 
     # Sample jobs tests
     os.makedirs(Pt('tests/jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/conftest.py'), Pt(f'{cwd}/tests/conftest.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py'))
-    copyfile(Pt(f'{package_path}/scripts/copy/ex1_full_sql_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_full_sql_job_test.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_sql_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_sql_job_test.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_pandas_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_pandas_job_test.py'))
 
     # TODO: add setup awscli or make sure it is there.
 
@@ -157,4 +162,8 @@ def setup_env(args):
         os.makedirs(Pt('.github/workflows/'), exist_ok=True)
         copyfile(Pt(f'{package_path}/scripts/github_pythonapp.yml'), Pt(f'{cwd}/.github/workflows/pythonapp.yml'))
 
-    print('Done')
+    print("""Filled the folder with:
+     * sample jobs, ready for local execution,
+     * a docker environment setup with spark,
+     * a configuration file for cloud execution,
+     * job unit-tests.""".format(cwd_leaf))

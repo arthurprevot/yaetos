@@ -77,12 +77,13 @@ class DeployPySparkScriptOnAws(object):
             # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0".
             # see latest supported emr version by AWS Data Pipeline at https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emrcluster.html
 
-        try:
-            self.git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_FRAMEWORK_FOLDER)
-            Git_Config_Manager().save_yaml(self.git_yml)
-        except Exception as e:  # TODO: get specific exception
-            self.git_yml = None
-            logger.info("Error saving yml file with git info, with error '{}'.".format(e))
+        if self.deploy_args.get('monitor_git', False):  # TODO: centralize monitor_git
+            try:
+                self.git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_FRAMEWORK_FOLDER)
+                Git_Config_Manager().save_yaml(self.git_yml)
+            except Exception as e:  # TODO: get specific exception
+                self.git_yml = None
+                logger.debug("Didn't save yml file with git info, expected if running for the pip installed library. message '{}'.".format(e))
 
     def run(self):
         if self.continue_post_git_check() is False:
@@ -99,10 +100,10 @@ class DeployPySparkScriptOnAws(object):
 
     def continue_post_git_check(self):
         if self.app_args['mode'] != 'prod_EMR':
-            print('Not pushing as "prod_EMR", so git check ignored')
+            logger.debug('Not pushing as "prod_EMR", so git check ignored')
             return True
         elif self.git_yml is None:
-            print('Code not git controled: git check ignored')
+            logger.debug('Code not git controled: git check ignored')
             return True
 
         git_yml = {key: value for key, value in self.git_yml.items() if key in ('is_dirty_yaetos', 'is_dirty_current', 'branch_current', 'branch_yaetos')}
@@ -229,7 +230,7 @@ class DeployPySparkScriptOnAws(object):
             if error_code == 404:
                 terminate("Bucket for temporary files does not exist: " + self.s3_bucket_logs + ' ' + e.message)
             terminate("Error while connecting to temporary Bucket: " + self.s3_bucket_logs + ' ' + e.message)
-        logger.info("S3 bucket for temporary files exists: " + self.s3_bucket_logs)
+        logger.debug("S3 bucket for temporary files exists: " + self.s3_bucket_logs)
 
     def tar_python_scripts(self):
         package = self.get_package_path()
@@ -283,13 +284,13 @@ class DeployPySparkScriptOnAws(object):
         for f in t_file.getnames():
             logger.debug("Added %s to tar-file" % f)
         t_file.close()
-        logger.info("Added all spark app files to {}".format(output_path))
+        logger.debug("Added all spark app files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
         package = self.get_package_path()
         for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
             copyfile(package + self.SCRIPTS + item, self.TMP + item)
-        logger.info("Added all EMR setup files to {}".format(self.TMP))
+        logger.debug("Added all EMR setup files to {}".format(self.TMP))
 
     def get_package_path(self):
         """
@@ -302,7 +303,7 @@ class DeployPySparkScriptOnAws(object):
             base = bases[0] + '/'
         elif self.app_args['code_source'] == 'repo':
             base = eu.LOCAL_FRAMEWORK_FOLDER
-        logger.info("Source of yaetos code to be shipped: {}".format(base + 'yaetos/'))
+        logger.debug("Source of yaetos code to be shipped: {}".format(base + 'yaetos/'))
         return base
 
     def upload_temp_files(self, s3):
@@ -437,7 +438,7 @@ class DeployPySparkScriptOnAws(object):
         )
         response_code = response['ResponseMetadata']['HTTPStatusCode']
         if response_code == 200:
-            logger.info("Added step")
+            logger.debug("Added step 'run setup'.")
         else:
             raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
@@ -462,7 +463,8 @@ class DeployPySparkScriptOnAws(object):
         )
         response_code = response['ResponseMetadata']['HTTPStatusCode']
         if response_code == 200:
-            logger.info("Added step 'spark-submit' with command line '{}'".format(cmd_runner_args))
+            logger.info("Added 'spark-submit' step to EMR")
+            logger.debug("Added step 'spark-submit' with command line '{}'".format(' '.join(cmd_runner_args)))
         else:
             raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
@@ -539,7 +541,7 @@ class DeployPySparkScriptOnAws(object):
         parameterObjects = trans.definition_to_api_parameters(definition)
         parameterValues = trans.definition_to_parameter_values(definition)
         parameterValues = self.update_params(parameterValues)
-        logger.info('Filled pipeline with data from ' + definition_file)
+        logger.debug('Filled pipeline with data from ' + definition_file)
 
         response = client.put_pipeline_definition(
             pipelineId=pipe_id,
@@ -547,7 +549,7 @@ class DeployPySparkScriptOnAws(object):
             parameterObjects=parameterObjects,
             parameterValues=parameterValues
         )
-        logger.info('put_pipeline_definition response: ' + str(response))
+        logger.debug('put_pipeline_definition response: ' + str(response))
         return parameterValues
 
     def activate_data_pipeline(self, client, pipe_id, parameterValues):
@@ -556,7 +558,7 @@ class DeployPySparkScriptOnAws(object):
             parameterValues=parameterValues,  # optional. If set, need to specify all params as per json.
             # startTimestamp=datetime(2018, 12, 1)  # optional
         )
-        logger.info('activate_pipeline response: ' + str(response))
+        logger.debug('activate_pipeline response: ' + str(response))
         logger.info('Activated pipeline ' + pipe_id)
 
     def list_data_pipeline(self, client):
@@ -629,7 +631,7 @@ class DeployPySparkScriptOnAws(object):
                 parameterValues[ii] = {'id': u'myEmrStep', 'stringValue': commands[mm]}
                 mm += 1
 
-        logger.info('parameterValues after changes: ' + str(parameterValues))
+        logger.debug('parameterValues after changes: ' + str(parameterValues))
         return parameterValues
 
     def push_secrets(self, creds_or_file):

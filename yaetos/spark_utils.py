@@ -9,7 +9,7 @@ try:
     from pyspark.sql.types import StructType
     SPARK_SETUP = True
 except ModuleNotFoundError or ImportError:
-    logger.warning('Yaetos will work in pandas mode only or to push jobs to AWS, since pyspark is not found.')
+    logger.debug('Yaetos will work in pandas mode only or to push jobs to AWS, since pyspark is not found.')
     SPARK_SETUP = False
 
 

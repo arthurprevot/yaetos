@@ -143,17 +143,29 @@ class ETL_Base(object):
             # TODO: add process time in that case.
             return None
 
+        # TODO: Move that code to a dispatcher class
         if not self.jargs.no_fw_cache or (self.jargs.is_incremental and self.jargs.rerun_criteria == 'output_empty'):
-            logger.info('Output sample:')
-            try:
-                output.show()
-            except Exception as e:
-                logger.info("Warning: Failed showing table sample with error '{}'.".format(e))
-                pass
-            count = output.count()
-            logger.info('Output count: {}'.format(count))
             if self.jargs.output.get('df_type', 'spark') == 'spark':
-                logger.info("Output data types: {}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
+                logger.info('Output sample:')
+                try:
+                    output.show()
+                except Exception as e:
+                    logger.info("Warning: Failed showing table sample with error '{}'.".format(e))
+                    pass
+                count = output.count()
+            elif self.jargs.output.get('df_type') == 'pandas':
+                logger.info('Output sample:')
+                logger.info(output)
+                count = len(output)
+            else:
+                raise "shouldn't get here"
+
+            logger.info('Output count: {}'.format(count))
+            # TODO: also move to a new dispatcher class
+            if self.jargs.output.get('df_type', 'spark') == 'spark':
+                logger.info("Output data types: \n{}".format(pformat([(fd.name, fd.dataType) for fd in output.schema.fields])))
+            elif self.jargs.output.get('df_type') == 'pandas':
+                logger.info("Output data types: \n{}".format(output.dtypes))
             self.output_empty = count == 0
 
         self.save_output(output, self.start_dt)
@@ -901,7 +913,7 @@ class Runner():
     def run(self):
         Job = self.Job
         job_args = self.job_args
-        parser, defaults_args = self.define_commandline_args()
+        parser, defaults_args, categories = self.define_commandline_args()  # TODO: use categories below to remove non applicable params.
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
         # Building "job", which will include all job args.
@@ -955,33 +967,52 @@ class Runner():
         defaults = {
             'deploy': 'none',
             'mode': 'dev_local',
-                    'job_param_file': JOBS_METADATA_FILE,
-                    'job_name': None,
-                    'sql_file': None,
-                    'connection_file': CONNECTION_FILE,
-                    'jobs_folder': JOB_FOLDER,
-                    'storage': 'local',
-                    'dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    'rerun_criteria': 'last_date',
-                    'chain_dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    'load_connectors': 'all',
-                    # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
-                    # -- Deploy specific below --
-                    'aws_config_file': AWS_CONFIG_FILE,
-                    'aws_setup': 'dev',
-                    'code_source': 'lib',  # Other options: 'repo' TODO: make it automatic so parameter not needed.
-                    'leave_on': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    'push_secrets': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
-                    # -- Not added in command line args:
-                    'enable_redshift_push': True,
-                    'base_path': '',
-                    'save_schemas': False,
-                    'manage_git_info': False,
-                    'add_created_at': 'true',  # set as string to be overrideable in cmdline.
-                    'no_fw_cache': False,
-                    'spark_boot': True,  # options ('spark', 'pandas') (experimental).
+            'job_param_file': JOBS_METADATA_FILE,
+            'job_name': None,
+            'sql_file': None,
+            'connection_file': CONNECTION_FILE,
+            'jobs_folder': JOB_FOLDER,
+            'storage': 'local',
+            'dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+            'rerun_criteria': 'last_date',
+            'chain_dependencies': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+            'load_connectors': 'all',
+            # 'output.type': 'csv',  # skipped on purpose to avoid setting it if not set in cmd line.
+            # -- Deploy specific below --
+            'aws_config_file': AWS_CONFIG_FILE,
+            'aws_setup': 'dev',
+            'code_source': 'lib',  # Other options: 'repo' TODO: make it automatic so parameter not needed.
+            'leave_on': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+            'push_secrets': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
+            # -- Not added in command line args:
+            'enable_redshift_push': True,
+            'base_path': '',
+            'save_schemas': False,
+            'manage_git_info': False,
+            'add_created_at': 'true',  # set as string to be overrideable in cmdline.
+            'no_fw_cache': False,
+            'spark_boot': True,  # options ('spark', 'pandas') (experimental).
         }
-        return parser, defaults
+        redshift = ['enable_redshift_push', 'schema', 'redshift_s3_tmp_dir', 'redshift_s3_tmp_dir']
+        spark = ['no_fw_cache', 'spark_boot', 'spark_version']
+        aws = ['aws_config_file', 'aws_setup', 'emr_core_instances', 'jobs_folder', 'push_secrets', 'ec2_instance_master', 'ec2_instance_slaves']
+        emr_deploy = ['leave_on'] + aws
+        emr_schedule = ['frequency', 'start_date'] + aws
+        local = ['load_connectors']
+        sql = ['sql_file']
+        dev = ['code_source', 'parse_cmdline']
+        inc = ['rerun_criteria', 'is_incremental']
+        categories = {
+            'redshift': redshift,
+            'spark': spark,
+            'aws': aws,
+            'emr_deploy': emr_deploy,
+            'emr_schedule': emr_schedule,
+            'local': local,
+            'sql': sql,
+            'dev': dev,
+            'inc': inc}
+        return parser, defaults, categories
 
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name

@@ -95,6 +95,7 @@ def get_spark_types(output_types):
 
 
 def pdf_to_sdf(df, output_types, sc, sc_sql):  # TODO: check suspicion that this leads to each node requiring loading all libs from this script.
+    # can now be done with sdf = self.sc_sql.createDataFrame(pdf). TODO: check to deprecate pdf_to_sdf if createDataFrame(pdf) covers every cases.
     spark_schema = get_spark_types(output_types)
     missing_columns = set(df.columns) - set(output_types.keys())
     if missing_columns:

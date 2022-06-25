@@ -1,4 +1,4 @@
-"""Same as ex1_full_sql_job.sql but allows access to spark for more complex ops (not used here but in ex2_frameworked_job.py)."""
+"""Same as ex1_sql_job.sql but allows access to spark for more complex ops (not used here but in ex2_frameworked_job.py)."""
 from yaetos.etl_utils import ETL_Base, Commandliner
 
 
