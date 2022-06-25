@@ -77,12 +77,13 @@ class DeployPySparkScriptOnAws(object):
             # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0".
             # see latest supported emr version by AWS Data Pipeline at https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emrcluster.html
 
-        try:
-            self.git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_FRAMEWORK_FOLDER)
-            Git_Config_Manager().save_yaml(self.git_yml)
-        except Exception as e:  # TODO: get specific exception
-            self.git_yml = None
-            logger.debug("Didn't save yml file with git info, expected if running for the pip installed library. message '{}'.".format(e))
+        if self.deploy_args.get('monitor_git', False):  # TODO: centralize monitor_git
+            try:
+                self.git_yml = Git_Config_Manager().get_config_from_git(eu.LOCAL_FRAMEWORK_FOLDER)
+                Git_Config_Manager().save_yaml(self.git_yml)
+            except Exception as e:  # TODO: get specific exception
+                self.git_yml = None
+                logger.debug("Didn't save yml file with git info, expected if running for the pip installed library. message '{}'.".format(e))
 
     def run(self):
         if self.continue_post_git_check() is False:
@@ -540,7 +541,7 @@ class DeployPySparkScriptOnAws(object):
         parameterObjects = trans.definition_to_api_parameters(definition)
         parameterValues = trans.definition_to_parameter_values(definition)
         parameterValues = self.update_params(parameterValues)
-        logger.info('Filled pipeline with data from ' + definition_file)
+        logger.debug('Filled pipeline with data from ' + definition_file)
 
         response = client.put_pipeline_definition(
             pipelineId=pipe_id,
