@@ -202,6 +202,11 @@ jobs:
 
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
+  marketing/github_extraction_job.py:
+    description: "Github API extraction job, pulling traffic data."
+    output: {'path':'{base_path}/github/repos/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
 # ----- Params -------
 common_params:
   all_mode_params:
