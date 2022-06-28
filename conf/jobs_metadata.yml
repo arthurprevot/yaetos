@@ -80,8 +80,8 @@ jobs:
     description: "shows dependency without specifying inputs path since it is pulled from upstream."
     inputs:
       # some_events: {'from':'examples/ex4_dependency1_job.py'}
-      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep1/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency1_job.py'}
-    output: {'path':'{base_path}/wiki_example/output_ex4_dep2/{now}/', 'type':'csv'}
+      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep1/{latest}/', 'type':'csv', 'df_type':'pandas', 'from':'examples/ex4_dependency1_job.py'}
+    output: {'path':'{base_path}/wiki_example/output_ex4_dep2/{now}/output.csv', 'df_type':'pandas', 'type':'csv'}
     dependencies: [examples/ex4_dependency1_job.py]
 
   examples/ex4_dependency3_job.sql:
