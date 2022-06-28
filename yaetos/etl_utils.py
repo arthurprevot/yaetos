@@ -1112,7 +1112,6 @@ class Flow():
             df[job_name] = job.etl(sc, sc_sql)  # at this point df[job_name] is unpersisted. TODO: keep it persisted.
 
             if not self.launch_jargs.merged_args.get('chain_dependencies'):  # or self.launch_jargs.merged_args.get('keep_df', True): TODO: check if it works in pipeline.
-                df[job_name].unpersist()
                 del df[job_name]
                 gc.collect()
             logger.info('-' * 80)
