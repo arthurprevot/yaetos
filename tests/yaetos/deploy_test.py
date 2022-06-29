@@ -33,7 +33,7 @@ class Test_DeployPySparkScriptOnAws(object):
         assert actual[:-15] == expected[:-15]  # [:-15] to remove timestamp
 
     def test_get_package_path(self, deploy_args, app_args):
-        app_args['code_source'] = 'repo'
+        app_args['code_source'] = 'repo'  # TODO: other test for 'lib'
         dep = Dep(deploy_args, app_args)
         actual = dep.get_package_path()
         expected = Pt(os.environ.get('YAETOS_FRAMEWORK_HOME', ''))
