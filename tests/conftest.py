@@ -51,7 +51,8 @@ def get_pre_jargs():
 @pytest.fixture
 def deploy_args():
     return {'aws_setup': 'dev',
-            'aws_config_file': 'conf/aws_config.cfg'}
+            'aws_config_file': 'conf/aws_config.cfg',
+            'mode': 'dev_EMR'}
 
 
 @pytest.fixture
