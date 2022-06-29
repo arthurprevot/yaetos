@@ -7,7 +7,7 @@ copyright = '2018, Arthur Prevot'
 author = 'Arthur Prevot'
 
 release = '0.9'
-version = '0.9.19'
+version = '0.9.20'
 
 # -- General configuration
 

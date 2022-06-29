@@ -79,9 +79,8 @@ jobs:
   examples/ex4_dependency2_job.py:
     description: "shows dependency without specifying inputs path since it is pulled from upstream."
     inputs:
-      # some_events: {'from':'examples/ex4_dependency1_job.py'}
-      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep1/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency1_job.py'}
-    output: {'path':'{base_path}/wiki_example/output_ex4_dep2/{now}/', 'type':'csv'}
+      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep1/{latest}/', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{base_path}/wiki_example/output_ex4_dep2/{now}/output.csv', 'df_type':'pandas', 'type':'csv'}
     dependencies: [examples/ex4_dependency1_job.py]
 
   examples/ex4_dependency3_job.sql:
@@ -129,7 +128,7 @@ jobs:
     output: {'path':'n/a', 'type':'None'}
 
   job_with_more_resources:
-    description: "To show how to size cluster and machines. See ec2_instance_master and emr_core_instances params below"
+    description: "To show how to change the machine specs and size of the cluster. See ec2_instance_master and emr_core_instances params below"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
@@ -201,6 +200,16 @@ jobs:
     owners: ['some_email@address.com']
 
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
+
+  marketing/github_extraction_job.py:
+    description: "Github API extraction job, pulling traffic data."
+    output: {'path':'{base_path}/github/user_repos/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
+  marketing/github_repo_list_extraction_job.py:
+    description: "Github API extraction job, pulling traffic data."
+    output: {'path':'{base_path}/github/repos/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
 
 # ----- Params -------
 common_params:

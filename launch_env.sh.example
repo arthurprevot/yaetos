@@ -13,7 +13,7 @@
 yaetos_jobs_home=/path/to/repo/yaetos_or_yaetos_jobs_if_separate/
 yaetos_home=/path/to/repo/yaetos/
 
-run_mode=$1  # values: 0 (no docker) or 1 (docker bash), or 2 (docker jupyter)
+run_mode=$1
 if [[ $run_mode = 1 ]]; then
   echo 'Starting docker with bash'
   cd $yaetos_jobs_home

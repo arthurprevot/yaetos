@@ -30,3 +30,6 @@ sender_email: some@email.com
 password: to_be_filled
 smtp_server: to_be_filled
 port: to_be_filled
+
+[github]
+token: to_be_filled

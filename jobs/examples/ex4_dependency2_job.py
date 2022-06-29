@@ -3,11 +3,8 @@ from yaetos.etl_utils import ETL_Base, Commandliner
 
 class Job(ETL_Base):
     def transform(self, some_events):
-        df = self.query("""
-            SELECT se.session_id, session_length, session_length*2 as doubled_length
-            FROM some_events se
-            """)
-        return df
+        some_events['doubled_length'] = some_events['session_length'].apply(lambda cell: cell * 2)
+        return some_events
 
 
 if __name__ == "__main__":
