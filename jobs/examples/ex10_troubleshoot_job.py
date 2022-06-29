@@ -1,4 +1,4 @@
-"""To show troubleshooting, done through 'import ipdb; ipdb.set_trace()'."""
+"""To show a troubleshooting method, using 'import ipdb; ipdb.set_trace()' below."""
 from yaetos.etl_utils import ETL_Base, Commandliner
 
 

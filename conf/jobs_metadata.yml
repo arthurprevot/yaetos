@@ -79,8 +79,7 @@ jobs:
   examples/ex4_dependency2_job.py:
     description: "shows dependency without specifying inputs path since it is pulled from upstream."
     inputs:
-      # some_events: {'from':'examples/ex4_dependency1_job.py'}
-      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep1/{latest}/', 'type':'csv', 'df_type':'pandas', 'from':'examples/ex4_dependency1_job.py'}
+      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep1/{latest}/', 'type':'csv', 'df_type':'pandas'}
     output: {'path':'{base_path}/wiki_example/output_ex4_dep2/{now}/output.csv', 'df_type':'pandas', 'type':'csv'}
     dependencies: [examples/ex4_dependency1_job.py]
 
@@ -129,7 +128,7 @@ jobs:
     output: {'path':'n/a', 'type':'None'}
 
   job_with_more_resources:
-    description: "To show how to size cluster and machines. See ec2_instance_master and emr_core_instances params below"
+    description: "To show how to change the machine and size of the cluster. See ec2_instance_master and emr_core_instances params below"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
@@ -218,7 +217,7 @@ common_params:
     connection_file:  conf/connections.cfg
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
-    spark_version: '3.0' # options: '2.4' 'or '3.0'
+    spark_version: '3.0' # options: '2.4' 'or '3.0'  # TODO: validate it works in EMR
   mode_specific_params:
     prod_EMR:
       base_path: s3://prod-spark  # don't add '/' at the end
@@ -232,7 +231,7 @@ common_params:
       save_schemas: False
       manage_git_info: True
     dev_EMR:
-      base_path: s3://dev-spark  # don't add '/' at the end
+      base_path: s3://dev-spark2/yaetos  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
