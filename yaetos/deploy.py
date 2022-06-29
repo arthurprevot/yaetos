@@ -17,6 +17,7 @@ import boto3
 import botocore
 import uuid
 import json
+from pathlib import Path as Pt
 from pprint import pformat
 from configparser import ConfigParser
 from shutil import copyfile
@@ -31,8 +32,8 @@ class DeployPySparkScriptOnAws(object):
     """
     Programmatically deploy a local PySpark script on an AWS cluster
     """
-    SCRIPTS = 'yaetos/scripts/'  # TODO: move to etl_utils.py
-    TMP = 'tmp/files_to_ship/'
+    SCRIPTS = Pt('yaetos/scripts/')  # TODO: move to etl_utils.py
+    TMP = Pt('tmp/files_to_ship/')
 
     def __init__(self, deploy_args, app_args):
 
@@ -194,8 +195,8 @@ class DeployPySparkScriptOnAws(object):
 
     @staticmethod
     def generate_pipeline_name(mode, job_name, user):
-        mode_label = {'dev_EMR': 'dev', 'prod_EMR': 'prod'}[mode]
         """Opposite of get_job_name()"""
+        mode_label = {'dev_EMR': 'dev', 'prod_EMR': 'prod'}[mode]
         name = "yaetos__{mode_label}__{pname}__{time}".format(
             mode_label=mode_label,
             pname=job_name.replace('.', '_d_').replace('/', '_s_'),
@@ -234,7 +235,7 @@ class DeployPySparkScriptOnAws(object):
 
     def tar_python_scripts(self):
         package = self.get_package_path()
-        output_path = self.TMP + "scripts.tar.gz"
+        output_path = self.TMP / "scripts.tar.gz"
 
         # Create tar.gz file
         t_file = tarfile.open(output_path, 'w:gz')
@@ -243,29 +244,29 @@ class DeployPySparkScriptOnAws(object):
         if self.app_args['job_param_file']:
             t_file.add(self.app_args['job_param_file'], arcname=eu.JOBS_METADATA_FILE)
 
-        git_yml = 'conf/git_config.yml'
+        git_yml = Pt('conf/git_config.yml')
         if os.path.isfile(git_yml):
             t_file.add(git_yml, arcname=git_yml)
 
         # ./yaetos files
         # TODO: check a way to deploy the yaetos code locally for testing.
-        files = os.listdir(package + 'yaetos/')
+        files = os.listdir(package / 'yaetos/')
         for f in files:
-            t_file.add(package + 'yaetos/' + f, arcname='yaetos/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package / 'yaetos/' / f, arcname='yaetos/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./libs files
         # TODO: get better way to walk down tree (reuse walk from below)
-        files = os.listdir(package + 'yaetos/libs/')
+        files = os.listdir(package / 'yaetos/libs/')
         for f in files:
-            t_file.add(package + 'yaetos/libs/' + f, arcname='yaetos/libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package / 'yaetos/libs/' / f, arcname='yaetos/libs/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir(package + 'yaetos/libs/analysis_toolkit/')
+        files = os.listdir(package / 'yaetos/libs/analysis_toolkit/')
         for f in files:
-            t_file.add(package + 'yaetos/libs/analysis_toolkit/' + f, arcname='yaetos/libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package / 'yaetos/libs/analysis_toolkit/' / f, arcname='yaetos/libs/analysis_toolkit/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
-        files = os.listdir(package + 'yaetos/libs/python_db_connectors/')
+        files = os.listdir(package / 'yaetos/libs/python_db_connectors/')
         for f in files:
-            t_file.add(package + 'yaetos/libs/python_db_connectors/' + f, arcname='yaetos/libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
+            t_file.add(package / 'yaetos/libs/python_db_connectors/' / f, arcname='yaetos/libs/python_db_connectors/' + f, filter=lambda obj: obj if obj.name.endswith('.py') else None)
 
         # ./jobs files and folders
         # TODO: extract code below in external function.
@@ -287,9 +288,10 @@ class DeployPySparkScriptOnAws(object):
         logger.debug("Added all spark app files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
+        """Moving file from local ... to local tmp folder for later upload to S3."""
         package = self.get_package_path()
         for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
-            copyfile(package + self.SCRIPTS + item, self.TMP + item)
+            copyfile(package / self.SCRIPTS / item, self.TMP / item)
         logger.debug("Added all EMR setup files to {}".format(self.TMP))
 
     def get_package_path(self):
@@ -300,10 +302,10 @@ class DeployPySparkScriptOnAws(object):
             bases = site.getsitepackages()
             if len(bases) > 1:
                 logger.info("There is more than one source of code to ship to EMR '{}'. Will continue with the first one.".format(bases))
-            base = bases[0] + '/'
+            base = Pt(bases[0]) #+ '/'
         elif self.app_args['code_source'] == 'repo':
-            base = eu.LOCAL_FRAMEWORK_FOLDER
-        logger.debug("Source of yaetos code to be shipped: {}".format(base + 'yaetos/'))
+            base = Pt(eu.LOCAL_FRAMEWORK_FOLDER)
+        logger.debug("Source of yaetos code to be shipped: {}".format(base / 'yaetos/'))
         return base
 
     def upload_temp_files(self, s3):
@@ -315,13 +317,13 @@ class DeployPySparkScriptOnAws(object):
 
         # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
-          .put(Body=open(self.TMP + setup_master, 'rb'), ContentType='text/x-sh')
+          .put(Body=open(str(self.TMP) + setup_master, 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_nodes.sh')\
-          .put(Body=open(self.TMP + setup_nodes, 'rb'), ContentType='text/x-sh')
+          .put(Body=open(str(self.TMP) + setup_nodes, 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/terminate_idle_cluster.sh')\
-          .put(Body=open(self.TMP + 'terminate_idle_cluster.sh', 'rb'), ContentType='text/x-sh')
+          .put(Body=open(str(self.TMP) + '/terminate_idle_cluster.sh', 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/scripts.tar.gz')\
-          .put(Body=open(self.TMP + 'scripts.tar.gz', 'rb'), ContentType='application/x-tar')
+          .put(Body=open(str(self.TMP) + '/scripts.tar.gz', 'rb'), ContentType='application/x-tar')
         logger.info("Uploaded job files (scripts.tar.gz, {}, {}, terminate_idle_cluster.sh) to bucket path '{}/{}'".format(setup_master, setup_nodes, self.s3_bucket_logs, self.package_path))
         return True
 
@@ -530,9 +532,9 @@ class DeployPySparkScriptOnAws(object):
         base = self.get_package_path()
 
         if emr_core_instances != 0:
-            definition_file = base + 'yaetos/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
+            definition_file = base / 'yaetos/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
         else:
-            definition_file = base + 'yaetos/definition_standalone_cluster.json'
+            definition_file = base / 'yaetos/definition_standalone_cluster.json'
             # TODO: have 1 json for both to avoid having to track duplication.
 
         definition = json.load(open(definition_file, 'r'))  # Note: Data Pipeline doesn't support emr-6.0.0 yet.
@@ -541,7 +543,7 @@ class DeployPySparkScriptOnAws(object):
         parameterObjects = trans.definition_to_api_parameters(definition)
         parameterValues = trans.definition_to_parameter_values(definition)
         parameterValues = self.update_params(parameterValues)
-        logger.debug('Filled pipeline with data from ' + definition_file)
+        logger.debug(f'Filled pipeline with data from {definition_file}')
 
         response = client.put_pipeline_definition(
             pipelineId=pipe_id,
