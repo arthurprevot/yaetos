@@ -128,7 +128,7 @@ jobs:
     output: {'path':'n/a', 'type':'None'}
 
   job_with_more_resources:
-    description: "To show how to change the machine and size of the cluster. See ec2_instance_master and emr_core_instances params below"
+    description: "To show how to change the machine specs and size of the cluster. See ec2_instance_master and emr_core_instances params below"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
