@@ -286,7 +286,7 @@ class DeployPySparkScriptOnAws(object):
         logger.debug("Added all spark app files to {}".format(output_path))
 
     def move_bash_to_local_temp(self):
-        """Moving file from local ... to local tmp folder for later upload to S3."""
+        """Moving file from local repo to local tmp folder for later upload to S3."""
         package = self.get_package_path()
         for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
             source = package / self.SCRIPTS / item
