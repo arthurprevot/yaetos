@@ -294,9 +294,9 @@ class DeployPySparkScriptOnAws(object):
         for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
             source = package / self.SCRIPTS / item
             destination = self.TMP / item
-            # import ipdb; ipdb.set_trace()
+            #import ipdb; ipdb.set_trace()
             # if 'win' in sys.platform:
-            if os.name != 'posix':
+            if os.name == 'nt':  # i.e. windows
                 from yaetos.windows_utils import convert_to_linux_eol
                 convert_to_linux_eol(source, source)
             copyfile(source, destination)
