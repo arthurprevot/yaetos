@@ -197,12 +197,10 @@ class DeployPySparkScriptOnAws(object):
     def generate_pipeline_name(mode, job_name, user):
         """Opposite of get_job_name()"""
         mode_label = {'dev_EMR': 'dev', 'prod_EMR': 'prod'}[mode]
-        name = "yaetos__{mode_label}__{pname}__{time}".format(
-            mode_label=mode_label,
-            pname=job_name.replace('.', '_d_').replace('/', '_s_'),
-            # user.replace('.','_'),
-            time=datetime.now().strftime("%Y%m%dT%H%M%S"))
-        print('Pipeline Name "{}":'.format(name))
+        pname = job_name.replace('.', '_d_').replace('/', '_s_')
+        now = datetime.now().strftime("%Y%m%dT%H%M%S")
+        name = f"yaetos__{mode_label}__{pname}__{now}"
+        logger.info('Pipeline Name "{}":'.format(name))
         return name
 
     @staticmethod
