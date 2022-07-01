@@ -451,6 +451,7 @@ class DeployPySparkScriptOnAws(object):
         response_code = response['ResponseMetadata']['HTTPStatusCode']
         if response_code == 200:
             logger.debug("Added step 'run setup'.")
+            logger.info("### - added step : s3://{}/setup_master.sh".format(self.package_path_with_bucket))
         else:
             raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
