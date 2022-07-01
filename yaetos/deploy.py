@@ -292,13 +292,8 @@ class DeployPySparkScriptOnAws(object):
         for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
             source = package / self.SCRIPTS / item
             destination = self.TMP / item
-            #import ipdb; ipdb.set_trace()
-            # if 'win' in sys.platform:
-            if os.name == 'nt':  # i.e. windows
-                from yaetos.windows_utils import convert_to_linux_eol
-                convert_to_linux_eol(source, source)
+            convert_to_linux_eol_if_needed(source)
             copyfile(source, destination)
-            logger.info(f"### source:{source}, dest {destination}")
         logger.debug("Added all EMR setup files to {}".format(self.TMP))
 
     def get_package_path(self):
@@ -734,6 +729,13 @@ def deploy_all_scheduled():
             continue
 
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
+
+
+def convert_to_linux_eol_if_needed(fname):
+    """ Function needed when running from windows to avoid error registering AWS EMR step : 'No such file or directory'"""
+    if os.name == 'nt':
+        from yaetos.windows_utils import convert_to_linux_eol  # loaded here to remove dependency for non windows users.
+        convert_to_linux_eol(fname, fname)
 
 
 def terminate(error_message=None):
