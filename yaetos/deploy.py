@@ -236,6 +236,7 @@ class DeployPySparkScriptOnAws(object):
     def tar_python_scripts(self):
         package = self.get_package_path()
         output_path = self.TMP / "scripts.tar.gz"
+        logger.info(f"### output_path:{output_path}")
 
         # Create tar.gz file
         t_file = tarfile.open(output_path, 'w:gz')
@@ -291,7 +292,10 @@ class DeployPySparkScriptOnAws(object):
         """Moving file from local ... to local tmp folder for later upload to S3."""
         package = self.get_package_path()
         for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
-            copyfile(package / self.SCRIPTS / item, self.TMP / item)
+            source = package / self.SCRIPTS / item
+            destination = self.TMP / item
+            copyfile(source, destination)
+            logger.info(f"### source:{source}, dest {destination}")
         logger.debug("Added all EMR setup files to {}".format(self.TMP))
 
     def get_package_path(self):
@@ -315,6 +319,10 @@ class DeployPySparkScriptOnAws(object):
         setup_master = '/setup_master.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else '/setup_master_alt.sh'
         setup_nodes = '/setup_nodes.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else '/setup_nodes_alt.sh'
 
+        logger.info(f"####1 - upload_temp_files: {str(self.TMP) + setup_master}")
+        logger.info(f"####2 {str(self.TMP / setup_master)}")
+        logger.info(f"####3 {str(self.TMP / Pt(setup_master))}")
+        # import ipdb; ipdb.set_trace()
         # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
           .put(Body=open(str(self.TMP) + setup_master, 'rb'), ContentType='text/x-sh')
@@ -325,6 +333,7 @@ class DeployPySparkScriptOnAws(object):
         s3.Object(self.s3_bucket_logs, self.package_path + '/scripts.tar.gz')\
           .put(Body=open(str(self.TMP) + '/scripts.tar.gz', 'rb'), ContentType='application/x-tar')
         logger.info("Uploaded job files (scripts.tar.gz, {}, {}, terminate_idle_cluster.sh) to bucket path '{}/{}'".format(setup_master, setup_nodes, self.s3_bucket_logs, self.package_path))
+        # raise
         return True
 
     def remove_temp_files(self, s3):
