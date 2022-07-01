@@ -319,7 +319,8 @@ class DeployPySparkScriptOnAws(object):
         setup_master = '/setup_master.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else '/setup_master_alt.sh'
         setup_nodes = '/setup_nodes.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else '/setup_nodes_alt.sh'
 
-        logger.info(f"####1 - upload_temp_files: {str(self.TMP) + setup_master}")
+        logger.info(f"#### - upload_temp_files from: {str(self.TMP) + setup_master}")
+        logger.info(f"#### - upload_temp_files to: {self.s3_bucket_logs, self.package_path + '/setup_master.sh'}")
         logger.info(f"####2 {str(self.TMP / setup_master)}")
         logger.info(f"####3 {str(self.TMP / Pt(setup_master))}")
         # import ipdb; ipdb.set_trace()
