@@ -187,8 +187,8 @@ class DeployPySparkScriptOnAws(object):
                     'name': None}
 
         clusters.append((len(clusters) + 1, None, 'Create a new cluster'))
-        logger.info('Clusters found for AWS account "%s":' % (self.aws_setup))
-        logger.info('\n'.join(['[%s] %s' % (item[0], item[2]) for item in clusters]))
+        print('Clusters found for AWS account "%s":' % (self.aws_setup))
+        print('\n'.join(['[%s] %s' % (item[0], item[2]) for item in clusters]))
         answer = input('Your choice ? ')
         return {'id': clusters[int(answer) - 1][1],
                 'name': clusters[int(answer) - 1][2]}
