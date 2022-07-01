@@ -109,19 +109,19 @@ class DeployPySparkScriptOnAws(object):
 
         git_yml = {key: value for key, value in self.git_yml.items() if key in ('is_dirty_yaetos', 'is_dirty_current', 'branch_current', 'branch_yaetos')}
         if self.git_yml['is_dirty_current'] or self.git_yml['is_dirty_yaetos']:
-            print('Some changes to your git controled files are not committed to git: {}'.format(git_yml))
+            logger.info('Some changes to your git controled files are not committed to git: {}'.format(git_yml))
             answer = input('Are you sure you want to deploy it ? [y/n] ')
             if answer == 'y':
-                print('Ok, continuing deployment')
+                logger.info('Ok, continuing deployment')
                 return True
             elif answer == 'n':
-                print('Ok, cancelling deployment')
+                logger.info('Ok, cancelling deployment')
                 return False
             else:
-                print('Answer not understood, it should be "y" or "n", cancelling deployment')
+                logger.info('Answer not understood, it should be "y" or "n", cancelling deployment')
                 return False
         else:
-            print('Git controled files are clean, continuing with push to prod. Git setup: {}'.format(git_yml))
+            logger.info('Git controled files are clean, continuing with push to prod. Git setup: {}'.format(git_yml))
             return True
 
     def run_push_code(self):
@@ -142,12 +142,12 @@ class DeployPySparkScriptOnAws(object):
         cluster = self.choose_cluster(clusters)
         new_cluster = cluster['id'] is None
         if new_cluster:
-            print("Starting new cluster")
+            logger.info("Starting new cluster")
             self.start_spark_cluster(c, self.emr_version)
-            print("cluster name: %s, and id: %s" % (self.pipeline_name, self.cluster_id))
+            logger.info("cluster name: %s, and id: %s" % (self.pipeline_name, self.cluster_id))
             self.step_run_setup_scripts(c)
         else:
-            print("Reusing existing cluster, name: %s, and id: %s" % (cluster['name'], cluster['id']))
+            logger.info("Reusing existing cluster, name: %s, and id: %s" % (cluster['name'], cluster['id']))
             self.cluster_id = cluster['id']
             self.step_run_setup_scripts(c)
 
@@ -177,18 +177,18 @@ class DeployPySparkScriptOnAws(object):
 
     def choose_cluster(self, clusters, cluster_id=None):
         if len(clusters) == 0:
-            print('No cluster found, will create a new one')
+            logger.info('No cluster found, will create a new one')
             return {'id': None,
                     'name': None}
 
         if cluster_id is not None:
-            print('Cluster_id set by user to {}'.format(cluster_id))
+            logger.info('Cluster_id set by user to {}'.format(cluster_id))
             return {'id': cluster_id,
                     'name': None}
 
         clusters.append((len(clusters) + 1, None, 'Create a new cluster'))
-        print('Clusters found for AWS account "%s":' % (self.aws_setup))
-        print('\n'.join(['[%s] %s' % (item[0], item[2]) for item in clusters]))
+        logger.info('Clusters found for AWS account "%s":' % (self.aws_setup))
+        logger.info('\n'.join(['[%s] %s' % (item[0], item[2]) for item in clusters]))
         answer = input('Your choice ? ')
         return {'id': clusters[int(answer) - 1][1],
                 'name': clusters[int(answer) - 1][2]}
@@ -423,14 +423,14 @@ class DeployPySparkScriptOnAws(object):
         :param c:
         :return:
         """
-        print('Waiting for job to finish on cluster')
+        logger.info('Waiting for job to finish on cluster')
         stop = False
         while stop is False:
             description = c.describe_cluster(ClusterId=self.cluster_id)
             state = description['Cluster']['Status']['State']
             if state == 'TERMINATED' or state == 'TERMINATED_WITH_ERRORS':
                 stop = True
-                print('Job is finished')
+                logger.info('Job is finished')
             logger.info('Cluster state:' + state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
 
@@ -685,7 +685,7 @@ class DeployPySparkScriptOnAws(object):
         )
         logger.debug('delete_secret response: ' + str(response))
         logger.info('Deleted aws secret, secret_id:' + eu.AWS_SECRET_ID)
-        print('delete_secret response: {}'.format(response))
+        logger.info('delete_secret response: {}'.format(response))
 
 
 def deploy_all_scheduled():
@@ -705,7 +705,7 @@ def deploy_all_scheduled():
             try:
                 return {"": True, "y": True, "n": False}[input(prompt).lower()]
             except KeyError:
-                print("Invalid input please enter y or n!")
+                logger.info("Invalid input please enter y or n!")
 
     def validate_job(job):
         return get_bool('Want to schedule "{}" [Y/n]? '.format(job))
@@ -780,7 +780,7 @@ def deploy_standalone(job_args_update={}):
         deployer = DeployPySparkScriptOnAws(deploy_args, app_args)
         client = deployer.session.client('datapipeline')
         pipelines = deployer.list_data_pipeline(client)
-        print('#--- pipelines: ', pipelines)
+        logger.info('#--- pipelines: ', pipelines)
 
     elif jargs.deploy_option == 'deploy_all_jobs':
         deploy_all_scheduled()  # TODO: needs more testing.
@@ -788,7 +788,7 @@ def deploy_standalone(job_args_update={}):
     elif jargs.deploy_option == 'package_code_locally_only':  # only for debuging
         deployer = DeployPySparkScriptOnAws(deploy_args, app_args)  # TODO: should remove need for some of these inputs as they are not required by tar_python_scripts()
         pipelines = deployer.tar_python_scripts()
-        print('#--- Finished packaging ---')
+        logger.info('#--- Finished packaging ---')
     return True
 
 
