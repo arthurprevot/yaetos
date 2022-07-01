@@ -65,7 +65,6 @@ class DeployPySparkScriptOnAws(object):
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
         self.package_path = self.job_log_path + '/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
         self.package_path_with_bucket = self.job_log_path_with_bucket + '/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
-        self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
 
         spark_version = self.deploy_args.get('spark_version', '2.4')
         # import ipdb; ipdb.set_trace()
@@ -90,6 +89,7 @@ class DeployPySparkScriptOnAws(object):
         if self.continue_post_git_check() is False:
             return False
 
+        self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
         if self.deploy_args['deploy'] == 'EMR':
             self.run_direct()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
