@@ -234,7 +234,6 @@ class DeployPySparkScriptOnAws(object):
     def tar_python_scripts(self):
         package = self.get_package_path()
         output_path = self.TMP / "scripts.tar.gz"
-        logger.info(f"### output_path:{output_path}")
 
         # Create tar.gz file
         t_file = tarfile.open(output_path, 'w:gz')
@@ -442,8 +441,7 @@ class DeployPySparkScriptOnAws(object):
         )
         response_code = response['ResponseMetadata']['HTTPStatusCode']
         if response_code == 200:
-            logger.debug("Added step 'run setup'.")
-            logger.info("### - added step : s3://{}/setup_master.sh".format(self.package_path_with_bucket))
+            logger.debug(f"Added step 'run setup', using s3://{self.package_path_with_bucket}/setup_master.sh")
         else:
             raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
