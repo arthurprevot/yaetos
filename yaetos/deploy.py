@@ -303,7 +303,7 @@ class DeployPySparkScriptOnAws(object):
             bases = site.getsitepackages()
             if len(bases) > 1:
                 logger.info("There is more than one source of code to ship to EMR '{}'. Will continue with the first one.".format(bases))
-            base = Pt(bases[0]) #+ '/'
+            base = Pt(bases[0])
         elif self.app_args['code_source'] == 'repo':
             base = Pt(eu.LOCAL_FRAMEWORK_FOLDER)
         logger.debug("Source of yaetos code to be shipped: {}".format(base / 'yaetos/'))
