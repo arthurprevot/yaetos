@@ -7,7 +7,11 @@
 import pytest
 from pyspark import SparkContext
 from pyspark.sql import SQLContext, SparkSession
+from pytest_socket import disable_socket
 
+# To block tests from accessing the web (and triggering AWS service)
+def pytest_runtest_setup():
+    disable_socket()
 
 @pytest.fixture(scope="session")
 def sc(request):
@@ -52,9 +56,12 @@ def get_pre_jargs():
 def deploy_args():
     return {'aws_setup': 'dev',
             'aws_config_file': 'conf/aws_config.cfg.example',
-            'mode': 'dev_EMR'}
+            'mode': 'dev_EMR',
+            }
 
 
 @pytest.fixture
 def app_args():
-    return {'py_job': 'some/job.py', 'job_name': 'some_job_name'}
+    return {'py_job': 'some/job.py',
+            'job_name': 'some_job_name',
+            'mode': 'dev_EMR'}

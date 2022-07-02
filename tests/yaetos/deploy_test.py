@@ -1,9 +1,75 @@
 from yaetos.deploy import DeployPySparkScriptOnAws as Dep
+import yaetos.deploy
 import os
 from pathlib import Path as Pt
+# import pytest
+from unittest import mock
 
 
 class Test_DeployPySparkScriptOnAws(object):
+
+    # using mocker (wrap around standart unittest mock lib.)
+    def test_run(self, deploy_args, app_args, mocker):
+        # mode = 'dev_EMR'
+        # job_name = 'jobs.some_folder.job'
+        # user = 'n/a'
+        deploy_args['deploy'] = 'EMR'
+        # mocker.patch('boto3.Session', return_value=True)
+        mocker.patch('boto3.session.Session', return_value=True)
+        # run_direct
+        dep = Dep(deploy_args, app_args)
+        dep.run()
+
+    # using mocker standart unittest mock lib
+    @mock.patch('boto3.session.Session')
+    def test_run(self, session_data, deploy_args, app_args):
+        mock_session_obj = mock.Mock()
+        mock_iam_client = mock.Mock()
+        creds = mock_session_obj.get_credentials()
+        print ('Access key: ', creds.access_key)
+        print ('Secret key: ', creds.secret_key)
+        print ('Region: ', mock_session_obj.region_name)
+        print ('Profile: ', mock_session_obj.profile_name)
+        print ('User: ', mock_iam_client.get_user())
+        # from https://unbiased-coder.com/boto3-session-guide/#How_to_Mock_Boto3_Session
+        # mode = 'dev_EMR'
+        # job_name = 'jobs.some_folder.job'
+        # user = 'n/a'
+        deploy_args['deploy'] = 'EMR'
+        # mocker.patch('boto3.Session', return_value=True)
+        # run_direct
+        dep = Dep(deploy_args, app_args)
+        dep.run()
+
+    # using standart unittest mock lib (magic mock I think)
+    @mock.patch('yaetos.deploy.boto3')
+    def test_run(self, mocked_boto, deploy_args, app_args):
+
+        mocked_session = mocked_boto.Session()
+        mocked_client = mocked_session.resource()
+        mocked_identity = mocked_client.get_caller_identity()
+
+        # now mock the return value of .get()
+        mocked_identity.get.return_value = "default_profile"
+
+        mocked_emr = mocked_session.client('emr')
+        mocked_run_job_flow = mocked_emr.run_job_flow()
+        mocked_emr.return_value = ['ResponseMetadata']['HTTPStatusCode']
+        app_args['code_source'] = 'repo'
+        app_args['job_param_file'] = None
+        app_args['jobs_folder'] = 'jobs/'
+
+        deploy_args['deploy'] = 'EMR'
+        dep = Dep(deploy_args, app_args)
+        dep.run()
+
+    # check using moto lib (mock_emr)
+    def test_run(self, mocked_boto, deploy_args, app_args):
+        # https://getbetterdevops.io/how-to-mock-aws-services-in-python-unit-tests/
+        # https://github.com/spulec/moto/issues/1925
+        pass
+
+
     def test_generate_pipeline_name(self):
         mode = 'dev_EMR'
         job_name = 'jobs.some_folder.job'
