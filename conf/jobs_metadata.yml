@@ -201,7 +201,7 @@ jobs:
 
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
-  marketing/github_extraction_job.py:
+  marketing/github_accounts_extraction_job.py:
     description: "Github API extraction job, pulling traffic data."
     inputs:
       github_accounts_man: {'path':"./data_man/github_accounts.csv", 'type':'csv', 'df_type':'pandas'}
