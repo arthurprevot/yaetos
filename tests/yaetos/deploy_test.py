@@ -41,8 +41,36 @@ class Test_DeployPySparkScriptOnAws(object):
     #     # PB: botocore.exceptions.ProfileNotFound: The config profile (to_be_filled) could not be found
 
     # # using standart unittest mock lib
+    # @mock.patch('yaetos.deploy.boto3')
+    # def test_run(self, mocked_boto, deploy_args, app_args):
+    #
+    #     mocked_session = mocked_boto.Session()
+    #     mocked_client = mocked_session.resource()
+    #     mocked_identity = mocked_client.get_caller_identity()
+    #
+    #     # now mock the return value of .get()
+    #     mocked_identity.get.return_value = "default_profile"
+    #
+    #     app_args['code_source'] = 'repo'
+    #     app_args['job_param_file'] = None
+    #     app_args['jobs_folder'] = 'jobs/'
+    #     app_args['mode'] = 'dev_EMR'
+    #     deploy_args['deploy'] = 'EMR'
+    #
+    #     dep = Dep(deploy_args, app_args)
+    #     dep.run()
+    #     # PB: Deploy:deploy.py:739 Could not create EMR cluster (status code <MagicMock name='boto3.Session().client().run_job_flow().__getitem__().__getitem__()' id='140032267112800'>)
+
+    # # check using moto lib (mock_emr)
+    # def test_run(self, mocked_boto, deploy_args, app_args):
+    #     # https://getbetterdevops.io/how-to-mock-aws-services-in-python-unit-tests/
+    #     # https://github.com/spulec/moto/issues/1925
+    #     pass
+
+    # using standart unittest mock lib
     @mock.patch('yaetos.deploy.boto3')
-    def test_run(self, mocked_boto, deploy_args, app_args):
+    def test_run_direct(self, mocked_boto, deploy_args, app_args):
+        from yaetos.deploy import boto3
 
         mocked_session = mocked_boto.Session()
         mocked_client = mocked_session.resource()
@@ -54,18 +82,11 @@ class Test_DeployPySparkScriptOnAws(object):
         app_args['code_source'] = 'repo'
         app_args['job_param_file'] = None
         app_args['jobs_folder'] = 'jobs/'
-        app_args['mode'] = 'dev_EMR'
-        deploy_args['deploy'] = 'EMR'
 
         dep = Dep(deploy_args, app_args)
-        dep.run()
+        dep.session = boto3.Session(profile_name=dep.profile_name)
+        dep.run_direct()
         # PB: Deploy:deploy.py:739 Could not create EMR cluster (status code <MagicMock name='boto3.Session().client().run_job_flow().__getitem__().__getitem__()' id='140032267112800'>)
-
-    # # check using moto lib (mock_emr)
-    # def test_run(self, mocked_boto, deploy_args, app_args):
-    #     # https://getbetterdevops.io/how-to-mock-aws-services-in-python-unit-tests/
-    #     # https://github.com/spulec/moto/issues/1925
-    #     pass
 
 
     def test_generate_pipeline_name(self):
