@@ -15,15 +15,15 @@ class Job(ETL_Base):
         data = []
         for row in repos.iterrows():
         # for row in list(repos.iterrows())[:10]:
-            self.logger.info(f"About to pull from owner {row[1]['owner']}")
+            self.logger.info(f"About to pull from repo {row[1]['full_name']}")
             repo_contribs = self.get_contributors(row[1]['owner'], row[1]['name'], headers)
 
-            repo_contribs = [{**item, 'owner':row[1]['owner']} for item in repo_contribs]
+            repo_contribs = [{**item, 'repo_name':row[1]['full_name']} for item in repo_contribs]
             data.extend(repo_contribs)
-            self.logger.info(f"Finished pulling all repos in {row[1]['owner']}")
+            self.logger.info(f"Finished pulling all contributors in {row[1]['full_name']}")
         df = pd.DataFrame(data)
         self.logger.info(f"Fields {df.columns}")
-        keep = ['login', 'id', 'node_id', 'avatar_url', 'html_url', 'organizations_url', 'type', 'site_admin', 'contributions', 'owner']
+        keep = ['login', 'id', 'node_id', 'avatar_url', 'html_url', 'organizations_url', 'type', 'site_admin', 'contributions', 'repo_name']
         return df[keep]
 
     def get_contributors(self, owner, repo, headers):
