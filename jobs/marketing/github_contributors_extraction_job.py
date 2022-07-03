@@ -13,8 +13,8 @@ class Job(ETL_Base):
         headers = {'Authorization': "Token " + token}
 
         data = []
-        # for row in repos.iterrows()[:10]:
-        for row in list(repos.iterrows())[:10]:
+        for row in repos.iterrows():
+        # for row in list(repos.iterrows())[:10]:
             self.logger.info(f"About to pull from owner {row[1]['owner']}")
             repo_contribs = self.get_contributors(row[1]['owner'], row[1]['name'], headers)
 
@@ -26,69 +26,32 @@ class Job(ETL_Base):
         keep = ['login', 'id', 'node_id', 'avatar_url', 'html_url', 'organizations_url', 'type', 'site_admin', 'contributions', 'owner']
         return df[keep]
 
-    # def get_contributors(self, owner, repo, headers):
-    #     contribs = []
-    #     # pages = repo_count // 100 + 1
-    #     for page_num in range(1, 3): #pages+1):  # +1 to make it inclusive.
-    #         url = f"https://api.github.com/repos/{owner}/{repo}/contributors?page={page_num}"
-    #         try:
-    #             data = requests.get(url, headers=headers).json()
-    #             contribs.extend(data)
-    #             self.logger.info(f"pulling from page {page_num}")
-    #         except Exception:
-    #             self.logger.info(f"Couldn't pull data from {url}")
-    #         import ipdb; ipdb.set_trace()
-    #         time.sleep(1. / 4999.)  # i.e. 5000 requests max / sec
-    #     return contribs
-
     def get_contributors(self, owner, repo, headers):
         contribs = []
-        # pages = repo_count // 100 + 1
         url = f"https://api.github.com/repos/{owner}/{repo}/contributors?per_page=100"
-        resp = self.pull_data(url, headers)
-        data = resp.json()
-        contribs = data.copy()
-        # self.logger.info(f"#### {resp.links['next']}")
-        # next_url = resp.links['next']['url']
+        resp, data = self.pull_data(url, headers)
+        # data = resp.json()
+        contribs = data.copy() if resp else []
 
-        while 'next' in resp.links:
+        while resp and 'next' in resp.links:
             next_url = resp.links['next']['url']
-            resp = self.pull_data(next_url, headers)
-            data = resp.json()
-            contribs.extend(data)
+            resp, data = self.pull_data(next_url, headers)
+            # data = resp.json()
+            if resp:
+                contribs.extend(data)
             time.sleep(1. / 4999.)  # i.e. 5000 requests max / sec
-
-            # self.logger.info(f"#### {resp.links['next']}")
-            # next_url = resp.links['next']['url']
-
-        # resp = self.pull_data(next_url, headers)
-        # self.logger.info(f"#### {resp.links['next']}")
-        # next_url = resp.links['next']['url']
-        #
-        # resp = self.pull_data(next_url, headers)
-        # self.logger.info(f"#### {resp.links}")
-        # next_url = resp.links['next']['url']
-        #
-        # resp = self.pull_data(next_url, headers)
-        # self.logger.info(f"#### {resp.links['next']}")
-        # next_url = resp.links['next']['url']
-
-        # import ipdb; ipdb.set_trace()
-        # for page_num in range(1, 3): #pages+1):  # +1 to make it inclusive.
-        #
-        #
-        #     import ipdb; ipdb.set_trace()
-        #     time.sleep(1. / 4999.)  # i.e. 5000 requests max / sec
         return contribs
 
     def pull_data(self, url, headers):
         try:
             resp = requests.get(url, headers=headers)
+            data = resp.json()
             self.logger.info(f"pulling from {url}")
         except Exception:
             resp = None
+            data = None
             self.logger.info(f"Couldn't pull data from {url}")
-        return resp
+        return resp, data
 
 
 if __name__ == "__main__":
