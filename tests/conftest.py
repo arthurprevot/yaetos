@@ -64,4 +64,4 @@ def deploy_args():
 def app_args():
     return {'py_job': 'some/job.py',
             'job_name': 'some_job_name',
-            'mode': 'dev_EMR'}
+            }
