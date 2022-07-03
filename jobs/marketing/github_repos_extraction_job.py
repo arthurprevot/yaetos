@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 from yaetos.env_dispatchers import Cred_Ops_Dispatcher
 import time
-# rename to github_user_extraction_job
+
 
 class Job(ETL_Base):
     def transform(self, github_accounts):
@@ -14,19 +14,13 @@ class Job(ETL_Base):
 
         data = []
         for row in github_accounts.iterrows():
-            # import ipdb; ipdb.set_trace()
             if row[1]['owner'] == 'apache':
                 continue
             self.logger.info(f"About to pull from owner {row[1]['owner']}")
-            # accounts_info = self.get_accounts_info(owner, headers)
-            # self.logger.info(f"Number of repos in {owner}")
             repos_owner = self.get_repos(row[1]['owner'], row[1]['public_repos'], headers)
-            # import ipdb; ipdb.set_trace()
             repos_owner = [{**item, 'owner':row[1]['owner']} for item in repos_owner]
-            # accounts_info = {**accounts_info, 'owner':owner}
             data.extend(repos_owner)
             self.logger.info(f"Finished pulling all repos in {row[1]['owner']}")
-        # import ipdb; ipdb.set_trace()
         df = pd.DataFrame(data)
         self.logger.info(f"Fields {df.columns}")
         # import ipdb; ipdb.set_trace()
@@ -34,19 +28,9 @@ class Job(ETL_Base):
         # repo_df = repo_df[keep]
         return df
 
-    # @staticmethod
-    # def get_accounts_info(owner, headers):
-    #     url = f"https://api.github.com/users/{owner}"
-    #     request = requests.get(url, headers=headers)
-    #     if request.status_code == 200:
-    #         return request.json() #.get('public_repos')
-    #     else:
-    #         return None
-
     def get_repos(self, owner, repo_count, headers):
         repos = []
         pages = repo_count // 100 + 1
-        # import ipdb; ipdb.set_trace()
         for page_num in range(1, pages+1):  # +1 to make it inclusive.
             url = f"https://api.github.com/users/{owner}/repos?page={page_num}"
             try:
