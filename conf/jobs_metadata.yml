@@ -203,7 +203,17 @@ jobs:
 
   marketing/github_extraction_job.py:
     description: "Github API extraction job, pulling traffic data."
+    inputs:
+      github_accounts_man: {'path':"./data_man/github_accounts.csv", 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{base_path}/github/users/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
+  marketing/github_repos_extraction_job.py:
+    description: "Github API extraction job, pulling traffic data."
+    inputs:
+      github_accounts: {'path':"{base_path}/github/users/{latest}/output.csv", 'type':'csv', 'df_type':'pandas'}
     output: {'path':'{base_path}/github/user_repos/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    dependencies: [marketing/github_extraction_job.py]
     spark_boot: False
 
   marketing/github_repo_list_extraction_job.py:
