@@ -56,12 +56,10 @@ def get_pre_jargs():
 def deploy_args():
     return {'aws_setup': 'dev',
             'aws_config_file': 'conf/aws_config.cfg.example',
-            'mode': 'dev_EMR',
-            }
+            'mode': 'dev_EMR'}
 
 
 @pytest.fixture
 def app_args():
     return {'py_job': 'some/job.py',
-            'job_name': 'some_job_name',
-            }
+            'job_name': 'some_job_name'}
