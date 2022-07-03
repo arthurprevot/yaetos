@@ -14,8 +14,6 @@ class Job(ETL_Base):
 
         data = []
         for row in github_accounts.iterrows():
-            if row[1]['owner'] == 'apache':
-                continue
             self.logger.info(f"About to pull from owner {row[1]['owner']}")
             repos_owner = self.get_repos(row[1]['owner'], row[1]['public_repos'], headers)
             repos_owner = [{**item, 'owner':row[1]['owner']} for item in repos_owner]
@@ -23,10 +21,8 @@ class Job(ETL_Base):
             self.logger.info(f"Finished pulling all repos in {row[1]['owner']}")
         df = pd.DataFrame(data)
         self.logger.info(f"Fields {df.columns}")
-        # import ipdb; ipdb.set_trace()
-        # keep = ['id', 'node_id', 'name', 'full_name', 'private', 'owner', 'html_url', 'description', 'created_at', 'updated_at', 'pushed_at', 'homepage', 'size', 'stargazers_count', 'watchers_count', 'forks_count', 'language', 'watchers']
-        # repo_df = repo_df[keep]
-        return df
+        keep = ['id', 'node_id', 'name', 'full_name', 'private', 'owner', 'html_url', 'description', 'created_at', 'updated_at', 'pushed_at', 'homepage', 'size', 'stargazers_count', 'watchers_count', 'forks_count', 'language', 'watchers']
+        return df[keep]
 
     def get_repos(self, owner, repo_count, headers):
         repos = []
