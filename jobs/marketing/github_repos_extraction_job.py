@@ -13,12 +13,12 @@ class Job(ETL_Base):
         headers = {'Authorization': "Token " + token}
 
         data = []
-        for row in github_accounts.iterrows():
-            self.logger.info(f"About to pull from owner {row[1]['owner']}")
-            repos_owner = self.get_repos(row[1]['owner'], row[1]['public_repos'], headers)
-            repos_owner = [{**item, 'owner': row[1]['owner']} for item in repos_owner]
+        for ii, row in github_accounts.iterrows():
+            self.logger.info(f"About to pull from owner {row['owner']}")
+            repos_owner = self.get_repos(row['owner'], row['public_repos'], headers)
+            repos_owner = [{**item, 'owner': row['owner']} for item in repos_owner]
             data.extend(repos_owner)
-            self.logger.info(f"Finished pulling all repos in {row[1]['owner']}")
+            self.logger.info(f"Finished pulling all repos in {row['owner']}")
         df = pd.DataFrame(data)
         self.logger.info(f"Fields {df.columns}")
         keep = ['id', 'node_id', 'name', 'full_name', 'private', 'owner', 'html_url', 'description', 'created_at', 'updated_at', 'pushed_at', 'homepage', 'size', 'stargazers_count', 'watchers_count', 'forks_count', 'language', 'watchers']

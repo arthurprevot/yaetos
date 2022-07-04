@@ -15,9 +15,9 @@ class Job(ETL_Base):
         self.logger.info(f"Size of contributors table after filtering {len(contributors)}")
 
         data = []
-        for row in contributors.iterrows():
-            self.logger.info(f"About to pull committer info from {row[1]['login']} for repo {row[1]['repo_name']}")
-            url = f"https://api.github.com/repos/{row[1]['login']}/{row[1]['repo_name']}/commits?per_page=1"  # TODO: check stats/contributors instead of contributors
+        for ii, row in contributors.iterrows():
+            self.logger.info(f"About to pull committer info from {row['login']} for repo {row['repo_name']}")
+            url = f"https://api.github.com/repos/{row['login']}/{row['repo_name']}/commits?per_page=1"  # TODO: check stats/contributors instead of contributors
             resp, data_line = pull_1page(url, headers)
             if getattr(resp, 'status_code', None) != 200 or not (isinstance(data_line, list) and len(data_line) > 0):
                 continue

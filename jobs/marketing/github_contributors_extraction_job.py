@@ -15,13 +15,13 @@ class Job(ETL_Base):
         headers = {'Authorization': "Token " + token}
 
         data = []
-        for row in repos.iterrows():
-            self.logger.info(f"About to pull contributors from repo {row[1]['full_name']}")
-            url = f"https://api.github.com/repos/{row[1]['owner']}/{row[1]['name']}/contributors?per_page=100"  # TODO: check stats/contributors instead of contributors
+        for ii, row in repos.iterrows():
+            self.logger.info(f"About to pull contributors from repo {row['full_name']}")
+            url = f"https://api.github.com/repos/{row['owner']}/{row['name']}/contributors?per_page=100"  # TODO: check stats/contributors instead of contributors
             repo_contribs = pull_all_pages(url, headers)
-            repo_contribs = [{**item, 'repo_full_name': row[1]['full_name'], 'repo_name': row[1]['name']} for item in repo_contribs]
+            repo_contribs = [{**item, 'repo_full_name': row['full_name'], 'repo_name': row['name']} for item in repo_contribs]
             data.extend(repo_contribs)
-            self.logger.info(f"Finished pulling all contributors in {row[1]['full_name']}")
+            self.logger.info(f"Finished pulling all contributors in {row['full_name']}")
         df = pd.DataFrame(data)
         self.logger.info(f"Fields {df.columns}")
         keep = ['login', 'id', 'node_id', 'avatar_url', 'html_url', 'organizations_url', 'type', 'site_admin', 'contributions', 'repo_name']
