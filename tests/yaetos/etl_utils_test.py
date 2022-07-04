@@ -126,6 +126,7 @@ class Test_Flow(object):
                 ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
                 ['marketing/github_accounts_extraction_job.py', 'marketing/github_repos_extraction_job.py'],
                 ['marketing/github_repos_extraction_job.py', 'marketing/github_contributors_extraction_job.py'],
+                ['marketing/github_contributors_extraction_job.py', 'marketing/github_committers_extraction_job.py'],
             ]),
         )
         print(connection_real)
