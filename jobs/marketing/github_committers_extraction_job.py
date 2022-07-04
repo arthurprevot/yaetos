@@ -38,10 +38,8 @@ class Job(ETL_Base):
                 pm['email'], pm['name'], pm['last_commit'], pm['login'] = None, None, None, None
                 self.logger.info(f"Failed getting nested fields, data: {data_line}, error: {ex}")
 
-            # import ipdb; ipdb.set_trace()
             orig = row.to_dict()
             orig = {key: value for key, value in orig.items() if key in keep_contribs}
-            # import ipdb; ipdb.set_trace()
             data_line = [{**item, **pm, **orig} for item in data_line]
             data.extend(data_line)
             self.logger.info("Finished pulling committer info")
