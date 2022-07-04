@@ -1,17 +1,10 @@
-from yaetos.etl_utils import ETL_Base, Commandliner
 import requests
-import pandas as pd
-from yaetos.env_dispatchers import Cred_Ops_Dispatcher
-import time
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
 
 
-#def pull_all_pages(self, owner, repo, headers):
 def pull_all_pages(url, headers):
     pages_data = []
-    #url = f"https://api.github.com/repos/{owner}/{repo}/contributors?per_page=100"  # TODO: check stats/contributors instead of contributors
-    # url = f"https://api.github.com/repos/{owner}/{repo}/contributors?per_page=100"  # TODO: check stats/contributors instead of contributors
     resp, data = pull_1page(url, headers)
     pages_data = data.copy() if resp else []
 
