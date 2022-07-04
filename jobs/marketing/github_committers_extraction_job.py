@@ -23,12 +23,12 @@ class Job(ETL_Base):
             if getattr(resp, 'status_code', None) != 200 or not (isinstance(data_line, list) and len(data_line) > 0):
                 continue
 
-            if 'last' in resp.links:
-                commits = resp.links['last']['url'].split('per_page=1&page=')[-1]
-            else:
-                commits = None
-
             pm = {}
+            if 'last' in resp.links:
+                pm['commits'] = resp.links['last']['url'].split('per_page=1&page=')[-1]
+            else:
+                pm['commits'] = None
+
             try:
                 pm['email'] = data_line[0]['commit']['author']['email']
                 pm['name'] = data_line[0]['commit']['author']['name']
