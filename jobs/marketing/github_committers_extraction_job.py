@@ -13,6 +13,7 @@ class Job(ETL_Base):
 
         contributors = contributors[contributors['contributions'] > 20]
         self.logger.info(f"Size of contributors table after filtering {len(contributors)}")
+        keep_contribs = ['avatar_url', 'html_url', 'organizations_url', 'type', 'site_admin', 'contributions', 'repo_name', 'repo_full_name']  # other: 'login', 'id', 'node_id'
 
         data = []
         for ii, row in contributors.iterrows():
@@ -37,12 +38,17 @@ class Job(ETL_Base):
                 pm['email'], pm['name'], pm['last_commit'], pm['login'] = None, None, None, None
                 self.logger.info(f"Failed getting nested fields, data: {data_line}, error: {ex}")
 
-            data_line = [{**item, **pm} for item in data_line]
+            # import ipdb; ipdb.set_trace()
+            orig = row.to_dict()
+            orig = {key: value for key, value in orig.items() if key in keep_contribs}
+            # import ipdb; ipdb.set_trace()
+            data_line = [{**item, **pm, **orig} for item in data_line]
             data.extend(data_line)
             self.logger.info("Finished pulling committer info")
         df = pd.DataFrame(data)
-        self.logger.info(f"Fields {df.columns}")
-        keep = ['sha', 'node_id'] + list(pm.keys())
+        self.logger.info(f"Fields :{df.columns}")
+
+        keep = ['sha', 'node_id'] + keep_contribs + list(pm.keys())
         return df[keep]
 
 

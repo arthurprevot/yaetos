@@ -24,7 +24,7 @@ class Job(ETL_Base):
             self.logger.info(f"Finished pulling all contributors in {row['full_name']}")
         df = pd.DataFrame(data)
         self.logger.info(f"Fields {df.columns}")
-        keep = ['login', 'id', 'node_id', 'avatar_url', 'html_url', 'organizations_url', 'type', 'site_admin', 'contributions', 'repo_name']
+        keep = ['login', 'id', 'node_id', 'avatar_url', 'html_url', 'organizations_url', 'type', 'site_admin', 'contributions', 'repo_name', 'repo_full_name']
         return df[keep]
 
 
