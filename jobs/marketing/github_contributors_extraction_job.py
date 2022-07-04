@@ -14,10 +14,9 @@ class Job(ETL_Base):
 
         data = []
         for row in repos.iterrows():
-        # for row in list(repos.iterrows())[:10]:
             self.logger.info(f"About to pull from repo {row[1]['full_name']}")
             repo_contribs = self.get_contributors(row[1]['owner'], row[1]['name'], headers)
-            repo_contribs = [{**item, 'repo_name':row[1]['full_name']} for item in repo_contribs]
+            repo_contribs = [{**item, 'repo_name': row[1]['full_name']} for item in repo_contribs]
             data.extend(repo_contribs)
             self.logger.info(f"Finished pulling all contributors in {row[1]['full_name']}")
         df = pd.DataFrame(data)

@@ -124,8 +124,11 @@ class Test_Flow(object):
                 ['examples/ex4_dependency2_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
+                ['marketing/github_accounts_extraction_job.py', 'marketing/github_repos_extraction_job.py'],
+                ['marketing/github_repos_extraction_job.py', 'marketing/github_contributors_extraction_job.py'],
             ]),
         )
+        print(connection_real)
         assert_frame_equal(connection_real, connection_expected)
 
     def test_create_global_graph(self):

@@ -15,7 +15,7 @@ class Job(ETL_Base):
         for owner in github_accounts_man['account_name'].tolist():
             self.logger.info(f"About to pull from owner {owner}")
             accounts_info = self.get_accounts_info(owner, headers)
-            accounts_info = {**accounts_info, 'owner':owner}
+            accounts_info = {**accounts_info, 'owner': owner}
             data.append(accounts_info)
             self.logger.info(f"Finished pulling all repos in {owner}")
         df = pd.DataFrame(data)
