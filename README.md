@@ -12,7 +12,7 @@
 </div>
 
 # Yaetos
-Yaetos is a framework to write ETLs on top of [spark](http://spark.apache.org/) (the python binding, pyspark) or pandas and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis is on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. It's name stands for "Yet Another ETL Tool on Spark".
+Yaetos is a framework to write ETLs on top of Pandas and Spark, and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis is on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. It's name stands for "Yet Another ETL Tool on Spark".
  - In the simplest cases, an ETL job can consist of an SQL file only. No need to know any programming for these.
  - In more complex cases, an ETL job can consist of a python file, giving access to Spark dataframes, RDDs and any python library.
 
