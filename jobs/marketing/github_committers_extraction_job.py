@@ -11,16 +11,18 @@ class Job(ETL_Base):
         token = creds.get(creds_section, 'token')
         headers = {'Authorization': "Token " + token}
 
-        # contributors = contributors[contributors['contributions'] > 20]
-        data = []
-        # for row in repos.iterrows():
-        for row in list(contributors.iterrows())[:10]:
-            self.logger.info(f"About to pull committer info from {row[1]['login']} for repo {row[1]['repo_name'].split('/')[-1]}")
+        contributors = contributors[contributors['contributions'] > 20]
+        self.logger.info(f"Size of contributors table after filtering {len(contributors)}")
 
-            url = f"https://api.github.com/repos/{row[1]['login']}/{row[1]['repo_name'].split('/')[-1]}/commits?per_page=1"  # TODO: check stats/contributors instead of contributors
+        # contributors = contributors[:10]
+        data = []
+        for row in contributors.iterrows():
+            self.logger.info(f"About to pull committer info from {row[1]['login']} for repo {row[1]['repo_name']}")
+
+            url = f"https://api.github.com/repos/{row[1]['login']}/{row[1]['repo_name']}/commits?per_page=1"  # TODO: check stats/contributors instead of contributors
             resp, data_line = pull_1page(url, headers)
             # import ipdb; ipdb.set_trace()
-            if getattr(resp, 'status_code', None) != 200 or not isinstance(data_line, list):
+            if getattr(resp, 'status_code', None) != 200 or not (isinstance(data_line, list) and len(data_line) > 0):
                 continue
 
             if 'last' in resp.links:
@@ -29,14 +31,15 @@ class Job(ETL_Base):
                 commits = None
 
             pm = {}
-            if len(data_line) > 0:
+            try:
                 # import ipdb; ipdb.set_trace()
                 pm['email'] = data_line[0]['commit']['author']['email']
                 pm['name'] = data_line[0]['commit']['author']['name']
                 pm['last_commit'] = data_line[0]['commit']['author']['date']
-                pm['login'] = data_line[0]['author']['login']
-            else:
+                pm['login'] = data_line[0].get('author', {}).get('login', None) if data_line[0].get('author') else None
+            except Exception as ex:
                 pm['email'], pm['name'], pm['last_commit'], pm['login'] = None, None, None, None
+                self.logger.info(f"Failed getting nested fields, data: {data_line}, error: {ex}")
 
             # import ipdb; ipdb.set_trace()
             data_line = [{**item, **pm} for item in data_line]
