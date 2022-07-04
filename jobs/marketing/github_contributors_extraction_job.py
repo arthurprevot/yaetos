@@ -17,7 +17,6 @@ class Job(ETL_Base):
         # for row in list(repos.iterrows())[:10]:
             self.logger.info(f"About to pull from repo {row[1]['full_name']}")
             repo_contribs = self.get_contributors(row[1]['owner'], row[1]['name'], headers)
-
             repo_contribs = [{**item, 'repo_name':row[1]['full_name']} for item in repo_contribs]
             data.extend(repo_contribs)
             self.logger.info(f"Finished pulling all contributors in {row[1]['full_name']}")
@@ -28,15 +27,13 @@ class Job(ETL_Base):
 
     def get_contributors(self, owner, repo, headers):
         contribs = []
-        url = f"https://api.github.com/repos/{owner}/{repo}/contributors?per_page=100"
+        url = f"https://api.github.com/repos/{owner}/{repo}/contributors?per_page=100"  # TODO: check stats/contributors instead of contributors
         resp, data = self.pull_data(url, headers)
-        # data = resp.json()
         contribs = data.copy() if resp else []
 
         while resp and 'next' in resp.links:
             next_url = resp.links['next']['url']
             resp, data = self.pull_data(next_url, headers)
-            # data = resp.json()
             if resp:
                 contribs.extend(data)
             time.sleep(1. / 4999.)  # i.e. 5000 requests max / sec

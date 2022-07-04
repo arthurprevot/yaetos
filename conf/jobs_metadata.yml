@@ -202,7 +202,7 @@ jobs:
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   marketing/github_accounts_extraction_job.py:
-    description: "Github API extraction job, pulling traffic data."
+    description: "Github API extraction job, pulling account data."
     api_inputs: {'creds': 'github'}
     inputs:
       github_accounts_man: {'path':"./data_man/github_accounts.csv", 'type':'csv', 'df_type':'pandas'}
@@ -210,12 +210,21 @@ jobs:
     spark_boot: False
 
   marketing/github_repos_extraction_job.py:
-    description: "Github API extraction job, pulling traffic data."
+    description: "Github API extraction job, pulling repo data."
     api_inputs: {'creds': 'github'}
     inputs:
       github_accounts: {'path':"{base_path}/github/users/{latest}/output.csv", 'type':'csv', 'df_type':'pandas'}
     output: {'path':'{base_path}/github/user_repos/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
     dependencies: [marketing/github_accounts_extraction_job.py]
+    spark_boot: False
+
+  marketing/github_contributors_extraction_job.py:
+    description: "Github API extraction job, pulling contributor data."
+    api_inputs: {'creds': 'github'}
+    inputs:
+      repos: {'path':"{base_path}/github/user_repos/{latest}/output.csv", 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{base_path}/github/contributors/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    dependencies: [marketing/github_repos_extraction_job.py]
     spark_boot: False
 
   marketing/github_repo_list_extraction_job.py:
