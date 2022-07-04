@@ -15,12 +15,11 @@ class Job(ETL_Base):
         headers = {'Authorization': "Token " + token}
 
         data = []
-        # for row in repos.iterrows():
-        for row in list(repos.iterrows())[:10]:
-            self.logger.info(f"About to pull from repo {row[1]['full_name']}")
+        for row in repos.iterrows():
+            self.logger.info(f"About to pull contributors from repo {row[1]['full_name']}")
             url = f"https://api.github.com/repos/{row[1]['owner']}/{row[1]['name']}/contributors?per_page=100"  # TODO: check stats/contributors instead of contributors
             repo_contribs = pull_all_pages(url, headers)
-            repo_contribs = [{**item, 'repo_name': row[1]['full_name']} for item in repo_contribs]
+            repo_contribs = [{**item, 'repo_full_name': row[1]['full_name'], 'repo_name': row[1]['name']} for item in repo_contribs]
             data.extend(repo_contribs)
             self.logger.info(f"Finished pulling all contributors in {row[1]['full_name']}")
         df = pd.DataFrame(data)
