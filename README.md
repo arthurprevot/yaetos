@@ -24,7 +24,7 @@ Some features:
  * The support for git and unit-tests
  * The integration with any python library or spark-ml to build machine learning or other pipelines.
 
-## To try it
+## To try
 
 https://user-images.githubusercontent.com/3277100/175531451-1931086d-866a-40a8-8b1d-0417f8928b66.mp4
 
@@ -116,3 +116,4 @@ The status of the job can be monitored in AWS in the EMR section.
  * ...
 
 Lots of room for improvement. Contributions welcome.
+Feel free to reach out at arthur@yaetos.com
