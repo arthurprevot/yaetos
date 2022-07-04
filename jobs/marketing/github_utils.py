@@ -17,6 +17,7 @@ def pull_all_pages(url, headers):
         time.sleep(1. / 4999.)  # i.e. 5000 requests max / sec
     return pages_data
 
+
 def pull_1page(url, headers):
     try:
         resp = requests.get(url, headers=headers)
