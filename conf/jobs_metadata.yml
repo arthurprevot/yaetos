@@ -227,6 +227,15 @@ jobs:
     dependencies: [marketing/github_repos_extraction_job.py]
     spark_boot: False
 
+  marketing/github_committers_extraction_job.py:
+    description: "Github API extraction job, pulling committer data, especially email."
+    api_inputs: {'creds': 'github'}
+    inputs:
+      contributors: {'path':"{base_path}/github/contributors/{latest}/output.csv", 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{base_path}/github/committers/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    dependencies: [marketing/github_contributors_extraction_job.py]
+    spark_boot: False
+
   marketing/github_repo_list_extraction_job.py:
     description: "Github API extraction job, pulling traffic data."
     api_inputs: {'creds': 'github'}
@@ -253,7 +262,7 @@ common_params:
       save_schemas: False
       manage_git_info: True
     dev_EMR:
-      base_path: s3://dev-spark  # don't add '/' at the end
+      base_path: s3://dev-spark2/yaetos  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
