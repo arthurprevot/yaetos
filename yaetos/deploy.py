@@ -227,8 +227,8 @@ class DeployPySparkScriptOnAws(object):
             # If it was a 404 error, then the bucket does not exist.
             error_code = int(e.response['Error']['Code'])
             if error_code == 404:
-                terminate("Bucket for temporary files does not exist: " + self.s3_bucket_logs + ' ' + e.message)
-            terminate("Error while connecting to temporary Bucket: " + self.s3_bucket_logs + ' ' + e.message)
+                terminate(f"Bucket for temporary files does not exist: {self.s3_bucket_logs} {e.response}")
+            terminate(f"Error while connecting to temporary Bucket: {self.s3_bucket_logs} {e.response}")
         logger.debug("S3 bucket for temporary files exists: " + self.s3_bucket_logs)
 
     def tar_python_scripts(self):
