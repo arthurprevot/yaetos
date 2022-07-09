@@ -306,6 +306,8 @@ class DeployPySparkScriptOnAws(object):
             base = Pt(bases[0])
         elif self.app_args['code_source'] == 'repo':
             base = Pt(eu.LOCAL_FRAMEWORK_FOLDER)
+        elif self.app_args['code_source'] == 'dir':
+            base = Pt(self.app_args['code_source_path'])
         logger.debug("Source of yaetos code to be shipped: {}".format(base / 'yaetos/'))
         return base
 
