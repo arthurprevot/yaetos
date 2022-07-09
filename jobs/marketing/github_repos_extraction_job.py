@@ -2,6 +2,7 @@ from yaetos.etl_utils import ETL_Base, Commandliner
 import requests
 import pandas as pd
 from yaetos.env_dispatchers import Cred_Ops_Dispatcher
+from jobs.marketing.github_utils import pull_all_pages
 import time
 
 
@@ -15,7 +16,11 @@ class Job(ETL_Base):
         data = []
         for ii, row in github_accounts.iterrows():
             self.logger.info(f"About to pull from owner {row['owner']}")
-            repos_owner = self.get_repos(row['owner'], row['public_repos'], headers)
+
+            url = f"https://api.github.com/users/{owner}/repos"
+            # repos_owner = self.get_repos(row['owner'], row['public_repos'], headers)
+            repos_owner = pull_all_pages(url, headers)
+
             repos_owner = [{**item, 'owner': row['owner']} for item in repos_owner]
             data.extend(repos_owner)
             self.logger.info(f"Finished pulling all repos in {row['owner']}")
@@ -24,19 +29,19 @@ class Job(ETL_Base):
         keep = ['id', 'node_id', 'name', 'full_name', 'private', 'owner', 'html_url', 'description', 'created_at', 'updated_at', 'pushed_at', 'homepage', 'size', 'stargazers_count', 'watchers_count', 'forks_count', 'language', 'watchers']
         return df[keep]
 
-    def get_repos(self, owner, repo_count, headers):
-        repos = []
-        pages = repo_count // 100 + 1
-        for page_num in range(1, pages + 1):  # +1 to make it inclusive.
-            url = f"https://api.github.com/users/{owner}/repos?page={page_num}"
-            try:
-                repo = requests.get(url, headers=headers).json()
-                repos.extend(repo)
-                self.logger.info(f"pulling from page {page_num}")
-            except Exception:
-                self.logger.info(f"Couldn't pull data from {url}")
-            time.sleep(1. / 4999.)  # i.e. 5000 requests max / sec
-        return repos
+    # def get_repos(self, owner, repo_count, headers):
+    #     repos = []
+    #     pages = repo_count // 100 + 1
+    #     for page_num in range(1, pages + 1):  # +1 to make it inclusive.
+    #         url = f"https://api.github.com/users/{owner}/repos?page={page_num}"
+    #         try:
+    #             repo = requests.get(url, headers=headers).json()
+    #             repos.extend(repo)
+    #             self.logger.info(f"pulling from page {page_num}")
+    #         except Exception:
+    #             self.logger.info(f"Couldn't pull data from {url}")
+    #         time.sleep(1. / 4999.)  # i.e. 5000 requests max / sec
+    #     return repos
 
 
 if __name__ == "__main__":
