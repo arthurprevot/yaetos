@@ -1,5 +1,5 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
-import requests
+# import requests
 import pandas as pd
 from yaetos.env_dispatchers import Cred_Ops_Dispatcher
 from jobs.marketing.github_utils import pull_all_pages
@@ -13,8 +13,8 @@ class Job(ETL_Base):
         headers = {'Authorization': "Token " + token}
 
         data = []
-        for ii, row in github_accounts_man.iterrows():
         # for owner in github_accounts_man['account_name'].tolist():
+        for ii, row in github_accounts_man.iterrows():
             self.logger.info(f"About to pull from owner {row['account_name']}")
 
             url = f"https://api.github.com/users/{row['account_name']}"
