@@ -17,7 +17,7 @@ class Job(ETL_Base):
         for ii, row in github_accounts.iterrows():
             self.logger.info(f"About to pull from owner {row['owner']}")
 
-            url = f"https://api.github.com/users/{owner}/repos"
+            url = f"https://api.github.com/users/{row['owner']}/repos"
             # repos_owner = self.get_repos(row['owner'], row['public_repos'], headers)
             repos_owner = pull_all_pages(url, headers)
 
