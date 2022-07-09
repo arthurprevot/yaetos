@@ -13,16 +13,17 @@ class Job(ETL_Base):
         headers = {'Authorization': "Token " + token}
 
         data = []
-        for owner in github_accounts_man['account_name'].tolist():
-            self.logger.info(f"About to pull from owner {owner}")
+        for ii, row in github_accounts_man.iterrows():
+        # for owner in github_accounts_man['account_name'].tolist():
+            self.logger.info(f"About to pull from owner {row['account_name']}")
 
-            url = f"https://api.github.com/users/{owner}"
+            url = f"https://api.github.com/users/{row['account_name']}"
             # accounts_info = self.get_accounts_info(owner, headers)
             accounts_info = pull_all_pages(url, headers)
 
-            accounts_info = {**accounts_info, 'owner': owner}
+            accounts_info = {**row, **accounts_info}
             data.append(accounts_info)
-            self.logger.info(f"Finished pulling all repos in {owner}")
+            self.logger.info(f"Finished pulling all repos in {row['account_name']}")
         df = pd.DataFrame(data)
         self.logger.info(f"Fields {df.columns}")
         return df
