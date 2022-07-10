@@ -1,8 +1,7 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
-# import requests
 import pandas as pd
 from yaetos.env_dispatchers import Cred_Ops_Dispatcher
-from jobs.marketing.github_utils import pull_all_pages
+from jobs.marketing.github_utils import pull_1page
 
 
 class Job(ETL_Base):
@@ -16,13 +15,16 @@ class Job(ETL_Base):
         # for owner in github_accounts_man['account_name'].tolist():
         for ii, row in github_accounts_man.iterrows():
             self.logger.info(f"About to pull from owner {row['account_name']}")
-
             url = f"https://api.github.com/users/{row['account_name']}"
-            # accounts_info = self.get_accounts_info(owner, headers)
-            accounts_info = pull_all_pages(url, headers)
 
-            accounts_info = {**row, **accounts_info}
-            data.append(accounts_info)
+            # accounts_info = self.get_accounts_info(owner, headers)
+            # accounts_info = pull_all_pages(url, headers)
+            resp, data_line = pull_1page(url, headers)
+            # import ipdb; ipdb.set_trace()
+
+            if resp:
+                data_line = {**row, **data_line}
+                data.append(data_line)
             self.logger.info(f"Finished pulling all repos in {row['account_name']}")
         df = pd.DataFrame(data)
         self.logger.info(f"Fields {df.columns}")

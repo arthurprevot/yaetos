@@ -7,7 +7,8 @@ logger = setup_logging('Job')
 def pull_all_pages(url, headers):
     pages_data = []
     resp, data = pull_1page(url, headers)
-    pages_data = data.copy() if resp else []
+    if resp:
+        pages_data = data.copy() if isinstance(data, list) else [data.copy()]
 
     while resp and 'next' in resp.links:
         next_url = resp.links['next']['url']
