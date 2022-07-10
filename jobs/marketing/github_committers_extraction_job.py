@@ -18,7 +18,7 @@ class Job(ETL_Base):
         data = []
         for ii, row in contributors.iterrows():
             self.logger.info(f"About to pull committer info from {row['login']} for repo {row['repo_name']}")
-            url = f"https://api.github.com/repos/{row['login']}/{row['repo_name']}/commits?per_page=1"  # TODO: check stats/contributors instead of contributors
+            url = f"https://api.github.com/repos/{row['login']}/{row['repo_name']}/commits?per_page=1"
             resp, data_line = pull_1page(url, headers)
             if getattr(resp, 'status_code', None) != 200 or not (isinstance(data_line, list) and len(data_line) > 0):
                 continue
