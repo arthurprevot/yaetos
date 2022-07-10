@@ -981,7 +981,7 @@ class Runner():
             # -- Deploy specific below --
             'aws_config_file': AWS_CONFIG_FILE,
             'aws_setup': 'dev',
-            'code_source': 'lib',  # Other options: 'repo' TODO: make it automatic so parameter not needed.
+            'code_source': 'lib',  # options: ('lib','repo', 'dir') TODO: make it automatic so parameter not needed.
             'leave_on': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
             'push_secrets': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
             # -- Not added in command line args:

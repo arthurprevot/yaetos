@@ -237,7 +237,7 @@ jobs:
     spark_boot: False
 
   marketing/github_repo_list_extraction_job.py:
-    description: "Github API extraction job, pulling traffic data."
+    description: "Github API extraction job, pulling repo data."
     api_inputs: {'creds': 'github'}
     output: {'path':'{base_path}/github/repos/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
