@@ -134,12 +134,13 @@ def setup_env(args):
     copyfile(Pt(f'{package_path}/scripts/copy/connections.cfg.example'), Pt(f'{cwd}/conf/connections.cfg'))
     copyfile(Pt(f'{package_path}/scripts/copy/requirements_extra.txt'), Pt(f'{cwd}/conf/requirements_extra.txt'))
 
-    # Sample jobs
+    # Generic jobs
     os.makedirs(Pt('jobs/generic/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/libs/generic_jobs/copy_job.py'), Pt(f'{cwd}/jobs/generic/copy_job.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/deployer.py'), Pt(f'{cwd}/jobs/generic/deployer.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/dummy_job.py'), Pt(f'{cwd}/jobs/generic/dummy_job.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/launcher.py'), Pt(f'{cwd}/jobs/generic/launcher.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/sql_job.py'), Pt(f'{cwd}/jobs/generic/sql_job.py'))
 
     # Sample jobs
     os.makedirs(Pt('jobs/examples/'), exist_ok=True)
