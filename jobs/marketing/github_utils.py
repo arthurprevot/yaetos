@@ -23,9 +23,9 @@ def pull_1page(url, headers):
     try:
         resp = requests.get(url, headers=headers)
         data = resp.json()
-        logger.info(f"pulling from {url}")
-    except Exception:
+        logger.info(f"Pulled data from {url}, size {len(data) if isinstance(data, list) else None}")
+    except Exception as ex:
         resp = None
         data = None
-        logger.info(f"Couldn't pull data from {url}")
+        logger.info(f"Couldn't pull data from {url} with error: {ex}")
     return resp, data
