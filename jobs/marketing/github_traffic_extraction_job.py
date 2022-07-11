@@ -1,5 +1,4 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
-import requests
 import pandas as pd
 from yaetos.env_dispatchers import Cred_Ops_Dispatcher
 from jobs.marketing.github_utils import pull_all_pages
