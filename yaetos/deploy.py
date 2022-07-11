@@ -503,7 +503,7 @@ class DeployPySparkScriptOnAws(object):
         jop = ['--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER + eu.JOBS_METADATA_FILE)] if app_args.get('job_param_file') else []
         dep = ["--dependencies"] if app_args.get('dependencies') else []
         box = ["--chain_dependencies"] if app_args.get('chain_dependencies') else []
-        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else [] # not needed when sql job is run from jobs/generic/launcher.py. TODO: make it work when launching from jobs/generic/sql_job.py
+        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER + app_args['sql_file'])] if app_args.get('sql_file') else []  # not needed when sql job is run from jobs/generic/launcher.py.
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
 
         return spark_submit_args + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam
