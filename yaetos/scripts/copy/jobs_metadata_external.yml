@@ -11,7 +11,7 @@ jobs:
 
   examples/ex1_sql_job.sql:
     description: "shows a sql job, running on top of Spark."
-    py_job: 'yaetos/sql_job.py'
+    py_job: 'jobs/generic/sql_job.py'
     inputs:
       some_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv'}
       other_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv'}

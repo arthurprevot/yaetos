@@ -227,8 +227,8 @@ class DeployPySparkScriptOnAws(object):
             # If it was a 404 error, then the bucket does not exist.
             error_code = int(e.response['Error']['Code'])
             if error_code == 404:
-                terminate("Bucket for temporary files does not exist: " + self.s3_bucket_logs + ' ' + e.message)
-            terminate("Error while connecting to temporary Bucket: " + self.s3_bucket_logs + ' ' + e.message)
+                terminate(f"Bucket for temporary files does not exist: {self.s3_bucket_logs} {e.response}")
+            terminate(f"Error while connecting to temporary Bucket: {self.s3_bucket_logs} {e.response}")
         logger.debug("S3 bucket for temporary files exists: " + self.s3_bucket_logs)
 
     def tar_python_scripts(self):
@@ -306,6 +306,8 @@ class DeployPySparkScriptOnAws(object):
             base = Pt(bases[0])
         elif self.app_args['code_source'] == 'repo':
             base = Pt(eu.LOCAL_FRAMEWORK_FOLDER)
+        elif self.app_args['code_source'] == 'dir':
+            base = Pt(self.app_args['code_source_path'])
         logger.debug("Source of yaetos code to be shipped: {}".format(base / 'yaetos/'))
         return base
 
@@ -501,7 +503,7 @@ class DeployPySparkScriptOnAws(object):
         jop = ['--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER + eu.JOBS_METADATA_FILE)] if app_args.get('job_param_file') else []
         dep = ["--dependencies"] if app_args.get('dependencies') else []
         box = ["--chain_dependencies"] if app_args.get('chain_dependencies') else []
-        sql = []  # ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER+app_args['sql_file'])] if app_args.get('sql_file') else [] # not needed when sql job is run from jobs/generic/launcher.py. TODO: make it work when launching from jobs/generic/sql_job.py
+        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER + app_args['sql_file'])] if app_args.get('sql_file') else []  # not needed when sql job is run from jobs/generic/launcher.py.
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
 
         return spark_submit_args + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam
