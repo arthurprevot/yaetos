@@ -21,7 +21,6 @@ class Job(ETL_Base):
         clones_ts = [{**item, 'category': 'clones'} for item in clones_ts]
         data.extend(clones_ts)
 
-
         url = f"https://api.github.com/repos/arthurprevot/yaetos/traffic/views"
         views = pull_all_pages(url, headers)
         views_ts = views[0]['views']
