@@ -242,6 +242,12 @@ jobs:
     output: {'path':'{base_path}/github/repos/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
+  marketing/github_traffic_extraction_job.py:
+    description: "Github API extraction job, pulling repo data."
+    api_inputs: {'creds': 'github'}
+    output: {'path':'{base_path}/github/traffic/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
 # ----- Params -------
 common_params:
   all_mode_params:
