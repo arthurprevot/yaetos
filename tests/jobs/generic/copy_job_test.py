@@ -4,9 +4,8 @@ import pandas as pd
 
 class Test_Job(object):
     def test_transform_spark(self, sc, sc_sql, ss, get_pre_jargs):
-        table = [
-            {'session_id': 1},
-            {'session_id': 12}]
+        table = [{'session_id': 1},
+                 {'session_id': 12}]
 
         table_to_copy = ss.read.json(sc.parallelize(table))
         loaded_inputs = {'table_to_copy': table_to_copy}
@@ -15,9 +14,8 @@ class Test_Job(object):
         assert actual == expected
 
     def test_transform_pandas(self, get_pre_jargs):
-        table = [
-            {'session_id': 1},
-            {'session_id': 12}]
+        table = [{'session_id': 1},
+                 {'session_id': 12}]
 
         table_to_copy = pd.DataFrame(table)
         loaded_inputs = {'table_to_copy': table_to_copy}
