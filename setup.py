@@ -39,12 +39,12 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version='0.9.22',  # Required
+    version='0.9.23',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='Cloudification of Data Pipelines in Spark and Pandas for AWS',  # Optional
+    description='Write data & AI pipelines in Spark and Pandas and deploy them to the cloud, simplified',  # Optional
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.

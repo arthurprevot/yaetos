@@ -1,9 +1,7 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
-# import requests
 import pandas as pd
 from yaetos.env_dispatchers import Cred_Ops_Dispatcher
 from jobs.marketing.github_utils import pull_all_pages
-# import time
 
 
 class Job(ETL_Base):
@@ -16,17 +14,6 @@ class Job(ETL_Base):
 
         url = f"https://api.github.com/repositories"
         repos = pull_all_pages(url, headers)
-
-        # repos = []
-        # for page_num in range(1, 300):  # 300
-        #     url = f"https://api.github.com/repositories?page={page_num}"
-        #     try:
-        #         repo = requests.get(url, headers=headers).json()
-        #         repos.extend(repo)
-        #         self.logger.info(f"pulling from page {page_num}")
-        #     except Exception:
-        #         self.logger.info(f"Couldn't pull data from {url}")
-        #     time.sleep(1. / 4999.)  # i.e. 5000 requests max / sec
         return pd.DataFrame(repos)
 
 
