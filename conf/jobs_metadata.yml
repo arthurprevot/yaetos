@@ -190,6 +190,13 @@ jobs:
     load_connectors: all
     enable_redshift_push: True
 
+  examples/ex10_excel_load_job:
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_excel/parts.xlsx", 'type':'excel', 'df_type':'pandas', 'read_kwargs':{'engine': 'openpyxl', 'sheet_name': 0, 'header': 1}}
+    output: {'path':'{base_path}/load_example/excel/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
   examples/wordcount_frameworked_job.py:
     description: "shows raw pyspark rdd ops in framework, same as wordcount_raw_job"
     inputs:

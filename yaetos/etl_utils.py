@@ -344,7 +344,7 @@ class ETL_Base(object):
             elif input_type == 'parquet':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'excel':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='excel', read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xlsx', read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
