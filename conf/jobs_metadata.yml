@@ -193,7 +193,7 @@ jobs:
   examples/ex10_excel_load_job:
     py_job: jobs/generic/copy_job.py
     inputs:
-      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_excel/parts.xlsx", 'type':'excel', 'df_type':'pandas', 'read_kwargs':{'engine': 'openpyxl', 'sheet_name': 0, 'header': 1}}
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_excel/parts.xlsx", 'type':'xlsx', 'df_type':'pandas', 'read_kwargs':{'engine': 'openpyxl', 'sheet_name': 0, 'header': 1}}
     output: {'path':'{base_path}/load_example/excel/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
