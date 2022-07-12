@@ -22,7 +22,6 @@ class Test_Job(object):
         table_to_copy = pd.DataFrame(table)
         loaded_inputs = {'table_to_copy': table_to_copy}
         pre_jargs = get_pre_jargs(loaded_inputs.keys())
-        # pre_jargs['defaults_args']['spark_boot'] = False
         pre_jargs['defaults_args']['output']['df_type'] = 'pandas'
         actual = Job(pre_jargs=pre_jargs).etl_no_io(sc=None, sc_sql=None, loaded_inputs=loaded_inputs)[0].to_dict(orient='records')
 
