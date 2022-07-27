@@ -6,7 +6,7 @@ class Job(ETL_Base):
         df = self.query("""
             WITH
             linkedin_mod as (
-                SELECT concat(`First Name`, ' ', `Last Name`) as lk_id,
+                SELECT lower(concat(`First Name`, ' ', `Last Name`)) as lk_id,
                     Company as company_lk,
                     `Connected On` as Connected_On,
                     `Email Address` as email_address,
@@ -18,7 +18,7 @@ class Job(ETL_Base):
             ),
             perso_mod as (
                 SELECT
-                    concat(first_name, ' ', coalesce(last_name, '')) as ps_id,
+                    lower(concat(first_name, ' ', coalesce(last_name, ''))) as ps_id,
                     'perso' as source_ps,
                     *
                 FROM perso
