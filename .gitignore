@@ -1,6 +1,7 @@
 *.pyc
 tmp/
 data/
+data_manual/
 extra/
 schemas/
 metastore_db/
