@@ -12,17 +12,17 @@
 </div>
 
 # Yaetos
-Yaetos is a framework to write ETLs on top of Pandas and Spark, and deploy them to Amazon Web Services (AWS). It can run locally (using local datasets and running the process on your machine), or on AWS (using S3 datasets and running the process on an AWS cluster). The emphasis is on simplicity while giving access to the full power of spark for processing large datasets. All job input and output definitions are in a human readable yaml file. It's name stands for "Yet Another ETL Tool on Spark".
- - In the simplest cases, an ETL job can consist of an SQL file only. No need to know any programming for these.
- - In more complex cases, an ETL job can consist of a python file, giving access to Spark dataframes, RDDs and any python library.
+Yaetos is a framework to write data pipelines on top of Pandas and Spark, and deploy them to Amazon Web Services (AWS). It can run locally or on AWS (using S3 datasets and running the process on an AWS cluster). The focus is on making simple things easy and complex things possible (and as easy as can be). It's name stands for "Yet Another ETL Tool on Spark".
+ - In the simplest cases, pipelines consist of SQL files only. No need to know any programming. Suitable for business intelligence use cases.
+ - In more complex cases, pipelines consist of python files, giving access to Pandas, Spark dataframes, RDDs and any python library (scikit-learn, tensorflow, pytorch). Suitable for AI use cases.
 
 Some features:
- * The ability to run jobs locally and on cluster without any changes.
- * The support of dependencies across jobs
- * The support of incremental loading and processing
+ * The ability to run jobs locally and on a cluster in the cloud without any changes.
+ * The support for dependencies across jobs
+ * The support for incremental jobs
  * The automatic creation of AWS clusters when needed.
  * The support for git and unit-tests
- * The integration with any python library or spark-ml to build machine learning or other pipelines.
+ * The integration with any python library to build machine learning or other pipelines.
 
 ## To try
 

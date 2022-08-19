@@ -6,11 +6,9 @@ from jobs.marketing.github_utils import pull_1page
 
 class Job(ETL_Base):
     def transform(self, github_accounts_man):
-        creds_section = self.jargs.api_inputs['creds']
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds='yaetos/connections', local_creds=self.jargs.connection_file)
-        token = creds.get(creds_section, 'token')
+        token = creds.get(self.jargs.api_inputs['creds'], 'token')
         headers = {'Authorization': "Token " + token}
-        github_accounts_man = github_accounts_man[:3]
 
         data = []
         for ii, row in github_accounts_man.iterrows():

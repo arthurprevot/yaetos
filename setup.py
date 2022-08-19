@@ -44,7 +44,7 @@ setup(
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='Write data & AI pipelines in Spark and Pandas and deploy them to the cloud, simplified',  # Optional
+    description='Write data & AI pipelines in (SQL, Spark, Pandas) and deploy them to the cloud, simplified',  # Optional
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.

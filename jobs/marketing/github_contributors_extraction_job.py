@@ -9,9 +9,8 @@ import pandas as pd
 
 class Job(ETL_Base):
     def transform(self, repos):
-        creds_section = self.jargs.api_inputs['creds']
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds='yaetos/connections', local_creds=self.jargs.connection_file)
-        token = creds.get(creds_section, 'token')
+        token = creds.get(self.jargs.api_inputs['creds'], 'token')
         headers = {'Authorization': "Token " + token}
 
         data = []

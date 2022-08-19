@@ -309,6 +309,7 @@ class DeployPySparkScriptOnAws(object):
         elif self.app_args['code_source'] == 'dir':
             base = Pt(self.app_args['code_source_path'])
         logger.debug("Source of yaetos code to be shipped: {}".format(base / 'yaetos/'))
+        # TODO: move code_source and code_source_path to deploy_args, involves adding it to DEPLOY_ARGS_LIST
         return base
 
     def upload_temp_files(self, s3):

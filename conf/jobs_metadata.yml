@@ -212,7 +212,7 @@ jobs:
     description: "Github API extraction job, pulling account data."
     api_inputs: {'creds': 'github'}
     inputs:
-      github_accounts_man: {'path':"./data_man/github_accounts.csv", 'type':'csv', 'df_type':'pandas'}
+      github_accounts_man: {'path':"./data_manual/github/github_accounts.csv", 'type':'csv', 'df_type':'pandas'}
     output: {'path':'{base_path}/github/users/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
@@ -252,10 +252,17 @@ jobs:
   marketing/github_traffic_extraction_job.py:
     description: "Github API extraction job, pulling repo data."
     inputs:
-      my_repos: {'path':"./data_man/my_github_repos.csv", 'type':'csv', 'df_type':'pandas'}
+      my_repos: {'path':"./data_manual/github/my_github_repos.csv", 'type':'csv', 'df_type':'pandas'}
     api_inputs: {'creds': 'github'}
     output: {'path':'{base_path}/github/traffic/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
+
+  marketing/people_merge_job.py:
+    description: "Merge people from linkedin, github..."
+    inputs:
+      perso: {'path':"./data_manual/people/people.csv", 'type':'csv'}
+      linkedin: {'path':"./data_manual/linkedin/export/Connections_mod.csv", 'type':'csv'}
+    output: {'path':'{base_path}/people/{now}/', 'type':'csv'}
 
 # ----- Params -------
 common_params:
