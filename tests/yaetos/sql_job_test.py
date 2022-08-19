@@ -27,6 +27,7 @@ class Test_Job(object):
     def test_get_params_from_sql(self):
         sql = textwrap.dedent("""
         ---param--- 'param_a': 'value_a' ---
+        ---param--- 'param_to_be_ignored': 'some_value' --
         --param--- 'param_to_be_ignored': 'some_value' ---
         """)
         expected = {'param_a': 'value_a'}
