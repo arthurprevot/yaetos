@@ -1,5 +1,6 @@
--- Params (lines starting with "----- " below) --
------ 'repartition' : 2 -----
+-- Params --
+-- Yaetos will get job parameters from lines starting with "-----param- " below --
+---param--- 'repartition' : 2 ---
 
 SELECT se.session_id, count(*) as count_events
 FROM some_events se

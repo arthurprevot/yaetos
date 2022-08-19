@@ -32,7 +32,7 @@ class Job(ETL_Base):
 
     @staticmethod
     def get_params_from_sql(sql):
-        param_lines = [item.split('-----')[1].split(':') for item in sql.split('\n') if item.startswith('----- ')]
+        param_lines = [item.split('---')[2].split(':') for item in sql.split('\n') if item.startswith('---param--- ')]
         params = {eval(key): eval(value) for key, value in param_lines}
         return params
 
