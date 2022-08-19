@@ -4,7 +4,7 @@ import textwrap
 
 class Test_Job(object):
     def test_set_jargs(self, sc, sc_sql, ss, get_pre_jargs):
-        loaded_inputs={}
+        loaded_inputs = {}
         pre_jargs = get_pre_jargs(input_names=loaded_inputs.keys())
         pre_jargs['cmd_args']['sql_file'] = 'tests/fixtures/sql_job.sql'
         job = Job(pre_jargs=pre_jargs)
