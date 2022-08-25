@@ -24,6 +24,7 @@ import smtplib
 import ssl
 from dateutil.relativedelta import relativedelta
 import yaetos.spark_utils as su
+import yaetos.pandas_utils as pu
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.env_dispatchers import FS_Ops_Dispatcher, Cred_Ops_Dispatcher
 from yaetos.logger import setup_logging
@@ -565,10 +566,13 @@ class ETL_Base(object):
             """ % (self.app_name, self.jargs.job_name, elapsed)
         FS_Ops_Dispatcher().save_metadata(fname, content)
 
-    def query(self, query_str):
+    def query(self, query_str, engine='spark', dfs=None):
         logger.info('Query string:\n' + query_str)
-        df = self.sc_sql.sql(query_str)
-        df.cache()
+        if engine == 'spark':
+            df = self.sc_sql.sql(query_str)
+            df.cache()
+        elif engine == 'pandas':
+            df = pu.query_pandas(query_str, *dfs)
         return df
 
     def copy_to_redshift_using_pandas(self, output, types):

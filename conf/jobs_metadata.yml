@@ -146,6 +146,14 @@ jobs:
     output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/output.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     spark_boot: False
 
+  examples/ex7_pandas_with_sql_job.py:
+    description: "job loading and processing data with pandas. No spark involved."
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{base_path}/wiki_example/output_ex7_pandas_with_sql/{now}/output.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+    spark_boot: False
+
   examples/ex7_hybrid_pandas_spark_job.py:
     description: "Job processing in pandas, loading and dropping done with spark."
     inputs:

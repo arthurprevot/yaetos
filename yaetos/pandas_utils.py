@@ -67,6 +67,12 @@ def save_pandas_local(df, path, save_method='to_csv', save_kwargs={}):
     func = getattr(df, save_method)
     func(path, **save_kwargs)
 
+def query_pandas(query_str, *dfs):
+
+    import duckdb
+    # cursor = duckdb.connect()
+    # print(cursor.execute('SELECT 42').fetchall())
+    return duckdb.query(query_str).to_df()
 
 if __name__ == '__main__':
     pass
