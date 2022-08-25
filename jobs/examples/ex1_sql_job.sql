@@ -1,6 +1,6 @@
--- Params --
--- Yaetos will get job parameters from lines starting with "-----param- " below --
----param--- 'repartition' : 2 ---
+-- SQL Query - Scalable (i.e. over Spark)
+-- Params (yaetos will parse lines starting with "----param---- " and finishing with "----", like below)
+----param---- 'repartition' : 2 ----
 
 SELECT se.session_id, count(*) as count_events
 FROM some_events se
