@@ -31,3 +31,4 @@ stripe==2.50.0
 py4j==0.10.9.1
 jupyterlab
 jupyterlab-git
+duckdb==0.4.0
