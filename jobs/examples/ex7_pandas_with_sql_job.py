@@ -19,8 +19,6 @@ class Job(ETL_Base):
         group by se.session_id
         order by count(*) desc
         """
-        # import ipdb; ipdb.set_trace()
-        # dfs = {k: eval(k) for k in ('some_events', 'other_events')}
         dfs = {'some_events': some_events, 'other_events': other_events}
         df = self.query(query_str, engine='pandas', dfs=dfs)
         return df

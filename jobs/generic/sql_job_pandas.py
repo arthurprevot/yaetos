@@ -5,11 +5,8 @@ class Job(SQLJob):
     """To run/deploy sql jobs, using --sql_file arg."""
     def transform(self, **dfs):
         query_str = self.read_sql_file(self.jargs.sql_file)
-        # df = self.query(query_str)
-        # import ipdb; ipdb.set_trace()
         df = self.query(query_str, engine='pandas', dfs=dfs)
         return df
 
 if __name__ == "__main__":
-    args = {'spark_boot': False}
-    Commandliner(Job, **args)
+    Commandliner(Job)
