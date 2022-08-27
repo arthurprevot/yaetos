@@ -8,7 +8,7 @@ jobs:
 
   examples/ex1_sql_job.sql2:
     description: "shows sql job, easiest when sql is enough"
-    py_job: 'jobs/generic/sql_job.py'
+    py_job: 'jobs/generic/sql_spark_job.py'
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
       other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
@@ -22,7 +22,7 @@ jobs:
   examples/ex1_sql_job.sql:
   # examples/ex1_sql_job_pandas:
     description: "shows sql job, easiest when sql is enough"
-    py_job: 'jobs/generic/sql_job_pandas.py'
+    py_job: 'jobs/generic/sql_pandas_job.py'
     # sql_file: 'examples/ex1_sql_job.sql'
     inputs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
@@ -100,7 +100,7 @@ jobs:
 
   examples/ex4_dependency3_job.sql:
     description: "shows dependency with sql"
-    py_job: 'jobs/generic/sql_job.py'
+    py_job: 'jobs/generic/sql_spark_job.py'
     inputs:
       some_events: {'path':'{base_path}/wiki_example/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
     output: {'path':'{base_path}/wiki_example/output_ex4_dep3/{now}/', 'type':'csv'}
