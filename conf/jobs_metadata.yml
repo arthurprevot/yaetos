@@ -6,7 +6,7 @@ jobs:
     output: {'path':'{base_path}/wiki_example/input/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
-  examples/ex1_sql_job.sql:
+  examples/ex1_sql_job.sql2:
     description: "shows sql job, easiest when sql is enough"
     py_job: 'jobs/generic/sql_job.py'
     inputs:
@@ -15,6 +15,21 @@ jobs:
     output: {'path':'{base_path}/wiki_example_sql/output_ex1_sql/{now}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
     repartition: 1
+    frequency: 1 day
+    start_date: "{today}T07:00:00"
+    owners: ['some_email@address.com']
+
+  examples/ex1_sql_job.sql:
+  # examples/ex1_sql_job_pandas:
+    description: "shows sql job, easiest when sql is enough"
+    py_job: 'jobs/generic/sql_job_pandas.py'
+    # sql_file: 'examples/ex1_sql_job.sql'
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{base_path}/wiki_example_sql/output_ex1_sql_pandas/{now}/data.csv', 'type':'csv', 'df_type':'pandas'}
+    dependencies: [examples/ex0_extraction_job.py]
+    spark_boot: False
     frequency: 1 day
     start_date: "{today}T07:00:00"
     owners: ['some_email@address.com']

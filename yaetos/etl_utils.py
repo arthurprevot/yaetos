@@ -572,7 +572,7 @@ class ETL_Base(object):
             df = self.sc_sql.sql(query_str)
             df.cache()
         elif engine == 'pandas':
-            df = pu.query_pandas(query_str, *dfs)
+            df = pu.query_pandas(query_str, dfs)
         return df
 
     def copy_to_redshift_using_pandas(self, output, types):

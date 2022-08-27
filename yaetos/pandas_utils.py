@@ -5,6 +5,7 @@ import pandas as pd
 import glob
 import os
 from pathlib import Path
+import duckdb
 from yaetos.logger import setup_logging
 logger = setup_logging('Pandas')
 
@@ -67,12 +68,23 @@ def save_pandas_local(df, path, save_method='to_csv', save_kwargs={}):
     func = getattr(df, save_method)
     func(path, **save_kwargs)
 
-def query_pandas(query_str, *dfs):
 
-    import duckdb
-    # cursor = duckdb.connect()
-    # print(cursor.execute('SELECT 42').fetchall())
-    return duckdb.query(query_str).to_df()
+# --- other ----
+
+def query_pandas(query_str, dfs):
+    # import duckdb
+    # to start an in-memory database
+    con = duckdb.connect(database=':memory:')
+
+    # con.register('some_events', dfs['some_events'])
+    # con.register('other_events', dfs['other_events'])
+    for key, value in dfs.items():
+        con.register(key, value)
+    # import ipdb; ipdb.set_trace()
+    df = con.execute(query_str).df()
+    # con.fetchall()
+    # duckdb.query(query_str).to_df()
+    return df
 
 if __name__ == '__main__':
     pass
