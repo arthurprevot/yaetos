@@ -1,5 +1,5 @@
 from yaetos.etl_utils import Commandliner
-from yaetos.sql_job import Job as SQLJob
+from yaetos.sql_spark_job import Job as SQLJob
 
 class Job(SQLJob):
     """To run/deploy sql jobs, using --sql_file arg, on top of pandas (using duckdb)"""
