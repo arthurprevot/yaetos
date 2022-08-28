@@ -206,7 +206,7 @@ class ETL_Base(object):
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
         if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('df_type', 'spark') == 'spark':
-            if self.jargs.add_created_at == 'true':
+            if self.jargs.merged_args.get('add_created_at') == 'true':
                 output = su.add_created_at(output, self.start_dt)
             output.cache()
             schemas = Schema_Builder()

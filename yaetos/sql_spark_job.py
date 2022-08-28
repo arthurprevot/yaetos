@@ -10,11 +10,11 @@ class Job(ETL_Base):
         job_name = Job_Yml_Parser.set_job_name_from_file(sql_file)
         pre_jargs['job_args']['job_name'] = job_name
 
-        sql = self.read_sql_file(sql_file)
-        job_args = self.get_params_from_sql(sql)
+        query_str = self.read_sql_file(sql_file)
+        job_args = self.get_params_from_sql(query_str)
         pre_jargs['job_args'].update(job_args)
 
-        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], loaded_inputs=loaded_inputs)
+        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, loaded_inputs=loaded_inputs)
 
     def transform(self, **ignored):
         sql = self.read_sql_file(self.jargs.sql_file)

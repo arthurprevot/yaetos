@@ -1,5 +1,6 @@
-from yaetos.sql_job import Job
+from yaetos.sql_spark_job import Job
 
+# TODO: rename to ex1_sql_spark_job_test.py
 
 class Test_Job(object):
     def test_transform(self, sc, sc_sql, ss, get_pre_jargs):
