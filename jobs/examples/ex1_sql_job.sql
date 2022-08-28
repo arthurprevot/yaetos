@@ -1,6 +1,9 @@
--- SQL Query - Scalable (i.e. over Spark)
--- Params (yaetos will parse lines starting with "----param---- " and finishing with "----", like below)
-----param---- 'repartition' : 2 ----
+-- SQL Query
+-- Job params below (yaetos will parse lines starting with "----param---- " and finishing with "----", like below)
+----param---- 'job_param_file' : 'conf/jobs_metadata.yml' ----
+----param---- 'job_name' : 'examples/ex1_sql_job.sql' ----
+----param---- 'param_a' : 'value_a' ----
+----param---- 'param_b' : 'value_b' ----
 
 SELECT se.session_id, count(*) as count_events
 FROM some_events se
@@ -10,5 +13,7 @@ group by se.session_id
 order by count(*) desc
 
 -- Path of 'some_events' and 'other_events' tables can be found in conf/jobs_metadata.yml or conf/jobs_metadata_local.yml
--- to run from jobs_metadata.yml: python jobs/generic/launcher.py --job_name=examples/ex1_sql_job.sql
--- to run standalone: python jobs/generic/sql_job.py --sql_file=jobs/examples/ex1_sql_job.sql
+-- to run from jobs_metadata.yml over spark : python jobs/generic/launcher.py --job_name=examples/ex1_sql_job.sql
+-- to run from jobs_metadata.yml over pandas: python jobs/generic/launcher.py --job_name=examples/ex1_sql_pandas_job
+-- to run standalone: python jobs/generic/sql_spark_job.py --sql_file=jobs/examples/ex1_sql_job.sql
+-- to run standalone (requires changing job_name above): python jobs/generic/sql_pandas_job.py --sql_file=jobs/examples/ex1_sql_job.sql

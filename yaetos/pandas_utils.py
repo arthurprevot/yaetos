@@ -5,9 +5,14 @@ import pandas as pd
 import glob
 import os
 from pathlib import Path
-import duckdb
 from yaetos.logger import setup_logging
 logger = setup_logging('Pandas')
+try:
+    import duckdb
+    DUCKDB_SETUP = True
+except ModuleNotFoundError or ImportError:
+    logger.debug("DuckDB not found. Yaetos won't be able to run SQL jobs on top of pandas.")
+    DUCKDB_SETUP = False
 
 
 # --- loading files ----
@@ -72,18 +77,10 @@ def save_pandas_local(df, path, save_method='to_csv', save_kwargs={}):
 # --- other ----
 
 def query_pandas(query_str, dfs):
-    # import duckdb
-    # to start an in-memory database
     con = duckdb.connect(database=':memory:')
-
-    # con.register('some_events', dfs['some_events'])
-    # con.register('other_events', dfs['other_events'])
     for key, value in dfs.items():
         con.register(key, value)
-    # import ipdb; ipdb.set_trace()
     df = con.execute(query_str).df()
-    # con.fetchall()
-    # duckdb.query(query_str).to_df()
     return df
 
 if __name__ == '__main__':
