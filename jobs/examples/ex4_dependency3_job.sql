@@ -1,4 +1,4 @@
--- Path of 'some_events' and 'other_events' tables can be found in conf/jobs_metadata.yml or conf/jobs_metadata_local.yml
+-- Path of 'some_events' and 'other_events' tables can be found in conf/jobs_metadata.yml
 -- to run: python yaetos/sql_spark_job.py --sql_file=jobs/examples/ex4_dependency3_job.sql
 
 
