@@ -795,7 +795,7 @@ class Job_Args_Parser():
             - job_name: to use only when yml_args is set to None, to specify what section of the yml to pick.
         """
         if yml_args is None:
-            # Getting merged args, without yml (order matters)
+            # Getting merged args, without yml (order matters) to get job_name, to then build yml_args.
             args = defaults_args.copy()
             args.update(job_args)
             args.update(cmd_args)
