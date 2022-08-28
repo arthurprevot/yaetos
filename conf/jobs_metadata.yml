@@ -99,11 +99,12 @@ jobs:
 
   examples/ex4_dependency3_job.sql:
     description: "shows dependency with sql"
-    py_job: 'jobs/generic/sql_spark_job.py'
+    py_job: 'jobs/generic/sql_pandas_job.py'
     inputs:
-      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep2/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
-    output: {'path':'{base_path}/wiki_example/output_ex4_dep3/{now}/', 'type':'csv'}
+      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep2/{latest}/', 'type':'csv', 'df_type':'pandas', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
+    output: {'path':'{base_path}/wiki_example/output_ex4_dep3/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     dependencies: [examples/ex4_dependency2_job.py, examples/ex4_dependency1_job.py]
+    spark_boot: False
 
   examples/ex4_dependency4_job.py:
     description: "shows dependency"
