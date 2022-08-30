@@ -4,7 +4,7 @@ jobs:
   examples/ex0_extraction_job.py:
     description: "Sample API extraction job, pulling public wikipedia data."
     api_inputs: {'path': 'https://raw.githubusercontent.com/wikimedia-research/Discovery-Hiring-Analyst-2016/master/events_log.csv.gz'}
-    output: {'path':'{base_path}/raw/wiki/{now}/output.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{base_path}/raw/wiki/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     frequency: 1 day
     start_date: "{today}T07:00:00"
     spark_boot: False
@@ -35,7 +35,7 @@ jobs:
     inputs:
       some_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv', 'df_type':'pandas'}
       other_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
-    output: {'path':'{base_path}/frontroom/wiki_ex1_pandas/{now}/output.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+    output: {'path':'{base_path}/frontroom/wiki_ex1_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     spark_boot: False
 
   # Your jobs should be added here.
