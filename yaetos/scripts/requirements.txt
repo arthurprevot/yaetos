@@ -34,4 +34,4 @@ py4j==0.10.9.1
 requests_oauthlib==1.3.0
 jupyterlab
 jupyterlab-git
-duckdb==0.4.0
+# duckdb==0.4.0 # not tested. Likely won't work in this docker setup (requiring more recent bitnami image)
