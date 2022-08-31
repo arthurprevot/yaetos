@@ -31,6 +31,9 @@ class Test_Job(object):
         pre_jargs = get_pre_jargs(loaded_inputs.keys())
         pre_jargs['cmd_args']['sql_file'] = sql_file
         pre_jargs['cmd_args']['job_name'] = job_name
-        actual = Job(pre_jargs=pre_jargs).etl_no_io(sc=None, sc_sql=None, loaded_inputs=loaded_inputs)[0].to_dict(orient='records')
+        job = Job(pre_jargs=pre_jargs)
+        assert 'param_a' in job.jargs.merged_args.keys()
+        actual = job.etl_no_io(sc=None, sc_sql=None, loaded_inputs=loaded_inputs)[0].to_dict(orient='records')
+
         # Compare
         assert actual == expected

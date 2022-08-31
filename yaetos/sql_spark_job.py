@@ -9,7 +9,6 @@ class Job(ETL_Base):
         # ignored if running from "python jobs/generic/launcher.py --job_name=some_job.sql"
         # i.e. same behavior as other python jobs.
         sql_file = pre_jargs['cmd_args']['sql_file']
-        # If job_name not provided in cmd line, then get it from .sql filename
         if 'job_name' not in pre_jargs['cmd_args'].keys():
             job_name = Job_Yml_Parser.set_job_name_from_file(sql_file)
             pre_jargs['cmd_args']['job_name'] = job_name
