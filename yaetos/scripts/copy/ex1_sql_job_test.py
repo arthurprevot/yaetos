@@ -1,4 +1,4 @@
-from yaetos.sql_job import Job
+from yaetos.sql_spark_job import Job
 
 
 class Test_Job(object):
