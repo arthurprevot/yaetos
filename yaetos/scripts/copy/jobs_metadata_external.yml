@@ -10,12 +10,21 @@ jobs:
     spark_boot: False
 
   examples/ex1_sql_job.sql:
+    description: "shows a sql job, running on top of Pandas."
+    py_job: 'jobs/generic/sql_pandas_job.py'
+    inputs:
+      some_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{base_path}/frontroom/wiki_ex1_sql/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    dependencies: [examples/ex0_extraction_job.py]
+
+  examples/ex1_sql_spark_job:
     description: "shows a sql job, running on top of Spark."
     py_job: 'jobs/generic/sql_spark_job.py'
     inputs:
       some_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv'}
       other_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/frontroom/wiki_ex1_sql/{now}/', 'type':'csv'}
+    output: {'path':'{base_path}/frontroom/wiki_ex1_sql_spark/{now}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
     repartition: 1
 
