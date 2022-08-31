@@ -159,7 +159,7 @@ class ETL_Base(object):
                 logger.info(output)
                 count = len(output)
             else:
-                raise "shouldn't get here"
+                raise Exception(f"shouldn't get here, set output/df_type = {self.jargs.output.get('df_type')}")
 
             logger.info('Output count: {}'.format(count))
             # TODO: also move to a new dispatcher class
@@ -573,6 +573,8 @@ class ETL_Base(object):
             df.cache()
         elif engine == 'pandas':
             df = pu.query_pandas(query_str, dfs)
+        else:
+            raise Exception(f"Shouldn't get here, set engine = {engine}. Should be in ('spark', 'pandas')")
         return df
 
     def copy_to_redshift_using_pandas(self, output, types):
