@@ -83,5 +83,6 @@ def query_pandas(query_str, dfs):
     df = con.execute(query_str).df()
     return df
 
+
 if __name__ == '__main__':
     pass

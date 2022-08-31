@@ -1,6 +1,7 @@
 from yaetos.sql_pandas_job import Job
 import pandas as pd
 
+
 class Test_Job(object):
     def test_transform(self, get_pre_jargs):
         some_events = pd.DataFrame([

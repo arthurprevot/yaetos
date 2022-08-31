@@ -4,8 +4,6 @@ This allows for faster run for small datasets but looses some of the benefits of
 Transformation is the same as ex1_sql_job.sql
 """
 from yaetos.etl_utils import ETL_Base, Commandliner
-import pandas as pd
-import numpy as np
 
 
 class Job(ETL_Base):
