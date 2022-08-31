@@ -9,24 +9,18 @@ class Job(ETL_Base):
         # ignored if running from "python jobs/generic/launcher.py --job_name=some_job.sql"
         # i.e. same behavior as other python jobs.
         sql_file = pre_jargs['cmd_args']['sql_file']
-        # if 'job_name' not in pre_jargs['job_args'].keys():
+        # If job_name not provided in cmd line, then get it from .sql filename
         if 'job_name' not in pre_jargs['cmd_args'].keys():
-            # If job_name not provided in cmd line, then get it from .sql filename
             job_name = Job_Yml_Parser.set_job_name_from_file(sql_file)
-            # pre_jargs['job_args']['job_name'] = job_name
             pre_jargs['cmd_args']['job_name'] = job_name
         else:
             job_name = pre_jargs['job_args'].get('job_name')
-            print('##########----------------')
 
+        # Get all params from sql file and set as pre_jargs['job_args']
         query_str = self.read_sql_file(sql_file)
         job_args = self.get_params_from_sql(query_str)
         pre_jargs['job_args'].update(job_args)
         # 'job_name' param may be present in .sql file and so in pre_jargs['job_args'], but it will be overwritten by pre_jargs['cmd_args']['job_name'] if available.
-
-        #
-        # print('##########')
-
         return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, loaded_inputs=loaded_inputs)
 
     def transform(self, **ignored):
