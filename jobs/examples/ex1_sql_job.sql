@@ -13,7 +13,7 @@ group by se.session_id
 order by count(*) desc
 
 -- Path of 'some_events' and 'other_events' tables can be found in conf/jobs_metadata.yml
--- to run from jobs_metadata.yml over spark (implying params above will be ignored):  python jobs/generic/launcher.py --job_name=examples/ex1_sql_job.sql
--- to run from jobs_metadata.yml over pandas (implying params above will be ignored): python jobs/generic/launcher.py --job_name=examples/ex1_sql_pandas_job
--- to run standalone over spark (requires changing job_name to 'examples/ex1_sql_job.sql' above):     python jobs/generic/sql_spark_job.py  --sql_file=jobs/examples/ex1_sql_job.sql
--- to run standalone over pandas (requires changing job_name to 'examples/ex1_sql_pandas_job' above): python jobs/generic/sql_pandas_job.py --sql_file=jobs/examples/ex1_sql_job.sql
+-- to run over spark using job_metadata.yml launcher (implying params above will be ignored):  python jobs/generic/launcher.py --job_name=examples/ex1_sql_job.sql
+-- to run over pandas using job_metadata.yml launcher (implying params above will be ignored): python jobs/generic/launcher.py --job_name=examples/ex1_sql_pandas_job
+-- to run over spark using standalone sql launcher:  python jobs/generic/sql_spark_job.py  --sql_file=jobs/examples/ex1_sql_job.sql
+-- to run over pandas using standalone sql launcher: python jobs/generic/sql_pandas_job.py --sql_file=jobs/examples/ex1_sql_job.sql --job_name=examples/ex1_sql_pandas_job # overwriting param above. 
