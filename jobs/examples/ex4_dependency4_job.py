@@ -4,7 +4,9 @@ from yaetos.etl_utils import ETL_Base, Commandliner
 class Job(ETL_Base):
     def transform(self, some_events):
         df = self.query("""
-            SELECT * , session_length*8 as D
+            SELECT
+                session_id, session_length, doubled_length, quadrupled_length,
+                session_length*8 as octupled_length
             FROM some_events se
             """)
         return df

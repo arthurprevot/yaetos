@@ -9,9 +9,9 @@ from yaetos.pandas_utils import load_csvs
 
 def test_job(sc, sc_sql, ss, get_pre_jargs):
     expected = [
-        {'session_id': 's1', 'session_length': 2, 'doubled_length': 4, 'quadrupled_length': 8, 'D': 16.0},
-        {'session_id': 's2', 'session_length': 2, 'doubled_length': 4, 'quadrupled_length': 8, 'D': 16.0},
-        {'session_id': 's3', 'session_length': 2, 'doubled_length': 4, 'quadrupled_length': 8, 'D': 16.0}]
+        {'session_id': 's1', 'session_length': 2, 'doubled_length': 4, 'quadrupled_length': 8, 'octupled_length': 16.0},
+        {'session_id': 's2', 'session_length': 2, 'doubled_length': 4, 'quadrupled_length': 8, 'octupled_length': 16.0},
+        {'session_id': 's3', 'session_length': 2, 'doubled_length': 4, 'quadrupled_length': 8, 'octupled_length': 16.0}]
 
     # Generating 'actual'
     args = {
