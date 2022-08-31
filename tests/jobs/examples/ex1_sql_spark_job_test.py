@@ -22,9 +22,11 @@ class Test_Job(object):
         ]
 
         sql_file = 'jobs/examples/ex1_sql_job.sql'
+        job_name = 'examples/ex1_sql_spark_job'
 
         loaded_inputs = {'some_events': some_events, 'other_events': other_events}
         pre_jargs = get_pre_jargs(loaded_inputs.keys())
         pre_jargs['cmd_args']['sql_file'] = sql_file
+        pre_jargs['cmd_args']['job_name'] = job_name
         actual = Job(pre_jargs=pre_jargs).etl_no_io(sc, sc_sql, loaded_inputs=loaded_inputs)[0].toPandas().to_dict(orient='records')
         assert actual == expected
