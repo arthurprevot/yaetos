@@ -23,6 +23,7 @@ from pprint import pformat
 import smtplib
 import ssl
 from dateutil.relativedelta import relativedelta
+from importlib import import_module
 import yaetos.spark_utils as su
 import yaetos.pandas_utils as pu
 from yaetos.git_utils import Git_Config_Manager
@@ -1181,10 +1182,21 @@ class Flow():
 
 def get_job_class(py_job):
     name_import = py_job.replace('/', '.').replace('.py', '')
-    import_cmd = "from {} import Job".format(name_import)
-    namespace = {}
-    exec(import_cmd, namespace)
-    return namespace['Job']
+
+    # import_cmd = "from {} import Job".format(name_import)
+    # namespace = {}
+    # exec(import_cmd, namespace)
+    # return namespace['Job']
+
+    print('#####------- name_import: ', name_import, '-----', __name__)
+    # mod = import_module(name_import)
+
+    try:
+        mod = import_module(name_import)
+    except ModuleNotFoundError:
+        # In Windows, __app__ is mandatory # TODO: test in windows (with "print(__name__)")
+        mod = import_module('__app__.'+name_import)
+    return mod.Job
 
 
 def send_email(message, receiver_email, sender_email, password, smtp_server, port):
