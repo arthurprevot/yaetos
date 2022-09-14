@@ -124,7 +124,7 @@ def setup_env(args):
 
     # Root folder files
     copyfile(Pt(f'{package_path}/scripts/copy/Dockerfile_external'), Pt(f'{cwd}/Dockerfile'))
-    copyfile(Pt(f'{package_path}/scripts/copy/launch_env_external.sh'), Pt(f'{cwd}/launch_env.sh'))
+    copyfile(Pt(f'{package_path}/scripts/copy/_gitignore_external.sh'), Pt(f'{cwd}/.gitignore'))
     os.chmod(Pt(f'{cwd}/launch_env.sh'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)  # equ to 0o755
 
     # Conf

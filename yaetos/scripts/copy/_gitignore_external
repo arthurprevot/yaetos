@@ -1,0 +1,8 @@
+data/
+tmp/
+schemas/
+_gitignore/
+conf/aws_config.cfg
+conf/connections.cfg
+conf/git_config.yml
+__pycache__/
