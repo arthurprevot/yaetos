@@ -25,6 +25,7 @@ jobs:
       some_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv', 'df_type':'pandas'}
       other_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
     output: {'path':'{base_path}/frontroom/wiki_ex1_pandas_api/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+    dependencies: [examples/ex0_extraction_job.py]
     spark_boot: False
 
   examples/ex1_sql_spark_job:
