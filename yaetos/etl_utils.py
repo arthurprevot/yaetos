@@ -1186,7 +1186,7 @@ def get_job_class(py_job):
         mod = import_module(name_import)
     except ModuleNotFoundError:
         logger.error(f'Failed importing "{name_import}". Check prefix, if any, as used in current script: "{__name__}". Taking a chance adding "__app__." as prefix since reported in some windows instances.')
-        mod = import_module('__app__.'+name_import)
+        mod = import_module('__app__.' + name_import)
     return mod.Job
 
 
