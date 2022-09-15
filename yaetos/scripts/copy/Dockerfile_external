@@ -6,7 +6,7 @@ RUN apt update
 RUN apt install -y git
 RUN apt install -y nodejs
 
-RUN pip3 install --no-deps yaetos==0.9.23
+RUN pip3 install --no-deps yaetos==0.9.24
 # Force latest version to avoid using previous ones.
 RUN pip3 install -r /opt/bitnami/python/lib/python3.8/site-packages/yaetos/scripts/requirements_alt.txt
 # TODO: check to put all yaetos requirements in package def to avoid having to call it separately.
