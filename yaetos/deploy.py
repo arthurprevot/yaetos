@@ -287,12 +287,27 @@ class DeployPySparkScriptOnAws(object):
 
     def move_bash_to_local_temp(self):
         """Moving file from local repo to local tmp folder for later upload to S3."""
+        # Copy from lib or repo
         package = self.get_package_path()
-        for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
+        for item in ['setup_master.sh',
+                     'setup_master_alt.sh',
+                     'requirements.txt',
+                     'requirements_alt.txt',
+                     'setup_nodes.sh',
+                     'setup_nodes_alt.sh',
+                     'terminate_idle_cluster.sh']:
             source = package / self.SCRIPTS / item
             destination = self.TMP / item
             convert_to_linux_eol_if_needed(source)
             copyfile(source, destination)
+
+        # Copy extra file from local folders
+        item = 'requirements_extra.txt'
+        source = Pt(f'conf/{item}')
+        destination = self.TMP / item
+        convert_to_linux_eol_if_needed(source)
+        copyfile(source, destination)
+
         logger.debug("Added all EMR setup files to {}".format(self.TMP))
 
     def get_package_path(self):
@@ -318,17 +333,22 @@ class DeployPySparkScriptOnAws(object):
         """
         setup_master = 'setup_master.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'setup_master_alt.sh'
         setup_nodes = 'setup_nodes.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'setup_nodes_alt.sh'
+        requirements = 'requirements.txt' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'requirements_alt.txt'
 
         # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
           .put(Body=open(str(self.TMP / setup_master), 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_nodes.sh')\
           .put(Body=open(str(self.TMP / setup_nodes), 'rb'), ContentType='text/x-sh')
+        s3.Object(self.s3_bucket_logs, self.package_path + '/requirements.txt')\
+          .put(Body=open(str(self.TMP / requirements), 'rb'), ContentType='text/x-sh')
+        s3.Object(self.s3_bucket_logs, self.package_path + '/requirements_extra.txt')\
+          .put(Body=open(str(self.TMP / 'requirements_extra.txt'), 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/terminate_idle_cluster.sh')\
           .put(Body=open(str(self.TMP / 'terminate_idle_cluster.sh'), 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/scripts.tar.gz')\
           .put(Body=open(str(self.TMP / 'scripts.tar.gz'), 'rb'), ContentType='application/x-tar')
-        logger.info(f"Uploaded job files (scripts.tar.gz, {setup_master}, {setup_nodes}, terminate_idle_cluster.sh) to bucket path '{self.s3_bucket_logs}/{self.package_path}'")
+        logger.info(f"Uploaded job files (scripts.tar.gz, {setup_master}, {setup_nodes}, {requirements}, requirements_extra.txt, terminate_idle_cluster.sh) to bucket path '{self.s3_bucket_logs}/{self.package_path}'")
         return True
 
     def remove_temp_files(self, s3):
