@@ -13,10 +13,14 @@ USER root
 # Lib installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements.txt doesn't change)
 COPY yaetos/scripts/requirements_alt.txt /tmp/requirements.txt
 WORKDIR /tmp/
-RUN apt update
-RUN apt install -y git
-RUN pip3 install -r requirements.txt
-RUN apt install -y nodejs
+RUN apt update \
+  && apt install -y git \
+  && apt install -y g++ \
+  && apt install -y nodejs
+# 2 lines above for jupyterlab
+RUN python -m pip install --upgrade pip \
+  && pip3 install -r requirements.txt
+
 
 WORKDIR /mnt/yaetos
 
