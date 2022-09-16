@@ -16,7 +16,7 @@ pyarrow  # latest 8.0.0 not available in env
 openpyxl==3.0.9  # used to open excel files. TODO: put in a new requirement_extra.txt, since optional.
 sqlalchemy==1.3.15
 # scikit-learn==0.20.0 # TODO: fix dep and re-enable since needed for joblib
-statsmodels==0.9.0
+# statsmodels==0.9.0 # TODO: delete
 kafka-python==1.4.7
 jsonschema==3.0.2
 flake8==3.7.9
@@ -34,3 +34,4 @@ py4j==0.10.9.1
 requests_oauthlib==1.3.0
 jupyterlab
 jupyterlab-git
+# duckdb==0.4.0 # not tested. Likely won't work in this docker setup (requiring more recent bitnami image)

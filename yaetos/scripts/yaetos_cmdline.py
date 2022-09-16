@@ -125,6 +125,7 @@ def setup_env(args):
     # Root folder files
     copyfile(Pt(f'{package_path}/scripts/copy/Dockerfile_external'), Pt(f'{cwd}/Dockerfile'))
     copyfile(Pt(f'{package_path}/scripts/copy/launch_env_external.sh'), Pt(f'{cwd}/launch_env.sh'))
+    copyfile(Pt(f'{package_path}/scripts/copy/_gitignore_external'), Pt(f'{cwd}/.gitignore'))
     os.chmod(Pt(f'{cwd}/launch_env.sh'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)  # equ to 0o755
 
     # Conf
@@ -140,21 +141,23 @@ def setup_env(args):
     copyfile(Pt(f'{package_path}/libs/generic_jobs/deployer.py'), Pt(f'{cwd}/jobs/generic/deployer.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/dummy_job.py'), Pt(f'{cwd}/jobs/generic/dummy_job.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/launcher.py'), Pt(f'{cwd}/jobs/generic/launcher.py'))
-    copyfile(Pt(f'{package_path}/libs/generic_jobs/sql_job.py'), Pt(f'{cwd}/jobs/generic/sql_job.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/sql_spark_job.py'), Pt(f'{cwd}/jobs/generic/sql_spark_job.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/sql_pandas_job.py'), Pt(f'{cwd}/jobs/generic/sql_pandas_job.py'))
 
     # Sample jobs
     os.makedirs(Pt('jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/ex0_extraction_job.py'), Pt(f'{cwd}/jobs/examples/ex0_extraction_job.py'))
-    copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job.py'), Pt(f'{cwd}/jobs/examples/ex1_frameworked_job.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_pandas_api_job.py'), Pt(f'{cwd}/jobs/examples/ex1_pandas_api_job.py'))
     copyfile(Pt(f'{package_path}/scripts/copy/ex1_sql_job.sql'), Pt(f'{cwd}/jobs/examples/ex1_sql_job.sql'))
-    copyfile(Pt(f'{package_path}/scripts/copy/ex1_pandas_job.py'), Pt(f'{cwd}/jobs/examples/ex1_pandas_job.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_spark_api_job.py'), Pt(f'{cwd}/jobs/examples/ex1_spark_api_job.py'))
 
     # Sample jobs tests
     os.makedirs(Pt('tests/jobs/examples/'), exist_ok=True)
     copyfile(Pt(f'{package_path}/scripts/copy/conftest.py'), Pt(f'{cwd}/tests/conftest.py'))
-    copyfile(Pt(f'{package_path}/scripts/copy/ex1_frameworked_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_frameworked_job_test.py'))
-    copyfile(Pt(f'{package_path}/scripts/copy/ex1_sql_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_sql_job_test.py'))
-    copyfile(Pt(f'{package_path}/scripts/copy/ex1_pandas_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_pandas_job_test.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_pandas_api_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_pandas_api_job_test.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_spark_api_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_spark_api_job_test.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_sql_pandas_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_sql_pandas_job_test.py'))
+    copyfile(Pt(f'{package_path}/scripts/copy/ex1_sql_spark_job_test.py'), Pt(f'{cwd}/tests/jobs/examples/ex1_sql_spark_job_test.py'))
 
     # TODO: add setup awscli or make sure it is there.
 

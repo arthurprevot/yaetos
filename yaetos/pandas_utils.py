@@ -7,6 +7,12 @@ import os
 from pathlib import Path
 from yaetos.logger import setup_logging
 logger = setup_logging('Pandas')
+try:
+    import duckdb
+    DUCKDB_SETUP = True
+except ModuleNotFoundError or ImportError:
+    logger.debug("DuckDB not found. Yaetos won't be able to run SQL jobs on top of pandas.")
+    DUCKDB_SETUP = False
 
 
 # --- loading files ----
@@ -66,6 +72,16 @@ def save_pandas_local(df, path, save_method='to_csv', save_kwargs={}):
         create_subfolders(path)
     func = getattr(df, save_method)
     func(path, **save_kwargs)
+
+
+# --- other ----
+
+def query_pandas(query_str, dfs):
+    con = duckdb.connect(database=':memory:')
+    for key, value in dfs.items():
+        con.register(key, value)
+    df = con.execute(query_str).df()
+    return df
 
 
 if __name__ == '__main__':

@@ -23,7 +23,9 @@ from pprint import pformat
 import smtplib
 import ssl
 from dateutil.relativedelta import relativedelta
+from importlib import import_module
 import yaetos.spark_utils as su
+import yaetos.pandas_utils as pu
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.env_dispatchers import FS_Ops_Dispatcher, Cred_Ops_Dispatcher
 from yaetos.logger import setup_logging
@@ -158,7 +160,7 @@ class ETL_Base(object):
                 logger.info(output)
                 count = len(output)
             else:
-                raise "shouldn't get here"
+                raise Exception(f"shouldn't get here, set output/df_type = {self.jargs.output.get('df_type')}")
 
             logger.info('Output count: {}'.format(count))
             # TODO: also move to a new dispatcher class
@@ -205,7 +207,7 @@ class ETL_Base(object):
         loaded_datasets = self.load_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
         if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('df_type', 'spark') == 'spark':
-            if self.jargs.add_created_at == 'true':
+            if self.jargs.merged_args.get('add_created_at') == 'true':
                 output = su.add_created_at(output, self.start_dt)
             output.cache()
             schemas = Schema_Builder()
@@ -565,10 +567,15 @@ class ETL_Base(object):
             """ % (self.app_name, self.jargs.job_name, elapsed)
         FS_Ops_Dispatcher().save_metadata(fname, content)
 
-    def query(self, query_str):
+    def query(self, query_str, engine='spark', dfs=None):
         logger.info('Query string:\n' + query_str)
-        df = self.sc_sql.sql(query_str)
-        df.cache()
+        if engine == 'spark':
+            df = self.sc_sql.sql(query_str)
+            df.cache()
+        elif engine == 'pandas':
+            df = pu.query_pandas(query_str, dfs)
+        else:
+            raise Exception(f"Shouldn't get here, set engine = {engine}. Should be in ('spark', 'pandas')")
         return df
 
     def copy_to_redshift_using_pandas(self, output, types):
@@ -702,7 +709,7 @@ class Job_Yml_Parser():
         self.yml_args = self.set_job_yml(job_name, job_param_file, mode, skip_job)
         self.yml_args['job_name'] = job_name
         self.yml_args['py_job'] = self.yml_args.get('py_job') or self.set_py_job_from_name(job_name)
-        self.yml_args['sql_file'] = self.set_sql_file_from_name(job_name, mode)
+        self.yml_args['sql_file'] = self.yml_args.get('sql_file') or self.set_sql_file_from_name(job_name, mode)
 
     @staticmethod
     def set_job_name_from_file(job_file):
@@ -791,7 +798,7 @@ class Job_Args_Parser():
             - job_name: to use only when yml_args is set to None, to specify what section of the yml to pick.
         """
         if yml_args is None:
-            # Getting merged args, without yml (order matters)
+            # Getting merged args, without yml (order matters) to get job_name, to then build yml_args.
             args = defaults_args.copy()
             args.update(job_args)
             args.update(cmd_args)
@@ -1175,10 +1182,12 @@ class Flow():
 
 def get_job_class(py_job):
     name_import = py_job.replace('/', '.').replace('.py', '')
-    import_cmd = "from {} import Job".format(name_import)
-    namespace = {}
-    exec(import_cmd, namespace)
-    return namespace['Job']
+    try:
+        mod = import_module(name_import)
+    except ModuleNotFoundError:
+        logger.error(f'Failed importing "{name_import}". Check prefix, if any, as used in current script: "{__name__}". Taking a chance adding "__app__." as prefix since reported in some windows instances.')
+        mod = import_module('__app__.' + name_import)
+    return mod.Job
 
 
 def send_email(message, receiver_email, sender_email, password, smtp_server, port):

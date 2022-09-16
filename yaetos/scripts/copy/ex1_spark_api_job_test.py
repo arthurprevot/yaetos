@@ -1,4 +1,4 @@
-from jobs.examples.ex1_frameworked_job import Job
+from jobs.examples.spark_api_job import Job
 
 
 class Test_Job(object):

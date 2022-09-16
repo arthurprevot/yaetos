@@ -5,8 +5,11 @@
 
 
 import pytest
-from pyspark import SparkContext
-from pyspark.sql import SQLContext, SparkSession
+try:
+    from pyspark import SparkContext
+    from pyspark.sql import SQLContext, SparkSession
+except ModuleNotFoundError or ImportError:
+    print('Yaetos will work in pandas mode only or to push jobs to AWS, since pyspark is not found.')
 
 
 @pytest.fixture(scope="session")
