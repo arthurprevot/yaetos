@@ -1,8 +1,6 @@
-# Add here If your transformations require extra python library:
-# - Add them below, following standard python requirement files format.
+# Add python libraries required by your jobs (following standard python requirements.txt format)
 
-scikit-learn==1.0.2 # TODO: fix dep and re-enable since needed for joblib
-statsmodels==0.13.2  # Uncomment if needed, tested to work
+statsmodels==0.13.2
 # kafka-python==1.4.7  # Uncomment if needed
 # jsonschema==3.0.2 # needed by kafka_utils
 # stripe==2.50.0  # Uncomment if needed
