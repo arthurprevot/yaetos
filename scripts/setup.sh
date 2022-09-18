@@ -3,7 +3,7 @@
 # Assumes spark (2.1.0) is already setup locally or in docker image
 
 mkdir -p tmp/files_to_ship/
-pip3 install -r requirements.txt
+pip3 install -r requirements_base.txt
 
 # Set env variables.
 # Requires having $SPARK_HOME set. Already set in docker image but may not be set if running outside of docker.
