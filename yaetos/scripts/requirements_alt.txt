@@ -13,7 +13,7 @@ duckdb==0.4.0
 # libs required for some functionalities but not required in import statements
 openpyxl==3.0.9  # used to open excel files. TODO: put in a new requirement_extra.txt, since optional.
 pymysql==0.9.3
-psycopg2-binary==2.8.5
+psycopg2-binary==2.8.5   # necesary for sqlalchemy-redshift, psycopg2==2.8.5 install fails.
 sqlalchemy-redshift==0.7.7
 py4j==0.10.9.1  # TODO: check to remove.
 # scikit-learn==1.0.2 # TODO: fix lib and re-enable when joblib code renabled in env_dispatchers.py, and move to yaetos install libs.
