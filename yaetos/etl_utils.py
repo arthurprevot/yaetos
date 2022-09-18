@@ -124,7 +124,7 @@ class ETL_Base(object):
             elif self.jargs.rerun_criteria == 'both':
                 needs_run = not (self.output_empty or self.final_inc)
             if needs_run:
-                del(output) 
+                del output
                 gc.collect()
             logger.info('Incremental build needs other run -> {}'.format(needs_run))
         # TODO: check to change output to reload all outputs from inc build
@@ -589,7 +589,7 @@ class ETL_Base(object):
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         create_table(df, connection_profile, name_tb, schema, types, creds, self.jargs.is_incremental)
-        del(df)
+        del df
 
     def copy_to_redshift_using_spark(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).

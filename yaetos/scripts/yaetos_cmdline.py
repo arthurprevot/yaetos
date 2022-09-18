@@ -110,8 +110,6 @@ def setup_env(args):
         cwd = os.getcwd()
         print(f'Created the folder "{args.project_name}"')
 
-    cwd_leaf = cwd.split('/')[-1]
-
     paths = yaetos.__path__
     package_path = paths[0]
     if len(paths) > 1:
