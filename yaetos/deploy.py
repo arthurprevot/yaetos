@@ -331,7 +331,7 @@ class DeployPySparkScriptOnAws(object):
         """
         Move the PySpark + bash scripts to the S3 bucket we use to store temporary files
         """
-        setup_master = 'setup_master.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'setup_master_alt2.sh'
+        setup_master = 'setup_master_alt.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'setup_master_alt2.sh'
         setup_nodes = 'setup_nodes.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'setup_nodes_alt.sh'
         requirements = 'requirements_base_alt.txt' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'requirements_base.txt'
 
