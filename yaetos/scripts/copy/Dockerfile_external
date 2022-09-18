@@ -11,7 +11,7 @@ RUN apt update \
 RUN python -m pip install --upgrade pip
 RUN pip3 install --no-deps yaetos==0.9.25
 # Force latest version to avoid using previous ones.
-RUN pip3 install -r /opt/bitnami/python/lib/python3.8/site-packages/yaetos/scripts/requirements_alt.txt
+RUN pip3 install -r /opt/bitnami/python/lib/python3.8/site-packages/yaetos/scripts/requirements_base.txt
 # TODO: check to put all yaetos requirements in package def to avoid having to call it separately.
 # Uncomment 2 lines below to install extra packages. Requires creating a requirements_extra.txt in conf/ file. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements.txt doesn't change)
 # COPY conf/requirements_extra.txt /tmp/requirements_extra.txt
