@@ -8,8 +8,8 @@ FROM docker.io/bitnami/spark:2.4.5
 # TODO: build spark image from vanilla ubuntu (or other), see https://github.com/masroorhasan/docker-pyspark
 USER root
 
-# Pip installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements.txt doesn't change)
-COPY yaetos/scripts/requirements.txt /tmp/requirements.txt
+# Pip installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements_base_alt.txt doesn't change)
+COPY yaetos/scripts/requirements_base_alt.txt /tmp/requirements.txt
 WORKDIR /tmp/
 RUN apt-get update && apt-get install -y git
 RUN pip3 install -r requirements.txt
