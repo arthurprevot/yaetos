@@ -8,8 +8,6 @@ s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
 
 
 # Update awscli here as required by "aws s3 cp ..."
-## TODO: pip install -r requirements.txt # see related note in setup_nodes.sh
-#RUN apt-get update && apt-get install -y git
 # sudo pip3 install awscli==1.20.41 # depends on botocore from 1.12.57
 # # sudo pip3 install scikit-learn==0.20.0  # TODO: remove when using req file, TODO: fix dep and re-enable since needed for joblib
 # # sudo pip3 install statsmodels==0.9.0  # TODO: remove when using req file
