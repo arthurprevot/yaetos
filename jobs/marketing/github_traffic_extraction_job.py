@@ -11,7 +11,7 @@ class Job(ETL_Base):
         headers = {'Authorization': "Token " + token}
 
         data = []
-        self.logger.info(f"About to pull data")
+        self.logger.info("About to pull data")
 
         for ii, row in my_repos.iterrows():
             self.logger.info(f"About to pull contributors from repo {row['owner']}-{row['repo']}")
@@ -27,7 +27,7 @@ class Job(ETL_Base):
             views_ts = [{**item, 'category': 'views', 'owner': row['owner'], 'repo': row['repo']} for item in views_ts]
             data.extend(views_ts)
 
-        self.logger.info(f"Finished pulling data")
+        self.logger.info("Finished pulling data")
         df = pd.DataFrame(data)
         self.logger.info(f"Fields {df.columns}")
         return df

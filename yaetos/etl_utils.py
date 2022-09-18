@@ -124,7 +124,7 @@ class ETL_Base(object):
             elif self.jargs.rerun_criteria == 'both':
                 needs_run = not (self.output_empty or self.final_inc)
             if needs_run:
-                del(output)
+                del(output) 
                 gc.collect()
             logger.info('Incremental build needs other run -> {}'.format(needs_run))
         # TODO: check to change output to reload all outputs from inc build

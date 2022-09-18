@@ -170,4 +170,4 @@ def setup_env(args):
      * sample jobs, ready for local execution,
      * a docker environment setup with spark,
      * a configuration file for cloud execution,
-     * job unit-tests.""".format(cwd_leaf))
+     * job unit-tests.""")
