@@ -784,7 +784,7 @@ class Job_Args_Parser():
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date',
                         'email', 'mode', 'deploy', 'terminate_after', 'spark_version']
 
-    def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}):
+    def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}, validate=True):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
         If yml_args not provided, it will go and get it.
         Sets of params:
@@ -821,6 +821,8 @@ class Job_Args_Parser():
         self.job_args = job_args
         self.cmd_args = cmd_args
         logger.info("Job args: \n{}".format(pformat(args)))
+        if validate:
+            self.validate()
 
     def get_deploy_args(self):
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
@@ -869,6 +871,16 @@ class Job_Args_Parser():
     def set_is_incremental(self, inputs, output):
         return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
 
+    def validate(self):
+        if self.merged_args.get('py_job') is None:
+            raise Exception("Couldn't find py_job, i.e. the python job to execute the code."
+                "It should be either the name of the job if it ends with .py, or it should be set in a parameter called py_job.")
+        if self.merged_args.get('sql_file') is None \
+            and (self.merged_args['py_job'].endswith('sql_pandas_job.py')
+            or self.merged_args['py_job'].endswith('sql_spark_job.py')):
+            raise Exception("Couldn't find sql_file, i.e. the sql file with the transformation."
+                "It should be either the name of the job if it ends with .sql, or it should be set in a parameter called sql_file.")
+        # TODO: add more.
 
 class Path_Handler():
     def __init__(self, path, base_path=None):

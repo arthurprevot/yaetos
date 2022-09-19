@@ -1,6 +1,7 @@
 from pandas.testing import assert_frame_equal
 import pandas as pd
 import numpy as np
+import pytest
 from yaetos.etl_utils import ETL_Base, \
     Period_Builder, Job_Args_Parser, Job_Yml_Parser, Flow, \
     get_job_class, LOCAL_JOB_FOLDER, JOBS_METADATA_FILE
@@ -102,11 +103,40 @@ class Test_Job_Yml_Parser(object):
 
 class Test_Job_Args_Parser(object):
     def test_no_param_override(self):
-        defaults_args = {'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
+        defaults_args = {'py_job': 'some_job.py', 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
         expected_args = {**{'inputs': {}, 'is_incremental': False}, **defaults_args}
 
         jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={})
         assert jargs.merged_args == expected_args
+
+    def test_validate_params(self):
+        # Error raised, py_job
+        defaults_args = {'py_job': None, 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        with pytest.raises(Exception) as e_info:
+            job.validate()
+
+        # Error not raised, py_job
+        defaults_args['py_job'] = 'some_job.py'
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        try:
+            job.validate()
+        except Exception as exc:
+            assert False, f"'test_validate_params' raised an exception: {exc}"
+
+        # Error raised, sql_file
+        defaults_args['py_job'] = 'sql_spark_job.py'
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        with pytest.raises(Exception) as e_info:
+            job.validate()
+
+        # Error not raised, sql_file
+        defaults_args['sql_file'] = 'some_job.sql'
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        try:
+            job.validate()
+        except Exception as exc:
+            assert False, f"'test_validate_params' raised an exception: {exc}"
 
 
 class Test_Flow(object):
