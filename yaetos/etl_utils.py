@@ -874,13 +874,16 @@ class Job_Args_Parser():
     def validate(self):
         if self.merged_args.get('py_job') is None:
             raise Exception("Couldn't find py_job, i.e. the python job to execute the code."
-                "It should be either the name of the job if it ends with .py, or it should be set in a parameter called py_job.")
-        if self.merged_args.get('sql_file') is None \
-            and (self.merged_args['py_job'].endswith('sql_pandas_job.py')
-            or self.merged_args['py_job'].endswith('sql_spark_job.py')):
+                            "It should be either the name of the job if it ends with .py, "
+                            "or it should be set in a parameter called py_job.")
+        if (self.merged_args.get('sql_file') is None and
+                (self.merged_args['py_job'].endswith('sql_pandas_job.py') or
+                    self.merged_args['py_job'].endswith('sql_spark_job.py'))):
             raise Exception("Couldn't find sql_file, i.e. the sql file with the transformation."
-                "It should be either the name of the job if it ends with .sql, or it should be set in a parameter called sql_file.")
+                            "It should be either the name of the job if it ends with .sql, "
+                            "or it should be set in a parameter called sql_file.")
         # TODO: add more.
+
 
 class Path_Handler():
     def __init__(self, path, base_path=None):

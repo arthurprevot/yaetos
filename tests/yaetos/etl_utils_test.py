@@ -113,7 +113,7 @@ class Test_Job_Args_Parser(object):
         # Error raised, py_job
         defaults_args = {'py_job': None, 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
         job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
-        with pytest.raises(Exception) as e_info:
+        with pytest.raises(Exception):
             job.validate()
 
         # Error not raised, py_job
@@ -127,7 +127,7 @@ class Test_Job_Args_Parser(object):
         # Error raised, sql_file
         defaults_args['py_job'] = 'sql_spark_job.py'
         job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
-        with pytest.raises(Exception) as e_info:
+        with pytest.raises(Exception):
             job.validate()
 
         # Error not raised, sql_file
