@@ -89,8 +89,12 @@ class Test_Job_Yml_Parser(object):
         job_name = Job_Yml_Parser.set_job_name_from_file(LOCAL_JOB_FOLDER + 'jobs/some/file.py')
         assert job_name == 'some/file.py'
 
-    # def test_set_sql_file_from_name(self) # to be added
-    #     Job_Yml_Parser.set_sql_file_from_name()
+    def test_set_sql_file_from_name(self):
+        sql_file = Job_Yml_Parser.set_sql_file_from_name('some/job_name.sql')
+        assert sql_file == 'jobs/some/job_name.sql'
+
+        sql_file = Job_Yml_Parser.set_sql_file_from_name('some/job_name')
+        assert sql_file == None
 
 
 class Test_Job_Args_Parser(object):
