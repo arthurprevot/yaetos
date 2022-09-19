@@ -1,9 +1,8 @@
 # Add python libraries required by your jobs (following standard python requirements.txt format)
-# Some examples below (to uncomment if needed):
 
+requests==2.28.1
+# Some potentially useful ones below (to uncomment if needed):
 # statsmodels==0.13.2
-# kafka-python==1.4.7
-# jsonschema==3.0.2 # needed by kafka_utils
 # stripe==2.50.0
-# soql==1.0.2  # Necessary for simple-salesforce
 # simple-salesforce==1.10.1
+# soql==1.0.2  # Necessary for simple-salesforce
