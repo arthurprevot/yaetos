@@ -735,6 +735,9 @@ class Job_Yml_Parser():
 
     @staticmethod
     def set_py_job_from_name(job_name):
+        if not job_name.endswith('.py'):
+            return None
+
         py_job = 'jobs/{}'.format(job_name)
         logger.info("py_job: '{}', from job_name: '{}'".format(py_job, job_name))
         return py_job

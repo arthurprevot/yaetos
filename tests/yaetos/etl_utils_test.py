@@ -79,8 +79,11 @@ class Test_Period_Builder(object):
 
 class Test_Job_Yml_Parser(object):
     def test_set_py_job_from_name(self):
-        py_job = Job_Yml_Parser.set_py_job_from_name('some_job_name')
-        assert py_job == 'jobs/some_job_name'
+        py_job = Job_Yml_Parser.set_py_job_from_name('some/job_name.py')
+        assert py_job == 'jobs/some/job_name.py'
+
+        py_job = Job_Yml_Parser.set_py_job_from_name('some/job_name')
+        assert py_job is None
 
     def test_set_job_name_from_file(self):
         job_name = Job_Yml_Parser.set_job_name_from_file('jobs/some/file.py')
