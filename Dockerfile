@@ -1,6 +1,5 @@
 FROM docker.io/bitnami/spark:3.1.3
 # docker.io/bitnami/spark:3.1.3 -> spark 3.1.3, python 3.8.13, scala 2.12.10, https://github.com/bitnami/bitnami-docker-spark, https://hub.docker.com/r/bitnami/spark
-# TODO: build spark image from vanilla ubuntu (or other), see https://github.com/masroorhasan/docker-pyspark
 USER root
 
 # Lib installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements_base.txt doesn't change)
