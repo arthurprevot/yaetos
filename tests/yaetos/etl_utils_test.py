@@ -94,7 +94,7 @@ class Test_Job_Yml_Parser(object):
         assert sql_file == 'jobs/some/job_name.sql'
 
         sql_file = Job_Yml_Parser.set_sql_file_from_name('some/job_name')
-        assert sql_file == None
+        assert sql_file is None
 
 
 class Test_Job_Args_Parser(object):

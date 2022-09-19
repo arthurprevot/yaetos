@@ -709,7 +709,7 @@ class Job_Yml_Parser():
         self.yml_args = self.set_job_yml(job_name, job_param_file, mode, skip_job)
         self.yml_args['job_name'] = job_name
         self.yml_args['py_job'] = self.yml_args.get('py_job') or self.set_py_job_from_name(job_name)
-        self.yml_args['sql_file'] = self.yml_args.get('sql_file') or self.set_sql_file_from_name(job_name, mode)
+        self.yml_args['sql_file'] = self.yml_args.get('sql_file') or self.set_sql_file_from_name(job_name)
 
     @staticmethod
     def set_job_name_from_file(job_file):
@@ -740,7 +740,7 @@ class Job_Yml_Parser():
         return py_job
 
     @staticmethod
-    def set_sql_file_from_name(job_name, mode):
+    def set_sql_file_from_name(job_name):
         if not job_name.endswith('.sql'):
             return None
 
