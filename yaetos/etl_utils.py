@@ -744,13 +744,7 @@ class Job_Yml_Parser():
         if not job_name.endswith('.sql'):
             return None
 
-        if mode in ('dev_EMR', 'prod_EMR'):
-            sql_file = CLUSTER_APP_FOLDER + 'jobs/{}'.format(job_name)
-        elif mode == 'dev_local':
-            sql_file = 'jobs/{}'.format(job_name)
-        else:
-            raise Exception("Mode not supported in set_sql_file_from_name(): {}".format(mode))
-
+        sql_file = 'jobs/{}'.format(job_name)
         logger.info("sql_file: '{}', from job_name: '{}'".format(sql_file, job_name))
         return sql_file
 
