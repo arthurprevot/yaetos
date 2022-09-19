@@ -1,19 +1,23 @@
-FROM docker.io/bitnami/spark:2.4.5
-# docker.io/bitnami/spark:2.4.5 -> spark 2.4.5, python 3.6.10, scala 2.11.12, https://github.com/bitnami/bitnami-docker-spark, https://hub.docker.com/r/bitnami/spark
-# FROM bde2020/spark-master:2.4.5-hadoop2.7  # https://github.com/big-data-europe/docker-spark, https://hub.docker.com/r/bde2020/spark-master. Failed installing python libs below. Seems to be missing basic compilers.
-# FROM jupyter/pyspark-notebook # spark 3.0.0. scala 2.12, Python 3.8.5. https://github.com/jupyter/docker-stacks, https://hub.docker.com/r/jupyter/pyspark-notebook. Was used successfully. Now leads to problems with sparks newly added jars that rely on scala 2.11.
-# FROM jupyter/pyspark-notebook:2fd856878b83  # to try later to get setup when spark got to 2.4.5 (https://github.com/jupyter/docker-stacks/commit/45d51e3b42b83748fe64997b0e39473aeee10377)
-# FROM arthurpr/pyspark_aws_etl:latest
-# FROM arthurpr/pyspark_aws_etl:oracle # also available to skip oracle install steps below.
-# TODO: build spark image from vanilla ubuntu (or other), see https://github.com/masroorhasan/docker-pyspark
+FROM docker.io/bitnami/spark:3.1.3
+# docker.io/bitnami/spark:3.1.3 -> spark 3.1.3, python 3.8.13, scala 2.12.10, https://github.com/bitnami/bitnami-docker-spark, https://hub.docker.com/r/bitnami/spark
 USER root
 
-# Pip installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements.txt doesn't change)
-COPY yaetos/scripts/requirements.txt /tmp/requirements.txt
+# Lib installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements_base.txt doesn't change)
+COPY yaetos/scripts/requirements_base.txt /tmp/requirements.txt
+COPY yaetos/scripts/requirements_dev.txt /tmp/requirements_dev.txt
+COPY conf/requirements_extra.txt /tmp/requirements_extra.txt
+
 WORKDIR /tmp/
-RUN apt-get update && apt-get install -y git
-RUN pip3 install -r requirements.txt
-RUN apt install nodejs -y
+RUN apt update \
+  && apt install -y git \
+  && apt install -y g++ \
+  && apt install -y nodejs
+# 2 lines above for jupyterlab
+RUN python -m pip install --upgrade pip \
+  && pip3 install -r requirements.txt \
+  && pip3 install -r requirements_dev.txt \
+  && pip3 install -r requirements_extra.txt
+
 
 WORKDIR /mnt/yaetos
 

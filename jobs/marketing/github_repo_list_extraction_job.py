@@ -11,7 +11,7 @@ class Job(ETL_Base):
         token = creds.get(self.jargs.api_inputs['creds'], 'token')
         headers = {'Authorization': "Token " + token}
 
-        url = f"https://api.github.com/repositories"
+        url = "https://api.github.com/repositories"
         repos = pull_all_pages(url, headers)
         return pd.DataFrame(repos)
 

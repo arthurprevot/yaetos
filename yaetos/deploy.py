@@ -287,12 +287,27 @@ class DeployPySparkScriptOnAws(object):
 
     def move_bash_to_local_temp(self):
         """Moving file from local repo to local tmp folder for later upload to S3."""
+        # Copy from lib or repo
         package = self.get_package_path()
-        for item in ['setup_master.sh', 'setup_master_alt.sh', 'setup_nodes.sh', 'setup_nodes_alt.sh', 'terminate_idle_cluster.sh']:
+        for item in ['setup_master.sh',
+                     'setup_master_alt.sh',
+                     'requirements_base.txt',
+                     'requirements_base_alt.txt',
+                     'setup_nodes.sh',
+                     'setup_nodes_alt.sh',
+                     'terminate_idle_cluster.sh']:
             source = package / self.SCRIPTS / item
             destination = self.TMP / item
             convert_to_linux_eol_if_needed(source)
             copyfile(source, destination)
+
+        # Copy extra file from local folders
+        item = 'requirements_extra.txt'
+        source = Pt(f'conf/{item}')
+        destination = self.TMP / item
+        convert_to_linux_eol_if_needed(source)
+        copyfile(source, destination)
+
         logger.debug("Added all EMR setup files to {}".format(self.TMP))
 
     def get_package_path(self):
@@ -316,19 +331,24 @@ class DeployPySparkScriptOnAws(object):
         """
         Move the PySpark + bash scripts to the S3 bucket we use to store temporary files
         """
-        setup_master = 'setup_master.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'setup_master_alt.sh'
-        setup_nodes = 'setup_nodes.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'setup_nodes_alt.sh'
+        setup_master = 'setup_master_alt.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'setup_master.sh'
+        setup_nodes = 'setup_nodes_alt.sh' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'setup_nodes.sh'
+        requirements = 'requirements_base_alt.txt' if self.deploy_args.get('spark_version', '2.4') == '2.4' else 'requirements_base.txt'
 
         # Looping through all 4 steps below doesn't work (Fails silently) so done 1 by 1.
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_master.sh')\
           .put(Body=open(str(self.TMP / setup_master), 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/setup_nodes.sh')\
           .put(Body=open(str(self.TMP / setup_nodes), 'rb'), ContentType='text/x-sh')
+        s3.Object(self.s3_bucket_logs, self.package_path + '/requirements.txt')\
+          .put(Body=open(str(self.TMP / requirements), 'rb'), ContentType='text/x-sh')
+        s3.Object(self.s3_bucket_logs, self.package_path + '/requirements_extra.txt')\
+          .put(Body=open(str(self.TMP / 'requirements_extra.txt'), 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/terminate_idle_cluster.sh')\
           .put(Body=open(str(self.TMP / 'terminate_idle_cluster.sh'), 'rb'), ContentType='text/x-sh')
         s3.Object(self.s3_bucket_logs, self.package_path + '/scripts.tar.gz')\
           .put(Body=open(str(self.TMP / 'scripts.tar.gz'), 'rb'), ContentType='application/x-tar')
-        logger.info(f"Uploaded job files (scripts.tar.gz, {setup_master}, {setup_nodes}, terminate_idle_cluster.sh) to bucket path '{self.s3_bucket_logs}/{self.package_path}'")
+        logger.info(f"Uploaded job files (scripts.tar.gz, {setup_master}, {setup_nodes}, {requirements}, requirements_extra.txt, terminate_idle_cluster.sh) to bucket path '{self.s3_bucket_logs}/{self.package_path}'")
         return True
 
     def remove_temp_files(self, s3):
@@ -504,7 +524,7 @@ class DeployPySparkScriptOnAws(object):
         jop = ['--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER + eu.JOBS_METADATA_FILE)] if app_args.get('job_param_file') else []
         dep = ["--dependencies"] if app_args.get('dependencies') else []
         box = ["--chain_dependencies"] if app_args.get('chain_dependencies') else []
-        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER + app_args['sql_file'])] if app_args.get('sql_file') else []  # not needed when sql job is run from jobs/generic/launcher.py.
+        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER + app_args['sql_file'])] if app_args.get('sql_file') else []
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
 
         return spark_submit_args + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam

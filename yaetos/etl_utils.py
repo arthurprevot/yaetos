@@ -124,7 +124,7 @@ class ETL_Base(object):
             elif self.jargs.rerun_criteria == 'both':
                 needs_run = not (self.output_empty or self.final_inc)
             if needs_run:
-                del(output)
+                del output
                 gc.collect()
             logger.info('Incremental build needs other run -> {}'.format(needs_run))
         # TODO: check to change output to reload all outputs from inc build
@@ -589,7 +589,7 @@ class ETL_Base(object):
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         create_table(df, connection_profile, name_tb, schema, types, creds, self.jargs.is_incremental)
-        del(df)
+        del df
 
     def copy_to_redshift_using_spark(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
@@ -709,7 +709,7 @@ class Job_Yml_Parser():
         self.yml_args = self.set_job_yml(job_name, job_param_file, mode, skip_job)
         self.yml_args['job_name'] = job_name
         self.yml_args['py_job'] = self.yml_args.get('py_job') or self.set_py_job_from_name(job_name)
-        self.yml_args['sql_file'] = self.yml_args.get('sql_file') or self.set_sql_file_from_name(job_name, mode)
+        self.yml_args['sql_file'] = self.yml_args.get('sql_file') or self.set_sql_file_from_name(job_name)
 
     @staticmethod
     def set_job_name_from_file(job_file):
@@ -735,22 +735,19 @@ class Job_Yml_Parser():
 
     @staticmethod
     def set_py_job_from_name(job_name):
+        if not job_name.endswith('.py'):
+            return None
+
         py_job = 'jobs/{}'.format(job_name)
         logger.info("py_job: '{}', from job_name: '{}'".format(py_job, job_name))
         return py_job
 
     @staticmethod
-    def set_sql_file_from_name(job_name, mode):
+    def set_sql_file_from_name(job_name):
         if not job_name.endswith('.sql'):
             return None
 
-        if mode in ('dev_EMR', 'prod_EMR'):
-            sql_file = CLUSTER_APP_FOLDER + 'jobs/{}'.format(job_name)
-        elif mode == 'dev_local':
-            sql_file = 'jobs/{}'.format(job_name)
-        else:
-            raise Exception("Mode not supported in set_sql_file_from_name(): {}".format(mode))
-
+        sql_file = 'jobs/{}'.format(job_name)
         logger.info("sql_file: '{}', from job_name: '{}'".format(sql_file, job_name))
         return sql_file
 
@@ -787,7 +784,7 @@ class Job_Args_Parser():
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date',
                         'email', 'mode', 'deploy', 'terminate_after', 'spark_version']
 
-    def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}):
+    def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}, validate=True):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
         If yml_args not provided, it will go and get it.
         Sets of params:
@@ -824,6 +821,8 @@ class Job_Args_Parser():
         self.job_args = job_args
         self.cmd_args = cmd_args
         logger.info("Job args: \n{}".format(pformat(args)))
+        if validate:
+            self.validate()
 
     def get_deploy_args(self):
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
@@ -871,6 +870,19 @@ class Job_Args_Parser():
 
     def set_is_incremental(self, inputs, output):
         return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
+
+    def validate(self):
+        if self.merged_args.get('py_job') is None:
+            raise Exception("Couldn't find py_job, i.e. the python job to execute the code."
+                            "It should be either the name of the job if it ends with .py, "
+                            "or it should be set in a parameter called py_job.")
+        if (self.merged_args.get('sql_file') is None and
+                (self.merged_args['py_job'].endswith('sql_pandas_job.py') or
+                    self.merged_args['py_job'].endswith('sql_spark_job.py'))):
+            raise Exception("Couldn't find sql_file, i.e. the sql file with the transformation."
+                            "It should be either the name of the job if it ends with .sql, "
+                            "or it should be set in a parameter called sql_file.")
+        # TODO: add more.
 
 
 class Path_Handler():
@@ -1184,9 +1196,8 @@ def get_job_class(py_job):
     name_import = py_job.replace('/', '.').replace('.py', '')
     try:
         mod = import_module(name_import)
-    except ModuleNotFoundError:
-        logger.error(f'Failed importing "{name_import}". Check prefix, if any, as used in current script: "{__name__}". Taking a chance adding "__app__." as prefix since reported in some windows instances.')
-        mod = import_module('__app__.' + name_import)
+    except ModuleNotFoundError as err:
+        raise Exception(f"Failure trying to import {name_import}, or any sub import. Check prefix, if any, as used in current script: {__name__}. error: \n{err}")
     return mod.Job
 
 

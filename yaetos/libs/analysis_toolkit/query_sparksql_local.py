@@ -28,7 +28,7 @@ def query_sparksql_local(query_str, fnames_in=None, dfs_in=None, **kwargs):
 
     df_out = run_sql(query_str)
     df_out.cache()
-    print('Sample output'.format(df_out.show()))  # TODO: rely on upstream functions arg 'show' when done before dropping.
+    print('Sample output: {}'.format(df_out.show()))  # TODO: rely on upstream functions arg 'show' when done before dropping.
     pdf = df_out.toPandas()
     sc.stop()
     return pdf

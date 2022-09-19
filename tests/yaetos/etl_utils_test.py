@@ -1,6 +1,7 @@
 from pandas.testing import assert_frame_equal
 import pandas as pd
 import numpy as np
+import pytest
 from yaetos.etl_utils import ETL_Base, \
     Period_Builder, Job_Args_Parser, Job_Yml_Parser, Flow, \
     get_job_class, LOCAL_JOB_FOLDER, JOBS_METADATA_FILE
@@ -79,8 +80,11 @@ class Test_Period_Builder(object):
 
 class Test_Job_Yml_Parser(object):
     def test_set_py_job_from_name(self):
-        py_job = Job_Yml_Parser.set_py_job_from_name('some_job_name')
-        assert py_job == 'jobs/some_job_name'
+        py_job = Job_Yml_Parser.set_py_job_from_name('some/job_name.py')
+        assert py_job == 'jobs/some/job_name.py'
+
+        py_job = Job_Yml_Parser.set_py_job_from_name('some/job_name')
+        assert py_job is None
 
     def test_set_job_name_from_file(self):
         job_name = Job_Yml_Parser.set_job_name_from_file('jobs/some/file.py')
@@ -89,17 +93,50 @@ class Test_Job_Yml_Parser(object):
         job_name = Job_Yml_Parser.set_job_name_from_file(LOCAL_JOB_FOLDER + 'jobs/some/file.py')
         assert job_name == 'some/file.py'
 
-    # def test_set_sql_file_from_name(self) # to be added
-    #     Job_Yml_Parser.set_sql_file_from_name()
+    def test_set_sql_file_from_name(self):
+        sql_file = Job_Yml_Parser.set_sql_file_from_name('some/job_name.sql')
+        assert sql_file == 'jobs/some/job_name.sql'
+
+        sql_file = Job_Yml_Parser.set_sql_file_from_name('some/job_name')
+        assert sql_file is None
 
 
 class Test_Job_Args_Parser(object):
     def test_no_param_override(self):
-        defaults_args = {'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
+        defaults_args = {'py_job': 'some_job.py', 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
         expected_args = {**{'inputs': {}, 'is_incremental': False}, **defaults_args}
 
         jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={})
         assert jargs.merged_args == expected_args
+
+    def test_validate_params(self):
+        # Error raised, py_job
+        defaults_args = {'py_job': None, 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        with pytest.raises(Exception):
+            job.validate()
+
+        # Error not raised, py_job
+        defaults_args['py_job'] = 'some_job.py'
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        try:
+            job.validate()
+        except Exception as exc:
+            assert False, f"'test_validate_params' raised an exception: {exc}"
+
+        # Error raised, sql_file
+        defaults_args['py_job'] = 'sql_spark_job.py'
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        with pytest.raises(Exception):
+            job.validate()
+
+        # Error not raised, sql_file
+        defaults_args['sql_file'] = 'some_job.sql'
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        try:
+            job.validate()
+        except Exception as exc:
+            assert False, f"'test_validate_params' raised an exception: {exc}"
 
 
 class Test_Flow(object):

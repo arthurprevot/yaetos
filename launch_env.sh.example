@@ -17,7 +17,7 @@ run_mode=$1
 if [[ $run_mode = 1 ]]; then
   echo 'Starting docker with bash'
   cd $yaetos_jobs_home
-  docker build -t pyspark_container -f Dockerfile_alt .
+  docker build -t pyspark_container -f Dockerfile .
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
       -v $yaetos_jobs_home:/mnt/yaetos_jobs \
       -v $yaetos_home:/mnt/yaetos \
@@ -29,7 +29,7 @@ if [[ $run_mode = 1 ]]; then
 elif [[ $run_mode = 2 ]]; then
   echo 'Starting docker with jupyter notebooks'
   cd $yaetos_jobs_home
-  docker build -t pyspark_container -f Dockerfile_alt .
+  docker build -t pyspark_container -f Dockerfile .
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
       -v $yaetos_jobs_home:/mnt/yaetos_jobs \
       -v $yaetos_home:/mnt/yaetos \
@@ -42,7 +42,7 @@ elif [[ $run_mode = 3 ]]; then
   cmd_str="${@:2}"
   echo "Starting the following job in docker: $cmd_str"
   cd $yaetos_jobs_home
-  docker build -t pyspark_container -f Dockerfile_alt .
+  docker build -t pyspark_container -f Dockerfile .
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
       -v $yaetos_jobs_home:/mnt/yaetos_jobs \
       -v $yaetos_home:/mnt/yaetos \

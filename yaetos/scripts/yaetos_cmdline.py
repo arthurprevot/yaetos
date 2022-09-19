@@ -110,8 +110,6 @@ def setup_env(args):
         cwd = os.getcwd()
         print(f'Created the folder "{args.project_name}"')
 
-    cwd_leaf = cwd.split('/')[-1]
-
     paths = yaetos.__path__
     package_path = paths[0]
     if len(paths) > 1:
@@ -170,4 +168,4 @@ def setup_env(args):
      * sample jobs, ready for local execution,
      * a docker environment setup with spark,
      * a configuration file for cloud execution,
-     * job unit-tests.""".format(cwd_leaf))
+     * job unit-tests.""")
