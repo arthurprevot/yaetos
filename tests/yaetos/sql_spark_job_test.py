@@ -7,6 +7,7 @@ class Test_Job(object):
         loaded_inputs = {}
         pre_jargs = get_pre_jargs(input_names=loaded_inputs.keys())
         pre_jargs['cmd_args']['sql_file'] = 'tests/fixtures/sql_job.sql'
+        pre_jargs['cmd_args']['py_job'] = 'sql_spark_job.py'
         job = Job(pre_jargs=pre_jargs)
         actual = job.set_jargs(pre_jargs, loaded_inputs)
 
@@ -19,7 +20,7 @@ class Test_Job(object):
             'output': {'type': None},
             'inputs': {},
             'job_name': 'tests/fixtures/sql_job.sql',
-            'py_job': 'jobs/tests/fixtures/sql_job.sql',
+            'py_job': 'sql_spark_job.py',
             'sql_file': 'tests/fixtures/sql_job.sql',
             'is_incremental': False}
         assert actual.merged_args == expected
