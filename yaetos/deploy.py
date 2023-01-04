@@ -274,6 +274,11 @@ class DeployPySparkScriptOnAws(object):
                 if file.endswith(".py") or file.endswith(".sql"):
                     path = os.path.join(dirpath, file)
                     dir_tar = dirpath[len(self.app_args['jobs_folder']):]
+                     # Include custom files like key-pairs or whatever (maybe .env files...)
+                elif dirpath[-14:] == 'included_files': 
+                    path = os.path.join(dirpath, file)
+                    dir_tar = dirpath[:-15][len(self.app_args['jobs_folder']):]
+                if file.endswith(".py") or file.endswith(".sql") or dirpath[-14:] == 'included_files':
                     path_tar = os.path.join(eu.JOB_FOLDER, dir_tar, file)
                     files.append((path, path_tar))
         for f, f_arc in files:
