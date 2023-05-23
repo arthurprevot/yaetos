@@ -1,6 +1,6 @@
 # Add python libraries required by your jobs (following standard python requirements.txt format)
 
-requests==2.28.1
+requests==2.31.0
 # Some potentially useful ones below (to uncomment if needed):
 # statsmodels==0.13.2
 # stripe==2.50.0
