@@ -499,16 +499,20 @@ class DeployPySparkScriptOnAws(object):
 
         emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
         launcher_file = app_args.get('launcher_file') or app_file
-        package = eu.PACKAGES_EMR if self.deploy_args.get('spark_version', '2.4') == '2.4' else eu.PACKAGES_EMR_ALT
-        package_str = ','.join(package)
 
         spark_submit_args = [
             "spark-submit",
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-            "--packages={}".format(package_str),
-            "--jars={}".format(eu.JARS),
         ]
+        if app_args.get('load_connectors', '') == 'all':
+            package = eu.PACKAGES_EMR if self.deploy_args.get('spark_version', '2.4') == '2.4' else eu.PACKAGES_EMR_ALT
+            package_str = ','.join(package)
+            pac = [f"--packages={app_args.get('spark_packages')}"] if app_args.get('spark_packages') else [f"--packages={package_str}"]
+            jar = [f"--jars={app_args.get('spark_jars')}"] if app_args.get('spark_jars') else [f"--jars={eu.JARS}"]
+        else:
+            pac = []
+            jar = []
         med = ["--driver-memory={}".format(app_args['driver-memory'])] if app_args.get('driver-memory') else []
         cod = ["--driver-cores={}".format(app_args['driver-cores'])] if app_args.get('driver-cores') else []
         mee = ["--executor-memory={}".format(app_args['executor-memory'])] if app_args.get('executor-memory') else []
@@ -527,7 +531,7 @@ class DeployPySparkScriptOnAws(object):
         sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER + app_args['sql_file'])] if app_args.get('sql_file') else []
         nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
 
-        return spark_submit_args + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam
+        return spark_submit_args + pac + jar + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
