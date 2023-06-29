@@ -300,7 +300,7 @@ common_params:
       schema: frontroom
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
-      aws_setup:        dev
+      aws_setup:        pro
       jobs_folder:      jobs/
       load_connectors: all
       enable_redshift_push: True
