@@ -504,8 +504,6 @@ class DeployPySparkScriptOnAws(object):
             "spark-submit",
             "--verbose",
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-            #"--packages={}".format(package_str),
-            #"--jars={}".format(eu.JARS),
         ]
         if app_args.get('load_connectors', '') == 'all':
             package = eu.PACKAGES_EMR if self.deploy_args.get('spark_version', '2.4') == '2.4' else eu.PACKAGES_EMR_ALT
