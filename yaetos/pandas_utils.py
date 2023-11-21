@@ -72,7 +72,7 @@ def create_subfolders(path):
 def save_pandas_csv_local(df, path):
     # TODO: to be made obsolete once save_pandas_local works
     create_subfolders(path)
-    df.to_csv(path)
+    df.to_csv(path, float_format='%.2f'.replace('.', ','))
 
 
 def save_pandas_local(df, path, save_method='to_csv', save_kwargs={}):
