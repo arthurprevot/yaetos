@@ -216,7 +216,7 @@ jobs:
   examples/ex10_excel_load_job:
     py_job: jobs/generic/copy_job.py
     inputs:
-      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_excel/parts.xlsx", 'type':'xlsx', 'df_type':'pandas', 'read_kwargs':{'engine': 'openpyxl', 'sheet_name': 0, 'header': 1}}
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_excel/parts.xlsx", 'type':'xlsx', 'df_type':'pandas', 'read_kwargs':{'engine': 'openpyxl', 'sheet_name': 0, 'header': 1}}  # for xls files, use 'type':'xls' and 'engine': 'xlrd'
     output: {'path':'{base_path}/load_example/excel/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
@@ -231,6 +231,7 @@ jobs:
 
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
+  # ----- Marketing Jobs --------
   marketing/github_accounts_extraction_job.py:
     description: "Github API extraction job, pulling account data."
     api_inputs: {'creds': 'github'}
