@@ -798,6 +798,13 @@ class Job_Args_Parser():
             - cmd_args: args passed in commandline, like "python some_job.py --some_args=xxx", predefined in define_commandline_args() or not
             - job_name: to use only when yml_args is set to None, to specify what section of the yml to pick.
         """
+        #import a_module
+        #print(Job_Args_Parser.__file__)
+        #py_job = inspect.getsourcefile(self.__class__)
+        logger.info(f"#########: {__name__}")
+        logger.info(f"#########: {__file__}")
+        
+
         if yml_args is None:
             # Getting merged args, without yml (order matters) to get job_name, to then build yml_args.
             args = defaults_args.copy()
