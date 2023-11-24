@@ -693,7 +693,7 @@ class DeployPySparkScriptOnAws(object):
         """
         Create the .py dag file
         """
-        from yaetos.example_airflow_emrspark2_template import get_template
+        from yaetos.airflow_template import get_template
 
         params={
             'ec2_instance_slaves': self.ec2_instance_slaves,
