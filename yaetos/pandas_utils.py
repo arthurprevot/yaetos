@@ -24,10 +24,16 @@ def load_multiple_csvs(path, read_kwargs):
     return df.reset_index(drop=True)
 
 
-def load_multiple_files(path, file_type='csv', read_func='read_csv', read_kwargs={}):
+def load_multiple_files(path, file_type='csv', read_func='read_csv', read_kwargs={}, add_file_fol=True):
     files = glob.glob(os.path.join(path, "*.{}".format(file_type)))
     func = getattr(pd, read_func)
-    df = pd.concat((func(f, **read_kwargs) for f in files))
+    dfs = []
+    for fi in files:
+        df = func(fi, **read_kwargs)
+        if add_file_fol:
+            df['_source'] = fi
+        dfs.append(df)
+    df = pd.concat(dfs)
     return df.reset_index(drop=True)
 
 
@@ -64,7 +70,7 @@ def create_subfolders(path):
 def save_pandas_csv_local(df, path):
     # TODO: to be made obsolete once save_pandas_local works
     create_subfolders(path)
-    df.to_csv(path)
+    df.to_csv(path, float_format='%.2f'.replace('.', ','))
 
 
 def save_pandas_local(df, path, save_method='to_csv', save_kwargs={}):

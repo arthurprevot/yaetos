@@ -489,8 +489,7 @@ class DeployPySparkScriptOnAws(object):
         )
         response_code = response['ResponseMetadata']['HTTPStatusCode']
         if response_code == 200:
-            logger.info("Added 'spark-submit' step to EMR")
-            logger.debug("Added step 'spark-submit' with command line '{}'".format(' '.join(cmd_runner_args)))
+            logger.info("Added step 'spark-submit' with command line '{}'".format(' '.join(cmd_runner_args)))
         else:
             raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
