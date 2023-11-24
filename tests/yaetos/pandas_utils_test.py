@@ -36,12 +36,12 @@ def test_load_df():
     path = 'tests/fixtures/data_sample/wiki_example/input/'
     actual = load_df(path, file_type='csv', read_func='read_csv', read_kwargs={}).sort_values('uuid').reset_index(drop=True)
     expected = pd.DataFrame([
-        {'uuid': 'u1', 'timestamp': 2.0, 'session_id': 's1', 'group': 'g1', 'action': 'searchResultPage', 'checkin': np.nan, 'page_id': 'p1', 'n_results': 5.0, 'result_position': np.nan, '_source':'tests/fixtures/data_sample/wiki_example/input/part1.csv'},
-        {'uuid': 'u2', 'timestamp': 2.0, 'session_id': 's2', 'group': 'g2', 'action': 'searchResultPage', 'checkin': np.nan, 'page_id': 'p2', 'n_results': 9.0, 'result_position': np.nan, '_source':'tests/fixtures/data_sample/wiki_example/input/part1.csv'},
-        {'uuid': 'u3', 'timestamp': 2.0, 'session_id': 's3', 'group': 'g3', 'action': 'checkin', 'checkin': 30, 'page_id': 'p3', 'n_results': np.nan, 'result_position': np.nan, '_source':'tests/fixtures/data_sample/wiki_example/input/part1.csv'},
-        {'uuid': 'u4', 'timestamp': 2.0, 'session_id': 's1', 'group': 'g1', 'action': 'searchResultPage', 'checkin': np.nan, 'page_id': 'p1', 'n_results': 5.0, 'result_position': np.nan, '_source':'tests/fixtures/data_sample/wiki_example/input/part2.csv'},
-        {'uuid': 'u5', 'timestamp': 2.0, 'session_id': 's2', 'group': 'g2', 'action': 'searchResultPage', 'checkin': np.nan, 'page_id': 'p2', 'n_results': 9.0, 'result_position': np.nan, '_source':'tests/fixtures/data_sample/wiki_example/input/part2.csv'},
-        {'uuid': 'u6', 'timestamp': 2.0, 'session_id': 's3', 'group': 'g3', 'action': 'checkin', 'checkin': 30, 'page_id': 'p3', 'n_results': np.nan, 'result_position': np.nan, '_source':'tests/fixtures/data_sample/wiki_example/input/part2.csv'},
+        {'uuid': 'u1', 'timestamp': 2.0, 'session_id': 's1', 'group': 'g1', 'action': 'searchResultPage', 'checkin': np.nan, 'page_id': 'p1', 'n_results': 5.0, 'result_position': np.nan, '_source': 'tests/fixtures/data_sample/wiki_example/input/part1.csv'},
+        {'uuid': 'u2', 'timestamp': 2.0, 'session_id': 's2', 'group': 'g2', 'action': 'searchResultPage', 'checkin': np.nan, 'page_id': 'p2', 'n_results': 9.0, 'result_position': np.nan, '_source': 'tests/fixtures/data_sample/wiki_example/input/part1.csv'},
+        {'uuid': 'u3', 'timestamp': 2.0, 'session_id': 's3', 'group': 'g3', 'action': 'checkin', 'checkin': 30, 'page_id': 'p3', 'n_results': np.nan, 'result_position': np.nan, '_source': 'tests/fixtures/data_sample/wiki_example/input/part1.csv'},
+        {'uuid': 'u4', 'timestamp': 2.0, 'session_id': 's1', 'group': 'g1', 'action': 'searchResultPage', 'checkin': np.nan, 'page_id': 'p1', 'n_results': 5.0, 'result_position': np.nan, '_source': 'tests/fixtures/data_sample/wiki_example/input/part2.csv'},
+        {'uuid': 'u5', 'timestamp': 2.0, 'session_id': 's2', 'group': 'g2', 'action': 'searchResultPage', 'checkin': np.nan, 'page_id': 'p2', 'n_results': 9.0, 'result_position': np.nan, '_source': 'tests/fixtures/data_sample/wiki_example/input/part2.csv'},
+        {'uuid': 'u6', 'timestamp': 2.0, 'session_id': 's3', 'group': 'g3', 'action': 'checkin', 'checkin': 30, 'page_id': 'p3', 'n_results': np.nan, 'result_position': np.nan, '_source': 'tests/fixtures/data_sample/wiki_example/input/part2.csv'},
     ]).reset_index(drop=True)
     assert_frame_equal(actual, expected)
 
