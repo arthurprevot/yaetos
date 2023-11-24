@@ -27,14 +27,12 @@ def load_multiple_csvs(path, read_kwargs):
 def load_multiple_files(path, file_type='csv', read_func='read_csv', read_kwargs={}, add_file_fol=True):
     files = glob.glob(os.path.join(path, "*.{}".format(file_type)))
     func = getattr(pd, read_func)
-    # dfs = [func(f, **read_kwargs) for f in files]
     dfs = []
     for fi in files :
         df = func(fi, **read_kwargs)
         if add_file_fol:
             df['_source']=fi
         dfs.append(df)
-    # import ipdb; ipdb.set_trace()
     df = pd.concat(dfs)
     return df.reset_index(drop=True)
 
