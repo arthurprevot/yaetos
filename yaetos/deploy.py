@@ -34,6 +34,7 @@ class DeployPySparkScriptOnAws(object):
     """
     SCRIPTS = Pt('yaetos/scripts/')  # TODO: move to etl_utils.py
     TMP = Pt('tmp/files_to_ship/')
+    DAGS = Pt('tmp/files_to_ship/dags')
 
     def __init__(self, deploy_args, app_args):
 
@@ -94,6 +95,8 @@ class DeployPySparkScriptOnAws(object):
             self.run_direct()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
             self.run_aws_data_pipeline()
+        elif self.deploy_args['deploy'] in ('EMR_Scheduled_AWSAF', 'AirflowTest'):
+            self.run_aws_airflow()
         elif self.deploy_args['deploy'] in ('code'):
             self.run_push_code()
         else:
@@ -167,6 +170,7 @@ class DeployPySparkScriptOnAws(object):
         self.tar_python_scripts()
         self.move_bash_to_local_temp()
         self.upload_temp_files(s3)
+        return s3
 
     def get_active_clusters(self, c):
         response = c.list_clusters(
@@ -451,7 +455,7 @@ class DeployPySparkScriptOnAws(object):
         response = c.add_job_flow_steps(
             JobFlowId=self.cluster_id,
             Steps=[{
-                'Name': 'run setup',
+                'Name': 'Run Setup',
                 'ActionOnFailure': 'CONTINUE',
                 'HadoopJarStep': {
                     'Jar': 's3://elasticmapreduce/libs/script-runner/script-runner.jar',
@@ -662,6 +666,85 @@ class DeployPySparkScriptOnAws(object):
 
         logger.debug('parameterValues after changes: ' + str(parameterValues))
         return parameterValues
+
+    def run_aws_airflow(self):
+        # More details at https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/mwaa/client/create_environment.html#
+
+        s3 = self.s3_ops(self.session)
+        if self.deploy_args.get('push_secrets', False):
+            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
+
+        needed = False
+        if needed:
+            self.create_airflow_environment2()
+
+        # self.deactivate_similar_pipelines(client, self.pipeline_name)
+        # pipe_id = self.create_data_pipeline(client)
+        # parameterValues = self.define_data_pipeline(client, pipe_id, self.emr_core_instances)
+        # self.activate_data_pipeline(client, pipe_id, parameterValues)
+
+        #self.push_dag(ARN)
+        self.s3_key_dags = 'pipelines_metadata/airflow_dags'  # replace with your DAGs path inside the S3 bucket
+
+        fname = self.create_dags()
+        self.upload_dags(s3, fname)
+
+    def create_dags(self):
+        """
+        Create the .py dag file
+        """
+        from yaetos.example_airflow_emrspark2_template import get_template
+
+        params={
+            'ec2_instance_slaves': self.ec2_instance_slaves,
+            'emr_core_instances': self.emr_core_instances,
+            'package_path_with_bucket': self.package_path_with_bucket,
+            'cmd_runner_args': self.get_spark_submit_args(self.app_file, self.app_args),
+            'pipeline_name': self.pipeline_name,
+            'emr_version': self.emr_version,
+            'ec2_instance_master': self.ec2_instance_master,
+            'deploy_args': self.deploy_args,
+            'ec2_key_name': self.ec2_key_name,
+            'ec2_subnet_id': self.ec2_subnet_id,
+            's3_bucket_logs': self.s3_bucket_logs,
+            'metadata_folder': self.metadata_folder,
+            'dag_nameid': self.app_args['job_name'].replace("/", "-").replace(".py", ""), # os.path.basename(__file__).replace(".py", "")
+            'start_date': self.deploy_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d')),
+            'frequency': self.deploy_args['frequency'],
+        }
+
+        content = get_template(params)
+        if not os.path.isdir(self.DAGS):
+            os.mkdir(self.DAGS)
+        
+        fname = self.DAGS / Pt(self.app_args['job_name'])
+        fname_folder = fname.parent
+        #import ipdb; ipdb.set_trace()
+        
+        os.makedirs(fname_folder, exist_ok=True)
+        with open(fname, 'w') as file:
+            file.write(content)
+        return fname
+
+    def upload_dags(self, s3, fname_local):
+        """
+        Move the dag files to S3
+        """
+        #from_file = 'example_airflow_basic.py'
+        to_bucket = self.s3_bucket_logs
+        # to_path = self.s3_key_dags + '/example_airflow_test1AP.py'
+        to_path = self.s3_key_dags + '/' + self.app_args['job_name']
+        #import ipdb; ipdb.set_trace()
+
+        # test 1 , doesn-t work
+        #s3.upload_file(fname_local, to_bucket, to_path)
+
+        # test 2
+        s3.Object(to_bucket, to_path)\
+          .put(Body=open(str(fname_local), 'rb'), ContentType='text/x-sh')
+        logger.info(f"Uploaded dag job files to bucket path '{to_bucket}', '{to_path}'")
+
+        return True
 
     def push_secrets(self, creds_or_file):
         client = self.session.client('secretsmanager')
