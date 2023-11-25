@@ -1,25 +1,10 @@
-# based on https://docs.aws.amazon.com/mwaa/latest/userguide/samples-emr.html
-
+"""
+Function to create a generic airflow dag for EMR execution, generic enought to be used by any yaetos job.
+Partly based on https://docs.aws.amazon.com/mwaa/latest/userguide/samples-emr.html
+"""
 from textwrap import dedent, indent
 
 def get_template(params):
-    """
-    params:
-     - ec2_instance_slaves
-     - emr_core_instances
-     - package_path_with_bucket
-     - cmd_runner_args
-     - pipeline_name
-     - emr_version
-     - ec2_instance_master
-     - deploy_args
-     - ec2_key_name
-     - ec2_subnet_id
-     - s3_bucket_logs
-     - metadata_folder
-     - package_path_with_bucket
-    """
-    #print('#####1', params)
 
     params['KeepJobFlowAliveWhenNoSteps'] = params['deploy_args'].get('leave_on', False)
 
@@ -35,8 +20,6 @@ def get_template(params):
 
     instance_groups_extra = instance_groups_extra if params['emr_core_instances'] != 0 else ''
 
-    #print('#####2', instance_groups_extra)
-
     params['instance_groups_extra'] = indent(instance_groups_extra, ' '*12)
 
     template = """
@@ -44,15 +27,18 @@ def get_template(params):
     from airflow.providers.amazon.aws.operators.emr import EmrCreateJobFlowOperator, EmrAddStepsOperator, EmrTerminateJobFlowOperator
     from airflow.providers.amazon.aws.sensors.emr import EmrJobFlowSensor, EmrStepSensor
     from airflow.utils.dates import days_ago
+    import datetime
     from datetime import timedelta
     import os
-    
+
+
     DAG_ARGS = {{
         'dag_id': '{dag_nameid}',  # os.path.basename(__file__).replace(".py", "")
         'dagrun_timeout': timedelta(hours=2),
-        # 'start_date': '{start_date}',  # days_ago(1),  # TODO fix
-        'start_date': days_ago(0),
-        'schedule_interval': '{frequency}', # '@once',
+        'start_date': {start_date},  # days_ago(1),
+        # 'start_date': days_ago(0),
+        #'schedule_interval': '{schedule}', # '@once',
+        'schedule': {schedule}, # '@once',
         'tags': ['emr'],
         'default_args' : {{
             'owner': 'airflow',
@@ -171,5 +157,4 @@ def get_template(params):
         cluster_creator >> step_adder >> step_checker 
         # cluster_creator >> step_adder >> cluster_checker 
     """.format(**params)
-    #print('#####3', template)
     return dedent(template)
