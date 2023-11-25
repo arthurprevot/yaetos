@@ -303,7 +303,7 @@ common_params:
     spark_version: '3.0' # options: '2.4' 'or '3.0'
   mode_specific_params:
     prod_EMR:
-      root_path: s3://lake-prod  # don't add '/' at the end
+      root_path: s3://mylake-prod  # don't add '/' at the end
       schema: frontroom
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
@@ -314,7 +314,7 @@ common_params:
       save_schemas: False
       manage_git_info: True
     dev_EMR:
-      root_path: s3://lake-dev  # don't add '/' at the end
+      root_path: s3://mylake-dev  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
