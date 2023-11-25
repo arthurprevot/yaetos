@@ -294,37 +294,32 @@ jobs:
 # ----- Params -------
 common_params:
   all_mode_params:
+    base_path: '{root_path}/pipelines_data'  # don't add '/' at the end
+    s3_dags: '{root_path}/pipelines_metadata/airflow_dags'
+    s3_logs: '{root_path}/pipelines_metadata'
     connection_file:  conf/connections.cfg
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
     spark_version: '3.0' # options: '2.4' 'or '3.0'
   mode_specific_params:
     prod_EMR:
-      # base_path: s3://prod-spark  # don't add '/' at the end
-      root_path: s3://yaetos-prod  # don't add '/' at the end
+      root_path: s3://lake-prod  # don't add '/' at the end
       schema: frontroom
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
       aws_setup:        pro
       jobs_folder:      jobs/
-      s3_dags: '{base_path}/pipelines_metadata/airflow_dags'
-      s3_logs: '{base_path}/pipelines_metadata'
       load_connectors: all
       enable_redshift_push: True
       save_schemas: False
       manage_git_info: True
     dev_EMR:
-      # base_path: s3://dev-spark2/yaetos  # don't add '/' at the end
-      root_path: s3://yaetos-dev  # don't add '/' at the end
-      base_path: '{root_path}/pipelines_data'  # don't add '/' at the end
+      root_path: s3://lake-dev  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
       aws_setup:        dev
       jobs_folder:      jobs/
-      s3_dags: '{root_path}/pipelines_metadata/airflow_dags'
-      # s3_dags: 's3://dev-spark2/pipelines_metadata/airflow_dags'
-      s3_logs: '{root_path}/pipelines_metadata'
       load_connectors: all
       enable_redshift_push: False
       save_schemas: False
