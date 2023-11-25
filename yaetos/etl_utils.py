@@ -331,7 +331,7 @@ class ETL_Base(object):
             path = self.jargs.inputs[input_name]['path']
             path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-            path = Path_Handler(path, self.jargs.base_path).expand_later()
+            path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
             self.jargs.inputs[input_name]['path_expanded'] = path
 
         # Unstructured type
@@ -384,7 +384,7 @@ class ETL_Base(object):
         input_name = name
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
         logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
-        path = Path_Handler(path, self.jargs.base_path).expand_later()
+        path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
         self.jargs.inputs[input_name]['path_expanded'] = path
 
         if input_type == 'txt':
@@ -516,7 +516,7 @@ class ETL_Base(object):
 
     def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
-        path = Path_Handler(path, base_path).expand_now(now_dt)
+        path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
         self.jargs.output['path_expanded'] = path
 
         if type == 'None':
@@ -892,9 +892,11 @@ class Job_Args_Parser():
 
 
 class Path_Handler():
-    def __init__(self, path, base_path=None):
-        if base_path:
-            path = path.format(base_path=base_path, latest='{latest}', now='{now}')
+    def __init__(self, path, base_path=None, root_path=None):
+        if base_path and '{base_path}' in path:
+            path = path.replace('{base_path}', base_path)
+        if root_path and '{root_path}' in path:
+            path = path.replace('{root_path}', root_path)
         self.path = path
 
     def expand_later(self):

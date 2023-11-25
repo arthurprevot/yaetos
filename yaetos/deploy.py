@@ -61,13 +61,15 @@ class DeployPySparkScriptOnAws(object):
         self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  # 'm5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
-        self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
-        self.metadata_folder = 'pipelines_metadata'
+        self.s3_logs = CPt(app_args['s3_logs'].replace('{root_path}', self.app_args['root_path']))
+        self.s3_bucket_logs = self.s3_logs.bucket
+        self.metadata_folder = 'pipelines_metadata' # TODO remove
         self.pipeline_name = self.generate_pipeline_name(self.deploy_args['mode'], self.app_args['job_name'], self.user)  # format: some_job.some_user.20181204.153429
         self.job_log_path = self.get_job_log_path()  # format: yaetos/logs/some_job.some_user.20181204.153429
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
         self.package_path = self.job_log_path + '/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
         self.package_path_with_bucket = self.job_log_path_with_bucket + '/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
+        # self.s3_dags = CPt(app_args['s3_dags'])
 
         spark_version = self.deploy_args.get('spark_version', '2.4')
         if spark_version == '2.4':
@@ -238,6 +240,7 @@ class DeployPySparkScriptOnAws(object):
 
     def tar_python_scripts(self):
         package = self.get_package_path()
+        logger.info(f"Package (.tar.gz) to be created from files in {package}, to be put in {self.TMP}, and pushed to S3")
         output_path = self.TMP / "scripts.tar.gz"
 
         # Create tar.gz file
@@ -683,7 +686,7 @@ class DeployPySparkScriptOnAws(object):
         Create the .py dag file from job_metadata.yml info, based on a template in 'airflow_template.py'
         """
         from airflow.utils.dates import days_ago
-        import datetime
+        # import datetime
         from datetime import timedelta
 
         # Set start_date
@@ -743,7 +746,7 @@ class DeployPySparkScriptOnAws(object):
         Move the dag files to S3
         """
         #import ipdb; ipdb.set_trace()
-        s3_dags = self.app_args['s3_dags'].replace('{base_path}', self.app_args['base_path'])
+        s3_dags = self.app_args['s3_dags'].replace('{root_path}', self.app_args['root_path'])
         s3_dags = CPt(s3_dags + '/' + self.app_args['job_name'])
 
         s3.Object(s3_dags.bucket, s3_dags.key)\
