@@ -684,24 +684,24 @@ class DeployPySparkScriptOnAws(object):
         Create the .py dag file from job_metadata.yml info, based on a template in 'airflow_template.py'
         """
 
-        # Set start_date
-        start_input = self.deploy_args.get('start_date', '')
+        # Set start_date, should be string evaluable in python, or string compatible with airflow
+        start_input = self.deploy_args.get('start_date', '{today}T00:00:00+00:00')
         if '{today}' in start_input:
             start_date = start_input.replace('{today}', datetime.today().strftime('%Y-%m-%d'))
             start_date = f"""eval('dateutil.parser.parse("{start_date}")')"""
         elif start_input.startswith('{') and start_input.endswith('}'):
             start_date = f"eval('{start_input[1:-1]}')"
         elif start_input == 'None':
-            start_date = None
+            start_date = "eval('None')"
         else:
             start_date = f"'{start_input}'"
         
-        # Set schedule
+        # Set schedule, should be string evaluable in python, or string compatible with airflow
         freq_input = self.deploy_args.get('frequency', '@once')
         if freq_input.startswith('{') and freq_input.endswith('}'):
             schedule = f"eval('{freq_input[1:-1]}')"
         elif freq_input == 'None':
-            schedule = None
+            schedule = "eval('None')"
         else:
             schedule = f"'{freq_input}'"
 
@@ -738,9 +738,9 @@ class DeployPySparkScriptOnAws(object):
     def set_job_dag_name(self, jobname):
         suffix = '_dag.py'
         if jobname.endswith('.py'):
-            return jobname.replace('.py', suffix)
+            return jobname.replace('.py', '_py' + suffix)
         elif jobname.endswith('.sql'):
-            return jobname.replace('.sql', suffix)
+            return jobname.replace('.sql', '_sql' + suffix)
         else:
             return jobname + suffix
 

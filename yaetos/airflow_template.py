@@ -34,12 +34,10 @@ def get_template(params):
 
 
     DAG_ARGS = {{
-        'dag_id': '{dag_nameid}',  # os.path.basename(__file__).replace(".py", "")
+        'dag_id': '{dag_nameid}',
         'dagrun_timeout': timedelta(hours=2),
-        'start_date': {start_date},  # days_ago(1),
-        # 'start_date': days_ago(0),
-        #'schedule_interval': '{schedule}', # '@once',
-        'schedule': {schedule}, # '@once',
+        'start_date': {start_date},
+        'schedule': {schedule},
         'tags': ['emr'],
         'default_args' : {{
             'owner': 'airflow',
