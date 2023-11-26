@@ -676,8 +676,6 @@ class DeployPySparkScriptOnAws(object):
         if self.deploy_args.get('push_secrets', False):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
-        # self.s3_key_dags = self.app_args['s3_dags'] #'pipelines_metadata/airflow_dags'  # replace with your DAGs path inside the S3 bucket
-
         fname = self.create_dags()
         self.upload_dags(s3, fname)
 
@@ -685,16 +683,16 @@ class DeployPySparkScriptOnAws(object):
         """
         Create the .py dag file from job_metadata.yml info, based on a template in 'airflow_template.py'
         """
-        from airflow.utils.dates import days_ago
-        # import datetime
-        from datetime import timedelta
+        # from airflow.utils.dates import days_ago
+        # from datetime import timedelta
         # from zoneinfo import ZoneInfo
         # from dateutil import parser
         # timezone_str = 
 
         # Set start_date
         if '{today}' in self.deploy_args['start_date']:
-            start_date = self.deploy_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d'))
+            # start_date = self.deploy_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d'))
+            start_date = self.deploy_args['start_date'].replace('{today}', datetime.today().strftime('%Y-%m-%d'))
             # start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=ZoneInfo(timezone_str)
             # start_date = parser.parse(start_date)         
             # start_date = f"'{start_date}'"
@@ -740,20 +738,27 @@ class DeployPySparkScriptOnAws(object):
         if not os.path.isdir(self.DAGS):
             os.mkdir(self.DAGS)
         
-        fname = self.DAGS / Pt(self.app_args['job_name'])
+        job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
+        fname = self.DAGS / Pt(job_dag_name)
+        # import ipdb; ipdb.set_trace()
+        # fname = Pt(str(fname).replace('.py', '_dag.py'))
         
         os.makedirs(fname.parent, exist_ok=True)
         with open(fname, 'w') as file:
             file.write(content)
         return fname
 
+    def set_job_dag_name(self, jobname):
+        return jobname.replace('.py', '_dag.py')
+
     def upload_dags(self, s3, fname_local):
         """
         Move the dag files to S3
         """
         #import ipdb; ipdb.set_trace()
+        job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
         s3_dags = self.app_args['s3_dags'].replace('{root_path}', self.app_args['root_path'])
-        s3_dags = CPt(s3_dags + '/' + self.app_args['job_name'])
+        s3_dags = CPt(s3_dags + '/' + job_dag_name)
 
         s3.Object(s3_dags.bucket, s3_dags.key)\
           .put(Body=open(str(fname_local), 'rb'), ContentType='text/x-sh')
