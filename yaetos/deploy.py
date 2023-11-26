@@ -240,7 +240,7 @@ class DeployPySparkScriptOnAws(object):
 
     def tar_python_scripts(self):
         package = self.get_package_path()
-        logger.info(f"Package (.tar.gz) to be created from files in {package}, to be put in {self.TMP}, and pushed to S3")
+        logger.info(f"Package (.tar.gz) to be created from files in '{package}', to be put in {self.TMP}, and pushed to S3")
         output_path = self.TMP / "scripts.tar.gz"
 
         # Create tar.gz file
@@ -688,11 +688,17 @@ class DeployPySparkScriptOnAws(object):
         from airflow.utils.dates import days_ago
         # import datetime
         from datetime import timedelta
+        # from zoneinfo import ZoneInfo
+        # from dateutil import parser
+        # timezone_str = 
 
         # Set start_date
         if '{today}' in self.deploy_args['start_date']:
             start_date = self.deploy_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d'))
-            start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%S")
+            # start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=ZoneInfo(timezone_str)
+            # start_date = parser.parse(start_date)         
+            # start_date = f"'{start_date}'"
+            start_date = f"""eval('dateutil.parser.parse("{start_date}")')"""
         elif self.deploy_args['start_date'].startswith('{') and self.deploy_args['start_date'].endswith('}'):
             start_date = self.deploy_args['start_date'][1:-1]
             start_date = f"eval('{start_date}')"
