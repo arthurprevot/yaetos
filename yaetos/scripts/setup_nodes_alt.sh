@@ -1,5 +1,7 @@
 #!/bin/bash
 # Script to configure all nodes on EMR cluster. (Setup as part of a boostrap operation in AWS)
+# OBSOLETE, was required by spark 2.4
+
 
 # Installs below are specific to python version, which is specific to EMR version. TODO: make it independant. Will be fixed when using to emr-6.x since python3 will be default and it will support pip3.
 sudo pip-3.6 install boto3==1.9.57

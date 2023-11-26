@@ -1,5 +1,5 @@
 # Libs. Used by docker env and AWS EMR env.
-# Used by spark2.4, with python2.7. Not maintained.
+# OBSOLETE: Used by spark2.4, with python2.7. Not maintained.
 
 # Libs part of yaetos install (left here to fix versions)
 pyyaml==5.4.1

@@ -20,12 +20,18 @@ sudo pip3 install --upgrade pip
 echo "--- Installing requirements.txt ---"
 sudo pip3 install --ignore-installed pyyaml==5.4.1  # install separately since "--ignore-installed" is required for this one.
 sudo pip3 install -r requirements.txt
+sudo pip3 install cloudpathlib  # re-installed outside of requirements.txt since install in requirements.txt is somehow uninstalled.
 echo "--- Installing requirements_extra.txt ---"
 sudo pip3 install -r requirements_extra.txt
 echo "--- Checking versions ---"
+echo "- pyyaml ---"
 sudo pip3 show pyyaml
+echo "- awscli ---"
 sudo pip3 show awscli
+echo "- boto3 ---"
 sudo pip3 show boto3
+echo "- cloudpathlib ---"
+sudo pip3 show cloudpathlib
 
 # Untar file
 echo "--- Untaring job files ---"
