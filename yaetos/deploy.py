@@ -691,7 +691,7 @@ class DeployPySparkScriptOnAws(object):
             start_date = f"""eval('dateutil.parser.parse("{start_date}")')"""
         elif start_input.startswith('{') and start_input.endswith('}'):
             start_date = f"eval('{start_input[1:-1]}')"
-        elif start_input is 'None':
+        elif start_input == 'None':
             start_date = None
         else:
             start_date = f"'{start_input}'"
@@ -700,7 +700,7 @@ class DeployPySparkScriptOnAws(object):
         freq_input = self.deploy_args.get('frequency', '@once')
         if freq_input.startswith('{') and freq_input.endswith('}'):
             schedule = f"eval('{freq_input[1:-1]}')"
-        elif freq_input is 'None':
+        elif freq_input == 'None':
             schedule = None
         else:
             schedule = f"'{freq_input}'"
