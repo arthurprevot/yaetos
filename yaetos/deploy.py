@@ -61,7 +61,7 @@ class DeployPySparkScriptOnAws(object):
         self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  # 'm5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
-        self.s3_logs = CPt(app_args['s3_logs'].replace('{root_path}', self.app_args['root_path']))
+        self.s3_logs = CPt(app_args.get('s3_logs', 's3://').replace('{root_path}', self.app_args.get('root_path', '')))
         self.s3_bucket_logs = self.s3_logs.bucket
         self.metadata_folder = 'pipelines_metadata' # TODO remove
         self.pipeline_name = self.generate_pipeline_name(self.deploy_args['mode'], self.app_args['job_name'], self.user)  # format: some_job.some_user.20181204.153429
