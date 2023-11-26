@@ -4,9 +4,7 @@ jobs:
     description: "Sample API extraction job, pulling public wikipedia data."
     api_inputs: {'path': 'https://raw.githubusercontent.com/wikimedia-research/Discovery-Hiring-Analyst-2016/master/events_log.csv.gz'}
     output: {'path':'{base_path}/wiki_example/input/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
-    frequency: '@once' # other option: @daily
-    # start_date: '{today} 07:00:00+00:00' # other option: '{today}T07:00:00'
-    start_date: '{days_ago(0)}' # "{today}T07:00:00"
+    frequency: '@once'
     spark_boot: False
 
   examples/ex1_sql_job.sql:
@@ -18,8 +16,8 @@ jobs:
     output: {'path':'{base_path}/wiki_example_sql/output_ex1_sql_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     dependencies: [examples/ex0_extraction_job.py]
     spark_boot: False
-    frequency: '@once' # other option: 
-    start_date: '{days_ago(0)}' # other option: '{today}T07:00:00'
+    frequency: '@daily'
+    start_date: '{days_ago(0)}'
     owners: ['some_email@address.com']
 
   examples/ex7_pandas_job.py:
@@ -29,8 +27,8 @@ jobs:
       other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
     output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     dependencies: [examples/ex0_extraction_job.py]
-    frequency: '@once' # other option: 
-    start_date: '{days_ago(0)}' # other option: '{today}T07:00:00'
+    frequency: '@daily'
+    start_date: '{days_ago(0)}'
     spark_boot: False
 
   examples/ex1_sql_spark_job:
@@ -43,8 +41,8 @@ jobs:
     output: {'path':'{base_path}/wiki_example_sql/output_ex1_sql_spark/{now}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
     repartition: 1
-    frequency: 1 day
-    start_date: "{today}T07:00:00"
+    frequency: '@daily'
+    start_date: "{today}T07:00:00+00:00"
     owners: ['some_email@address.com']
 
   examples/ex1_frameworked_job.py:

@@ -683,38 +683,27 @@ class DeployPySparkScriptOnAws(object):
         """
         Create the .py dag file from job_metadata.yml info, based on a template in 'airflow_template.py'
         """
-        # from airflow.utils.dates import days_ago
-        # from datetime import timedelta
-        # from zoneinfo import ZoneInfo
-        # from dateutil import parser
-        # timezone_str = 
 
         # Set start_date
-        if '{today}' in self.deploy_args['start_date']:
-            # start_date = self.deploy_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d'))
-            start_date = self.deploy_args['start_date'].replace('{today}', datetime.today().strftime('%Y-%m-%d'))
-            # start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=ZoneInfo(timezone_str)
-            # start_date = parser.parse(start_date)         
-            # start_date = f"'{start_date}'"
+        start_input = self.deploy_args.get('start_date', '')
+        if '{today}' in start_input:
+            start_date = start_input.replace('{today}', datetime.today().strftime('%Y-%m-%d'))
             start_date = f"""eval('dateutil.parser.parse("{start_date}")')"""
-        elif self.deploy_args['start_date'].startswith('{') and self.deploy_args['start_date'].endswith('}'):
-            start_date = self.deploy_args['start_date'][1:-1]
-            start_date = f"eval('{start_date}')"
-            # print('####3', self.deploy_args['start_date'])
-        elif self.deploy_args['start_date'] is 'None':
+        elif start_input.startswith('{') and start_input.endswith('}'):
+            start_date = f"eval('{start_input[1:-1]}')"
+        elif start_input is 'None':
             start_date = None
         else:
-            start_date = f"'{self.deploy_args['start_date']}'"
+            start_date = f"'{start_input}'"
         
         # Set schedule
-        if self.deploy_args['frequency'].startswith('{') and self.deploy_args['frequency'].endswith('}'):
-            # schedule = eval(self.deploy_args['frequency'])
-            schedule = self.deploy_args['frequency'][1:-1]
-            schedule = f"eval('{schedule}')"
-        elif self.deploy_args['frequency'] is 'None':
+        freq_input = self.deploy_args.get('frequency', '@once')
+        if freq_input.startswith('{') and freq_input.endswith('}'):
+            schedule = f"eval('{freq_input[1:-1]}')"
+        elif freq_input is 'None':
             schedule = None
         else:
-            schedule = f"'{self.deploy_args['frequency']}'"
+            schedule = f"'{freq_input}'"
 
         params={
             'ec2_instance_slaves': self.ec2_instance_slaves,
@@ -740,8 +729,6 @@ class DeployPySparkScriptOnAws(object):
         
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
         fname = self.DAGS / Pt(job_dag_name)
-        # import ipdb; ipdb.set_trace()
-        # fname = Pt(str(fname).replace('.py', '_dag.py'))
         
         os.makedirs(fname.parent, exist_ok=True)
         with open(fname, 'w') as file:
@@ -755,7 +742,6 @@ class DeployPySparkScriptOnAws(object):
         """
         Move the dag files to S3
         """
-        #import ipdb; ipdb.set_trace()
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
         s3_dags = self.app_args['s3_dags'].replace('{root_path}', self.app_args['root_path'])
         s3_dags = CPt(s3_dags + '/' + job_dag_name)
