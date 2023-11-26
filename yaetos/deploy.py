@@ -718,7 +718,7 @@ class DeployPySparkScriptOnAws(object):
             'ec2_subnet_id': self.ec2_subnet_id,
             's3_bucket_logs': self.s3_bucket_logs,
             'metadata_folder': self.metadata_folder,
-            'dag_nameid': self.app_args['job_name'].replace("/", "-").replace(".py", ""),
+            'dag_nameid': self.app_args['job_name'].replace("/", "-"),
             'start_date': start_date,
             'schedule': schedule,
         }
@@ -736,7 +736,13 @@ class DeployPySparkScriptOnAws(object):
         return fname
 
     def set_job_dag_name(self, jobname):
-        return jobname.replace('.py', '_dag.py')
+        suffix = '_dag.py'
+        if jobname.endswith('.py'):
+            return jobname.replace('.py', suffix)
+        elif jobname.endswith('.sql'):
+            return jobname.replace('.sql', suffix)
+        else:
+            return jobname + suffix
 
     def upload_dags(self, s3, fname_local):
         """
