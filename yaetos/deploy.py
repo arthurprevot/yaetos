@@ -688,20 +688,20 @@ class DeployPySparkScriptOnAws(object):
         start_input = self.deploy_args.get('start_date', '{today}T00:00:00+00:00')
         if '{today}' in start_input:
             start_date = start_input.replace('{today}', datetime.today().strftime('%Y-%m-%d'))
-            start_date = f"""eval('dateutil.parser.parse("{start_date}")')"""
+            start_date = f'dateutil.parser.parse("{start_date}")'
         elif start_input.startswith('{') and start_input.endswith('}'):
-            start_date = f"eval('{start_input[1:-1]}')"
+            start_date = start_input[1:-1]
         elif start_input == 'None':
-            start_date = "eval('None')"
+            start_date = 'None'
         else:
-            start_date = f"'{start_input}'"
+            start_date = f'dateutil.parser.parse("{start_date}")'
         
         # Set schedule, should be string evaluable in python, or string compatible with airflow
         freq_input = self.deploy_args.get('frequency', '@once')
         if freq_input.startswith('{') and freq_input.endswith('}'):
-            schedule = f"eval('{freq_input[1:-1]}')"
+            schedule = freq_input[1:-1]
         elif freq_input == 'None':
-            schedule = "eval('None')"
+            schedule = 'None'
         else:
             schedule = f"'{freq_input}'"
 
@@ -721,7 +721,7 @@ class DeployPySparkScriptOnAws(object):
             'dag_nameid': self.app_args['job_name'].replace("/", "-"),
             'start_date': start_date,
             'schedule': schedule,
-            'emails': self.deploy_args.get('owners', '[]'),
+            'emails': self.deploy_args.get('emails', '[]'),
         }
 
         param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
