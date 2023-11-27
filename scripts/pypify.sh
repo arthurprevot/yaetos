@@ -8,7 +8,7 @@
 # Copy files needed in ./yaetos/scripts/ to check later that they are in git.
 # They need to be also in sync with list in yaetos/scripts/yaetos_cmdline.py
 # TODO: find better way to deal with this, avoiding file duplication
-# TODO: put duplicated files in subfolder "copy" to make it explicit
+## Config files
 cp conf/connections.cfg.example yaetos/scripts/copy/connections.cfg.example
 cp conf/aws_config.cfg.example yaetos/scripts/copy/aws_config.cfg.example
 cp conf/requirements_extra.txt yaetos/scripts/copy/requirements_extra.txt
@@ -25,13 +25,13 @@ cp jobs/examples/ex1_sql_job.sql yaetos/scripts/copy/ex1_sql_job.sql
 cp jobs/examples/ex7_pandas_job.py yaetos/scripts/copy/ex1_pandas_api_job.py
 cp jobs/examples/ex1_frameworked_job.py yaetos/scripts/copy/ex1_spark_api_job.py
 cp tests/jobs/examples/ex1_sql_pandas_job_test.py yaetos/scripts/copy/ex1_sql_pandas_job_test.py
-# cp tests/jobs/examples/ex7_pandas_job_test.py yaetos/scripts/copy/ex1_pandas_api_job_test.py # TODO: uncomment when yaetos repo job names match with pip installed job names.
 cp tests/jobs/examples/ex1_sql_spark_job_test.py yaetos/scripts/copy/ex1_sql_spark_job_test.py
-# cp tests/jobs/examples/ex1_frameworked_job_test.py yaetos/scripts/copy/ex1_spark_api_job_test.py # TODO: uncomment when yaetos repo job names match with pip installed job names.
-# Other files not to be copied exactly but close:
+## Other files not to be copied exactly but close (to be checked before running this script):
 #  - cp .github/workflows/pythonapp.yml yaetos/scripts/github_pythonapp.yml
-#  - cp tests/jobs/examples/ex7_pandas_job_test.py yaetos/scripts/copy/ex1_pandas_job_test.py
 #  - cp Dockerfile yaetos/scripts/copy/Dockerfile_external
+#  - cp conf/jobs_metadata.yml yaetos/scripts/copy/jobs_metadata_external.yml
+#  - cp tests/jobs/examples/ex7_pandas_job_test.py yaetos/scripts/copy/ex1_pandas_api_job_test.py # need to update import path after copy. TODO: uncomment when yaetos repo job names match with pip installed job names.
+#  - cp tests/jobs/examples/ex1_frameworked_job_test.py yaetos/scripts/copy/ex1_spark_api_job_test.py # need to update import path after copy. TODO: uncomment when yaetos repo job names match with pip installed job names.
 
 
 rm -r dist/
