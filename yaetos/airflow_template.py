@@ -160,7 +160,7 @@ def get_template(params, param_extras):
         # # not used for now
         # terminate_cluster = EmrTerminateJobFlowOperator(
         #     task_id='terminate_cluster',
-        #     job_flow_id="{{ task_instance.xcom_pull('start_emr_cluster', key='return_value') }}",
+        #     job_flow_id="{{{{ task_instance.xcom_pull('start_emr_cluster', key='return_value') }}}}",
         #     aws_conn_id='aws_default',
         # )
 
