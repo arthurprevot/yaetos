@@ -8,6 +8,7 @@ from io import BytesIO
 class Job(ETL_Base):
     def transform(self):
         url = self.jargs.api_inputs['path']
+        self.logger.info('Starting pulling file from {}.'.format(url))
         resp = requests.get(url, allow_redirects=True)
         self.logger.info('Finished pulling file from {}.'.format(url))
         fp = BytesIO(resp.content)
