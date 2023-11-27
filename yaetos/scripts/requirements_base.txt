@@ -11,7 +11,7 @@ networkx==2.4
 duckdb==0.4.0
 
 # libs required for some functionalities but not required in import statements
-pyarrow==12.0.1  # necessary for saving pandas to parquet.
+pyarrow==14.0.1  # necessary for saving pandas to parquet.
 openpyxl==3.0.9  # used to open excel files. TODO: put in a new requirement_extra.txt, since optional.
 pymysql==0.9.3
 psycopg2-binary==2.8.5   # necesary for sqlalchemy-redshift, psycopg2==2.8.5 install fails.
