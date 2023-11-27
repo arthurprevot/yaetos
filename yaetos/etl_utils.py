@@ -787,7 +787,7 @@ class Job_Yml_Parser():
 class Job_Args_Parser():
 
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date',
-                        'email', 'mode', 'deploy', 'terminate_after', 'spark_version']
+                        'emails', 'mode', 'deploy', 'terminate_after', 'spark_version']
 
     def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}, validate=True):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
@@ -831,7 +831,7 @@ class Job_Args_Parser():
             self.validate()
 
     def get_deploy_args(self):
-        return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
+        return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST or key.startswith('airflow.')}
 
     def get_app_args(self):
         return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST or key == 'mode'}

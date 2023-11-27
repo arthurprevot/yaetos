@@ -4,7 +4,7 @@ Partly based on https://docs.aws.amazon.com/mwaa/latest/userguide/samples-emr.ht
 """
 from textwrap import dedent, indent
 
-def get_template(params):
+def get_template(params, param_extras):
 
     params['KeepJobFlowAliveWhenNoSteps'] = params['deploy_args'].get('leave_on', False)
 
@@ -19,8 +19,18 @@ def get_template(params):
     """.format(**params)
 
     instance_groups_extra = instance_groups_extra if params['emr_core_instances'] != 0 else ''
-
     params['instance_groups_extra'] = indent(instance_groups_extra, ' '*12)
+
+    # Set extra params, params not available in template but overloadable
+    # import ipdb; ipdb.set_trace()  # will drop to python terminal here to inspect  # noqa: E702
+    lines = ''
+    for item in param_extras.keys():
+        entries = item.replace('airflow.', '').split('.')
+        entries = '"]["'.join(entries)
+        line = f'DAG_ARGS["{entries}"] = {param_extras[item]}\n' + ' ' * 4
+        lines += line
+
+    params['extras'] = lines
 
     template = """
     from airflow import DAG
@@ -40,13 +50,14 @@ def get_template(params):
         'schedule': {schedule},
         'tags': ['emr'],
         'default_args' : {{
-            'owner': 'airflow',
+            'owner': 'me',
             'depends_on_past': False,
-            'email': ['airflow@example.com'],
+            'email': {emails},
             'email_on_failure': False,
             'email_on_retry': False,
             }},
         }}
+    {extras}
 
     CLUSTER_JOB_FLOW_OVERRIDES = {{
         'Name': '{pipeline_name}',

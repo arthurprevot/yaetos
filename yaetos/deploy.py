@@ -721,9 +721,13 @@ class DeployPySparkScriptOnAws(object):
             'dag_nameid': self.app_args['job_name'].replace("/", "-"),
             'start_date': start_date,
             'schedule': schedule,
+            'emails': self.deploy_args.get('owners', '[]'),
         }
 
-        content = get_template(params)
+        param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
+        # import ipdb; ipdb.set_trace()
+
+        content = get_template(params, param_extras)
         if not os.path.isdir(self.DAGS):
             os.mkdir(self.DAGS)
         
