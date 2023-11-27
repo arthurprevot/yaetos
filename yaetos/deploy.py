@@ -18,6 +18,7 @@ import botocore
 import uuid
 import json
 from pathlib import Path as Pt
+from cloudpathlib import CloudPath as CPt
 from pprint import pformat
 from configparser import ConfigParser
 from shutil import copyfile
@@ -25,6 +26,7 @@ import site
 import yaetos.etl_utils as eu
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.logger import setup_logging
+from yaetos.airflow_template import get_template
 logger = setup_logging('Deploy')
 
 
@@ -34,6 +36,7 @@ class DeployPySparkScriptOnAws(object):
     """
     SCRIPTS = Pt('yaetos/scripts/')  # TODO: move to etl_utils.py
     TMP = Pt('tmp/files_to_ship/')
+    DAGS = Pt('tmp/files_to_ship/dags')
 
     def __init__(self, deploy_args, app_args):
 
@@ -58,16 +61,17 @@ class DeployPySparkScriptOnAws(object):
         self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  # 'm5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         # Paths
-        self.s3_bucket_logs = config.get(aws_setup, 's3_bucket_logs')
-        self.metadata_folder = 'pipelines_metadata'
+        self.s3_logs = CPt(app_args.get('s3_logs', 's3://').replace('{root_path}', self.app_args.get('root_path', '')))
+        self.s3_bucket_logs = self.s3_logs.bucket
+        self.metadata_folder = 'pipelines_metadata'  # TODO remove
         self.pipeline_name = self.generate_pipeline_name(self.deploy_args['mode'], self.app_args['job_name'], self.user)  # format: some_job.some_user.20181204.153429
         self.job_log_path = self.get_job_log_path()  # format: yaetos/logs/some_job.some_user.20181204.153429
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
         self.package_path = self.job_log_path + '/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
         self.package_path_with_bucket = self.job_log_path_with_bucket + '/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
+        # self.s3_dags = CPt(app_args['s3_dags'])
 
         spark_version = self.deploy_args.get('spark_version', '2.4')
-        # import ipdb; ipdb.set_trace()
         if spark_version == '2.4':
             self.emr_version = "emr-5.26.0"
             # used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
@@ -94,6 +98,8 @@ class DeployPySparkScriptOnAws(object):
             self.run_direct()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
             self.run_aws_data_pipeline()
+        elif self.deploy_args['deploy'] in ('airflow'):
+            self.run_aws_airflow()
         elif self.deploy_args['deploy'] in ('code'):
             self.run_push_code()
         else:
@@ -167,6 +173,7 @@ class DeployPySparkScriptOnAws(object):
         self.tar_python_scripts()
         self.move_bash_to_local_temp()
         self.upload_temp_files(s3)
+        return s3
 
     def get_active_clusters(self, c):
         response = c.list_clusters(
@@ -233,6 +240,7 @@ class DeployPySparkScriptOnAws(object):
 
     def tar_python_scripts(self):
         package = self.get_package_path()
+        logger.info(f"Package (.tar.gz) to be created from files in '{package}', to be put in {self.TMP}, and pushed to S3")
         output_path = self.TMP / "scripts.tar.gz"
 
         # Create tar.gz file
@@ -451,7 +459,7 @@ class DeployPySparkScriptOnAws(object):
         response = c.add_job_flow_steps(
             JobFlowId=self.cluster_id,
             Steps=[{
-                'Name': 'run setup',
+                'Name': 'Run Setup',
                 'ActionOnFailure': 'CONTINUE',
                 'HadoopJarStep': {
                     'Jar': 's3://elasticmapreduce/libs/script-runner/script-runner.jar',
@@ -662,6 +670,96 @@ class DeployPySparkScriptOnAws(object):
 
         logger.debug('parameterValues after changes: ' + str(parameterValues))
         return parameterValues
+
+    def run_aws_airflow(self):
+        s3 = self.s3_ops(self.session)
+        if self.deploy_args.get('push_secrets', False):
+            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
+
+        fname = self.create_dags()
+        self.upload_dags(s3, fname)
+
+    def create_dags(self):
+        """
+        Create the .py dag file from job_metadata.yml info, based on a template in 'airflow_template.py'
+        """
+
+        # Set start_date, should be string evaluable in python, or string compatible with airflow
+        start_input = self.deploy_args.get('start_date', '{today}T00:00:00+00:00')
+        if '{today}' in start_input:
+            start_date = start_input.replace('{today}', datetime.today().strftime('%Y-%m-%d'))
+            start_date = f'dateutil.parser.parse("{start_date}")'
+        elif start_input.startswith('{') and start_input.endswith('}'):
+            start_date = start_input[1:-1]
+        elif start_input == 'None':
+            start_date = 'None'
+        else:
+            start_date = f'dateutil.parser.parse("{start_date}")'
+
+        # Set schedule, should be string evaluable in python, or string compatible with airflow
+        freq_input = self.deploy_args.get('frequency', '@once')
+        if freq_input.startswith('{') and freq_input.endswith('}'):
+            schedule = freq_input[1:-1]
+        elif freq_input == 'None':
+            schedule = 'None'
+        else:
+            schedule = f"'{freq_input}'"
+
+        params = {
+            'ec2_instance_slaves': self.ec2_instance_slaves,
+            'emr_core_instances': self.emr_core_instances,
+            'package_path_with_bucket': self.package_path_with_bucket,
+            'cmd_runner_args': self.get_spark_submit_args(self.app_file, self.app_args),
+            'pipeline_name': self.pipeline_name,
+            'emr_version': self.emr_version,
+            'ec2_instance_master': self.ec2_instance_master,
+            'deploy_args': self.deploy_args,
+            'ec2_key_name': self.ec2_key_name,
+            'ec2_subnet_id': self.ec2_subnet_id,
+            's3_bucket_logs': self.s3_bucket_logs,
+            'metadata_folder': self.metadata_folder,
+            'dag_nameid': self.app_args['job_name'].replace("/", "-"),
+            'start_date': start_date,
+            'schedule': schedule,
+            'emails': self.deploy_args.get('emails', '[]'),
+        }
+
+        param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
+        # import ipdb; ipdb.set_trace()
+
+        content = get_template(params, param_extras)
+        if not os.path.isdir(self.DAGS):
+            os.mkdir(self.DAGS)
+
+        job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
+        fname = self.DAGS / Pt(job_dag_name)
+
+        os.makedirs(fname.parent, exist_ok=True)
+        with open(fname, 'w') as file:
+            file.write(content)
+        return fname
+
+    def set_job_dag_name(self, jobname):
+        suffix = '_dag.py'
+        if jobname.endswith('.py'):
+            return jobname.replace('.py', '_py' + suffix)
+        elif jobname.endswith('.sql'):
+            return jobname.replace('.sql', '_sql' + suffix)
+        else:
+            return jobname + suffix
+
+    def upload_dags(self, s3, fname_local):
+        """
+        Move the dag files to S3
+        """
+        job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
+        s3_dags = self.app_args['s3_dags'].replace('{root_path}', self.app_args['root_path'])
+        s3_dags = CPt(s3_dags + '/' + job_dag_name)
+
+        s3.Object(s3_dags.bucket, s3_dags.key)\
+          .put(Body=open(str(fname_local), 'rb'), ContentType='text/x-sh')
+        logger.info(f"Uploaded dag job files to path '{s3_dags}'")
+        return True
 
     def push_secrets(self, creds_or_file):
         client = self.session.client('secretsmanager')

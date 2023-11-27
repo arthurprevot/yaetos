@@ -331,7 +331,7 @@ class ETL_Base(object):
             path = self.jargs.inputs[input_name]['path']
             path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-            path = Path_Handler(path, self.jargs.base_path).expand_later()
+            path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
             self.jargs.inputs[input_name]['path_expanded'] = path
 
         # Unstructured type
@@ -384,7 +384,7 @@ class ETL_Base(object):
         input_name = name
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
         logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
-        path = Path_Handler(path, self.jargs.base_path).expand_later()
+        path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
         self.jargs.inputs[input_name]['path_expanded'] = path
 
         if input_type == 'txt':
@@ -516,7 +516,7 @@ class ETL_Base(object):
 
     def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
-        path = Path_Handler(path, base_path).expand_now(now_dt)
+        path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
         self.jargs.output['path_expanded'] = path
 
         if type == 'None':
@@ -787,7 +787,7 @@ class Job_Yml_Parser():
 class Job_Args_Parser():
 
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date',
-                        'email', 'mode', 'deploy', 'terminate_after', 'spark_version']
+                        'emails', 'mode', 'deploy', 'terminate_after', 'spark_version']
 
     def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}, validate=True):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
@@ -806,7 +806,7 @@ class Job_Args_Parser():
             args.update(job_args)
             args.update(cmd_args)
             args.update({'job_name': job_name} if job_name else {})
-            args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled') else args['mode']
+            args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'airflow') else args['mode']
             assert 'job_name' in args.keys()
             yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
 
@@ -816,7 +816,7 @@ class Job_Args_Parser():
         args.update(yml_args)
         args.update(job_args)
         args.update(cmd_args)
-        args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled') else args['mode']
+        args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'airflow') else args['mode']
         args = self.update_args(args, loaded_inputs)
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
@@ -831,7 +831,7 @@ class Job_Args_Parser():
             self.validate()
 
     def get_deploy_args(self):
-        return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST}
+        return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST or key.startswith('airflow.')}
 
     def get_app_args(self):
         return {key: value for key, value in self.merged_args.items() if key not in self.DEPLOY_ARGS_LIST or key == 'mode'}
@@ -892,9 +892,11 @@ class Job_Args_Parser():
 
 
 class Path_Handler():
-    def __init__(self, path, base_path=None):
-        if base_path:
-            path = path.format(base_path=base_path, latest='{latest}', now='{now}')
+    def __init__(self, path, base_path=None, root_path=None):
+        if base_path and '{base_path}' in path:
+            path = path.replace('{base_path}', base_path)
+        if root_path and '{root_path}' in path:
+            path = path.replace('{root_path}', root_path)
         self.path = path
 
     def expand_later(self):
@@ -952,7 +954,7 @@ class Runner():
         # Executing or deploying
         if job.jargs.deploy in ('none'):  # when executing job code
             job = self.launch_run_mode(job)
-        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'code'):  # when deploying to AWS for execution there
+        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
         return job
 
@@ -970,7 +972,7 @@ class Runner():
         # Defined here separatly from parsing for overridability.
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
@@ -1107,13 +1109,16 @@ class Flow():
         df = self.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
         logger.debug('Flow app_name : {}, connection_table: {}'.format(app_name, df))
         graph = self.create_global_graph(df)  # top to bottom
-        tree = self.create_local_tree(graph, nx.DiGraph(), app_name)  # bottom to top
-        self.leafs = self.get_leafs(tree, leafs=[])  # bottom to top
+        if graph.has_node(app_name):
+            tree = self.create_local_tree(graph, nx.DiGraph(), app_name)  # bottom to top
+            self.leafs = self.get_leafs(tree, leafs=[])  # bottom to top
+            launch_jargs.cmd_args.pop('job_name', None)  # removing since it should be pulled from yml and not be overriden by cmd_args.
+            launch_jargs.job_args.pop('job_name', None)  # same
+        else:
+            self.leafs = [app_name]
         logger.info('Sequence of jobs to be run: {}'.format(self.leafs))
         logger.info('-' * 80)
         logger.info('-')
-        launch_jargs.cmd_args.pop('job_name', None)  # removing since it should be pulled from yml and not be overriden by cmd_args.
-        launch_jargs.job_args.pop('job_name', None)  # same
         self.launch_jargs = launch_jargs
 
     def run_pipeline(self, sc, sc_sql):

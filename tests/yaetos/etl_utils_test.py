@@ -154,6 +154,7 @@ class Test_Flow(object):
             columns=['source_job', 'destination_job'],
             data=np.array([
                 ['examples/ex0_extraction_job.py', 'examples/ex1_sql_job.sql'],
+                ['examples/ex0_extraction_job.py', 'examples/ex7_pandas_job.py'],
                 ['examples/ex0_extraction_job.py', 'examples/ex1_sql_spark_job'],
                 ['examples/ex0_extraction_job.py', 'examples/ex1_frameworked_job.py'],
                 ['examples/ex0_extraction_job.py', 'job_using_generic_template'],
