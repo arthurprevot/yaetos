@@ -70,7 +70,7 @@ class DeployPySparkScriptOnAws(object):
         self.package_path = self.job_log_path + '/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
         self.package_path_with_bucket = self.job_log_path_with_bucket + '/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
 
-        spark_version = self.deploy_args.get('spark_version', '2.4')
+        spark_version = self.deploy_args.get('spark_version', '3.0')
         if spark_version == '2.4':
             self.emr_version = "emr-5.26.0"
             # used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
@@ -79,6 +79,8 @@ class DeployPySparkScriptOnAws(object):
             self.emr_version = "emr-6.1.1"
             # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0".
             # see latest supported emr version by AWS Data Pipeline at https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emrcluster.html
+        elif spark_version == '3.4':
+            self.emr_version = "emr-6.15.0"  # not compatible with "AWS Data Pipeline" but should be with Airflow. Inc Python 3.7.16
 
         if self.deploy_args.get('monitor_git', False):  # TODO: centralize monitor_git
             try:
