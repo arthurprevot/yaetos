@@ -83,7 +83,7 @@ def save_pandas_local(df, path, save_method='to_csv', save_kwargs={}):
 # --- other ----
 
 def query_pandas(query_str, dfs):
-    assert DUCKDB_SETUP == True
+    assert DUCKDB_SETUP is True
     con = duckdb.connect(database=':memory:')
     for key, value in dfs.items():
         con.register(key, value)

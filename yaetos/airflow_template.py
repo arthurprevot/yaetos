@@ -4,6 +4,7 @@ Partly based on https://docs.aws.amazon.com/mwaa/latest/userguide/samples-emr.ht
 """
 from textwrap import dedent, indent
 
+
 def get_template(params, param_extras):
 
     params['KeepJobFlowAliveWhenNoSteps'] = params['deploy_args'].get('leave_on', False)
@@ -19,17 +20,15 @@ def get_template(params, param_extras):
     """.format(**params)
 
     instance_groups_extra = instance_groups_extra if params['emr_core_instances'] != 0 else ''
-    params['instance_groups_extra'] = indent(instance_groups_extra, ' '*12)
+    params['instance_groups_extra'] = indent(instance_groups_extra, ' ' * 12)
 
     # Set extra params, params not available in template but overloadable
-    # import ipdb; ipdb.set_trace()  # will drop to python terminal here to inspect  # noqa: E702
     lines = ''
     for item in param_extras.keys():
         entries = item.replace('airflow.', '').split('.')
         entries = '"]["'.join(entries)
         line = f'DAG_ARGS["{entries}"] = {param_extras[item]}\n' + ' ' * 4
         lines += line
-
     params['extras'] = lines
 
     template = """
@@ -129,21 +128,21 @@ def get_template(params, param_extras):
     ]
 
     with DAG(**DAG_ARGS) as dag:
-        
+
         cluster_creator = EmrCreateJobFlowOperator(
             task_id='start_emr_cluster', 
             aws_conn_id='aws_default',
             emr_conn_id='emr_default',
             job_flow_overrides=CLUSTER_JOB_FLOW_OVERRIDES
         )
-        
+
         step_adder = EmrAddStepsOperator(
             task_id='add_steps',
             job_flow_id="{{{{ task_instance.xcom_pull(task_ids='start_emr_cluster', key='return_value') }}}}",
             aws_conn_id='aws_default',
             steps=EMR_STEPS,
         )
-        
+
         step_checker = EmrStepSensor(
             task_id='watch_step',
             job_flow_id="{{{{ task_instance.xcom_pull('start_emr_cluster', key='return_value') }}}}",

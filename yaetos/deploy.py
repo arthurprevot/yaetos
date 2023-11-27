@@ -63,7 +63,7 @@ class DeployPySparkScriptOnAws(object):
         # Paths
         self.s3_logs = CPt(app_args.get('s3_logs', 's3://').replace('{root_path}', self.app_args.get('root_path', '')))
         self.s3_bucket_logs = self.s3_logs.bucket
-        self.metadata_folder = 'pipelines_metadata' # TODO remove
+        self.metadata_folder = 'pipelines_metadata'  # TODO remove
         self.pipeline_name = self.generate_pipeline_name(self.deploy_args['mode'], self.app_args['job_name'], self.user)  # format: some_job.some_user.20181204.153429
         self.job_log_path = self.get_job_log_path()  # format: yaetos/logs/some_job.some_user.20181204.153429
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
@@ -695,7 +695,7 @@ class DeployPySparkScriptOnAws(object):
             start_date = 'None'
         else:
             start_date = f'dateutil.parser.parse("{start_date}")'
-        
+
         # Set schedule, should be string evaluable in python, or string compatible with airflow
         freq_input = self.deploy_args.get('frequency', '@once')
         if freq_input.startswith('{') and freq_input.endswith('}'):
@@ -705,7 +705,7 @@ class DeployPySparkScriptOnAws(object):
         else:
             schedule = f"'{freq_input}'"
 
-        params={
+        params = {
             'ec2_instance_slaves': self.ec2_instance_slaves,
             'emr_core_instances': self.emr_core_instances,
             'package_path_with_bucket': self.package_path_with_bucket,
@@ -730,7 +730,7 @@ class DeployPySparkScriptOnAws(object):
         content = get_template(params, param_extras)
         if not os.path.isdir(self.DAGS):
             os.mkdir(self.DAGS)
-        
+
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
         fname = self.DAGS / Pt(job_dag_name)
         
