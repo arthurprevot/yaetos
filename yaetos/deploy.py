@@ -98,7 +98,7 @@ class DeployPySparkScriptOnAws(object):
             self.run_direct()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
             self.run_aws_data_pipeline()
-        elif self.deploy_args['deploy'] in ('EMR_Scheduled_AWSAF', 'AirflowTest'):
+        elif self.deploy_args['deploy'] in ('airflow'):
             self.run_aws_airflow()
         elif self.deploy_args['deploy'] in ('code'):
             self.run_push_code()

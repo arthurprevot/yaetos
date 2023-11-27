@@ -806,7 +806,7 @@ class Job_Args_Parser():
             args.update(job_args)
             args.update(cmd_args)
             args.update({'job_name': job_name} if job_name else {})
-            args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'EMR_Scheduled_AWSAF') else args['mode']
+            args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'airflow') else args['mode']
             assert 'job_name' in args.keys()
             yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
 
@@ -816,7 +816,7 @@ class Job_Args_Parser():
         args.update(yml_args)
         args.update(job_args)
         args.update(cmd_args)
-        args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'EMR_Scheduled_AWSAF') else args['mode']
+        args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'airflow') else args['mode']
         args = self.update_args(args, loaded_inputs)
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
@@ -954,7 +954,7 @@ class Runner():
         # Executing or deploying
         if job.jargs.deploy in ('none'):  # when executing job code
             job = self.launch_run_mode(job)
-        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'EMR_Scheduled_AWSAF', 'code'):  # when deploying to AWS for execution there
+        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
         return job
 
@@ -972,7 +972,7 @@ class Runner():
         # Defined here separatly from parsing for overridability.
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'EMR_Scheduled_AWSAF', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
