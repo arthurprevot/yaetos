@@ -69,7 +69,6 @@ class DeployPySparkScriptOnAws(object):
         self.job_log_path_with_bucket = '{}/{}'.format(self.s3_bucket_logs, self.job_log_path)   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429
         self.package_path = self.job_log_path + '/code_package'   # format: yaetos/logs/some_job.some_user.20181204.153429/package
         self.package_path_with_bucket = self.job_log_path_with_bucket + '/code_package'   # format: bucket-tempo/yaetos/logs/some_job.some_user.20181204.153429/package
-        # self.s3_dags = CPt(app_args['s3_dags'])
 
         spark_version = self.deploy_args.get('spark_version', '2.4')
         if spark_version == '2.4':
@@ -725,7 +724,6 @@ class DeployPySparkScriptOnAws(object):
         }
 
         param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
-        # import ipdb; ipdb.set_trace()
 
         content = get_template(params, param_extras)
         if not os.path.isdir(self.DAGS):
