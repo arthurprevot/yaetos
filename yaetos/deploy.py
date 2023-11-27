@@ -733,7 +733,7 @@ class DeployPySparkScriptOnAws(object):
 
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
         fname = self.DAGS / Pt(job_dag_name)
-        
+
         os.makedirs(fname.parent, exist_ok=True)
         with open(fname, 'w') as file:
             file.write(content)

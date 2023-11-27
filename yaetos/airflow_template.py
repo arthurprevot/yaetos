@@ -61,7 +61,7 @@ def get_template(params, param_extras):
     CLUSTER_JOB_FLOW_OVERRIDES = {{
         'Name': '{pipeline_name}',
         'ReleaseLabel': '{emr_version}',
-        'Applications': [{{'Name': 'Hadoop'}}, {{'Name': 'Spark'}}],    
+        'Applications': [{{'Name': 'Hadoop'}}, {{'Name': 'Spark'}}],
         'Instances': {{
             'InstanceGroups': [
                 {{
@@ -104,7 +104,7 @@ def get_template(params, param_extras):
             # }}
         ]
     }}
-    
+
     EMR_STEPS = [
         {{
             'Name': 'Run Setup',
@@ -130,7 +130,7 @@ def get_template(params, param_extras):
     with DAG(**DAG_ARGS) as dag:
 
         cluster_creator = EmrCreateJobFlowOperator(
-            task_id='start_emr_cluster', 
+            task_id='start_emr_cluster',
             aws_conn_id='aws_default',
             emr_conn_id='emr_default',
             job_flow_overrides=CLUSTER_JOB_FLOW_OVERRIDES
@@ -150,6 +150,7 @@ def get_template(params, param_extras):
             aws_conn_id='aws_default',
         )
 
+        # # not used for now
         # cluster_checker = EmrJobFlowSensor(
         #     task_id='check_cluster',
         #     job_flow_id="{{{{ task_instance.xcom_pull('start_emr_cluster', key='return_value') }}}}",
@@ -163,7 +164,6 @@ def get_template(params, param_extras):
         #     aws_conn_id='aws_default',
         # )
 
-        cluster_creator >> step_adder >> step_checker 
-        # cluster_creator >> step_adder >> cluster_checker 
+        cluster_creator >> step_adder >> step_checker
     """.format(**params)
     return dedent(template)
