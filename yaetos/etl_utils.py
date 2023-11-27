@@ -2,11 +2,10 @@
 Helper functions. Setup to run locally and on cluster.
 """
 # TODO:
-# - add linter
 # - finish _metadata.txt file content.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
-# - way to run all jobs from 1 cmd line.
+# - way to run all jobs from 1 cmd line (EMR and airflow).
 
 
 import inspect
