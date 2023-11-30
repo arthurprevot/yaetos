@@ -5,8 +5,7 @@ jobs:
     description: "Sample API extraction job, pulling public wikipedia data."
     api_inputs: {'path': 'https://raw.githubusercontent.com/wikimedia-research/Discovery-Hiring-Analyst-2016/master/events_log.csv.gz'}
     output: {'path':'{base_path}/raw/wiki/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
-    frequency: 1 day
-    start_date: "{today}T07:00:00"
+    frequency: '@once'
     spark_boot: False
 
   examples/ex1_sql_job.sql:
@@ -17,6 +16,9 @@ jobs:
       other_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv', 'df_type':'pandas'}
     output: {'path':'{base_path}/frontroom/wiki_ex1_pandas_sql/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     dependencies: [examples/ex0_extraction_job.py]
+    frequency: '@daily'
+    start_date: "{today}T07:00:00+00:00"
+    emails: ['some_email@address.com']
     spark_boot: False
 
   examples/ex1_pandas_api_job.py:
@@ -26,6 +28,9 @@ jobs:
       other_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
     output: {'path':'{base_path}/frontroom/wiki_ex1_pandas_api/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     dependencies: [examples/ex0_extraction_job.py]
+    frequency: '@once'
+    airflow.default_args.retries: 3
+    airflow.default_args.retry_delay: 'timedelta(minutes=5)'
     spark_boot: False
 
   examples/ex1_sql_spark_job:
@@ -38,6 +43,7 @@ jobs:
     output: {'path':'{base_path}/frontroom/wiki_ex1_spark_sql/{now}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
     repartition: 1
+    frequency: '@once'
 
   examples/ex1_spark_api_job.py:
     description: "shows frameworked pyspark ops, same as ex1_sql_job but gives access to spark ops to expand on sql."
@@ -46,9 +52,8 @@ jobs:
       other_events: {'path':"{base_path}/raw/wiki/{latest}/", 'type':'csv'}
     output: {'path':'{base_path}/frontroom/wiki_ex1_spark_api/{now}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
-    frequency: 1 day
-    start_date: "{today}T07:00:00"
-    owners: ['some_email@address.com']
+    frequency: '@once'
+    start_date: '{days_ago(0)}'
 
   # Your jobs should be added here.
 
@@ -56,24 +61,27 @@ jobs:
 # ----- Params -------
 common_params:
   all_mode_params:
+    base_path: '{root_path}/pipelines_data'  # don't add '/' at the end
+    s3_dags: '{root_path}/pipelines_metadata/airflow_dags'
+    s3_logs: '{root_path}/pipelines_metadata'
     connection_file:  conf/connections.cfg
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
-    spark_version: '3.0' # options: '2.4' 'or '3.0'
+    spark_version: '3.4' # options: '2.4', '3.0' or '3.4'
   mode_specific_params:
     prod_EMR:
-      base_path: s3://prod-spark  # don't add '/' at the end
+      root_path: s3://mylake-prod  # don't add '/' at the end
       schema: frontroom
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
-      aws_setup:        dev
+      aws_setup:        pro
       jobs_folder:      jobs/
       load_connectors: all
       enable_redshift_push: True
       save_schemas: False
       manage_git_info: True
     dev_EMR:
-      base_path: s3://dev-spark  # don't add '/' at the end
+      root_path: s3://mylake-dev  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0
       aws_config_file:  conf/aws_config.cfg
@@ -84,7 +92,8 @@ common_params:
       save_schemas: False
       manage_git_info: True
     dev_local:
-      base_path: ./data  # don't add '/' at the end
+      root_path: '.'  # don't add '/' at the end
+      base_path: '{root_path}/data'  # don't add '/' at the end
       schema: sandbox
       load_connectors: none
       aws_config_file:  none
