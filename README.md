@@ -16,13 +16,28 @@ Yaetos is a framework to write data pipelines on top of Pandas and Spark, and de
  - In the simplest cases, pipelines consist of SQL files only. No need to know any programming. Suitable for business intelligence use cases.
  - In more complex cases, pipelines consist of python files, giving access to Pandas, Spark dataframes, RDDs and any python library (scikit-learn, tensorflow, pytorch). Suitable for AI use cases.
 
+It integrates several popular open source systems:
+
+<p float="right">
+  <center>
+  <img src="./docs/images/AirflowLogo.png" alt="image" style="width:auto;height:70px;" />
+  , 
+  <img src="./docs/images/Apache_Spark_logo.svg.png" alt="image" style="width:auto;height:70px;" /> 
+  , 
+  <img src="./docs/images/DuckDB_Logo.png" alt="image" style="width:auto;height:70px;" />
+  and
+  <img src="./docs/images/Pandas_logo.svg.png" alt="image" style="width:auto;height:70px;" />
+  </center>
+</p>
+
+
 Some features:
  * The ability to run jobs locally and on a cluster in the cloud without any changes.
  * The support for dependencies across jobs
  * The support for incremental jobs
  * The automatic creation of AWS clusters when needed.
  * The support for git and unit-tests
- * The integration with any python library to build machine learning or other pipelines.
+ * The ability to integrate any python library in the process (ex: machine learning libraries).
 
 ## To try
 
@@ -58,17 +73,23 @@ Then, open a browser, go to `http://localhost:8888/tree/notebooks`, open  [inspe
 
 ## Development Flow
 
-To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run the AWS cluster or in [conf/jobs_metadata.yml](conf/jobs_metadata.yml) to run locally. To run the jobs, execute the command lines following the same patterns as above:
+To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml). To run the jobs, execute the command lines following the same patterns as above:
 
     python jobs/generic/launcher.py --job_name=examples/some_sql_file.sql
     # or
     python jobs/examples/some_python_file.py
 
-And add the `--deploy=EMR` to deploy and run on an AWS cluster.
-
-You can specify dependencies in the job registry, for local jobs or on AWS cluster.
+Extra arguments:
+ * To run the job with its dependencies: add `--dependencies`
+ * To run the job in the cloud: add `--deploy=EMR`
+ * To run the job in the cloud on a schedule: add `--deploy=airflow`
 
 Jobs can be unit-tested using `py.test`. For a given job, create a corresponding job in `tests/jobs/` folder and add tests that relate to the specific business logic in this job. See [tests/jobs/ex1_frameworked_job_test.py](tests/jobs/ex1_frameworked_job_test.py)for an example.
+
+Depending on the parameters chosen to load the inputs (`'df_type':'pandas'` in [conf/jobs_metadata.yml](conf/jobs_metadata.yml)), the job will use:
+ * Spark: for big-data use cases in SQL and python
+ * DuckDB and Pandas: for normal-data use cases in SQL
+ * Pandas: for normal-data use cases in python
 
 ## Unit-testing
 ... is done using `py.test`. Run them with:
@@ -108,7 +129,6 @@ The status of the job can be monitored in AWS in the EMR section.
 ## Potential improvements
 
  * more unit-testing
- * integration with other scheduling tools (airflow...)
  * integration with other resource provisioning tools (kubernetes...)
  * adding type annotations to code and type checks to CI
  * automatic pulling/pushing data from s3 to local (sampled) for local development
