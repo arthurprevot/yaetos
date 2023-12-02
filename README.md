@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="./docs/images/logo_full.jpeg" alt="Yaetos Project" width="300" height="auto"/>
+	<img src="./docs/images/logo_full_2_transp.png" alt="Yaetos Project" width="300" height="auto"/>
 </p>
 
 <div align="center">
