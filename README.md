@@ -18,17 +18,16 @@ Yaetos is a framework to write data pipelines on top of Pandas and Spark, and de
 
 It integrates several popular open source systems:
 
-<p float="left">
-  <center>
-  <img src="./docs/images/AirflowLogo.png" alt="Airflow" width="15%" style="margin-right:20px"/>
-  <img src="./docs/images/Apache_Spark_logo.svg.png" alt="Spark" width="15%"  style="margin-right:20px"/> 
-  <img src="./docs/images/DuckDB_Logo.png" alt="DuckDB" width="15%"  style="margin-right:20px"/>
-  <img src="./docs/images/Pandas_logo.svg.png" alt="Pandas" width="15%" />
-  </center>
+<p align="center">
+  <img src="./docs/images/AirflowLogo.png" alt="Airflow" style="width:15%" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./docs/images/Apache_Spark_logo.svg.png" alt="Spark" style="width:15%" /> 
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./docs/images/DuckDB_Logo.png" alt="DuckDB" style="width:15%" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./docs/images/Pandas_logo.svg.png" alt="Pandas" style="width:15%" />
 </p>
-
-<!-- style="width:auto;height:50px;margin-right:20px" -->
-
+<!-- CSS options for above, to be tested: style="width:auto;height:50px;margin-right:20px" -->
 
 Some features:
  * The ability to run jobs locally and on a cluster in the cloud without any changes.
