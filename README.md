@@ -20,13 +20,10 @@ It integrates several popular open source systems:
 
 <p float="right">
   <center>
-  <img src="./docs/images/AirflowLogo.png" alt="image" style="width:auto;height:70px;" />
-  , 
-  <img src="./docs/images/Apache_Spark_logo.svg.png" alt="image" style="width:auto;height:70px;" /> 
-  , 
-  <img src="./docs/images/DuckDB_Logo.png" alt="image" style="width:auto;height:70px;" />
-  and
-  <img src="./docs/images/Pandas_logo.svg.png" alt="image" style="width:auto;height:70px;" />
+  <img src="./docs/images/AirflowLogo.png" alt="image" style="width:auto;height:50px;margin-right:20px" />
+  <img src="./docs/images/Apache_Spark_logo.svg.png" alt="image" style="width:auto;height:50px;margin-right:20px" /> 
+  <img src="./docs/images/DuckDB_Logo.png" alt="image" style="width:auto;height:50px;margin-right:20px" />
+  <img src="./docs/images/Pandas_logo.svg.png" alt="image" style="width:auto;height:50px;" />
   </center>
 </p>
 
