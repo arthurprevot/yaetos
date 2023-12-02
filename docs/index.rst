@@ -1,7 +1,7 @@
 Welcome to Yaetos' documentation!
 =================================
 
-.. image:: ./images/logo_full.jpeg
+.. image:: ./images/logo_full_2_transp.png
     :width: 300
     :alt: Logo
     :align: center
