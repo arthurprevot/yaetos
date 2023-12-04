@@ -110,7 +110,7 @@ def get_template(params, param_extras):
             'Name': 'Run Setup',
             'ActionOnFailure': 'CONTINUE',
             'HadoopJarStep': {{
-                'Jar': 's3://elasticmapreduce/libs/script-runner/script-runner.jar',
+                'Jar': 's3://{region}.elasticmapreduce/libs/script-runner/script-runner.jar',
                 'Args': [
                     "s3://{package_path_with_bucket}/setup_master.sh",
                     "s3://{package_path_with_bucket}",

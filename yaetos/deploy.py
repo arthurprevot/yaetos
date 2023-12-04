@@ -463,7 +463,8 @@ class DeployPySparkScriptOnAws(object):
                 'Name': 'Run Setup',
                 'ActionOnFailure': 'CONTINUE',
                 'HadoopJarStep': {
-                    'Jar': 's3://elasticmapreduce/libs/script-runner/script-runner.jar',
+                    # 'Jar': f's3://{self.s3_region}.elasticmapreduce/libs/script-runner/script-runner.jar',
+                    'Jar': f's3://{self.s3_region}.elasticmapreduce/libs/script-runner/script-runner.jar',
                     'Args': [
                         "s3://{}/setup_master.sh".format(self.package_path_with_bucket),
                         "s3://{}".format(self.package_path_with_bucket),
@@ -659,7 +660,7 @@ class DeployPySparkScriptOnAws(object):
                 parameterValues[ii] = {'id': u'myCoreInstanceType', 'stringValue': self.ec2_instance_slaves}
 
         # Change steps to include proper path
-        setup_command = 's3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://{s3_tmp_path}/setup_master.sh,s3://{s3_tmp_path}'.format(s3_tmp_path=self.package_path_with_bucket)  # s3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/setup_master.sh,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/
+        setup_command = 's3://{s3_region}.elasticmapreduce/libs/script-runner/script-runner.jar,s3://{s3_tmp_path}/setup_master.sh,s3://{s3_tmp_path}'.format(s3_tmp_path=self.package_path_with_bucket, region=self.s3_region)  # s3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/setup_master.sh,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/
         spark_submit_command = 'command-runner.jar,' + ','.join([item.replace(',', '\\\,') for item in self.get_spark_submit_args(self.app_file, self.app_args)])   # command-runner.jar,spark-submit,--py-files,/home/hadoop/app/scripts.zip,--packages=com.amazonaws:aws-java-sdk-pom:1.11.760\\\\,org.apache.hadoop:hadoop-aws:2.7.0,/home/hadoop/app/jobs/examples/ex1_frameworked_job.py,--storage=s3  # instructions about \\\ part: https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emractivity.html
 
         commands = [setup_command, spark_submit_command]
@@ -723,6 +724,7 @@ class DeployPySparkScriptOnAws(object):
             'start_date': start_date,
             'schedule': schedule,
             'emails': self.deploy_args.get('emails', '[]'),
+            'region': self.s3_region,
         }
 
         param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
