@@ -463,7 +463,6 @@ class DeployPySparkScriptOnAws(object):
                 'Name': 'Run Setup',
                 'ActionOnFailure': 'CONTINUE',
                 'HadoopJarStep': {
-                    # 'Jar': f's3://{self.s3_region}.elasticmapreduce/libs/script-runner/script-runner.jar',
                     'Jar': f's3://{self.s3_region}.elasticmapreduce/libs/script-runner/script-runner.jar',
                     'Args': [
                         "s3://{}/setup_master.sh".format(self.package_path_with_bucket),
