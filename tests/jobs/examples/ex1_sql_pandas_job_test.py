@@ -1,4 +1,4 @@
-from yaetos.sql_pandas_job import Job
+from jobs.generic.sql_pandas_job import Job
 import pandas as pd
 
 
