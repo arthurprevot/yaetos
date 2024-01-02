@@ -32,12 +32,12 @@ It integrates several popular open source systems:
 Some features:
  * The ability to run jobs locally and on a cluster in the cloud without any changes.
  * The support for dependencies across jobs
- * The support for incremental jobs
+ * The support for incremental jobs (inc. idempotency)
  * The automatic creation of AWS clusters when needed.
  * The support for git and unit-tests
  * The ability to integrate any python library in the process (ex: machine learning libraries).
 
-## To try
+## Getting Started
 
 https://user-images.githubusercontent.com/3277100/175531451-1931086d-866a-40a8-8b1d-0417f8928b66.mp4
 
@@ -69,7 +69,7 @@ Then, open a browser, go to `http://localhost:8888/tree/notebooks`, open  [inspe
 
 ![jupyter demo](docs/images/Screenshot_2022-05-30_at_12.03.14.png)
 
-## Development Flow
+## Development Workflow
 
 To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml). To run the jobs, execute the command lines following the same patterns as above:
 
@@ -96,7 +96,7 @@ Depending on the parameters chosen to load the inputs (`'df_type':'pandas'` in [
     # From inside the docker container
     pytest tests/*
 
-## Installation instructions
+## Installation Instructions
 
 https://user-images.githubusercontent.com/3277100/175531551-02d8606e-8d2c-4cd9-ad8c-759711810fd7.mp4
 
@@ -124,10 +124,22 @@ To check running the same job in the cloud works:
 
 The status of the job can be monitored in AWS in the EMR section.
 
-## Potential improvements
+## Use Cases
+
+This repository includes few jobs or data pipelines to demonstrate Yaetos core functionalities. More "businessy" use cases are available in a separate repository at [github.com/arthurprevot/yaetos_jobs](https://github.com/arthurprevot/yaetos_jobs). They include:
+ * Data pipelines to pull information out of ChatGPT programmatically, to feed into datasets.
+ * Data pipelines to fine tune a "small" open source LLM (aka generative AI), called Albert, for classification, and to run inferences. The model is small enough to run from a laptop (no need for GPU).
+ * Data pipelines to pull employee contact information out of Apollo.io for a set of companies.
+ * Data pipelines to process images (could be satellite, medical, etc) to find contours (@ scale, using Spark).
+ * Data pipelines to process carbon emissions data from climate-trace (https://climatetrace.org/).
+ * Data pipelines to pull information from Github contributors using Github API. 
+
+
+## Potential Improvements
 
  * more unit-testing
  * integration with other resource provisioning tools (kubernetes...)
+ * integration with complementary open source data tools (great expectations, airbyte...)
  * adding type annotations to code and type checks to CI
  * automatic pulling/pushing data from s3 to local (sampled) for local development
  * easier dataset reconciliation
