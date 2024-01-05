@@ -238,7 +238,7 @@ jobs:
     py_job: 'jobs/generic/dummy_job.py'
     spark_boot: False
     dependencies: 
-      # - examples/ex0_extraction_job.py
+      - examples/ex0_extraction_job.py
       - examples/ex1_sql_job.sql
       - examples/ex7_pandas_job.py
 
