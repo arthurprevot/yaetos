@@ -19,6 +19,8 @@ pymysql==0.9.3
 psycopg2-binary==2.8.5   # necesary for sqlalchemy-redshift, psycopg2==2.8.5 install fails.
 sqlalchemy-redshift==0.7.7
 py4j==0.10.9.1  # TODO: check to remove.
+apache-airflow-providers-amazon=8.11.0
+apache-airflow-providers-ssh=3.9.0
 # xlrd==2.0.1  # for excel, xls only, better to be added in project specific req file.
 # scikit-learn==1.0.2 # TODO: fix lib and re-enable when joblib code renabled in env_dispatchers.py, and move to yaetos install libs.
 # botocore==1.8.7
