@@ -233,6 +233,15 @@ jobs:
     frequency: 24h
     emails: ['some_email@address.com']
 
+  examples/run_jobs:
+    description: "shows a job meant to run a bunch of dependencies (dummy job). Takes no input. Generates no output."
+    py_job: 'jobs/generic/dummy_job.py'
+    spark_boot: False
+    dependencies: 
+      # - examples/ex0_extraction_job.py
+      - examples/ex1_sql_job.sql
+      - examples/ex7_pandas_job.py
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------

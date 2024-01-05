@@ -1,10 +1,11 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
-from pyspark.sql.types import StructType
+# from pyspark.sql.types import StructType
 
 
 class Job(ETL_Base):
     def transform(self):
-        return self.sc_sql.createDataFrame([], StructType([]))
+        # return self.sc_sql.createDataFrame([], StructType([]))
+        return None
 
 
 if __name__ == "__main__":
