@@ -62,7 +62,7 @@ class ETL_Base(object):
         .union(set(OTHER_TYPES))
 
     def __init__(self, pre_jargs={}, jargs=None, loaded_inputs={}):
-        logger.info(f"Path to library file (to know if running from yaetos lib or git repo): {__file__}")
+        logger.info(f"Path to library file (to know if running from yaetos lib or git repo): {__file__}")  # TODO: make param 'code_source' impact this. Now only impacts deploy. Not obvious since depend on import from job.
         self.loaded_inputs = loaded_inputs
         self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
         if self.jargs.manage_git_info:
