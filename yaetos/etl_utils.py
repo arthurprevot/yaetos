@@ -227,8 +227,11 @@ class ETL_Base(object):
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
-        py_job = self.set_py_job()
-        job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
+        if 'job_name' not in pre_jargs['job_args']:
+            py_job = self.set_py_job()
+            job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
+        else:
+            job_name = pre_jargs['job_args']['job_name']
         return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
 
     def set_py_job(self):
@@ -840,7 +843,8 @@ class Job_Args_Parser():
         args['inputs'] = self.set_inputs(args, loaded_inputs)
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
-        args['output']['type'] = args.pop('output.type', None) or args['output']['type']
+        if args.get('output'):
+            args['output']['type'] = args.pop('output.type', None) or args['output'].get('type', 'none')
         return args
 
     # TODO: modify later since not used now
@@ -947,7 +951,7 @@ class Runner():
             jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, loaded_inputs={})
             Job = get_job_class(jargs.py_job)
             job = Job(jargs=jargs)
-        else:  # when job run from "python some_job.py"
+        else:  # when job run from "python some_job.py", (or from jupyter notebooks)
             job = Job(pre_jargs={'defaults_args': defaults_args, 'job_args': job_args, 'cmd_args': cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
 
         # Executing or deploying
