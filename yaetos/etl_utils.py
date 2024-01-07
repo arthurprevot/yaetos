@@ -204,7 +204,7 @@ class ETL_Base(object):
         if self.jargs.job_name != self.app_name:
             logger.info("... part of spark app '{}'".format(self.app_name))
 
-        loaded_datasets = self.load_inputs(loaded_inputs)
+        loaded_datasets = self.load_missing_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
         if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('df_type', 'spark') == 'spark':
             if self.jargs.merged_args.get('add_created_at') == 'true':
@@ -241,7 +241,7 @@ class ETL_Base(object):
         logger.info("py_job: '{}'".format(py_job))
         return py_job
 
-    def load_inputs(self, loaded_inputs):
+    def load_missing_inputs(self, loaded_inputs):
         app_args = {}
         for item in self.jargs.inputs.keys():
 
@@ -868,7 +868,7 @@ class Job_Args_Parser():
     #         # code below limited, will break in non-friendly way if not all output params are provided, doesn't support other types of outputs like db ones. TODO: make it better.
     #         output = {'path':cmd_args['output_path'], 'type':cmd_args['output_type']}
     #         return output
-    #     elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
+    #     elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_missing_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
     #         return yml_args.get('output', {})
     #     elif cmd_args.get('mode_no_io'):
     #         output = {}
@@ -937,7 +937,7 @@ class Runner():
         self.job_args = job_args
 
     def parse_cmdline_and_run(self):
-        self.job_args['parse_cmdline'] = True
+        self.job_args['parse_cmdline'] = True  # TODO: parse commandline in this function instead of enabling a flag to parse it downstream. Cleaner for downstream code.
         return self.run()
 
     def run(self):
