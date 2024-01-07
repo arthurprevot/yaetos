@@ -31,6 +31,7 @@ class YaetosCmds(object):
     usage_docker_jupyter = "Launching docker container to run jobs from jupyter notebook."
     usage_run_dockerized = "Run job through docker. Running 'yaetos run_dockerized some/job.py --some=arg' is the same as running 'yaetos usage_docker_bash; python some/job.py --some=arg'"
     usage_run = "Run job in terminal. Running 'yaetos run some/job.py --some=arg' is the same as running 'python some/job.py --some=arg'"
+    usage_panel = "Run panel commandlines to create dashboards (experimental). Running 'yaetos panel some_args' is the same as running 'panel some_args'"
 
     usage = f'''
     yaetos <command> [<args>]
@@ -41,6 +42,7 @@ class YaetosCmds(object):
     launch_docker_jupyter: {usage_docker_jupyter}
     run_dockerized       : {usage_run_dockerized}
     run                  : {usage_run}
+    panel                : {usage_panel}
 
     For more details, see:
     - https://yaetos.readthedocs.io/en/latest/
@@ -88,6 +90,14 @@ class YaetosCmds(object):
         parser = argparse.ArgumentParser(description=self.usage_run)
         ignored, cmd_unknown_args = parser.parse_known_args()
         cmd_str = 'python ' + ' '.join(cmd_unknown_args[1:])
+        cmd_delegated = "./launch_env.sh 4 " + cmd_str
+        out = subprocess.call(cmd_delegated, shell=True)
+        self.print_error(out)
+
+    def panel(self):
+        parser = argparse.ArgumentParser(description=self.usage_panel)
+        ignored, cmd_unknown_args = parser.parse_known_args()
+        cmd_str = ' '.join(cmd_unknown_args[1:])
         cmd_delegated = "./launch_env.sh 4 " + cmd_str
         out = subprocess.call(cmd_delegated, shell=True)
         self.print_error(out)
