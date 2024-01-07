@@ -7,7 +7,7 @@
 # Usage once above done:
 # - "./launch_env.sh 1" -> goes in docker bash, can be used to run all jobs in command line (incl. spark jobs)
 # - "./launch_env.sh 2" -> sets up jupyter in docker, can be used to run all jobs in jupyter. Open UI in host OS at http://localhost:8888/
-# - "./launch_env.sh 3 python somejob.py --some_arg" -> sets up jupyter in docker, can be used to run all jobs in jupyter. Open UI in host OS at http://localhost:8888/
+# - "./launch_env.sh 3 python somejob.py --some_arg" -> Running the job inside docker.
 
 
 yaetos_jobs_home=/path/to/repo/yaetos_or_yaetos_jobs_if_separate/
@@ -40,7 +40,7 @@ elif [[ $run_mode = 2 ]]; then
       jupyter lab --ip 0.0.0.0 --port 8888 --no-browser --allow-root
 elif [[ $run_mode = 3 ]]; then
   cmd_str="${@:2}"
-  echo "Starting the following job in docker: $cmd_str"
+  echo "Running the following job in docker: $cmd_str"
   cd $yaetos_jobs_home
   docker build -t pyspark_container -f Dockerfile .
   docker run -it -p 4040:4040 -p 8080:8080 -p 8081:8081 -p 8888:8888 \
