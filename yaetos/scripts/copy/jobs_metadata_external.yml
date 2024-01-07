@@ -67,7 +67,7 @@ common_params:
     connection_file:  conf/connections.cfg
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
-    spark_version: '3.4' # options: '2.4', '3.0' or '3.4'
+    spark_version: '3.5' # options: '2.4', '3.0', '3.4' or '3.5'
   mode_specific_params:
     prod_EMR:
       root_path: s3://mylake-prod  # don't add '/' at the end
