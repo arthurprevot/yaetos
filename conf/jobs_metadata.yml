@@ -301,6 +301,17 @@ jobs:
       linkedin: {'path':"./data_manual/linkedin/export/Connections_mod.csv", 'type':'csv'}
     output: {'path':'{base_path}/people/{now}/', 'type':'csv'}
 
+  # ----- Dashboards--------
+  dashboards/wikipedia_demo_dashboard.ipynb:
+    description: "Showcase a Dashboard using 'panel', based on dummy wikipedia data (experimental)."
+    inputs:
+      ex1_sql: {'path':'{base_path}/wiki_example_sql/output_ex1_sql_pandas/{latest}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      ex7_pandas: {'path':'{base_path}/wiki_example/output_ex7_pandas/{latest}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'read_kwargs':{'sep':'|'}}
+    dependencies:
+      - examples/ex1_sql_job.sql
+      - examples/ex7_pandas_job.py
+
+
 # ----- Params -------
 common_params:
   all_mode_params:

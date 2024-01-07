@@ -1057,12 +1057,16 @@ class Runner():
             job = Flow(job.jargs, app_name).run_pipeline(sc, sc_sql)  # 'job' is the last job object one in pipeline.
         return job
 
-    def launch_deploy_mode(self, deploy_args, app_args):
+    @staticmethod
+    # def launch_deploy_mode(self, deploy_args, app_args):
+    def launch_deploy_mode(deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from yaetos.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
-    def create_contexts(self, app_name, jargs):
+    @staticmethod
+    # def create_contexts(self, app_name, jargs):
+    def create_contexts(app_name, jargs):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws or running pandas job only.
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
@@ -1104,6 +1108,33 @@ class Runner():
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
         return sc, sc_sql
+
+
+class InputLoader():
+    """
+    To be used by jupyter notebooks (for dashboards) that need to load datasets without running ETL, and without parsing cmdline args.
+    Comes with limitations. Spark disabled.
+    """
+    def __init__(self, **job_args):
+        self.Job = ETL_Base
+        self.job_args = job_args
+
+    # def parse_cmdline_and_run(self):
+    #     self.job_args['parse_cmdline'] = True
+    #     return self.run()
+
+    def run(self):
+        # Job = self.Job
+        # job_args = self.job_args
+        parser, defaults_args, categories = Runner.define_commandline_args()  # TODO: use categories below to remove non applicable params.
+        # cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
+
+        # Building "job", which will include all job args.
+        job = self.Job(pre_jargs={'defaults_args': defaults_args, 'job_args': self.job_args, 'cmd_args': {}})
+
+        # Loading inputs
+        loaded_inputs = job.load_missing_inputs(loaded_inputs={})
+        return loaded_inputs
 
 
 class Flow():
