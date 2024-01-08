@@ -2,6 +2,7 @@ FROM docker.io/bitnami/spark:3.1.3
 # docker.io/bitnami/spark:3.1.3 -> spark 3.1.3, python 3.8.13, scala 2.12.10, https://github.com/bitnami/bitnami-docker-spark, https://hub.docker.com/r/bitnami/spark
 USER root
 
+
 # Lib installs. Using local copy to tmp dir to allow checkpointing this step (no re-installs as long as requirements_base.txt doesn't change)
 COPY yaetos/scripts/requirements_base.txt /tmp/requirements.txt
 COPY yaetos/scripts/requirements_dev.txt /tmp/requirements_dev.txt
