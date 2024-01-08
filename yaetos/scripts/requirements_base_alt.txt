@@ -7,7 +7,7 @@ awscli==1.32.14  # necessary to deploy to AWS Data Pipeline. Tried 1.19.7 but ca
 boto3==1.34.14
 cloudpathlib==0.7.0
 pandas==2.1.4
-sqlalchemy==2.0.25
+sqlalchemy==1.4.51
 networkx==3.2.1
 # duckdb==0.4.0 # not tested. Likely won't work in this docker setup (requiring more recent bitnami image)
 
