@@ -4,6 +4,7 @@
 # Parse arguments
 s3_bucket="$1"
 s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
+echo "--- S3 path to grab files: ", $s3_bucket
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
 echo "--- Copy S3 to EMR master ---"
@@ -18,10 +19,9 @@ aws s3 cp "$s3_bucket/terminate_idle_cluster.sh" /home/hadoop/terminate_idle_clu
 cd /home/hadoop/
 sudo pip3 install --upgrade pip
 echo "--- Installing requirements.txt ---"
-sudo pip3 install --ignore-installed pyyaml==5.4.1  # install separately since "--ignore-installed" is required for this one.
 sudo pip3 install -r requirements.txt
-sudo pip3 install cloudpathlib  # re-installed outside of requirements.txt since install in requirements.txt is somehow registered. TODO: fix it
-sudo pip3 install duckdb  # re-installed outside of requirements.txt since install in requirements.txt is somehow registered. TODO: fix it
+# Note: saw issues with libs from requirement not installed (because of other version already available).
+# May need to force them using "sudo pip3 install --ignore-installed somelib==x.x.x". TODO: double check.
 echo "--- Installing requirements_extra.txt ---"
 sudo pip3 install -r requirements_extra.txt
 echo "--- Checking versions ---"
@@ -31,6 +31,8 @@ echo "- awscli ---"
 sudo pip3 show awscli
 echo "- boto3 ---"
 sudo pip3 show boto3
+echo "- pandas ---"
+sudo pip3 show pandas
 echo "- cloudpathlib ---"
 sudo pip3 show cloudpathlib
 echo "- duckdb ---"
