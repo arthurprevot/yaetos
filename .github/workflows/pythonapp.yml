@@ -12,19 +12,19 @@ jobs:
     #   image: docker://manifoldai/orbyter-ml-dev:2.0 # replace name
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.7
+    - name: Set up Python
       uses: actions/setup-python@v1
       with:
         python-version: 3.9  # installs 3.9.x emr-7.0.0 includes python 3.9.x, emr-6.15.0 includes python 3.7.16
     # Spark setup as per https://github.com/marketplace/actions/setup-apache-spark
-    - uses: actions/setup-java@v1
+    - uses: actions/setup-java@v3
       with:
-        java-version: '11'
+        java-version: '17'
 
     - uses: vemonet/setup-spark@v1
       with:
-        spark-version: '3.1.3'
-        hadoop-version: '3.2'
+        spark-version: '3.4.1'
+        hadoop-version: '3'
 
     - run: spark-submit --version
     - name: Install dependencies
