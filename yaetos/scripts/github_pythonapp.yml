@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Setup close to EMR7.0.0 (same python, same spark versions)
     - uses: actions/checkout@v3
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -21,7 +22,7 @@ jobs:
 
     - uses: vemonet/setup-spark@v1
       with:
-        spark-version: '3.4.1'
+        spark-version: '3.5.0'
         hadoop-version: '3'
 
     - run: spark-submit --version
