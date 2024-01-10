@@ -74,7 +74,6 @@ class DeployPySparkScriptOnAws(object):
         if spark_version == '2.4':
             self.emr_version = "emr-5.26.0"
             # used "emr-5.26.0" successfully for a bit. emr-6.0.0 is latest as of june 2020, first with python3 by default but not supported by AWS Data Pipeline, emr-5.26.0 is latest as of aug 2019 # Was "emr-5.8.0", which was compatible with m3.2xlarge.
-            # TODO: check switching to EMR 5.28 which has improvement to EMR runtime for spark.
         elif spark_version == '3.0':
             self.emr_version = "emr-6.1.1"
             # latest is "emr-6.3.0" but latest compatible with AWS Data Piupeline is "emr-6.1.0".
@@ -82,7 +81,7 @@ class DeployPySparkScriptOnAws(object):
         elif spark_version == '3.4':
             self.emr_version = "emr-6.15.0"  # not compatible with "AWS Data Pipeline" but should be with Airflow. Inc Python 3.7.16
         elif spark_version == '3.5':
-            self.emr_version = "emr-7.0.0"  # not compatible with "AWS Data Pipeline" but should be with Airflow. Inc Python 3.7.16
+            self.emr_version = "emr-7.0.0"  # not compatible with "AWS Data Pipeline" but should be with Airflow. Inc Python 3.9.16
 
         if self.deploy_args.get('monitor_git', False):  # TODO: centralize monitor_git
             try:
