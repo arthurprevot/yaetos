@@ -6,8 +6,8 @@ project = 'Yaetos'
 copyright = '2018, Arthur Prevot'
 author = 'Arthur Prevot'
 
-release = '0.10'
-version = '0.10.3'
+release = '0.11'
+version = '0.11.1'
 
 # -- General configuration
 

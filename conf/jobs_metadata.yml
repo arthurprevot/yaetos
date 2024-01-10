@@ -233,6 +233,15 @@ jobs:
     frequency: 24h
     emails: ['some_email@address.com']
 
+  examples/run_jobs:
+    description: "shows a job meant to run a bunch of dependencies (dummy job). Takes no input. Generates no output."
+    py_job: 'jobs/generic/dummy_job.py'
+    spark_boot: False
+    dependencies: 
+      - examples/ex0_extraction_job.py
+      - examples/ex1_sql_job.sql
+      - examples/ex7_pandas_job.py
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------
@@ -292,6 +301,17 @@ jobs:
       linkedin: {'path':"./data_manual/linkedin/export/Connections_mod.csv", 'type':'csv'}
     output: {'path':'{base_path}/people/{now}/', 'type':'csv'}
 
+  # ----- Dashboards--------
+  dashboards/wikipedia_demo_dashboard.ipynb:
+    description: "Showcase a Dashboard using 'panel', based on dummy wikipedia data (experimental)."
+    inputs:
+      ex1_sql: {'path':'{base_path}/wiki_example_sql/output_ex1_sql_pandas/{latest}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      ex7_pandas: {'path':'{base_path}/wiki_example/output_ex7_pandas/{latest}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'read_kwargs':{'sep':'|'}}
+    dependencies:
+      - examples/ex1_sql_job.sql
+      - examples/ex7_pandas_job.py
+
+
 # ----- Params -------
 common_params:
   all_mode_params:
@@ -301,7 +321,7 @@ common_params:
     connection_file:  conf/connections.cfg
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
-    spark_version: '3.4' # options: '2.4', '3.0' or '3.4'
+    spark_version: '3.5' # options: '2.4', '3.0', '3.4' or '3.5'
   mode_specific_params:
     prod_EMR:
       root_path: s3://mylake-prod  # don't add '/' at the end

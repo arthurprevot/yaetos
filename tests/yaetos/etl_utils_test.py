@@ -29,15 +29,15 @@ class Test_ETL_Base(object):
         py_job = ETL_Base(pre_jargs=get_pre_jargs({})).set_py_job()
         assert py_job == LOCAL_JOB_FOLDER + 'yaetos/etl_utils.py'  # file is the one that starts execution, typically the job python file.
 
-    def test_load_inputs(self, sc, sc_sql, ss, get_pre_jargs):
-        """Confirming load_inputs acts as a passthrough"""
+    def test_load_missing_inputs(self, sc, sc_sql, ss, get_pre_jargs):
+        """Confirming load_missing_inputs acts as a passthrough"""
         sdf = ss.read.json(sc.parallelize([
             {'id': 1},
             {'id': 2},
             {'id': 3}]))
         loaded_inputs = {'input1': sdf}
         app_args_expected = loaded_inputs
-        assert ETL_Base(pre_jargs=get_pre_jargs(loaded_inputs.keys())).load_inputs(loaded_inputs) == app_args_expected
+        assert ETL_Base(pre_jargs=get_pre_jargs(loaded_inputs.keys())).load_missing_inputs(loaded_inputs) == app_args_expected
 
     def test_get_max_timestamp(self, sc, sc_sql, ss, get_pre_jargs):
         sdf = ss.read.json(sc.parallelize([
@@ -163,9 +163,14 @@ class Test_Flow(object):
                 ['examples/ex4_dependency2_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency1_job.py', 'examples/ex4_dependency3_job.sql'],
                 ['examples/ex4_dependency3_job.sql', 'examples/ex4_dependency4_job.py'],
+                ['examples/ex0_extraction_job.py', 'examples/run_jobs'],
+                ['examples/ex1_sql_job.sql', 'examples/run_jobs'],
+                ['examples/ex7_pandas_job.py', 'examples/run_jobs'],
                 ['marketing/github_accounts_extraction_job.py', 'marketing/github_repos_extraction_job.py'],
                 ['marketing/github_repos_extraction_job.py', 'marketing/github_contributors_extraction_job.py'],
                 ['marketing/github_contributors_extraction_job.py', 'marketing/github_committers_extraction_job.py'],
+                ['examples/ex1_sql_job.sql', 'dashboards/wikipedia_demo_dashboard.ipynb'],
+                ['examples/ex7_pandas_job.py', 'dashboards/wikipedia_demo_dashboard.ipynb'],
             ]),
         )
         print(connection_real)

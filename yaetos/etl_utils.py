@@ -62,7 +62,7 @@ class ETL_Base(object):
         .union(set(OTHER_TYPES))
 
     def __init__(self, pre_jargs={}, jargs=None, loaded_inputs={}):
-        logger.info(f"Path to library file (to know if running from yaetos lib or git repo): {__file__}")
+        logger.info(f"Path to library file (to know if running from yaetos lib or git repo): {__file__}")  # TODO: make param 'code_source' impact this. Now only impacts deploy. Not obvious since depend on import from job.
         self.loaded_inputs = loaded_inputs
         self.jargs = self.set_jargs(pre_jargs, loaded_inputs) if not jargs else jargs
         if self.jargs.manage_git_info:
@@ -204,7 +204,7 @@ class ETL_Base(object):
         if self.jargs.job_name != self.app_name:
             logger.info("... part of spark app '{}'".format(self.app_name))
 
-        loaded_datasets = self.load_inputs(loaded_inputs)
+        loaded_datasets = self.load_missing_inputs(loaded_inputs)
         output = self.transform(**loaded_datasets)
         if output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('df_type', 'spark') == 'spark':
             if self.jargs.merged_args.get('add_created_at') == 'true':
@@ -227,8 +227,11 @@ class ETL_Base(object):
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
-        py_job = self.set_py_job()
-        job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
+        if 'job_name' not in pre_jargs['job_args']:
+            py_job = self.set_py_job()
+            job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
+        else:
+            job_name = pre_jargs['job_args']['job_name']
         return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
 
     def set_py_job(self):
@@ -238,7 +241,7 @@ class ETL_Base(object):
         logger.info("py_job: '{}'".format(py_job))
         return py_job
 
-    def load_inputs(self, loaded_inputs):
+    def load_missing_inputs(self, loaded_inputs):
         app_args = {}
         for item in self.jargs.inputs.keys():
 
@@ -840,7 +843,8 @@ class Job_Args_Parser():
         args['inputs'] = self.set_inputs(args, loaded_inputs)
         # args['output'] = self.set_output(cmd_args, yml_args)  # TODO: fix later
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
-        args['output']['type'] = args.pop('output.type', None) or args['output']['type']
+        if args.get('output'):
+            args['output']['type'] = args.pop('output.type', None) or args['output'].get('type', 'none')
         return args
 
     # TODO: modify later since not used now
@@ -864,7 +868,7 @@ class Job_Args_Parser():
     #         # code below limited, will break in non-friendly way if not all output params are provided, doesn't support other types of outputs like db ones. TODO: make it better.
     #         output = {'path':cmd_args['output_path'], 'type':cmd_args['output_type']}
     #         return output
-    #     elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
+    #     elif cmd_args.get('job_param_file'):  # should be before loaded_inputs to use yaml if available. Later function load_missing_inputs uses both self.jargs.inputs and loaded_inputs, so not incompatible.
     #         return yml_args.get('output', {})
     #     elif cmd_args.get('mode_no_io'):
     #         output = {}
@@ -933,7 +937,7 @@ class Runner():
         self.job_args = job_args
 
     def parse_cmdline_and_run(self):
-        self.job_args['parse_cmdline'] = True
+        self.job_args['parse_cmdline'] = True  # TODO: parse commandline in this function instead of enabling a flag to parse it downstream. Cleaner for downstream code.
         return self.run()
 
     def run(self):
@@ -947,7 +951,7 @@ class Runner():
             jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, loaded_inputs={})
             Job = get_job_class(jargs.py_job)
             job = Job(jargs=jargs)
-        else:  # when job run from "python some_job.py"
+        else:  # when job run from "python some_job.py", (or from jupyter notebooks)
             job = Job(pre_jargs={'defaults_args': defaults_args, 'job_args': job_args, 'cmd_args': cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
 
         # Executing or deploying
@@ -1053,12 +1057,14 @@ class Runner():
             job = Flow(job.jargs, app_name).run_pipeline(sc, sc_sql)  # 'job' is the last job object one in pipeline.
         return job
 
-    def launch_deploy_mode(self, deploy_args, app_args):
+    @staticmethod
+    def launch_deploy_mode(deploy_args, app_args):
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from yaetos.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
-    def create_contexts(self, app_name, jargs):
+    @staticmethod
+    def create_contexts(app_name, jargs):
         # Load spark here instead of at module level to remove dependency on spark when only deploying code to aws or running pandas job only.
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
@@ -1100,6 +1106,26 @@ class Runner():
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
         return sc, sc_sql
+
+
+class InputLoader():
+    """
+    To be used by jupyter notebooks (for dashboards) that need to load datasets without running ETL, and without parsing cmdline args.
+    Comes with limitations. Spark disabled.
+    """
+    def __init__(self, **job_args):
+        self.Job = ETL_Base
+        self.job_args = job_args
+
+    def run(self):
+        parser, defaults_args, categories = Runner.define_commandline_args()
+
+        # Building "job", which will include all job args.
+        job = self.Job(pre_jargs={'defaults_args': defaults_args, 'job_args': self.job_args, 'cmd_args': {}})
+
+        # Loading inputs
+        loaded_inputs = job.load_missing_inputs(loaded_inputs={})
+        return loaded_inputs
 
 
 class Flow():

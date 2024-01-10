@@ -69,6 +69,8 @@ Then, open a browser, go to `http://localhost:8888/tree/notebooks`, open  [inspe
 
 ![jupyter demo](docs/images/Screenshot_2022-05-30_at_12.03.14.png)
 
+To create dashboards, Yaetos integrates "Panel" python library. Dashboards can be defined in jupyter notebooks (see example in ./dashboards folder) and published using "Panel".
+
 ## Development Workflow
 
 To write a new ETL, create a new file in [ the `jobs/` folder](jobs/) or any subfolders, either a `.sql` file or a `.py` file, following the examples from that same folder, and register that job, its inputs and output path locations in [conf/jobs_metadata.yml](conf/jobs_metadata.yml). To run the jobs, execute the command lines following the same patterns as above:
