@@ -38,4 +38,11 @@ To execute a job or pipeline in the cloud, on a scheduled
 
 .. code-block:: console
 
-  $ python jobs/examples/ex1_frameworked_job.py --deploy=EMR_Scheduled
+  $ python jobs/examples/ex1_frameworked_job.py --deploy=airflow
+
+To create and deploy dashboards
+---------------------------------------------------------
+
+To create dashboards, Yaetos integrates "Panel" python library, and some functionalities to help the integration. Dashboards can be defined in jupyter notebooks, as per standard Panel process, and published using "Panel" from within the notebook. See the example https://github.com/arthurprevot/yaetos/blob/master/dashboards/wikipedia_demo_dashboard.ipynb .
+
+The dashboards can be defined in the job manifest (jobs_metadata.yml) to provide full lineage of the data all the way to the dashboards.
