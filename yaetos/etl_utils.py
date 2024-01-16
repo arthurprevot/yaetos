@@ -1090,8 +1090,8 @@ class Runner():
 
             # JARs
             package_str = ','.join(PACKAGES_LOCAL_SPARK_3_5)
-            package_str = jargs.merged_args.get('spark_packages') or package_str
-            jars_str = jargs.merged_args.get('spark_jars') or JARS
+            package_str = jargs.merged_args.get('spark_packages') or package_str  # TODO: pass PACKAGES_LOCAL_SPARK_3_5 as default spark_packages param, instead of here, so default is visible in param list.
+            jars_str = jargs.merged_args.get('spark_jars') or JARS  # TODO: same as above.
 
             conf = conf \
                 .set("spark.jars.packages", package_str) \
