@@ -1075,6 +1075,7 @@ class Runner():
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
+        from configparser import ConfigParser
 
         conf = SparkConf()
         # TODO: move spark-submit params here since it is more generic than in spark submit, params like "spark.driver.memoryOverhead" cause pb in spark submit.
@@ -1085,9 +1086,16 @@ class Runner():
         if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
             # Env vars for S3 access
             # credentials = boto3.Session(profile_name='default').get_credentials() # TODO: parametrize
-            credentials = boto3.Session(profile_name='generic_profile').get_credentials()  # generic + profile
+
+            config = ConfigParser()
+            # assert os.path.isfile(deploy_args['aws_config_file'])
+            print('#####', jargs.aws_config_file, jargs.aws_setup)
+            config.read(jargs.aws_config_file)
+            profile_name = config.get(jargs.aws_setup, 'profile_name')
+            credentials = boto3.Session(profile_name=profile_name).get_credentials()
             os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+
             # JARs
             package = PACKAGES_LOCAL if jargs.merged_args.get('spark_version', '2.4') == '2.4' else PACKAGES_LOCAL_ALT
             package_str = ','.join(package)
