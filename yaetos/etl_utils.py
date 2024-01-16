@@ -1079,6 +1079,7 @@ class Runner():
             conf = conf.set("spark.driver.memoryOverhead", jargs.merged_args['driver-memoryOverhead'])
 
         if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
+            # Setup below not needed when running from EMR because setup there is done through spark-submit.
             # Env vars for S3 access
             config = ConfigParser()
             assert os.path.isfile(jargs.aws_config_file)
@@ -1095,13 +1096,8 @@ class Runner():
 
             conf = conf \
                 .set("spark.jars.packages", package_str) \
-                .set("spark.jars", jars_str) #\
-                # .set('spark.hadoop.fs.s3a.aws.credentials.provider', 'org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider')
+                .set("spark.jars", jars_str)
 
-            # Setup above not needed when running from EMR where setup done in spark-submit.
-
-        # print('#######', package_str)
-        # print('#######', jars_str)
         if jargs.merged_args.get('emr_core_instances') == 0:
             conf = conf \
                 .set("spark.hadoop.fs.s3a.buffer.dir", '/tmp') \
