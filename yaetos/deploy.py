@@ -515,7 +515,7 @@ class DeployPySparkScriptOnAws(object):
             "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
         ]
         if app_args.get('load_connectors', '') == 'all':
-            package_str = ','.join(PACKAGES_EMR_SPARK_3)
+            package_str = ','.join(eu.PACKAGES_EMR_SPARK_3)
             pac = [f"--packages={app_args.get('spark_packages')}"] if app_args.get('spark_packages') else [f"--packages={package_str}"]
             jar = [f"--jars={app_args.get('spark_jars')}"] if app_args.get('spark_jars') else [f"--jars={eu.JARS}"]
         else:
