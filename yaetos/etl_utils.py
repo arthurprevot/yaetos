@@ -1085,11 +1085,8 @@ class Runner():
 
         if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
             # Env vars for S3 access
-            # credentials = boto3.Session(profile_name='default').get_credentials() # TODO: parametrize
-
             config = ConfigParser()
-            # assert os.path.isfile(deploy_args['aws_config_file'])
-            print('#####', jargs.aws_config_file, jargs.aws_setup)
+            assert os.path.isfile(jargs.aws_config_file)
             config.read(jargs.aws_config_file)
             profile_name = config.get(jargs.aws_setup, 'profile_name')
             credentials = boto3.Session(profile_name=profile_name).get_credentials()

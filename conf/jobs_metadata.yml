@@ -231,7 +231,7 @@ jobs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input/", 'type':'csv'}
     base_path: 's3a://mylake-dev/pipelines_data'
     aws_config_file:  conf/aws_config.cfg
-    aws_setup:        dev_gen
+    aws_setup: dev
     output: {'path':'{base_path}/load_example/test_files/{now}/', 'type':'csv'}
     load_connectors: all
 
