@@ -1095,8 +1095,8 @@ class Runner():
 
             conf = conf \
                 .set("spark.jars.packages", package_str) \
-                .set("spark.jars", jars_str) \
-                .set('spark.hadoop.fs.s3a.aws.credentials.provider', 'org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider')
+                .set("spark.jars", jars_str) #\
+                # .set('spark.hadoop.fs.s3a.aws.credentials.provider', 'org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider')
 
             # Setup above not needed when running from EMR where setup done in spark-submit.
 
