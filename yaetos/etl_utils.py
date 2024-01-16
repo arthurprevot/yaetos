@@ -45,7 +45,13 @@ JOB_FOLDER = 'jobs/'
 PACKAGES_EMR = ['com.databricks:spark-redshift_2.11:2.0.1', 'org.apache.spark:spark-avro_2.11:2.4.0', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
 PACKAGES_EMR_ALT = ['io.github.spark-redshift-community:spark-redshift_2.12:5.0.3', 'org.apache.spark:spark-avro_2.12:3.1.1', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # same but compatible with spark 3.
 PACKAGES_LOCAL = PACKAGES_EMR + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']
-PACKAGES_LOCAL_ALT = PACKAGES_EMR_ALT + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']  # will probably need to be moved to hadoop-aws:3.2.1 to work locally.
+# PACKAGES_LOCAL_ALT = PACKAGES_EMR_ALT + ['com.amazonaws:aws-java-sdk-pom:1.12.576', 'org.apache.hadoop:hadoop-aws:3.3.6']  # will probably need to be moved to hadoop-aws:3.2.1 to work locally.
+#PACKAGES_LOCAL_ALT = PACKAGES_EMR_ALT + ['org.apache.hadoop:hadoop-aws:2.8.5', 'com.amazonaws:aws-java-sdk:1.11.659', 'org.apache.hadoop:hadoop-common:2.8.5', 'com.google.guava:guava:33.0.0-jre']  # will probably need to be moved to hadoop-aws:3.2.1 to work locally.
+#PACKAGES_LOCAL_SPARK3_1_2 = PACKAGES_EMR_ALT + ['org.apache.hadoop:hadoop-aws:2.8.5', 'com.amazonaws:aws-java-sdk:1.11.659', 'org.apache.hadoop:hadoop-common:2.8.5', 'com.google.guava:guava:23.0']  # Said to work but not here.
+PACKAGES_LOCAL_SPARK3_5   = PACKAGES_EMR_ALT + ['org.apache.hadoop:hadoop-aws:3.3.6', 'com.amazonaws:aws-java-sdk:1.12.367', 'org.apache.hadoop:hadoop-common:3.3.6']  # will probably need to be moved to hadoop-aws:3.2.1 to work locally.
+
+PACKAGES_LOCAL_ALT = PACKAGES_LOCAL_SPARK3_5
+
 JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.13/redshift-jdbc42-2.1.0.13.zip'  # putting here libs not available in public repo so not add-eable to "packages" var. TODO: redshift-jdbc42-2.1.0.13.zip found online so check if add-eable to "packages"
 
 
@@ -1078,7 +1084,8 @@ class Runner():
 
         if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
             # Env vars for S3 access
-            credentials = boto3.Session(profile_name='default').get_credentials()
+            # credentials = boto3.Session(profile_name='default').get_credentials() # TODO: parametrize
+            credentials = boto3.Session(profile_name='generic_profile').get_credentials()  # generic + profile
             os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
             # JARs
@@ -1089,9 +1096,13 @@ class Runner():
 
             conf = conf \
                 .set("spark.jars.packages", package_str) \
-                .set("spark.jars", jars_str)
+                .set("spark.jars", jars_str) \
+                .set('spark.hadoop.fs.s3a.aws.credentials.provider', 'org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider')
+
             # Setup above not needed when running from EMR where setup done in spark-submit.
 
+        # print('#######', package_str)
+        # print('#######', jars_str)
         if jargs.merged_args.get('emr_core_instances') == 0:
             conf = conf \
                 .set("spark.hadoop.fs.s3a.buffer.dir", '/tmp') \
@@ -1105,6 +1116,7 @@ class Runner():
         sc = spark.sparkContext
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
+        # import ipdb; ipdb.set_trace()
         return sc, sc_sql
 
 

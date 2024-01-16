@@ -224,6 +224,15 @@ jobs:
     output: {'path':'{base_path}/load_example/excel/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
+  examples/copy_local_to_cloud_job:
+    description: "Copy data from local to cloud. To be executed from local only."
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input/", 'type':'csv'}
+    base_path: 's3a://mylake-dev/pipelines_data'
+    output: {'path':'{base_path}/load_example/test_files/{now}/', 'type':'csv'}
+    load_connectors: all
+
   examples/wordcount_frameworked_job.py:
     description: "shows raw pyspark rdd ops in framework, same as wordcount_raw_job"
     inputs:
