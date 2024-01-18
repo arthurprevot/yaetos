@@ -10,17 +10,17 @@ echo "--- S3 path to grab files: ", $s3_bucket
 print_lib_install() {
     local FILENAME="$1"
     # Read the file line by line
-    while IFS= read -r name
+    while IFS= read -r lib_line
     do
         # Skip empty lines and lines starting with spaces
-        if [[ -z "$name" || "$name" =~ ^[[:space:]] || "$name" =~ ^# ]]; then
+        if [[ -z "$lib_line" || "$lib_line" =~ ^[[:space:]] || "$lib_line" =~ ^# ]]; then
             continue
         fi
 
-        # Print each name
-        name_lib="${name%%==*}"
-        name_lib_and_version="${name%%\#*}"
-        echo "--- Checking lib $name_lib from line $name ---"
+        # Print each lib_line
+        name_lib="${lib_line%%==*}"
+        name_lib_and_version="${lib_line%%\#*}"
+        echo "--- Checking lib $name_lib from line $lib_line ---"
         
         # if [ "$is_executable" = true ]; then
         #     # Execute some code
