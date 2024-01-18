@@ -6,30 +6,7 @@ s3_bucket="$1"
 s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
 echo "--- S3 path to grab files: ", $s3_bucket
 
-# Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
-echo "--- Copy S3 to EMR master ---"
-aws s3 cp $s3_bucket_scripts /home/hadoop/scripts.tar.gz  # TODO check step worked or exit with failure, instead of failing silently.
-aws s3 cp "$s3_bucket/setup_master.sh" /home/hadoop/setup_master.sh  # Added for debugging purposes only
-aws s3 cp "$s3_bucket/setup_nodes.sh" /home/hadoop/setup_nodes.sh  # Added for debugging purposes only
-aws s3 cp "$s3_bucket/requirements.txt" /home/hadoop/requirements.txt
-aws s3 cp "$s3_bucket/requirements_extra.txt" /home/hadoop/requirements_extra.txt
-aws s3 cp "$s3_bucket/terminate_idle_cluster.sh" /home/hadoop/terminate_idle_cluster.sh
-
-# Install pip libs.
-cd /home/hadoop/
-sudo pip3 install --upgrade pip
-echo "--- Installing requirements.txt ---"
-sudo pip3 install -r requirements.txt
-# Note: saw issues with libs from requirement not installed (because of other version already available).
-# May need to force them using "sudo pip3 install --ignore-installed somelib==x.x.x". TODO: double check.
-sudo pip3 install --ignore-installed cloudpathlib==0.16.0
-echo "--- Installing requirements_extra.txt ---"
-sudo pip3 install -r --ignore-installed requirements_extra.txt
-# sudo pip3 install --ignore-installed transformers==4.30.2
-# sudo pip3 install --ignore-installed tensorflow==2.11.0 # latest 2.15.0
-sudo pip3 install --ignore-installed sentencepiece==0.1.99
-echo "--- Checking versions ---"
-
+# Function to print install info about libraries, to double check installs
 print_lib_install() {
     local FILENAME="$1"
     # Read the file line by line
@@ -48,6 +25,34 @@ print_lib_install() {
     done < "$FILENAME"
 }
 
+# Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
+echo "--- Copy S3 to EMR master ---"
+aws s3 cp $s3_bucket_scripts /home/hadoop/scripts.tar.gz  # TODO check step worked or exit with failure, instead of failing silently.
+aws s3 cp "$s3_bucket/setup_master.sh" /home/hadoop/setup_master.sh  # Added for debugging purposes only
+aws s3 cp "$s3_bucket/setup_nodes.sh" /home/hadoop/setup_nodes.sh  # Added for debugging purposes only
+aws s3 cp "$s3_bucket/requirements.txt" /home/hadoop/requirements.txt
+aws s3 cp "$s3_bucket/requirements_extra.txt" /home/hadoop/requirements_extra.txt
+aws s3 cp "$s3_bucket/terminate_idle_cluster.sh" /home/hadoop/terminate_idle_cluster.sh
+
+# Install pip libs.
+echo "--- Checking versions pre install ---"
+print_lib_install "requirements.txt"
+print_lib_install "requirements_extra.txt"
+
+cd /home/hadoop/
+sudo pip3 install --upgrade pip
+echo "--- Installing requirements.txt ---"
+sudo pip3 install -r requirements.txt
+# Note: saw issues with libs from requirement not installed (because of other version already available).
+# May need to force them using "sudo pip3 install --ignore-installed somelib==x.x.x". TODO: double check.
+sudo pip3 install --ignore-installed cloudpathlib==0.16.0
+echo "--- Installing requirements_extra.txt ---"
+sudo pip3 install -r --ignore-installed requirements_extra.txt
+# sudo pip3 install --ignore-installed transformers==4.30.2
+# sudo pip3 install --ignore-installed tensorflow==2.11.0 # latest 2.15.0
+sudo pip3 install --ignore-installed sentencepiece==0.1.99
+
+echo "--- Checking versions post install ---"
 print_lib_install "requirements.txt"
 print_lib_install "requirements_extra.txt"
 
