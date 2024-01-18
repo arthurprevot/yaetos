@@ -1,7 +1,9 @@
 # Add python libraries required by your jobs (following standard python requirements.txt format)
 
+# Libraries below needed for some of the example jobs.
+# They can be removed if the example jobs are removed.
 requests==2.31.0
 transformers==4.30.2 # latest 4.36.2
 tensorflow==2.11.0 # latest 2.15.0
 sentencepiece==0.1.99
-
+# add more as needed.

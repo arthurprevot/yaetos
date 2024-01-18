@@ -29,22 +29,39 @@ sudo pip3 install -r --ignore-installed requirements_extra.txt
 # sudo pip3 install --ignore-installed tensorflow==2.11.0 # latest 2.15.0
 sudo pip3 install --ignore-installed sentencepiece==0.1.99
 echo "--- Checking versions ---"
-echo "- pyyaml ---"
-sudo pip3 show pyyaml
-echo "- awscli ---"
-sudo pip3 show awscli
-echo "- boto3 ---"
-sudo pip3 show boto3
-echo "- pandas ---"
-sudo pip3 show pandas
-echo "- cloudpathlib ---"
-sudo pip3 show cloudpathlib
-echo "- duckdb ---"
-sudo pip3 show duckdb
-echo "- transformers ---"
-sudo pip3 show transformers
-echo "- sentencepiece ---"
-sudo pip3 show sentencepiece
+
+FILENAME="requirements.txt"
+# Read the file line by line
+while IFS= read -r name
+do
+    # Skip empty lines and lines starting with spaces
+    if [[ -z "$name" || "$name" =~ ^[[:space:]] ]]; then
+        continue
+    fi
+
+    # Print each name
+    name_lib="${name%%==*}"
+    echo "--- Checking lib $name_lib from line $name ---"
+    # echo "- pyyaml ---"
+    sudo pip3 show $name_lib
+done < "$FILENAME"
+
+FILENAME="requirements_extra.txt"
+# Read the file line by line
+while IFS= read -r name
+do
+    # Skip empty lines and lines starting with spaces
+    if [[ -z "$name" || "$name" =~ ^[[:space:]] ]]; then
+        continue
+    fi
+
+    # Print each name
+    name_lib="${name%%==*}"
+    echo "--- Checking lib $name_lib from line $name ---"
+    # echo "- pyyaml ---"
+    sudo pip3 show $name_lib
+done < "$FILENAME"
+
 
 # Untar file
 echo "--- Untaring job files ---"
