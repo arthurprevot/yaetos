@@ -36,21 +36,23 @@ aws s3 cp "$s3_bucket/terminate_idle_cluster.sh" /home/hadoop/terminate_idle_clu
 
 # Install pip libs.
 echo "--- Checking versions pre install ---"
+cd /home/hadoop/
 print_lib_install "requirements.txt"
 print_lib_install "requirements_extra.txt"
-
-cd /home/hadoop/
+echo "--- Installing libs ---"
 sudo pip3 install --upgrade pip
 echo "--- Installing requirements.txt ---"
 sudo pip3 install -r requirements.txt
 # Note: saw issues with libs from requirement not installed (because of other version already available).
+# Can be identified with print_lib_install calls pre and post installs.
 # May need to force them using "sudo pip3 install --ignore-installed somelib==x.x.x". TODO: double check.
-sudo pip3 install --ignore-installed cloudpathlib==0.16.0
+# sudo pip3 install --ignore-installed cloudpathlib==0.16.0
 echo "--- Installing requirements_extra.txt ---"
-sudo pip3 install -r --ignore-installed requirements_extra.txt
+sudo pip3 install -r requirements_extra.txt
+#sudo pip3 install -r --ignore-installed requirements_extra.txt
 # sudo pip3 install --ignore-installed transformers==4.30.2
 # sudo pip3 install --ignore-installed tensorflow==2.11.0 # latest 2.15.0
-sudo pip3 install --ignore-installed sentencepiece==0.1.99
+# sudo pip3 install --ignore-installed sentencepiece==0.1.99
 
 echo "--- Checking versions post install ---"
 print_lib_install "requirements.txt"
