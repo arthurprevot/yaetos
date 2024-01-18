@@ -12,6 +12,8 @@ class Job(ETL_Base):
     MODEL_NAME = 'albert-base-v2'  # or other version of ALBERT
 
     def transform(self, training_set):
+        self.logger.info(training_set)
+
         # Force TensorFlow to use the CPU
         tf.config.set_visible_devices([], 'GPU')
 

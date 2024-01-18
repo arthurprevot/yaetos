@@ -22,8 +22,12 @@ echo "--- Installing requirements.txt ---"
 sudo pip3 install -r requirements.txt
 # Note: saw issues with libs from requirement not installed (because of other version already available).
 # May need to force them using "sudo pip3 install --ignore-installed somelib==x.x.x". TODO: double check.
+sudo pip3 install --ignore-installed cloudpathlib==0.16.0
 echo "--- Installing requirements_extra.txt ---"
-sudo pip3 install -r requirements_extra.txt
+sudo pip3 install -r --ignore-installed requirements_extra.txt
+# sudo pip3 install --ignore-installed transformers==4.30.2
+# sudo pip3 install --ignore-installed tensorflow==2.11.0 # latest 2.15.0
+sudo pip3 install --ignore-installed sentencepiece==0.1.99
 echo "--- Checking versions ---"
 echo "- pyyaml ---"
 sudo pip3 show pyyaml
@@ -37,7 +41,10 @@ echo "- cloudpathlib ---"
 sudo pip3 show cloudpathlib
 echo "- duckdb ---"
 sudo pip3 show duckdb
-
+echo "- transformers ---"
+sudo pip3 show transformers
+echo "- sentencepiece ---"
+sudo pip3 show sentencepiece
 
 # Untar file
 echo "--- Untaring job files ---"
