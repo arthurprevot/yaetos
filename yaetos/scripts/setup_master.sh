@@ -9,6 +9,8 @@ echo "--- S3 path to grab files: ", $s3_bucket
 # Function to print install info about libraries, to double check installs
 print_lib_install() {
     local FILENAME="$1"
+    local install_if_missing="$2"
+
     # Read the file line by line
     while IFS= read -r lib_line
     do
@@ -22,20 +24,16 @@ print_lib_install() {
         name_lib_and_version="${lib_line%%\#*}"
         echo "--- Checking lib $name_lib from line $lib_line ---"
         
-        # if [ "$is_executable" = true ]; then
-        #     # Execute some code
-        #     echo "The condition is true, executing code..."
-        #     # Your code goes here
-        # fi
-        
         if sudo pip3 show "$name_lib" > /dev/null; then
             echo "Package '$name_lib' is installed."
-            sudo pip3 show -v $name_lib
-        else
+            sudo pip3 show $name_lib
+        elif [ "$install_if_missing" = true ]; then
             echo "Package '$name_lib' is not installed. Installing it."
-            sudo pip3 install -vv --ignore-installed "$name_lib_and_version"
+            sudo pip3 install --ignore-installed "$name_lib_and_version"
             echo "Package '$name_lib' forced installed. Trying it again."
-            sudo pip3 show -v "$name_lib"
+            sudo pip3 show "$name_lib"
+        else
+            echo "Package '$name_lib' is not installed. installation skipped."
         fi
     done < "$FILENAME"
 }
@@ -54,8 +52,8 @@ echo "--- Updating pip ---"
 sudo pip3 install --upgrade pip
 echo "--- Checking versions pre install ---"
 cd /home/hadoop/
-print_lib_install "requirements.txt"
-print_lib_install "requirements_extra.txt"
+print_lib_install "requirements.txt" false
+print_lib_install "requirements_extra.txt" false
 echo "--- Installing libs ---"
 echo "--- Installing requirements.txt ---"
 sudo pip3 install -r requirements.txt
@@ -71,8 +69,8 @@ sudo pip3 install -r requirements_extra.txt
 # sudo pip3 install --ignore-installed sentencepiece==0.1.99
 
 echo "--- Checking versions post install ---"
-print_lib_install "requirements.txt"
-print_lib_install "requirements_extra.txt"
+print_lib_install "requirements.txt" true
+print_lib_install "requirements_extra.txt" true
 
 
 # Untar file
