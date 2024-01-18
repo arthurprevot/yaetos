@@ -19,9 +19,24 @@ print_lib_install() {
 
         # Print each name
         name_lib="${name%%==*}"
+        name_lib_and_version="${name%%\#*}"
         echo "--- Checking lib $name_lib from line $name ---"
-        # echo "- pyyaml ---"
-        sudo pip3 show $name_lib
+        
+        # if [ "$is_executable" = true ]; then
+        #     # Execute some code
+        #     echo "The condition is true, executing code..."
+        #     # Your code goes here
+        # fi
+        
+        if sudo pip3 show "$name_lib" > /dev/null; then
+            echo "Package '$name_lib' is installed."
+            sudo pip3 show -v $name_lib
+        else
+            echo "Package '$name_lib' is not installed. Installing it."
+            sudo pip3 install -vv --ignore-installed "$name_lib_and_version"
+            echo "Package '$name_lib' forced installed. Trying it again."
+            sudo pip3 show -v "$name_lib"
+        fi
     done < "$FILENAME"
 }
 
@@ -35,12 +50,13 @@ aws s3 cp "$s3_bucket/requirements_extra.txt" /home/hadoop/requirements_extra.tx
 aws s3 cp "$s3_bucket/terminate_idle_cluster.sh" /home/hadoop/terminate_idle_cluster.sh
 
 # Install pip libs.
+echo "--- Updating pip ---"
+sudo pip3 install --upgrade pip
 echo "--- Checking versions pre install ---"
 cd /home/hadoop/
 print_lib_install "requirements.txt"
 print_lib_install "requirements_extra.txt"
 echo "--- Installing libs ---"
-sudo pip3 install --upgrade pip
 echo "--- Installing requirements.txt ---"
 sudo pip3 install -r requirements.txt
 # Note: saw issues with libs from requirement not installed (because of other version already available).
