@@ -30,37 +30,26 @@ sudo pip3 install -r --ignore-installed requirements_extra.txt
 sudo pip3 install --ignore-installed sentencepiece==0.1.99
 echo "--- Checking versions ---"
 
-FILENAME="requirements.txt"
-# Read the file line by line
-while IFS= read -r name
-do
-    # Skip empty lines and lines starting with spaces
-    if [[ -z "$name" || "$name" =~ ^[[:space:]] ]]; then
-        continue
-    fi
+print_lib_install() {
+    local FILENAME="$1"
+    # Read the file line by line
+    while IFS= read -r name
+    do
+        # Skip empty lines and lines starting with spaces
+        if [[ -z "$name" || "$name" =~ ^[[:space:]] || "$name" =~ ^# ]]; then
+            continue
+        fi
 
-    # Print each name
-    name_lib="${name%%==*}"
-    echo "--- Checking lib $name_lib from line $name ---"
-    # echo "- pyyaml ---"
-    sudo pip3 show $name_lib
-done < "$FILENAME"
+        # Print each name
+        name_lib="${name%%==*}"
+        echo "--- Checking lib $name_lib from line $name ---"
+        # echo "- pyyaml ---"
+        sudo pip3 show $name_lib
+    done < "$FILENAME"
+}
 
-FILENAME="requirements_extra.txt"
-# Read the file line by line
-while IFS= read -r name
-do
-    # Skip empty lines and lines starting with spaces
-    if [[ -z "$name" || "$name" =~ ^[[:space:]] ]]; then
-        continue
-    fi
-
-    # Print each name
-    name_lib="${name%%==*}"
-    echo "--- Checking lib $name_lib from line $name ---"
-    # echo "- pyyaml ---"
-    sudo pip3 show $name_lib
-done < "$FILENAME"
+print_lib_install "requirements.txt"
+print_lib_install "requirements_extra.txt"
 
 
 # Untar file
