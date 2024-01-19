@@ -42,11 +42,12 @@ LOCAL_FRAMEWORK_FOLDER = os.environ.get('YAETOS_FRAMEWORK_HOME', '')  # YAETOS_F
 LOCAL_JOB_FOLDER = (os.getcwd() + '/') or os.environ.get('YAETOS_JOBS_HOME', '')  # location of folder with jobs, regardless of where framework code is (in main repo or pip installed). It will be the same as LOCAL_FRAMEWORK_FOLDER when the jobs are in the main repo.
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
-PACKAGES_EMR = ['com.databricks:spark-redshift_2.11:2.0.1', 'org.apache.spark:spark-avro_2.11:2.4.0', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
-PACKAGES_EMR_ALT = ['io.github.spark-redshift-community:spark-redshift_2.12:5.0.3', 'org.apache.spark:spark-avro_2.12:3.1.1', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # same but compatible with spark 3.
-PACKAGES_LOCAL = PACKAGES_EMR + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']
-PACKAGES_LOCAL_ALT = PACKAGES_EMR_ALT + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']  # will probably need to be moved to hadoop-aws:3.2.1 to work locally.
-JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.13/redshift-jdbc42-2.1.0.13.zip'  # putting here libs not available in public repo so not add-eable to "packages" var. TODO: redshift-jdbc42-2.1.0.13.zip found online so check if add-eable to "packages"
+PACKAGES_EMR_SPARK_2_4 = ['com.databricks:spark-redshift_2.11:2.0.1', 'org.apache.spark:spark-avro_2.11:2.4.0', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
+PACKAGES_EMR_SPARK_3 = ['io.github.spark-redshift-community:spark-redshift_2.12:5.0.3', 'org.apache.spark:spark-avro_2.12:3.1.1', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # same
+PACKAGES_LOCAL_SPARK_2_4 = PACKAGES_EMR_SPARK_2_4 + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']
+PACKAGES_LOCAL_SPARK_3_0 = PACKAGES_EMR_SPARK_3 + ['com.amazonaws:aws-java-sdk-pom:1.12.576', 'org.apache.hadoop:hadoop-aws:2.7.0']
+PACKAGES_LOCAL_SPARK_3_5 = PACKAGES_EMR_SPARK_3 + ['org.apache.hadoop:hadoop-aws:3.3.6', 'com.amazonaws:aws-java-sdk:1.12.367', 'org.apache.hadoop:hadoop-common:3.3.6']
+JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.13/redshift-jdbc42-2.1.0.13.zip'  # putting here libs not available in public repo so not add-eable to "packages" var. TODO: check if available as part of "packages".
 
 
 class ETL_Base(object):
@@ -605,7 +606,7 @@ class ETL_Base(object):
         schema, name_tb = self.jargs.copy_to_redshift['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
-        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '2.4'))
+        create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '3.5'))
 
     def copy_to_clickhouse(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
@@ -1047,7 +1048,7 @@ class Runner():
     def launch_run_mode(self, job):
         app_name = job.jargs.job_name
         if job.jargs.spark_boot is True:
-            sc, sc_sql = self.create_contexts(app_name, job.jargs)  # TODO: set spark_version default upstream, remove it from here and from deploy.py.
+            sc, sc_sql = self.create_contexts(app_name, job.jargs)
         else:
             sc, sc_sql = None, None
 
@@ -1069,6 +1070,7 @@ class Runner():
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
+        from configparser import ConfigParser
 
         conf = SparkConf()
         # TODO: move spark-submit params here since it is more generic than in spark submit, params like "spark.driver.memoryOverhead" cause pb in spark submit.
@@ -1077,20 +1079,24 @@ class Runner():
             conf = conf.set("spark.driver.memoryOverhead", jargs.merged_args['driver-memoryOverhead'])
 
         if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
+            # Setup below not needed when running from EMR because setup there is done through spark-submit.
             # Env vars for S3 access
-            credentials = boto3.Session(profile_name='default').get_credentials()
+            config = ConfigParser()
+            assert os.path.isfile(jargs.aws_config_file)
+            config.read(jargs.aws_config_file)
+            profile_name = config.get(jargs.aws_setup, 'profile_name')
+            credentials = boto3.Session(profile_name=profile_name).get_credentials()
             os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
             os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+
             # JARs
-            package = PACKAGES_LOCAL if jargs.merged_args.get('spark_version', '2.4') == '2.4' else PACKAGES_LOCAL_ALT
-            package_str = ','.join(package)
-            package_str = jargs.merged_args.get('spark_packages') or package_str
-            jars_str = jargs.merged_args.get('spark_jars') or JARS
+            package_str = ','.join(PACKAGES_LOCAL_SPARK_3_5)
+            package_str = jargs.merged_args.get('spark_packages') or package_str  # TODO: pass PACKAGES_LOCAL_SPARK_3_5 as default spark_packages param, instead of here, so default is visible in param list.
+            jars_str = jargs.merged_args.get('spark_jars') or JARS  # TODO: same as above.
 
             conf = conf \
                 .set("spark.jars.packages", package_str) \
                 .set("spark.jars", jars_str)
-            # Setup above not needed when running from EMR where setup done in spark-submit.
 
         if jargs.merged_args.get('emr_core_instances') == 0:
             conf = conf \

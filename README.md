@@ -69,7 +69,7 @@ Then, open a browser, go to `http://localhost:8888/tree/notebooks`, open  [inspe
 
 ![jupyter demo](docs/images/Screenshot_2022-05-30_at_12.03.14.png)
 
-To create dashboards, Yaetos integrates "Panel" python library. Dashboards can be defined in jupyter notebooks (see example in ./dashboards folder) and published using "Panel".
+To create dashboards, Yaetos integrates "Panel" python library (https://panel.holoviz.org/). Dashboards can be defined in jupyter notebooks (see example in ./dashboards folder) and published using "Panel".
 
 ## Development Workflow
 

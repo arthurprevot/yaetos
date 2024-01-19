@@ -10,13 +10,14 @@ sqlalchemy==1.4.51
 networkx==3.1 # latest is 3.2.1. latest for python3.8 is 3.1
 duckdb==0.9.2
 
-# libs required for some functionalities but not required in import statements
+# libs required for some functionalities but not required for initial yaetos import statements
+# some may be commented since rarely used. Can be added back on a case by case basis in requirements_extra.txt.
 pyarrow==14.0.2  # necessary for saving pandas to parquet.
-openpyxl==3.1.2  # used to open excel files. TODO: put in a new requirement_extra.txt, since optional.
-pymysql==1.1.0
-psycopg2-binary==2.9.9   # necesary for sqlalchemy-redshift, psycopg2==2.8.5 install fails.
+openpyxl==3.1.2  # used to open excel files. needed for unit-tests.
+# pymysql==1.1.0
+# psycopg2-binary==2.9.9   # necesary for sqlalchemy-redshift, psycopg2==2.8.5 install fails.
 py4j==0.10.9.7
-apache-airflow-providers-amazon==8.11.0  # latest 8.11.0
-apache-airflow-providers-ssh==3.9.0  # latest 3.9.0
+# apache-airflow-providers-amazon==8.11.0  # latest 8.11.0
+# apache-airflow-providers-ssh==3.9.0  # latest 3.9.0
 # sqlalchemy-redshift==0.7.7
 
