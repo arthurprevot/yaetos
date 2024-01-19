@@ -57,17 +57,11 @@ print_lib_install "requirements_extra.txt" false
 echo "--- Installing libs ---"
 echo "--- Installing requirements.txt ---"
 sudo pip3 install -r requirements.txt
-# Note: saw issues with libs from requirement not installed (because of other version already available).
-# Can be identified with print_lib_install calls pre and post installs.
-# May need to force them using "sudo pip3 install --ignore-installed somelib==x.x.x". TODO: double check.
-# sudo pip3 install --ignore-installed cloudpathlib==0.16.0
+# Note: saw issues with libs from requirement not installed after this step (likely because of other version already available).
+# May need to force them using "sudo pip3 install --ignore-installed somelib==x.x.x"
+# Handled as part of print_lib_install calls below.
 echo "--- Installing requirements_extra.txt ---"
 sudo pip3 install -r requirements_extra.txt
-#sudo pip3 install -r --ignore-installed requirements_extra.txt
-# sudo pip3 install --ignore-installed transformers==4.30.2
-# sudo pip3 install --ignore-installed tensorflow==2.11.0 # latest 2.15.0
-# sudo pip3 install --ignore-installed sentencepiece==0.1.99
-
 echo "--- Checking versions post install ---"
 print_lib_install "requirements.txt" true
 print_lib_install "requirements_extra.txt" true
@@ -84,9 +78,8 @@ echo "--- Zipping job files ---"
 cd /home/hadoop/app
 zip -r scripts.zip .
 
-# export PYSPARK_AWS_ETL_HOME=`pwd` # TODO: enable later to be avoid hardcoded path in etl_utils.py
-# . setup_oracle.sh  # uncomment if needed.
+# . setup_oracle.sh  # uncomment if needed. May not work out of the box because of version updates.
 
-python --version # shows in stderr, ->2.7.18 on emr-5.26.0, 2.7.16 on emr-6.0.0, 2.7.18 on emr-6.1.1
-python3 --version # shows in stdout, ->3.6.10 on emr-5.26.0, 3.7.4 on emr-6.0.0, 3.7.10 on emr-6.1.1
+python --version # shows in stderr, ->3.9.16 on emr-7.0.0, was 2.7.18 on emr-5.26.0, 2.7.16 on emr-6.0.0, 2.7.18 on emr-6.1.1
+python3 --version # shows in stdout, ->3.9.16 on emr-7.0.0, was 3.6.10 on emr-5.26.0, 3.7.4 on emr-6.0.0, 3.7.10 on emr-6.1.1
 echo "Done with setup_master.sh"

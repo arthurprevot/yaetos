@@ -43,11 +43,11 @@ LOCAL_JOB_FOLDER = (os.getcwd() + '/') or os.environ.get('YAETOS_JOBS_HOME', '')
 AWS_SECRET_ID = '/yaetos/connections'
 JOB_FOLDER = 'jobs/'
 PACKAGES_EMR_SPARK_2_4 = ['com.databricks:spark-redshift_2.11:2.0.1', 'org.apache.spark:spark-avro_2.11:2.4.0', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # necessary for reading/writing to redshift, mysql & clickhouse using spark connector.
-PACKAGES_EMR_SPARK_3 = ['io.github.spark-redshift-community:spark-redshift_2.12:5.0.3', 'org.apache.spark:spark-avro_2.12:3.1.1', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # same but compatible with spark 3.
+PACKAGES_EMR_SPARK_3 = ['io.github.spark-redshift-community:spark-redshift_2.12:5.0.3', 'org.apache.spark:spark-avro_2.12:3.1.1', 'mysql:mysql-connector-java:8.0.22', 'org.postgresql:postgresql:42.2.18']  # same
 PACKAGES_LOCAL_SPARK_2_4 = PACKAGES_EMR_SPARK_2_4 + ['com.amazonaws:aws-java-sdk-pom:1.11.760', 'org.apache.hadoop:hadoop-aws:2.7.0']
-PACKAGES_LOCAL_SPARK_3_0 = PACKAGES_EMR_SPARK_3 + ['com.amazonaws:aws-java-sdk-pom:1.12.576', 'org.apache.hadoop:hadoop-aws:2.7.0']  # will probably need to be moved to hadoop-aws:3.2.1 to work locally.
-PACKAGES_LOCAL_SPARK_3_5 = PACKAGES_EMR_SPARK_3 + ['org.apache.hadoop:hadoop-aws:3.3.6', 'com.amazonaws:aws-java-sdk:1.12.367', 'org.apache.hadoop:hadoop-common:3.3.6']  # will probably need to be moved to hadoop-aws:3.2.1 to work locally.
-JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.13/redshift-jdbc42-2.1.0.13.zip'  # putting here libs not available in public repo so not add-eable to "packages" var. TODO: redshift-jdbc42-2.1.0.13.zip found online so check if add-eable to "packages"
+PACKAGES_LOCAL_SPARK_3_0 = PACKAGES_EMR_SPARK_3 + ['com.amazonaws:aws-java-sdk-pom:1.12.576', 'org.apache.hadoop:hadoop-aws:2.7.0']
+PACKAGES_LOCAL_SPARK_3_5 = PACKAGES_EMR_SPARK_3 + ['org.apache.hadoop:hadoop-aws:3.3.6', 'com.amazonaws:aws-java-sdk:1.12.367', 'org.apache.hadoop:hadoop-common:3.3.6']
+JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.13/redshift-jdbc42-2.1.0.13.zip'  # putting here libs not available in public repo so not add-eable to "packages" var. TODO: check if available as part of "packages".
 
 
 class ETL_Base(object):
@@ -1111,7 +1111,6 @@ class Runner():
         sc = spark.sparkContext
         sc_sql = SQLContext(sc)
         logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
-        # import ipdb; ipdb.set_trace()
         return sc, sc_sql
 
 
