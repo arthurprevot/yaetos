@@ -1,4 +1,7 @@
-"""To show a job using GPU, for deeplearning in that case. Can also run on GPU in the cloud."""
+"""
+Job to showcase using a GPU, for deeplearning in that case, in local and in the cloud.
+The jobs runs inferences from ALBERT model for demo purposes.
+"""
 from yaetos.etl_utils import ETL_Base, Commandliner
 from transformers import AlbertTokenizer, TFAlbertForSequenceClassification
 from transformers import file_utils
@@ -20,11 +23,14 @@ class Job(ETL_Base):
         self.logger.info(f"Tensorflow is_gpu_available: {tf.test.is_gpu_available()}")
         self.logger.info(f"Tensorflow devices: {tf.config.list_physical_devices()}")
 
-        x_train, y_train, x_test, y_test = self.split_training_data(training_set, 0.8)
-        x_test_proc = self.preprocess(x_test)
+        # x_train, y_train, x_test, y_test = self.split_training_data(training_set, 0.8)
+        x = training_set['text'].tolist()
+        y = training_set['classification'].tolist()
+
+        x_proc = self.preprocess(x)
         model = self.load_model()
-        predictions = self.predict(model, x_test_proc)
-        evaluations = pd.DataFrame({'text': x_test, 'predictions': predictions, 'real': y_test})
+        predictions = self.predict(model, x_proc)
+        evaluations = pd.DataFrame({'text': x, 'predictions': predictions, 'real': y})
         return evaluations
 
     def load_model(self):

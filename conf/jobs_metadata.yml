@@ -235,7 +235,7 @@ jobs:
     aws_setup: dev
     load_connectors: all
 
-  examples/ex11_run_cloud_gpu.py:
+  examples/ex11_run_gpu_for_deeplearning.py:
     description: ""
     inputs:
       training_set: {'path':'{base_path}/gen_ai/finetuned_albert/raw/{latest}/', 'type':'csv', 'df_type':'pandas'}  # file available in repo in ./tests/fixtures/data_sample/gen_ai/text_classification.csv
