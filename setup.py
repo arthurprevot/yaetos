@@ -162,8 +162,8 @@ setup(
         'pandas',
         'sqlalchemy',
         'networkx',
-        'duckdb', # Optional
-        'py4j'], # Required to run spark.
+        'duckdb',  # Optional
+        'py4j'],  # Required to run spark.
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
