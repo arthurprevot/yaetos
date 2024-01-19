@@ -18,15 +18,13 @@ class Job(ETL_Base):
 
         # Force TensorFlow to use the CPU
         tf.config.set_visible_devices([], 'GPU')
-
         self.logger.info(f"Location of huggingface cache model {file_utils.default_cache_path}")
         self.logger.info(f"Tensorflow is_gpu_available: {tf.test.is_gpu_available()}")
         self.logger.info(f"Tensorflow devices: {tf.config.list_physical_devices()}")
 
-        # x_train, y_train, x_test, y_test = self.split_training_data(training_set, 0.8)
+        # Run inferences
         x = training_set['text'].tolist()
         y = training_set['classification'].tolist()
-
         x_proc = self.preprocess(x)
         model = self.load_model()
         predictions = self.predict(model, x_proc)
@@ -36,15 +34,6 @@ class Job(ETL_Base):
     def load_model(self):
         model = TFAlbertForSequenceClassification.from_pretrained(self.MODEL_NAME)
         return model
-
-    def split_training_data(self, df, split):
-        np.random.seed(42)
-        df['training_test'] = np.random.choice(['training', 'test'], size=len(df), p=[split, 1 - split])
-        x_train = df[df['training_test'] == 'training']['text'].tolist()
-        y_train = df[df['training_test'] == 'training']['classification'].tolist()
-        x_test = df[df['training_test'] == 'test']['text'].tolist()
-        y_test = df[df['training_test'] == 'test']['classification'].tolist()
-        return x_train, y_train, x_test, y_test
 
     @classmethod
     def preprocess(cls, texts):

@@ -240,7 +240,7 @@ jobs:
     inputs:
       training_set: {'path':'{base_path}/gen_ai/finetuned_albert/raw/{latest}/', 'type':'csv', 'df_type':'pandas'}  # file available in repo in ./tests/fixtures/data_sample/gen_ai/text_classification.csv
     output: {'path':'{base_path}/load_example/test_files/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
-    ec2_instance_master: 'g4dn.xlarge'
+    ec2_instance_master: 'g4dn.xlarge'  # access to this GPU instance may requires special request to AWS.
     emr_core_instances: 0
 
   examples/wordcount_frameworked_job.py:
