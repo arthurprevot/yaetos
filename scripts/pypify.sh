@@ -11,8 +11,6 @@
 ## Config files
 cp conf/connections.cfg.example yaetos/scripts/copy/connections.cfg.example
 cp conf/aws_config.cfg.example yaetos/scripts/copy/aws_config.cfg.example
-cp conf/requirements_extra.txt yaetos/scripts/copy/requirements_extra.txt
-# cp yaetos/libs/pytest_utils/conftest.py tests/conftest.py  # yaetos/libs/pytest_utils should be considered master copy and tests/conftest.py should be removed (TODO), although currently tests/conftest.py may be changed directly for dev reasons.
 ## Jobs
 cp jobs/generic/copy_job.py yaetos/libs/generic_jobs/copy_job.py
 cp jobs/generic/deployer.py yaetos/libs/generic_jobs/deployer.py
@@ -27,6 +25,8 @@ cp jobs/examples/ex1_frameworked_job.py yaetos/scripts/copy/ex1_spark_api_job.py
 cp tests/jobs/examples/ex1_sql_pandas_job_test.py yaetos/scripts/copy/ex1_sql_pandas_job_test.py
 cp tests/jobs/examples/ex1_sql_spark_job_test.py yaetos/scripts/copy/ex1_sql_spark_job_test.py
 ## Other files not to be copied exactly but close (to be checked before running this script):
+#  - cp yaetos/libs/pytest_utils/conftest.py tests/conftest.py  # yaetos/libs/pytest_utils should be considered master copy and tests/conftest.py should be removed (TODO), although currently tests/conftest.py may be changed directly for dev reasons.
+#  - cp conf/requirements_extra.txt yaetos/scripts/copy/requirements_extra.txt # yaetos may have libs to run jobs not included in yaetos_jobs, so not needed there.
 #  - cp .github/workflows/pythonapp.yml yaetos/scripts/github_pythonapp.yml
 #  - cp Dockerfile yaetos/scripts/copy/Dockerfile_external
 #  - cp conf/jobs_metadata.yml yaetos/scripts/copy/jobs_metadata_external.yml

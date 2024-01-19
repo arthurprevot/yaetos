@@ -1,3 +1,4 @@
+# Instructions: in the YAETOS_JOBS_HOME path below, update yaetos_jobs to the name of your repo (for both occurences)
 name: CI
 
 on: [push]
@@ -34,7 +35,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest
-        export YAETOS_JOBS_HOME=/home/runner/work/yaetos_jobs/yaetos_jobs  # TODO: find cleaner way
+        export YAETOS_JOBS_HOME=/home/runner/work/yaetos_jobs/yaetos_jobs  # to be updated by repo name. TODO: find cleaner way
         export PYTHONPATH=$YAETOS_JOBS_HOME:$PYTHONPATH
         pytest
     - name: Lint with flake8

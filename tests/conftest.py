@@ -1,6 +1,6 @@
 # from yaetos.libs.pytest_utils.conftest import sc, sc_sql, \
 #     ss, get_pre_jargs
-# TODO fix renable code above and delete code below (duplicated from yaetos/libs/pytest*/conftest.py) when works in github actions.
+# TODO re-enable code above and delete code below (duplicated from yaetos/libs/pytest*/conftest.py) when works in github actions.
 # code above probably works when getting code from pip install yaetos but not from orig repo, so need to have it work in both cases.
 
 
@@ -8,8 +8,8 @@ import pytest
 try:
     from pyspark import SparkContext
     from pyspark.sql import SQLContext, SparkSession
-except ModuleNotFoundError or ImportError:
-    print('Yaetos will work in pandas mode only or to push jobs to AWS, since pyspark is not found.')
+except ModuleNotFoundError or ImportError as exc:
+    print(f'Yaetos will work in pandas mode only or to push jobs to AWS, since pyspark is not found. Error "{exc}"')
 
 
 @pytest.fixture(scope="session")
