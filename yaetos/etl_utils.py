@@ -960,6 +960,8 @@ class Runner():
             job = self.launch_run_mode(job)
         elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
+        elif job.jargs.deploy in ('local_spark_submit'):
+            self.launch_run_mode_spark_submit(job)
         return job
 
     @staticmethod
@@ -976,7 +978,7 @@ class Runner():
         # Defined here separatly from parsing for overridability.
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
@@ -1023,6 +1025,8 @@ class Runner():
             'add_created_at': 'true',  # set as string to be overrideable in cmdline.
             'no_fw_cache': False,
             'spark_boot': True,  # options ('spark', 'pandas') (experimental).
+            'spark_submit_args': '',
+            'spark_app_args': '',
         }
         redshift = ['enable_redshift_push', 'schema', 'redshift_s3_tmp_dir', 'redshift_s3_tmp_dir']
         spark = ['no_fw_cache', 'spark_boot', 'spark_version']
@@ -1063,6 +1067,45 @@ class Runner():
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from yaetos.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
+
+    def launch_run_mode_spark_submit(self, job):
+        cmdline = self.create_spark_submit(job.jargs)
+        cmdline_str = " ".join(cmdline)
+        logger.info(f'About to run spark submit command line: {cmdline_str}')
+        os.system(cmdline_str)
+        # TODO: test with dependencies.
+
+    @staticmethod
+    def create_spark_submit(jargs):
+        launcher_file = jargs.merged_args.get('jar_job') or jargs.merged_args['py_job']
+
+        spark_submit_cmd = ["spark-submit"]
+
+        # Get spark submit args (i.e. before launcher)
+        spark_submit_args = jargs.merged_args.get('spark_submit_args')
+        spark_submit_args_lst = [] if spark_submit_args.split('--')==[''] else spark_submit_args.split('--')
+        # import ipdb; ipdb.set_trace()
+        for item in spark_submit_args_lst:
+            if jargs.merged_args.get(item) is None:
+                raise Exception(f"The param '{item}' set from spark-submit (see list in spark_submit_args) is missing in your list of params '{jargs.merged_args}'.")
+            
+            kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
+            spark_submit_cmd.append(kv)
+
+        # Add launcher
+        spark_submit_cmd.append(launcher_file)
+
+        # Get spark app args (i.e. after launcher)
+        spark_app_args = jargs.merged_args.get('spark_app_args')
+        spark_app_args_lst = [] if spark_app_args.split('--')==[''] else spark_app_args.split('--')
+        for item in spark_app_args_lst:
+            if jargs.merged_args.get(item) is None:
+                raise Exception(f"The param '{item}' set from spark-submit (see list in spark_app_args) is missing in your list of params '{jargs.merged_args}'.")
+            
+            kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
+            spark_submit_cmd.append(kv)
+
+        return spark_submit_cmd
 
     @staticmethod
     def create_contexts(app_name, jargs):

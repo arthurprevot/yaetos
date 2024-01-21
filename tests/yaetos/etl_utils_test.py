@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pytest
 from yaetos.etl_utils import ETL_Base, \
-    Period_Builder, Job_Args_Parser, Job_Yml_Parser, Flow, \
+    Period_Builder, Job_Args_Parser, Job_Yml_Parser, Runner, Flow, \
     get_job_class, LOCAL_JOB_FOLDER, JOBS_METADATA_FILE
 
 
@@ -137,6 +137,36 @@ class Test_Job_Args_Parser(object):
             job.validate()
         except Exception as exc:
             assert False, f"'test_validate_params' raised an exception: {exc}"
+
+class Test_Runner(object):
+    def test_create_spark_submit_python_job(self):
+        """Ex: python jobs/generic/launcher.py \
+            --deploy=local_spark_submit \
+            --job_name=examples/ex0_extraction_job.py \
+            --spark_submit_args='verbose' \
+            --spark_app_args='mode--storage--job_param_file' \
+            --verbose='no value'
+        """
+        cmd_args = {
+            'deploy': 'none',
+            'mode': 'dev_local',
+            'job_param_file': JOBS_METADATA_FILE,
+            'job_name': 'examples/ex0_extraction_job.py',
+            'storage': 'local',
+            'spark_submit_args': 'verbose',
+            'spark_app_args': 'mode--storage--job_param_file',
+            'verbose': 'no value',
+        }
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
+        cmd_lst_real = Runner.create_spark_submit(app_name='test_app', jargs=launch_jargs)
+        cmd_lst_expected = ['spark-submit',
+            '--verbose',
+            'jobs/examples/ex0_extraction_job.py',
+            '--mode=dev_local',
+            '--storage=local',
+            '--job_param_file=conf/jobs_metadata.yml',
+            ]
+        assert cmd_lst_real==cmd_lst_expected
 
 
 class Test_Flow(object):
