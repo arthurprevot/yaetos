@@ -142,7 +142,7 @@ class Test_Runner(object):
     def test_create_spark_submit_python_job(self):
         """Ex: python jobs/generic/launcher.py \
             --deploy=local_spark_submit \
-            --job_name=examples/ex0_extraction_job.py \
+            --job_name=examples/ex7_pandas_job.py \
             --spark_submit_args='verbose' \
             --spark_app_args='mode--storage--job_param_file' \
             --verbose='no value'
@@ -151,17 +151,17 @@ class Test_Runner(object):
             'deploy': 'none',
             'mode': 'dev_local',
             'job_param_file': JOBS_METADATA_FILE,
-            'job_name': 'examples/ex0_extraction_job.py',
+            'job_name': 'examples/ex7_pandas_job.py',
             'storage': 'local',
             'spark_submit_args': 'verbose',
             'spark_app_args': 'mode--storage--job_param_file',
             'verbose': 'no value',
         }
         launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
-        cmd_lst_real = Runner.create_spark_submit(app_name='test_app', jargs=launch_jargs)
+        cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
         cmd_lst_expected = ['spark-submit',
             '--verbose',
-            'jobs/examples/ex0_extraction_job.py',
+            'jobs/examples/ex7_pandas_job.py',
             '--mode=dev_local',
             '--storage=local',
             '--job_param_file=conf/jobs_metadata.yml',
