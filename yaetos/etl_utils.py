@@ -1153,7 +1153,8 @@ class Runner():
 
         sc = spark.sparkContext
         sc_sql = SQLContext(sc)
-        logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
+        logger.info(f'Spark Version: {sc.version}')
+        logger.info(f'Spark Config: {sc.getConf().getAll()}')
         return sc, sc_sql
 
 
