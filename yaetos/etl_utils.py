@@ -233,7 +233,7 @@ class ETL_Base(object):
             job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
         else:
             job_name = pre_jargs['job_args']['job_name']
-        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
+        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, build_yml_args=True, loaded_inputs=loaded_inputs)
 
     def set_py_job(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -792,7 +792,7 @@ class Job_Args_Parser():
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date',
                         'emails', 'mode', 'deploy', 'terminate_after', 'spark_version']
 
-    def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}, validate=True):
+    def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, build_yml_args=True, loaded_inputs={}, validate=True):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
         If yml_args not provided, it will go and get it.
         Sets of params:
@@ -803,7 +803,7 @@ class Job_Args_Parser():
             - job_name: to use only when yml_args is set to None, to specify what section of the yml to pick.
         """
 
-        if yml_args is None:
+        if build_yml_args:
             # Getting merged args, without yml (order matters) to get job_name, to then build yml_args.
             args = defaults_args.copy()
             args.update(job_args)
@@ -949,20 +949,34 @@ class Runner():
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
         # Building "job", which will include all job args.
+        # jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})
+        # is_py_job = job_args.get('py_job') or cmd_args.get('py_job')  # TODO: check to add yml_args
+        # is_jar_job = job_args.get('jar_job') or cmd_args.get('jar_job')  # TODO: same
+        # is_py_job = jargs.merged_args.get('py_job')
+        # is_jar_job = jargs.merged_args.get('jar_job')
+        # print('####', is_py_job, ' --- ', is_jar_job)
+        # import ipdb; ipdb.set_trace()
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
-            jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, loaded_inputs={})
-            Job = get_job_class(jargs.py_job)
-            job = Job(jargs=jargs)
-        else:  # when job run from "python some_job.py", (or from jupyter notebooks)
+            # Implies 'job_name' will be available in cmd_args.
+            jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})  # yml_args loaded inside based on 
+            if jargs.merged_args.get('py_job'):
+                Job = get_job_class(jargs.py_job)
+                job = Job(jargs=jargs)
+            elif jargs.merged_args.get('jar_job'):
+                job = None
+        else:  # when job run from "python some_job.py", i.e. python job
+            # Implies Job Class exist, so 'job_name' and 'py_code' will be derived from Job instance.
             job = Job(pre_jargs={'defaults_args': defaults_args, 'job_args': job_args, 'cmd_args': cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
+            jargs = job.jargs
+        # Loading from jupyter notebooks for dashboarding goes through 'InputLoader', away from this if sequence.
 
         # Executing or deploying
-        if job.jargs.deploy in ('none'):  # when executing job code
+        if jargs.deploy in ('none'):  # when executing job code
             job = self.launch_run_mode(job)
-        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
+        elif jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
-        elif job.jargs.deploy in ('local_spark_submit'):
-            self.launch_run_mode_spark_submit(job)
+        elif jargs.deploy in ('local_spark_submit'):
+            self.launch_run_mode_spark_submit(jargs)
         return job
 
     @staticmethod
@@ -1002,7 +1016,7 @@ class Runner():
             'deploy': 'none',
             'mode': 'dev_local',
             'job_param_file': JOBS_METADATA_FILE,
-            'job_name': None,
+            # 'job_name': None,
             'sql_file': None,
             'connection_file': CONNECTION_FILE,
             'jobs_folder': JOB_FOLDER,
@@ -1026,8 +1040,10 @@ class Runner():
             'add_created_at': 'true',  # set as string to be overrideable in cmdline.
             'no_fw_cache': False,
             'spark_boot': True,  # options ('spark', 'pandas') (experimental).
-            'spark_submit_args': '',
-            'spark_app_args': '',
+            'spark_submit_keys': '',
+            'spark_app_keys': '',
+            # 'spark_app_args': '',
+            'dry_run': False,
         }
         redshift = ['enable_redshift_push', 'schema', 'redshift_s3_tmp_dir', 'redshift_s3_tmp_dir']
         spark = ['no_fw_cache', 'spark_boot', 'spark_version']
@@ -1069,11 +1085,13 @@ class Runner():
         from yaetos.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
 
-    def launch_run_mode_spark_submit(self, job):
-        cmdline = self.create_spark_submit(job.jargs)
+    def launch_run_mode_spark_submit(self, jargs):
+        cmdline = self.create_spark_submit(jargs)
         cmdline_str = " ".join(cmdline)
         logger.info(f'About to run spark submit command line: {cmdline_str}')
-        os.system(cmdline_str)
+        # import ipdb; ipdb.set_trace()
+        if not jargs.merged_args.get('dry_run'):
+            os.system(cmdline_str)
         # ### TODO: test with dependencies.
 
     @staticmethod
@@ -1083,10 +1101,10 @@ class Runner():
         spark_submit_cmd = ["spark-submit"]
 
         # Get spark submit args (i.e. before launcher)
-        spark_submit_args = jargs.merged_args.get('spark_submit_args')
-        spark_submit_args_lst = [] if spark_submit_args.split('--') == [''] else spark_submit_args.split('--')
+        spark_submit_keys = jargs.merged_args.get('spark_submit_keys')
+        spark_submit_keys_lst = [] if spark_submit_keys.split('--') == [''] else spark_submit_keys.split('--')
         # import ipdb; ipdb.set_trace()
-        for item in spark_submit_args_lst:
+        for item in spark_submit_keys_lst:
             if jargs.merged_args.get(item) is None:
                 raise Exception(f"The param '{item}' set from spark-submit (see list in spark_submit_args) is missing in your list of params '{jargs.merged_args}'.")
 
@@ -1097,9 +1115,9 @@ class Runner():
         spark_submit_cmd.append(launcher_file)
 
         # Get spark app args (i.e. after launcher)
-        spark_app_args = jargs.merged_args.get('spark_app_args')
-        spark_app_args_lst = [] if spark_app_args.split('--') == [''] else spark_app_args.split('--')
-        for item in spark_app_args_lst:
+        spark_app_keys = jargs.merged_args.get('spark_app_keys')
+        spark_app_keys_lst = [] if spark_app_keys.split('--') == [''] else spark_app_keys.split('--')
+        for item in spark_app_keys_lst:
             if jargs.merged_args.get(item) is None:
                 raise Exception(f"The param '{item}' set from spark-submit (see list in spark_app_args) is missing in your list of params '{jargs.merged_args}'.")
 

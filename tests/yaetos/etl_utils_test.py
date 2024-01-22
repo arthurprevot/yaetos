@@ -142,9 +142,10 @@ class Test_Job_Args_Parser(object):
 class Test_Runner(object):
     def test_run(self):
         from jobs.examples.ex7_pandas_job import Job
-        cmd_args = {
+        job_args = {
             'job_param_file': None,
             'deploy': 'none',
+            # 'py_code': 'asdf.py',
             'dependencies': False,
             'inputs': {
                 'some_events': {'path': "./tests/fixtures/data_sample/wiki_example/input/", 'type': 'csv', 'df_type': 'pandas'},
@@ -152,7 +153,7 @@ class Test_Runner(object):
             },
             'output': {'path': 'n/a', 'type': 'None', 'df_type': 'pandas'},  # i.e. there is an output but it won't be dumped to disk.
             'spark_boot': False}
-        job_post = Runner(Job, **cmd_args).run()  # will run the full job based on small scale data, to test full job scope.
+        job_post = Runner(Job, **job_args).run()  # will run the full job based on small scale data, to test full job scope.
         assert hasattr(job_post, 'out_df')
 
     def test_create_spark_submit_python_job(self):
@@ -163,17 +164,17 @@ class Test_Runner(object):
             --spark_app_args='mode--storage--job_param_file' \
             --verbose='no value'
         """
-        cmd_args = {
+        job_args = {
             'deploy': 'none',
             'mode': 'dev_local',
             'job_param_file': JOBS_METADATA_FILE,
             'job_name': 'examples/ex7_pandas_job.py',
             'storage': 'local',
-            'spark_submit_args': 'verbose',
-            'spark_app_args': 'mode--storage--job_param_file',
+            'spark_submit_keys': 'verbose',
+            'spark_app_keys': 'mode--storage--job_param_file',
             'verbose': 'no value',
         }
-        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args=job_args, cmd_args={}, loaded_inputs={})
         cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
         cmd_lst_expected = [
             'spark-submit',
