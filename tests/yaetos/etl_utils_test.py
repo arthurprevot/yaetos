@@ -150,7 +150,7 @@ class Test_Runner(object):
             },
             'output': {'path': 'n/a', 'type': 'None', 'df_type': 'pandas'},  # i.e. there is an output but it won't be dumped to disk.
             'spark_boot': False}
-        job_post = Runner(Job, **job_args).run()  # will run the full job based on small scale data, to test full job scope.
+        job_post = Runner(Job, **job_args).run()  # will run the full job based on small scale data
         assert hasattr(job_post, 'out_df')
 
     def test_create_spark_submit_python_job(self):
@@ -159,8 +159,7 @@ class Test_Runner(object):
             'arg1': 'value1',
             'arg2': 'value2',
             'spark_submit_args': '--verbose',
-            'spark_app_keys': 'arg1--arg2',
-        }
+            'spark_app_keys': 'arg1--arg2'}
         launch_jargs = Job_Args_Parser(defaults_args={}, yml_args={}, job_args=job_args, cmd_args={}, build_yml_args=False, loaded_inputs={})
         cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
         cmd_lst_expected = [
@@ -170,25 +169,20 @@ class Test_Runner(object):
             '--arg1=value1',
             '--arg2=value2']
         assert cmd_lst_real == cmd_lst_expected
-        # ##### TODO: Runner(Job, **cmd_args).launch_run_mode_spark_submit(self, job)
 
     def test_create_spark_submit_jar_job(self):
         job_args = {
-            # 'job_param_file': None,
             'jar_job': 'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
             'spark_submit_args': '--verbose',
-            'spark_app_args': 'jobs/examples/ex12_scala_job/some_text.txt',
-        }
+            'spark_app_args': 'jobs/examples/ex12_scala_job/some_text.txt'}
         launch_jargs = Job_Args_Parser(defaults_args={}, yml_args={}, job_args=job_args, cmd_args={}, build_yml_args=False, loaded_inputs={})
         cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
         cmd_lst_expected = [
             'spark-submit',
             '--verbose',
             'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
-            'jobs/examples/ex12_scala_job/some_text.txt',
-            ]
+            'jobs/examples/ex12_scala_job/some_text.txt']
         assert cmd_lst_real==cmd_lst_expected
-        # ##### TODO: works but need to make it work with compiling (to not have jar in git) and with param to run the job from spark-submit
 
 
 class Test_Flow(object):

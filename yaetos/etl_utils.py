@@ -809,7 +809,7 @@ class Job_Args_Parser():
             args.update(job_args)
             args.update(cmd_args)
             args.update({'job_name': job_name} if job_name else {})
-            args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'airflow') else args['mode']
+            args['mode'] = self.get_default_mode(args)
             assert 'job_name' in args.keys()
             yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
 
@@ -819,7 +819,7 @@ class Job_Args_Parser():
         args.update(yml_args)
         args.update(job_args)
         args.update(cmd_args)
-        args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'airflow') else args['mode']
+        args['mode'] = self.get_default_mode(args)
         args = self.update_args(args, loaded_inputs)
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
@@ -832,6 +832,13 @@ class Job_Args_Parser():
         logger.info("Job args: \n{}".format(pformat(args)))
         if validate:
             self.validate()
+
+    @staticmethod
+    def get_default_mode(args):
+        if args.get('mode') == 'dev_local' and args.get('deploy') in ('EMR', 'EMR_Scheduled', 'airflow'):
+            return 'dev_EMR'
+        else:
+            return args.get('mode', 'None')
 
     def get_deploy_args(self):
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST or key.startswith('airflow.')}
@@ -883,7 +890,7 @@ class Job_Args_Parser():
 
     def validate(self):
         if self.merged_args.get('py_job') is None and self.merged_args.get('jar_job') is None:
-            raise Exception("Couldn't find py_job not jar_job, i.e. the job to execute the code."
+            raise Exception("Couldn't find py_job nor jar_job, i.e. the job to execute the code."
                             "It should be either the name of the job if it ends with .py, "
                             "or it should be set in a parameter called py_job or jar_job.")
         if (self.merged_args.get('sql_file') is None and
