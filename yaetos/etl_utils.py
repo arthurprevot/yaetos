@@ -956,16 +956,14 @@ class Runner():
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
         # Building "job", which will include all job args.
-        if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
-            # Implies 'job_name' will be available in cmd_args.
+        if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file", Implies 'job_name' available in cmd_args.
             jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})
             if jargs.merged_args.get('py_job'):
                 Job = get_job_class(jargs.py_job)
                 job = Job(jargs=jargs)
             elif jargs.merged_args.get('jar_job'):
                 job = None
-        else:  # when job run from "python some_job.py", i.e. python job
-            # Implies Job Class exist, so 'job_name' and 'py_code' will be derived from Job instance.
+        else:  # when job run from "python some_job.py", i.e. python job, Implies Job class exist, so it is a python job, so 'job_name' will be derived from Job class.
             job = Job(pre_jargs={'defaults_args': defaults_args, 'job_args': job_args, 'cmd_args': cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
             jargs = job.jargs
         # Loading from jupyter notebooks for dashboarding goes through 'InputLoader', away from this if sequence.
