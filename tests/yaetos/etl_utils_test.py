@@ -183,7 +183,7 @@ class Test_Runner(object):
             '--storage=local',
             '--job_param_file=conf/jobs_metadata.yml',]
         assert cmd_lst_real==cmd_lst_expected
-        ##### TODO: Runner(Job, **cmd_args).launch_run_mode_spark_submit(self, job)
+        # ##### TODO: Runner(Job, **cmd_args).launch_run_mode_spark_submit(self, job)
 
     # def test_create_spark_submit_jar_job(self):
     #     """Ex: python jobs/generic/launcher.py \
