@@ -144,9 +144,9 @@ class Test_Runner(object):
         from jobs.examples.ex7_pandas_job import Job
         job_args = {
             'job_param_file': None,
-            'deploy': 'none',
+            # 'deploy': 'none',
             # 'py_code': 'asdf.py',
-            'dependencies': False,
+            # 'dependencies': False,
             'inputs': {
                 'some_events': {'path': "./tests/fixtures/data_sample/wiki_example/input/", 'type': 'csv', 'df_type': 'pandas'},
                 'other_events': {'path': "./tests/fixtures/data_sample/wiki_example/input/", 'type': 'csv', 'df_type': 'pandas'},
@@ -157,62 +157,46 @@ class Test_Runner(object):
         assert hasattr(job_post, 'out_df')
 
     def test_create_spark_submit_python_job(self):
-        """Ex: 
-        python jobs/generic/launcher.py \
-            --deploy=local_spark_submit \
-            --job_name=examples/ex7_pandas_job.py \
-            --job_param_file='conf/jobs_metadata.yml' \
-            --spark_submit_keys='verbose' \
-            --spark_app_keys='mode--storage--job_param_file' \
-            --verbose='no value'  # TODO: remove need for 'no value'
-        """
         job_args = {
-            'deploy': 'none',
-            'mode': 'dev_local',
-            'job_param_file': JOBS_METADATA_FILE,
-            'job_name': 'examples/ex7_pandas_job.py',
-            'storage': 'local',
-            'spark_submit_keys': 'verbose',
-            'spark_app_keys': 'mode--storage--job_param_file',
-            'verbose': 'no value',
+            # 'deploy': 'none',
+            # 'mode': 'dev_local',
+            # 'job_param_file': JOBS_METADATA_FILE,
+            'py_job': 'jobs/examples/ex7_pandas_job.py',
+            # 'job_param_file': None,
+            # 'job_name': 'examples/ex7_pandas_job.py',
+            'arg1': 'value1',
+            'arg2': 'value2',
+            'spark_submit_args': '--verbose',
+            'spark_app_keys': 'arg1--arg2',
         }
-        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args=job_args, cmd_args={}, loaded_inputs={})
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args={}, job_args=job_args, cmd_args={}, build_yml_args=False, loaded_inputs={})
         cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
         cmd_lst_expected = [
             'spark-submit',
             '--verbose',
             'jobs/examples/ex7_pandas_job.py',
-            '--mode=dev_local',
-            '--storage=local',
-            '--job_param_file=conf/jobs_metadata.yml']
+            '--arg1=value1',
+            '--arg2=value2']
         assert cmd_lst_real == cmd_lst_expected
         # ##### TODO: Runner(Job, **cmd_args).launch_run_mode_spark_submit(self, job)
 
     def test_create_spark_submit_jar_job(self):
-        """Ex: python jobs/generic/launcher.py \
-            --job_name='examples/run_scala_job' \
-            --job_param_file='conf/jobs_metadata.yml' \
-            --jar_job='jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar' \
-            --deploy=local_spark_submit \
-            --spark_submit_args='--verbose' \
-            --spark_app_args='jobs/examples/scala_test5/some_text.txt' \
-            --dry_run=True 
-        """
         job_args = {
-            'job_name': 'examples/run_scala_job',
-            'job_param_file': JOBS_METADATA_FILE,
-            'jar_job': 'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar',
-            'deploy': 'asdf',  # required but not used here.
-            'mode': 'dev_local',
+            # 'job_name': 'examples/run_scala_job',
+            # 'job_param_file': JOBS_METADATA_FILE,
+            'job_param_file': None,
+            'jar_job': 'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
+            # 'deploy': 'asdf',  # required but not used here.
+            # 'mode': 'dev_local',
             'spark_submit_args': '--verbose',
-            'spark_app_args': 'jobs/examples/scala_test5/some_text.txt',
+            'spark_app_args': 'jobs/examples/ex12_scala_job/some_text.txt',
         }
-        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args=job_args, cmd_args={}, loaded_inputs={})
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args={}, job_args=job_args, cmd_args={}, build_yml_args=False, loaded_inputs={})
         cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
         cmd_lst_expected = [
             'spark-submit',
             '--verbose',
-            'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar',
+            'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
             'jobs/examples/scala_test5/some_text.txt',
             ]
         assert cmd_lst_real==cmd_lst_expected
@@ -228,7 +212,7 @@ class Test_Flow(object):
             'job_name': 'examples/ex4_dependency2_job.py',
             'storage': 'local',
         }
-        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})
         connection_real = Flow.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
         connection_expected = pd.DataFrame(
             columns=['source_job', 'destination_job'],
