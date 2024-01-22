@@ -106,19 +106,19 @@ class Test_Job_Args_Parser(object):
         defaults_args = {'py_job': 'some_job.py', 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
         expected_args = {**{'inputs': {}, 'is_incremental': False}, **defaults_args}
 
-        jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={})
+        jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False)
         assert jargs.merged_args == expected_args
 
     def test_validate_params(self):
         # Error raised, py_job
         defaults_args = {'py_job': None, 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
-        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False, validate=False)
         with pytest.raises(Exception):
             job.validate()
 
         # Error not raised, py_job
         defaults_args['py_job'] = 'some_job.py'
-        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False, validate=False)
         try:
             job.validate()
         except Exception as exc:
@@ -126,13 +126,13 @@ class Test_Job_Args_Parser(object):
 
         # Error raised, sql_file
         defaults_args['py_job'] = 'sql_spark_job.py'
-        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False, validate=False)
         with pytest.raises(Exception):
             job.validate()
 
         # Error not raised, sql_file
         defaults_args['sql_file'] = 'some_job.sql'
-        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False, validate=False)
         try:
             job.validate()
         except Exception as exc:

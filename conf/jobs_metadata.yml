@@ -261,6 +261,10 @@ jobs:
       - examples/ex1_sql_job.sql
       - examples/ex7_pandas_job.py
 
+  examples/run_scala_job:
+    description: "shows a job running scala code (compiled into a jar)."
+    jar_job: 'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar'
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------

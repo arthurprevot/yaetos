@@ -1033,9 +1033,6 @@ class Runner():
             'add_created_at': 'true',  # set as string to be overrideable in cmdline.
             'no_fw_cache': False,
             'spark_boot': True,  # options ('spark', 'pandas') (experimental).
-            # 'spark_submit_keys': '',
-            # 'spark_app_keys': '',
-            # 'spark_app_args': '',
             'dry_run': False,
         }
         redshift = ['enable_redshift_push', 'schema', 'redshift_s3_tmp_dir', 'redshift_s3_tmp_dir']
@@ -1228,7 +1225,7 @@ class Flow():
                         loaded_inputs[in_name] = df[in_properties['from']]
 
             # Get jargs
-            jargs = Job_Args_Parser(self.launch_jargs.defaults_args, yml_args, self.launch_jargs.job_args, self.launch_jargs.cmd_args, loaded_inputs=loaded_inputs)
+            jargs = Job_Args_Parser(self.launch_jargs.defaults_args, yml_args, self.launch_jargs.job_args, self.launch_jargs.cmd_args, build_yml_args=False, loaded_inputs=loaded_inputs)
 
             Job = get_job_class(yml_args['py_job'])
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
