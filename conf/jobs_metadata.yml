@@ -253,7 +253,7 @@ jobs:
     emails: ['some_email@address.com']
 
   examples/run_jobs:
-    description: "shows a job meant to run a bunch of dependencies (dummy job). Takes no input. Generates no output."
+    description: "shows a job meant to run several dependencies at once. The job itself takes no input and generates no output."
     py_job: 'jobs/generic/dummy_job.py'
     spark_boot: False
     dependencies: 
@@ -262,7 +262,7 @@ jobs:
       - examples/ex7_pandas_job.py
 
   examples/run_scala_job:
-    description: "shows a job running scala code (compiled into a jar), through a spark-submit"
+    description: "Sample spark scala code (compiled into a jar), executed through spark-submit"
     jar_job: 'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar'
     scala_job: 'jobs/examples/ex12_scala_job/src/spark_scala_job.scala'
     sbt: 'jobs/examples/ex12_scala_job/build.sbt'
