@@ -151,7 +151,7 @@ class Test_Runner(object):
                 'other_events': {'path': "./tests/fixtures/data_sample/wiki_example/input/", 'type': 'csv', 'df_type': 'pandas'},
             },
             'output': {'path': 'n/a', 'type': 'None', 'df_type': 'pandas'},  # i.e. there is an output but it won't be dumped to disk.
-            'spark_boot': False,}
+            'spark_boot': False}
         job_post = Runner(Job, **cmd_args).run()  # will run the full job based on small scale data, to test full job scope.
         assert hasattr(job_post, 'out_df')
 
@@ -181,8 +181,8 @@ class Test_Runner(object):
             'jobs/examples/ex7_pandas_job.py',
             '--mode=dev_local',
             '--storage=local',
-            '--job_param_file=conf/jobs_metadata.yml',]
-        assert cmd_lst_real==cmd_lst_expected
+            '--job_param_file=conf/jobs_metadata.yml']
+        assert cmd_lst_real == cmd_lst_expected
         # ##### TODO: Runner(Job, **cmd_args).launch_run_mode_spark_submit(self, job)
 
     # def test_create_spark_submit_jar_job(self):
