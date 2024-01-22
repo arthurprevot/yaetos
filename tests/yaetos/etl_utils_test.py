@@ -142,6 +142,7 @@ class Test_Runner(object):
     def test_run(self):
         cmd_args = {
             'job_name': 'examples/ex7_pandas_job.py',
+            'job_param_file': JOBS_METADATA_FILE,
             'deploy': 'none',
             'input': {
                 'some_events': {'path':"./tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'df_type':'pandas'},
