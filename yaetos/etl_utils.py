@@ -882,11 +882,12 @@ class Job_Args_Parser():
         return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
 
     def validate(self):
-        if self.merged_args.get('py_job') is None:
-            raise Exception("Couldn't find py_job, i.e. the python job to execute the code."
+        if self.merged_args.get('py_job') is None and self.merged_args.get('jar_job') is None:
+            raise Exception("Couldn't find py_job not jar_job, i.e. the job to execute the code."
                             "It should be either the name of the job if it ends with .py, "
-                            "or it should be set in a parameter called py_job.")
+                            "or it should be set in a parameter called py_job or jar_job.")
         if (self.merged_args.get('sql_file') is None and
+                self.merged_args.get('jar_job') is None and
                 (self.merged_args['py_job'].endswith('sql_pandas_job.py') or
                     self.merged_args['py_job'].endswith('sql_spark_job.py'))):
             raise Exception("Couldn't find sql_file, i.e. the sql file with the transformation."
