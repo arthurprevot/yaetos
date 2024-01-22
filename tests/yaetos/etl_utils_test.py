@@ -142,8 +142,6 @@ class Test_Runner(object):
     def test_run(self):
         from jobs.examples.ex7_pandas_job import Job
         cmd_args = {
-            # 'job_name': 'examples/ex7_pandas_job.py',
-            # 'job_param_file': JOBS_METADATA_FILE,
             'job_param_file': None,
             'deploy': 'none',
             'dependencies': False,
@@ -155,12 +153,9 @@ class Test_Runner(object):
             'spark_boot': False,
         }
 
-        # Job = ETL_Base
         job_post = Runner(Job, **cmd_args).run()  # will run the full job based on small scale data, to test full job scope.
-        # print(job_post.out_df)
         print(job_post.jargs.merged_args)
         assert hasattr(job_post, 'out_df')
-        # assert False
 
     def test_create_spark_submit_python_job(self):
         """Ex: python jobs/generic/launcher.py \
