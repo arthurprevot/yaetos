@@ -182,7 +182,7 @@ class Test_Runner(object):
             '--verbose',
             'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
             'jobs/examples/ex12_scala_job/some_text.txt']
-        assert cmd_lst_real==cmd_lst_expected
+        assert cmd_lst_real == cmd_lst_expected
 
 
 class Test_Flow(object):

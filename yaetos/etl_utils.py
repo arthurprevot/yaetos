@@ -958,7 +958,7 @@ class Runner():
         # Building "job", which will include all job args.
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
             # Implies 'job_name' will be available in cmd_args.
-            jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})  # yml_args loaded inside based on 
+            jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})
             if jargs.merged_args.get('py_job'):
                 Job = get_job_class(jargs.py_job)
                 job = Job(jargs=jargs)
