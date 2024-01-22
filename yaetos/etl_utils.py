@@ -1084,12 +1084,12 @@ class Runner():
 
         # Get spark submit args (i.e. before launcher)
         spark_submit_args = jargs.merged_args.get('spark_submit_args')
-        spark_submit_args_lst = [] if spark_submit_args.split('--')==[''] else spark_submit_args.split('--')
+        spark_submit_args_lst = [] if spark_submit_args.split('--') == [''] else spark_submit_args.split('--')
         # import ipdb; ipdb.set_trace()
         for item in spark_submit_args_lst:
             if jargs.merged_args.get(item) is None:
                 raise Exception(f"The param '{item}' set from spark-submit (see list in spark_submit_args) is missing in your list of params '{jargs.merged_args}'.")
-            
+
             kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
             spark_submit_cmd.append(kv)
 
@@ -1098,11 +1098,11 @@ class Runner():
 
         # Get spark app args (i.e. after launcher)
         spark_app_args = jargs.merged_args.get('spark_app_args')
-        spark_app_args_lst = [] if spark_app_args.split('--')==[''] else spark_app_args.split('--')
+        spark_app_args_lst = [] if spark_app_args.split('--') == [''] else spark_app_args.split('--')
         for item in spark_app_args_lst:
             if jargs.merged_args.get(item) is None:
                 raise Exception(f"The param '{item}' set from spark-submit (see list in spark_app_args) is missing in your list of params '{jargs.merged_args}'.")
-            
+
             kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
             spark_submit_cmd.append(kv)
 
