@@ -157,12 +157,14 @@ class Test_Runner(object):
         assert hasattr(job_post, 'out_df')
 
     def test_create_spark_submit_python_job(self):
-        """Ex: python jobs/generic/launcher.py \
+        """Ex: 
+        python jobs/generic/launcher.py \
             --deploy=local_spark_submit \
             --job_name=examples/ex7_pandas_job.py \
-            --spark_submit_args='verbose' \
-            --spark_app_args='mode--storage--job_param_file' \
-            --verbose='no value'
+            --job_param_file='conf/jobs_metadata.yml' \
+            --spark_submit_keys='verbose' \
+            --spark_app_keys='mode--storage--job_param_file' \
+            --verbose='no value'  # TODO: remove need for 'no value'
         """
         job_args = {
             'deploy': 'none',
