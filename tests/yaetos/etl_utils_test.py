@@ -147,7 +147,7 @@ class Test_Runner(object):
                 'some_events': {'path':"./tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'df_type':'pandas'},
                 'other_events': {'path':"./tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'df_type':'pandas'},
             },
-            'output': {'path':'n/a', 'type':'csv', 'df_type':'pandas'},
+            'output': {'path':'n/a', 'type':'csv', 'df_type':'pandas'},  # TODO: remove need for some of the params.
             'spark_boot': False,
         }
         Job = ETL_Base
