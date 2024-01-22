@@ -188,30 +188,34 @@ class Test_Runner(object):
         assert cmd_lst_real == cmd_lst_expected
         # ##### TODO: Runner(Job, **cmd_args).launch_run_mode_spark_submit(self, job)
 
-    # def test_create_spark_submit_jar_job(self):
-    #     """Ex: python jobs/generic/launcher.py \
-    #         --spark_submit_args='verbose' \
-    #         --spark_app_args='mode--storage--job_param_file' \
-    #         --verbose='no value'
-    #     """
-    #     cmd_args = {
-    #         'job_name': 'examples/run_scala_job',
-    #         'jar_job': 'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar',
-    #         'job_param_file': JOBS_METADATA_FILE,
-    #         'mode': 'dev_local',
-    #         'deploy': 'asdf',
-    #         'spark_submit_args': 'verbose',
-    #         'spark_app_args': '',
-    #         'verbose': 'no value',
-    #     }
-    #     launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
-    #     cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
-    #     cmd_lst_expected = ['spark-submit',
-    #         '--verbose',
-    #         'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar',
-    #         ]
-    #     assert cmd_lst_real==cmd_lst_expected
-    #     ##### TODO: works but need to make it work with compiling (to not have jar in git) and with param to run the job from spark-submit
+    def test_create_spark_submit_jar_job(self):
+        """Ex: python jobs/generic/launcher.py \
+            --job_name='examples/run_scala_job' \
+            --jar_job='jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar' \
+            --deploy=local_spark_submit \
+            --spark_submit_keys='verbose' \
+            --spark_app_args='jobs/examples/scala_test5/some_text.txt' \
+            --verbose='no value' \
+            --dry_run=True 
+        """
+        job_args = {
+            'job_name': 'examples/run_scala_job',
+            'jar_job': 'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar',
+            'job_param_file': JOBS_METADATA_FILE,
+            'mode': 'dev_local',
+            'deploy': 'asdf',
+            'spark_submit_keys': 'verbose',
+            'spark_app_keys': '',
+            'verbose': 'no value',
+        }
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args=job_args, cmd_args={}, loaded_inputs={})
+        cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
+        cmd_lst_expected = ['spark-submit',
+            '--verbose',
+            'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar',
+            ]
+        assert cmd_lst_real==cmd_lst_expected
+        # ##### TODO: works but need to make it work with compiling (to not have jar in git) and with param to run the job from spark-submit
 
 
 class Test_Flow(object):

@@ -1124,6 +1124,8 @@ class Runner():
             kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
             spark_submit_cmd.append(kv)
 
+        if jargs.merged_args.get('spark_app_args'):
+            spark_submit_cmd.append(jargs.spark_app_args)
         return spark_submit_cmd
 
     @staticmethod
