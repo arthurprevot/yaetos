@@ -144,9 +144,6 @@ class Test_Runner(object):
         from jobs.examples.ex7_pandas_job import Job
         job_args = {
             'job_param_file': None,
-            # 'deploy': 'none',
-            # 'py_code': 'asdf.py',
-            # 'dependencies': False,
             'inputs': {
                 'some_events': {'path': "./tests/fixtures/data_sample/wiki_example/input/", 'type': 'csv', 'df_type': 'pandas'},
                 'other_events': {'path': "./tests/fixtures/data_sample/wiki_example/input/", 'type': 'csv', 'df_type': 'pandas'},
@@ -158,12 +155,7 @@ class Test_Runner(object):
 
     def test_create_spark_submit_python_job(self):
         job_args = {
-            # 'deploy': 'none',
-            # 'mode': 'dev_local',
-            # 'job_param_file': JOBS_METADATA_FILE,
             'py_job': 'jobs/examples/ex7_pandas_job.py',
-            # 'job_param_file': None,
-            # 'job_name': 'examples/ex7_pandas_job.py',
             'arg1': 'value1',
             'arg2': 'value2',
             'spark_submit_args': '--verbose',
@@ -182,12 +174,8 @@ class Test_Runner(object):
 
     def test_create_spark_submit_jar_job(self):
         job_args = {
-            # 'job_name': 'examples/run_scala_job',
-            # 'job_param_file': JOBS_METADATA_FILE,
-            'job_param_file': None,
+            # 'job_param_file': None,
             'jar_job': 'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
-            # 'deploy': 'asdf',  # required but not used here.
-            # 'mode': 'dev_local',
             'spark_submit_args': '--verbose',
             'spark_app_args': 'jobs/examples/ex12_scala_job/some_text.txt',
         }
@@ -197,7 +185,7 @@ class Test_Runner(object):
             'spark-submit',
             '--verbose',
             'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
-            'jobs/examples/scala_test5/some_text.txt',
+            'jobs/examples/ex12_scala_job/some_text.txt',
             ]
         assert cmd_lst_real==cmd_lst_expected
         # ##### TODO: works but need to make it work with compiling (to not have jar in git) and with param to run the job from spark-submit
