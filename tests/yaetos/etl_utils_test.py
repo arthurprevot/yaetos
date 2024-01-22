@@ -191,28 +191,29 @@ class Test_Runner(object):
     def test_create_spark_submit_jar_job(self):
         """Ex: python jobs/generic/launcher.py \
             --job_name='examples/run_scala_job' \
+            --job_param_file='conf/jobs_metadata.yml' \
             --jar_job='jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar' \
             --deploy=local_spark_submit \
-            --spark_submit_keys='verbose' \
+            --spark_submit_args='--verbose' \
             --spark_app_args='jobs/examples/scala_test5/some_text.txt' \
-            --verbose='no value' \
             --dry_run=True 
         """
         job_args = {
             'job_name': 'examples/run_scala_job',
-            'jar_job': 'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar',
             'job_param_file': JOBS_METADATA_FILE,
+            'jar_job': 'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar',
+            'deploy': 'asdf',  # required but not used here.
             'mode': 'dev_local',
-            'deploy': 'asdf',
-            'spark_submit_keys': 'verbose',
-            'spark_app_keys': '',
-            'verbose': 'no value',
+            'spark_submit_args': '--verbose',
+            'spark_app_args': 'jobs/examples/scala_test5/some_text.txt',
         }
         launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args=job_args, cmd_args={}, loaded_inputs={})
         cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
-        cmd_lst_expected = ['spark-submit',
+        cmd_lst_expected = [
+            'spark-submit',
             '--verbose',
             'jobs/examples/scala_test5/target/scala-2.13/spark_scala_test_2.13-1.0.jar',
+            'jobs/examples/scala_test5/some_text.txt',
             ]
         assert cmd_lst_real==cmd_lst_expected
         # ##### TODO: works but need to make it work with compiling (to not have jar in git) and with param to run the job from spark-submit

@@ -949,13 +949,6 @@ class Runner():
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
         # Building "job", which will include all job args.
-        # jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})
-        # is_py_job = job_args.get('py_job') or cmd_args.get('py_job')  # TODO: check to add yml_args
-        # is_jar_job = job_args.get('jar_job') or cmd_args.get('jar_job')  # TODO: same
-        # is_py_job = jargs.merged_args.get('py_job')
-        # is_jar_job = jargs.merged_args.get('jar_job')
-        # print('####', is_py_job, ' --- ', is_jar_job)
-        # import ipdb; ipdb.set_trace()
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
             # Implies 'job_name' will be available in cmd_args.
             jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})  # yml_args loaded inside based on 
@@ -1040,8 +1033,8 @@ class Runner():
             'add_created_at': 'true',  # set as string to be overrideable in cmdline.
             'no_fw_cache': False,
             'spark_boot': True,  # options ('spark', 'pandas') (experimental).
-            'spark_submit_keys': '',
-            'spark_app_keys': '',
+            # 'spark_submit_keys': '',
+            # 'spark_app_keys': '',
             # 'spark_app_args': '',
             'dry_run': False,
         }
@@ -1089,7 +1082,6 @@ class Runner():
         cmdline = self.create_spark_submit(jargs)
         cmdline_str = " ".join(cmdline)
         logger.info(f'About to run spark submit command line: {cmdline_str}')
-        # import ipdb; ipdb.set_trace()
         if not jargs.merged_args.get('dry_run'):
             os.system(cmdline_str)
         # ### TODO: test with dependencies.
@@ -1101,9 +1093,8 @@ class Runner():
         spark_submit_cmd = ["spark-submit"]
 
         # Get spark submit args (i.e. before launcher)
-        spark_submit_keys = jargs.merged_args.get('spark_submit_keys')
+        spark_submit_keys = jargs.merged_args.get('spark_submit_keys', '')
         spark_submit_keys_lst = [] if spark_submit_keys.split('--') == [''] else spark_submit_keys.split('--')
-        # import ipdb; ipdb.set_trace()
         for item in spark_submit_keys_lst:
             if jargs.merged_args.get(item) is None:
                 raise Exception(f"The param '{item}' set from spark-submit (see list in spark_submit_args) is missing in your list of params '{jargs.merged_args}'.")
@@ -1111,11 +1102,14 @@ class Runner():
             kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
             spark_submit_cmd.append(kv)
 
+        if jargs.merged_args.get('spark_submit_args'):
+            spark_submit_cmd.append(jargs.spark_submit_args)
+
         # Add launcher
         spark_submit_cmd.append(launcher_file)
 
         # Get spark app args (i.e. after launcher)
-        spark_app_keys = jargs.merged_args.get('spark_app_keys')
+        spark_app_keys = jargs.merged_args.get('spark_app_keys', '')
         spark_app_keys_lst = [] if spark_app_keys.split('--') == [''] else spark_app_keys.split('--')
         for item in spark_app_keys_lst:
             if jargs.merged_args.get(item) is None:
