@@ -150,12 +150,9 @@ class Test_Runner(object):
                 'some_events': {'path':"./tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'df_type':'pandas'},
                 'other_events': {'path':"./tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'df_type':'pandas'},
             },
-            'output': {'path':'n/a', 'type':'csv', 'df_type':'pandas'},  # TODO: remove need for some of the params.
-            'spark_boot': False,
-        }
-
+            'output': {'path':'n/a', 'type':'None', 'df_type':'pandas'},  # i.e. there is an output but it won't be dumped to disk.
+            'spark_boot': False,}
         job_post = Runner(Job, **cmd_args).run()  # will run the full job based on small scale data, to test full job scope.
-        print(job_post.jargs.merged_args)
         assert hasattr(job_post, 'out_df')
 
     def test_create_spark_submit_python_job(self):
