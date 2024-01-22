@@ -139,6 +139,26 @@ class Test_Job_Args_Parser(object):
             assert False, f"'test_validate_params' raised an exception: {exc}"
 
 class Test_Runner(object):
+    def test_run(self):
+        cmd_args = {
+            'job_name': 'examples/ex7_pandas_job.py',
+            'deploy': 'none',
+            # 'mode': 'dev_local',
+            # 'job_param_file': JOBS_METADATA_FILE,
+            'input': {
+                'some_events': {'path':"./tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'df_type':'pandas'},
+                'other_events': {'path':"./tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'df_type':'pandas'},
+            },
+            'output': {'path':'n/a', 'type':'csv', 'df_type':'pandas'},
+            # 'storage': 'local',
+            'spark_boot': False,
+        }
+        Job = ETL_Base
+        job_post = Runner(Job, **cmd_args).run()
+        print(job_post.out_df)
+        assert hasattr(job_post, 'out_df')
+        # assert False
+
     def test_create_spark_submit_python_job(self):
         """Ex: python jobs/generic/launcher.py \
             --deploy=local_spark_submit \
