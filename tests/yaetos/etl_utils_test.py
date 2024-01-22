@@ -143,10 +143,11 @@ class Test_Runner(object):
         from jobs.examples.ex7_pandas_job import Job
         cmd_args = {
             # 'job_name': 'examples/ex7_pandas_job.py',
-            'job_param_file': JOBS_METADATA_FILE,
+            # 'job_param_file': JOBS_METADATA_FILE,
+            'job_param_file': None,
             'deploy': 'none',
             'dependencies': False,
-            'input': {
+            'inputs': {
                 'some_events': {'path':"./tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'df_type':'pandas'},
                 'other_events': {'path':"./tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'df_type':'pandas'},
             },
