@@ -1014,7 +1014,6 @@ class Runner():
             'deploy': 'none',
             'mode': 'dev_local',
             'job_param_file': JOBS_METADATA_FILE,
-            # 'job_name': None,
             'sql_file': None,
             'connection_file': CONNECTION_FILE,
             'jobs_folder': JOB_FOLDER,
@@ -1038,7 +1037,7 @@ class Runner():
             'add_created_at': 'true',  # set as string to be overrideable in cmdline.
             'no_fw_cache': False,
             'spark_boot': True,  # options ('spark', 'pandas') (experimental).
-            'dry_run': False,
+            # 'dry_run': False,
         }
         redshift = ['enable_redshift_push', 'schema', 'redshift_s3_tmp_dir', 'redshift_s3_tmp_dir']
         spark = ['no_fw_cache', 'spark_boot', 'spark_version']
@@ -1086,7 +1085,6 @@ class Runner():
         logger.info(f'About to run spark submit command line: {cmdline_str}')
         if not jargs.merged_args.get('dry_run'):
             os.system(cmdline_str)
-        # ### TODO: test with dependencies.
 
     @staticmethod
     def create_spark_submit(jargs):
