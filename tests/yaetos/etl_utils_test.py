@@ -158,13 +158,16 @@ class Test_Runner(object):
             'py_job': 'jobs/examples/ex7_pandas_job.py',
             'arg1': 'value1',
             'arg2': 'value2',
+            'py-files': 'some/files.zip',
             'spark_submit_args': '--verbose',
+            'spark_submit_keys': 'py-files',
             'spark_app_keys': 'arg1--arg2'}
         launch_jargs = Job_Args_Parser(defaults_args={}, yml_args={}, job_args=job_args, cmd_args={}, build_yml_args=False, loaded_inputs={})
         cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
         cmd_lst_expected = [
             'spark-submit',
             '--verbose',
+            '--py-files=some/files.zip',
             'jobs/examples/ex7_pandas_job.py',
             '--arg1=value1',
             '--arg2=value2']

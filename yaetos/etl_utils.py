@@ -1093,33 +1093,32 @@ class Runner():
         spark_submit_cmd = ["spark-submit"]
 
         # Get spark submit args (i.e. before launcher)
+        if jargs.merged_args.get('spark_submit_args'):
+            spark_submit_cmd.append(jargs.spark_submit_args)
         spark_submit_keys = jargs.merged_args.get('spark_submit_keys', '')
         spark_submit_keys_lst = [] if spark_submit_keys.split('--') == [''] else spark_submit_keys.split('--')
         for item in spark_submit_keys_lst:
-            if jargs.merged_args.get(item) is None:
+            if item not in jargs.merged_args.keys():
                 raise Exception(f"The param '{item}' set from spark-submit (see list in spark_submit_args) is missing in your list of params '{jargs.merged_args}'.")
 
             kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
             spark_submit_cmd.append(kv)
 
-        if jargs.merged_args.get('spark_submit_args'):
-            spark_submit_cmd.append(jargs.spark_submit_args)
-
         # Add launcher
         spark_submit_cmd.append(launcher_file)
 
         # Get spark app args (i.e. after launcher)
+        if jargs.merged_args.get('spark_app_args'):
+            spark_submit_cmd.append(jargs.spark_app_args)
         spark_app_keys = jargs.merged_args.get('spark_app_keys', '')
         spark_app_keys_lst = [] if spark_app_keys.split('--') == [''] else spark_app_keys.split('--')
         for item in spark_app_keys_lst:
-            if jargs.merged_args.get(item) is None:
+            if item not in jargs.merged_args.keys():
                 raise Exception(f"The param '{item}' set from spark-submit (see list in spark_app_args) is missing in your list of params '{jargs.merged_args}'.")
 
             kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
             spark_submit_cmd.append(kv)
 
-        if jargs.merged_args.get('spark_app_args'):
-            spark_submit_cmd.append(jargs.spark_app_args)
         return spark_submit_cmd
 
     @staticmethod
