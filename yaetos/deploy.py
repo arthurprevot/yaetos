@@ -502,7 +502,8 @@ class DeployPySparkScriptOnAws(object):
             raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
 
-    def get_spark_submit_args(self, app_file, app_args):
+    @staticmethod
+    def get_spark_submit_args(app_file, app_args):
 
         emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
         launcher_file = app_args.get('launcher_file') or app_file

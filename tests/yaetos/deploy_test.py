@@ -48,3 +48,22 @@ class Test_DeployPySparkScriptOnAws(object):
         expected = Pt('some/path/')
         assert actual == expected
         # TODO: other test for 'lib'
+
+    def test_get_spark_submit_args(self, app_args):
+        app_args['code_source'] = 'repo'
+        app_args['mode'] = 'mode_x'
+        app_file = 'asdf.py'
+        # dep = Dep(deploy_args, app_args)
+        actual = Dep.get_spark_submit_args(app_file, app_args)
+        expected = [
+            'spark-submit',
+            '--verbose',
+            '--py-files=/home/hadoop/app/scripts.zip',
+            '/home/hadoop/app/asdf.py',
+            '--mode=mode_x',
+            '--deploy=none',
+            '--storage=s3',
+            '--rerun_criteria=None',
+            '--job_name=some_job_name',
+            ]
+        assert actual == expected
