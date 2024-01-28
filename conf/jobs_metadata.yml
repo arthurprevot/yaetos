@@ -267,7 +267,7 @@ jobs:
     scala_job: 'jobs/examples/ex12_scala_job/src/spark_scala_job.scala'
     sbt: 'jobs/examples/ex12_scala_job/build.sbt'
     spark_submit_args: '--verbose'
-    spark_app_args': 'jobs/examples/ex12_scala_job/some_text.txt'
+    spark_app_args: 'jobs/examples/ex12_scala_job/some_text.txt'
   
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
