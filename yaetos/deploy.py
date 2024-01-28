@@ -502,46 +502,46 @@ class DeployPySparkScriptOnAws(object):
             raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
 
+    # @staticmethod
+    # def get_spark_submit_args(app_file, app_args):
+
+    #     emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
+    #     launcher_file = app_args.get('launcher_file') or app_file
+
+    #     spark_submit_args = [
+    #         "spark-submit",
+    #         "--verbose",
+    #         "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
+    #     ]
+    #     if app_args.get('load_connectors', '') == 'all':
+    #         package_str = ','.join(eu.PACKAGES_EMR_SPARK_3)
+    #         pac = [f"--packages={app_args.get('spark_packages')}"] if app_args.get('spark_packages') else [f"--packages={package_str}"]
+    #         jar = [f"--jars={app_args.get('spark_jars')}"] if app_args.get('spark_jars') else [f"--jars={eu.JARS}"]
+    #     else:
+    #         pac = []
+    #         jar = []
+    #     med = ["--driver-memory={}".format(app_args['driver-memory'])] if app_args.get('driver-memory') else []
+    #     cod = ["--driver-cores={}".format(app_args['driver-cores'])] if app_args.get('driver-cores') else []
+    #     mee = ["--executor-memory={}".format(app_args['executor-memory'])] if app_args.get('executor-memory') else []
+    #     coe = ["--executor-cores={}".format(app_args['executor-cores'])] if app_args.get('executor-cores') else []
+
+    #     spark_app_args = [
+    #         eu.CLUSTER_APP_FOLDER + launcher_file,
+    #         "--mode={}".format(emr_mode),
+    #         "--deploy=none",
+    #         "--storage=s3",
+    #         "--rerun_criteria={}".format(app_args.get('rerun_criteria')),
+    #     ]
+    #     jop = ['--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER + eu.JOBS_METADATA_FILE)] if app_args.get('job_param_file') else []
+    #     dep = ["--dependencies"] if app_args.get('dependencies') else []
+    #     box = ["--chain_dependencies"] if app_args.get('chain_dependencies') else []
+    #     sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER + app_args['sql_file'])] if app_args.get('sql_file') else []
+    #     nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
+
+    #     return spark_submit_args + pac + jar + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam
+
     @staticmethod
     def get_spark_submit_args(app_file, app_args):
-
-        emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
-        launcher_file = app_args.get('launcher_file') or app_file
-
-        spark_submit_args = [
-            "spark-submit",
-            "--verbose",
-            "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-        ]
-        if app_args.get('load_connectors', '') == 'all':
-            package_str = ','.join(eu.PACKAGES_EMR_SPARK_3)
-            pac = [f"--packages={app_args.get('spark_packages')}"] if app_args.get('spark_packages') else [f"--packages={package_str}"]
-            jar = [f"--jars={app_args.get('spark_jars')}"] if app_args.get('spark_jars') else [f"--jars={eu.JARS}"]
-        else:
-            pac = []
-            jar = []
-        med = ["--driver-memory={}".format(app_args['driver-memory'])] if app_args.get('driver-memory') else []
-        cod = ["--driver-cores={}".format(app_args['driver-cores'])] if app_args.get('driver-cores') else []
-        mee = ["--executor-memory={}".format(app_args['executor-memory'])] if app_args.get('executor-memory') else []
-        coe = ["--executor-cores={}".format(app_args['executor-cores'])] if app_args.get('executor-cores') else []
-
-        spark_app_args = [
-            eu.CLUSTER_APP_FOLDER + launcher_file,
-            "--mode={}".format(emr_mode),
-            "--deploy=none",
-            "--storage=s3",
-            "--rerun_criteria={}".format(app_args.get('rerun_criteria')),
-        ]
-        jop = ['--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER + eu.JOBS_METADATA_FILE)] if app_args.get('job_param_file') else []
-        dep = ["--dependencies"] if app_args.get('dependencies') else []
-        box = ["--chain_dependencies"] if app_args.get('chain_dependencies') else []
-        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER + app_args['sql_file'])] if app_args.get('sql_file') else []
-        nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
-
-        return spark_submit_args + pac + jar + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam
-
-    @staticmethod
-    def get_spark_submit_args2(app_file, app_args):
         if app_args.get('py_job'):
             overridable_args = {
                 'spark_submit_args': '--verbose',
