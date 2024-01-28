@@ -542,20 +542,30 @@ class DeployPySparkScriptOnAws(object):
 
     @staticmethod
     def get_spark_submit_args2(app_file, app_args):
-        overridable_args = {
-            'spark_submit_args': '--verbose',
-            'spark_submit_keys': 'py-files',
-            'spark_app_args': '',
-            'spark_app_keys': 'mode--deploy--storage',
-            }
+        if app_args.get('py_job'):
+            overridable_args = {
+                'spark_submit_args': '--verbose',
+                'spark_submit_keys': 'py-files',
+                'spark_app_args': '',
+                'spark_app_keys': 'mode--deploy--storage',
+                }
+        else:
+            overridable_args = {
+                'spark_submit_args': '--verbose',
+                'spark_submit_keys': '',
+                'spark_app_args': '',
+                'spark_app_keys': '',
+                }
+
         overridable_args.update(app_args)
         args = overridable_args
         unoverridable_args = {
             'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip",
             'py_job': eu.CLUSTER_APP_FOLDER + (app_args.get('launcher_file') or app_file),
-            'mode': 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode'],
+            'mode': 'dev_EMR' if app_args.get('mode') == 'dev_local' else app_args.get('mode'),
             'deploy': 'none',
             'storage': 's3',
+            'jar_job': eu.CLUSTER_APP_FOLDER + (app_args.get('launcher_file') or app_file),
             }
         args.update(unoverridable_args)
 
