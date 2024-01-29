@@ -277,9 +277,14 @@ class DeployPySparkScriptOnAws(object):
         # ./jobs files and folders
         # TODO: extract code below in external function.
         files = []
+        folder_to_skip = ('bg-jobs')  # bg-jobs contains intermediate jars from scala compilation process.
         for (dirpath, dirnames, filenames) in os.walk(self.app_args['jobs_folder']):
             for file in filenames:
-                if file.endswith(".py") or file.endswith(".sql"):
+                if folder_to_skip in dirnames:
+                    dirnames.remove(folder_to_skip)
+                    continue
+
+                if file.endswith(".py") or file.endswith(".sql") or file.endswith(".jar"):
                     path = os.path.join(dirpath, file)
                     dir_tar = dirpath[len(self.app_args['jobs_folder']):]
                     path_tar = os.path.join(eu.JOB_FOLDER, dir_tar, file)
