@@ -919,10 +919,11 @@ class Path_Handler():
         self.path = self.expand_base()
 
     def expand_base(self):
-        if self.base_path and '{base_path}' in self.path:
-            path = self.path.replace('{base_path}', self.base_path)
-        if self.root_path and '{root_path}' in self.path:
-            path = self.path.replace('{root_path}', self.root_path)
+        path = self.path
+        if self.base_path and '{base_path}' in path:
+            path = path.replace('{base_path}', self.base_path)
+        if self.root_path and '{root_path}' in path:
+            path = path.replace('{root_path}', self.root_path)
         return path
 
     def expand_later(self):
