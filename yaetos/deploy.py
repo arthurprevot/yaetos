@@ -558,14 +558,14 @@ class DeployPySparkScriptOnAws(object):
                 }
 
         overridable_args.update(app_args)
-        args = overridable_args
+        args = overridable_args.copy()
         unoverridable_args = {
             'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip",
-            'py_job': eu.CLUSTER_APP_FOLDER + (app_args.get('launcher_file') or app_file),
+            'py_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('py_job') or app_args.get('launcher_file')),  # TODO: simplify business of getting application code upstream
             'mode': 'dev_EMR' if app_args.get('mode') == 'dev_local' else app_args.get('mode'),
             'deploy': 'none',
             'storage': 's3',
-            'jar_job': eu.CLUSTER_APP_FOLDER + (app_args.get('launcher_file') or app_file),
+            'jar_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('jar_job') or app_args.get('launcher_file')),
             }
         args.update(unoverridable_args)
 
@@ -580,7 +580,7 @@ class DeployPySparkScriptOnAws(object):
         if app_args.get('chain_dependencies'):
             args['spark_app_args'] += ' --chain_dependencies'
         
-        if app_args.get('job_param_file'):
+        if app_args.get('job_param_file') and app_args.get('py_job'):
             args['job_param_file'] = eu.CLUSTER_APP_FOLDER + app_args['job_param_file']
             args['spark_app_keys'] += '--job_param_file'
 
@@ -588,7 +588,7 @@ class DeployPySparkScriptOnAws(object):
             args['sql_file'] = eu.CLUSTER_APP_FOLDER + app_args['sql_file']
             args['spark_app_keys'] += '--sql_file'
 
-        if app_args.get('job_name'):
+        if app_args.get('job_name') and app_args.get('py_job'):
             args['job_name'] = app_args['job_name']
             args['spark_app_keys'] += '--job_name'
 

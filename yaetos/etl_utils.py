@@ -855,7 +855,7 @@ class Job_Args_Parser():
             args['output']['type'] = args.pop('output.type', None) or args['output'].get('type', 'none')
         return args
 
-    # TODO: modify later since not used now
+    # TODO: update to put back in use later.
     def set_inputs(self, args, loaded_inputs):
         # inputs_in_args = any([item.startswith('input_') for item in cmd_args.keys()])
         # if inputs_in_args:
@@ -869,7 +869,7 @@ class Job_Args_Parser():
         else:
             return args.get('inputs', {})
 
-    # TODO: modify later since not used now
+    # TODO: update to put back in use later.
     # def set_output(self, cmd_args, yml_args):
     #     output_in_args = any([item == 'output_path' for item in cmd_args.keys()])
     #     if output_in_args:
@@ -1096,7 +1096,7 @@ class Runner():
         if jargs.merged_args.get('spark_submit_args'):
             spark_submit_cmd.append(jargs.spark_submit_args)
         spark_submit_keys = jargs.merged_args.get('spark_submit_keys', '')
-        spark_submit_keys_lst = [] if spark_submit_keys.split('--') == [''] else spark_submit_keys.split('--')
+        spark_submit_keys_lst = [item for item in spark_submit_keys.split('--') if item != '']
         for item in spark_submit_keys_lst:
             if item not in jargs.merged_args.keys():
                 raise Exception(f"The param '{item}' set from spark-submit (see list in spark_submit_args) is missing in your list of params '{jargs.merged_args}'.")
@@ -1111,7 +1111,8 @@ class Runner():
         if jargs.merged_args.get('spark_app_args'):
             spark_submit_cmd.append(jargs.spark_app_args)
         spark_app_keys = jargs.merged_args.get('spark_app_keys', '')
-        spark_app_keys_lst = [] if spark_app_keys.split('--') == [''] else spark_app_keys.split('--')
+        # spark_app_keys_lst = [] if spark_app_keys.split('--') == [''] else spark_app_keys.split('--')
+        spark_app_keys_lst = [item for item in spark_app_keys.split('--') if item != '']
         for item in spark_app_keys_lst:
             if item not in jargs.merged_args.keys():
                 raise Exception(f"The param '{item}' set from spark-submit (see list in spark_app_args) is missing in your list of params '{jargs.merged_args}'.")
