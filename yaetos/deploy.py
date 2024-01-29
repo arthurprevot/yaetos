@@ -277,9 +277,14 @@ class DeployPySparkScriptOnAws(object):
         # ./jobs files and folders
         # TODO: extract code below in external function.
         files = []
+        folder_to_skip = ('bg-jobs')  # bg-jobs contains intermediate jars from scala compilation process.
         for (dirpath, dirnames, filenames) in os.walk(self.app_args['jobs_folder']):
             for file in filenames:
-                if file.endswith(".py") or file.endswith(".sql"):
+                if folder_to_skip in dirnames:
+                    dirnames.remove(folder_to_skip)
+                    continue
+
+                if file.endswith(".py") or file.endswith(".sql") or file.endswith(".jar"):
                     path = os.path.join(dirpath, file)
                     dir_tar = dirpath[len(self.app_args['jobs_folder']):]
                     path_tar = os.path.join(eu.JOB_FOLDER, dir_tar, file)
@@ -502,42 +507,58 @@ class DeployPySparkScriptOnAws(object):
             raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
 
-    def get_spark_submit_args(self, app_file, app_args):
-
-        emr_mode = 'dev_EMR' if app_args['mode'] == 'dev_local' else app_args['mode']
-        launcher_file = app_args.get('launcher_file') or app_file
-
-        spark_submit_args = [
-            "spark-submit",
-            "--verbose",
-            "--py-files={}scripts.zip".format(eu.CLUSTER_APP_FOLDER),
-        ]
-        if app_args.get('load_connectors', '') == 'all':
-            package_str = ','.join(eu.PACKAGES_EMR_SPARK_3)
-            pac = [f"--packages={app_args.get('spark_packages')}"] if app_args.get('spark_packages') else [f"--packages={package_str}"]
-            jar = [f"--jars={app_args.get('spark_jars')}"] if app_args.get('spark_jars') else [f"--jars={eu.JARS}"]
+    @staticmethod
+    def get_spark_submit_args(app_file, app_args):
+        if app_args.get('py_job'):
+            overridable_args = {
+                'spark_submit_args': '--verbose',
+                'spark_submit_keys': 'py-files',
+                'spark_app_args': '',
+                'spark_app_keys': 'mode--deploy--storage'}
         else:
-            pac = []
-            jar = []
-        med = ["--driver-memory={}".format(app_args['driver-memory'])] if app_args.get('driver-memory') else []
-        cod = ["--driver-cores={}".format(app_args['driver-cores'])] if app_args.get('driver-cores') else []
-        mee = ["--executor-memory={}".format(app_args['executor-memory'])] if app_args.get('executor-memory') else []
-        coe = ["--executor-cores={}".format(app_args['executor-cores'])] if app_args.get('executor-cores') else []
+            overridable_args = {
+                'spark_submit_args': '--verbose',
+                'spark_submit_keys': '',
+                'spark_app_args': '',
+                'spark_app_keys': ''}
 
-        spark_app_args = [
-            eu.CLUSTER_APP_FOLDER + launcher_file,
-            "--mode={}".format(emr_mode),
-            "--deploy=none",
-            "--storage=s3",
-            "--rerun_criteria={}".format(app_args.get('rerun_criteria')),
-        ]
-        jop = ['--job_param_file={}'.format(eu.CLUSTER_APP_FOLDER + eu.JOBS_METADATA_FILE)] if app_args.get('job_param_file') else []
-        dep = ["--dependencies"] if app_args.get('dependencies') else []
-        box = ["--chain_dependencies"] if app_args.get('chain_dependencies') else []
-        sql = ["--sql_file={}".format(eu.CLUSTER_APP_FOLDER + app_args['sql_file'])] if app_args.get('sql_file') else []
-        nam = ["--job_name={}".format(app_args['job_name'])] if app_args.get('job_name') else []
+        overridable_args.update(app_args)
+        args = overridable_args.copy()
+        unoverridable_args = {
+            'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip",
+            'py_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('py_job') or app_args.get('launcher_file')),  # TODO: simplify business of getting application code upstream
+            'mode': 'dev_EMR' if app_args.get('mode') == 'dev_local' else app_args.get('mode'),
+            'deploy': 'none',
+            'storage': 's3',
+            'jar_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('jar_job') or app_args.get('launcher_file'))}
+        args.update(unoverridable_args)
 
-        return spark_submit_args + pac + jar + med + cod + mee + coe + spark_app_args + jop + dep + box + sql + nam
+        if app_args.get('load_connectors', '') == 'all':
+            args['packages'] = app_args.get('spark_packages') or ','.join(eu.PACKAGES_EMR_SPARK_3),  # may not be used in spark-submit depending on 'load_connectors' para above.
+            args['jars'] = app_args.get('spark_jars') or eu.JARS,  # may not be used in spark-submit depending on 'load_connectors' para above.
+            args['spark_submit_keys'] += '--packages--jars'
+
+        if app_args.get('dependencies'):
+            args['spark_app_args'] += ' --dependencies'
+
+        if app_args.get('chain_dependencies'):
+            args['spark_app_args'] += ' --chain_dependencies'
+
+        if app_args.get('job_param_file') and app_args.get('py_job'):
+            args['job_param_file'] = eu.CLUSTER_APP_FOLDER + app_args['job_param_file']
+            args['spark_app_keys'] += '--job_param_file'
+
+        if app_args.get('sql_file'):
+            args['sql_file'] = eu.CLUSTER_APP_FOLDER + app_args['sql_file']
+            args['spark_app_keys'] += '--sql_file'
+
+        if app_args.get('job_name') and app_args.get('py_job'):
+            args['job_name'] = app_args['job_name']
+            args['spark_app_keys'] += '--job_name'
+
+        # TODO: implement better way to handle params, less case by case, to only deal with overloaded params
+        jargs = eu.Job_Args_Parser(defaults_args={}, yml_args={}, job_args=args, cmd_args={}, build_yml_args=False, loaded_inputs={})
+        return eu.Runner.create_spark_submit(jargs)
 
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)

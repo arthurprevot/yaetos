@@ -48,3 +48,45 @@ class Test_DeployPySparkScriptOnAws(object):
         expected = Pt('some/path/')
         assert actual == expected
         # TODO: other test for 'lib'
+
+    def test_get_spark_submit_args(self, app_args):
+        # Test base case
+        app_args['mode'] = 'mode_x'
+        app_file = 'some_file.py'
+        actual = Dep.get_spark_submit_args(app_file, app_args)
+        expected = [
+            'spark-submit',
+            '--verbose',
+            '--py-files=/home/hadoop/app/scripts.zip',
+            '/home/hadoop/app/some_file.py',
+            '--mode=mode_x',
+            '--deploy=none',
+            '--storage=s3',
+            '--job_name=some_job_name']
+        assert actual == expected
+
+        # Test adding args
+        app_args['dependencies'] = True
+        app_args['chain_dependencies'] = True
+        actual = Dep.get_spark_submit_args(app_file, app_args)
+        expected.insert(4, ' --dependencies --chain_dependencies')
+        assert actual == expected
+
+        # Test adding args
+        app_args['sql_file'] = 'some_file.sql'
+        actual = Dep.get_spark_submit_args(app_file, app_args)
+        expected.insert(8, '--sql_file=/home/hadoop/app/some_file.sql')
+        assert actual == expected
+
+    def test_get_spark_submit_args_jar(self):
+        app_args = {
+            'jar_job': 'some/job.jar',
+            'spark_app_args': 'some_arg'}
+        app_file = app_args['jar_job']
+        actual = Dep.get_spark_submit_args(app_file, app_args)
+        expected = [
+            'spark-submit',
+            '--verbose',
+            '/home/hadoop/app/some/job.jar',
+            'some_arg']
+        assert actual == expected

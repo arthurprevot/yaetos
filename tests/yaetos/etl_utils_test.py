@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pytest
 from yaetos.etl_utils import ETL_Base, \
-    Period_Builder, Job_Args_Parser, Job_Yml_Parser, Flow, \
+    Period_Builder, Job_Args_Parser, Job_Yml_Parser, Runner, Flow, \
     get_job_class, LOCAL_JOB_FOLDER, JOBS_METADATA_FILE
 
 
@@ -106,19 +106,19 @@ class Test_Job_Args_Parser(object):
         defaults_args = {'py_job': 'some_job.py', 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
         expected_args = {**{'inputs': {}, 'is_incremental': False}, **defaults_args}
 
-        jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={})
+        jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False)
         assert jargs.merged_args == expected_args
 
     def test_validate_params(self):
         # Error raised, py_job
         defaults_args = {'py_job': None, 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
-        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False, validate=False)
         with pytest.raises(Exception):
             job.validate()
 
         # Error not raised, py_job
         defaults_args['py_job'] = 'some_job.py'
-        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False, validate=False)
         try:
             job.validate()
         except Exception as exc:
@@ -126,17 +126,66 @@ class Test_Job_Args_Parser(object):
 
         # Error raised, sql_file
         defaults_args['py_job'] = 'sql_spark_job.py'
-        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False, validate=False)
         with pytest.raises(Exception):
             job.validate()
 
         # Error not raised, sql_file
         defaults_args['sql_file'] = 'some_job.sql'
-        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, validate=False)
+        job = Job_Args_Parser(defaults_args=defaults_args, yml_args={}, job_args={}, cmd_args={}, build_yml_args=False, validate=False)
         try:
             job.validate()
         except Exception as exc:
             assert False, f"'test_validate_params' raised an exception: {exc}"
+
+
+class Test_Runner(object):
+    def test_run(self):
+        from jobs.examples.ex7_pandas_job import Job
+        job_args = {
+            'job_param_file': None,
+            'inputs': {
+                'some_events': {'path': "./tests/fixtures/data_sample/wiki_example/input/", 'type': 'csv', 'df_type': 'pandas'},
+                'other_events': {'path': "./tests/fixtures/data_sample/wiki_example/input/", 'type': 'csv', 'df_type': 'pandas'},
+            },
+            'output': {'path': 'n/a', 'type': 'None', 'df_type': 'pandas'},  # i.e. there is an output but it won't be dumped to disk.
+            'spark_boot': False}
+        job_post = Runner(Job, **job_args).run()  # will run the full job based on small scale data
+        assert hasattr(job_post, 'out_df')
+
+    def test_create_spark_submit_python_job(self):
+        job_args = {
+            'py_job': 'jobs/examples/ex7_pandas_job.py',
+            'arg1': 'value1',
+            'arg2': 'value2',
+            'py-files': 'some/files.zip',
+            'spark_submit_args': '--verbose',
+            'spark_submit_keys': 'py-files',
+            'spark_app_keys': 'arg1--arg2'}
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args={}, job_args=job_args, cmd_args={}, build_yml_args=False, loaded_inputs={})
+        cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
+        cmd_lst_expected = [
+            'spark-submit',
+            '--verbose',
+            '--py-files=some/files.zip',
+            'jobs/examples/ex7_pandas_job.py',
+            '--arg1=value1',
+            '--arg2=value2']
+        assert cmd_lst_real == cmd_lst_expected
+
+    def test_create_spark_submit_jar_job(self):
+        job_args = {
+            'jar_job': 'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
+            'spark_submit_args': '--verbose',
+            'spark_app_args': 'jobs/examples/ex12_scala_job/some_text.txt'}
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args={}, job_args=job_args, cmd_args={}, build_yml_args=False, loaded_inputs={})
+        cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
+        cmd_lst_expected = [
+            'spark-submit',
+            '--verbose',
+            'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
+            'jobs/examples/ex12_scala_job/some_text.txt']
+        assert cmd_lst_real == cmd_lst_expected
 
 
 class Test_Flow(object):
@@ -148,7 +197,7 @@ class Test_Flow(object):
             'job_name': 'examples/ex4_dependency2_job.py',
             'storage': 'local',
         }
-        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, loaded_inputs={})
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args=None, job_args={}, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})
         connection_real = Flow.create_connections_jobs(launch_jargs.storage, launch_jargs.merged_args)
         connection_expected = pd.DataFrame(
             columns=['source_job', 'destination_job'],

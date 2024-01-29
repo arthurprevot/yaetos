@@ -233,7 +233,7 @@ class ETL_Base(object):
             job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
         else:
             job_name = pre_jargs['job_args']['job_name']
-        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, loaded_inputs=loaded_inputs)  # set yml_args=None so loading yml is handled in Job_Args_Parser()
+        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, build_yml_args=True, loaded_inputs=loaded_inputs)
 
     def set_py_job(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -792,7 +792,7 @@ class Job_Args_Parser():
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date',
                         'emails', 'mode', 'deploy', 'terminate_after', 'spark_version']
 
-    def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, loaded_inputs={}, validate=True):
+    def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, build_yml_args=True, loaded_inputs={}, validate=True):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
         If yml_args not provided, it will go and get it.
         Sets of params:
@@ -803,13 +803,13 @@ class Job_Args_Parser():
             - job_name: to use only when yml_args is set to None, to specify what section of the yml to pick.
         """
 
-        if yml_args is None:
+        if build_yml_args:
             # Getting merged args, without yml (order matters) to get job_name, to then build yml_args.
             args = defaults_args.copy()
             args.update(job_args)
             args.update(cmd_args)
             args.update({'job_name': job_name} if job_name else {})
-            args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'airflow') else args['mode']
+            args['mode'] = self.get_default_mode(args)
             assert 'job_name' in args.keys()
             yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
 
@@ -819,7 +819,7 @@ class Job_Args_Parser():
         args.update(yml_args)
         args.update(job_args)
         args.update(cmd_args)
-        args['mode'] = 'dev_EMR' if args['mode'] == 'dev_local' and args['deploy'] in ('EMR', 'EMR_Scheduled', 'airflow') else args['mode']
+        args['mode'] = self.get_default_mode(args)
         args = self.update_args(args, loaded_inputs)
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
@@ -832,6 +832,13 @@ class Job_Args_Parser():
         logger.info("Job args: \n{}".format(pformat(args)))
         if validate:
             self.validate()
+
+    @staticmethod
+    def get_default_mode(args):
+        if args.get('mode') == 'dev_local' and args.get('deploy') in ('EMR', 'EMR_Scheduled', 'airflow'):
+            return 'dev_EMR'
+        else:
+            return args.get('mode', 'None')
 
     def get_deploy_args(self):
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST or key.startswith('airflow.')}
@@ -846,9 +853,12 @@ class Job_Args_Parser():
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
         if args.get('output'):
             args['output']['type'] = args.pop('output.type', None) or args['output'].get('type', 'none')
+        if args.get('spark_app_args'):  # hack to have scala sample job working. TODO: remove hardcoded case when made more generic
+            args['spark_app_args'] = Path_Handler(args['spark_app_args'], args.get('base_path'), args.get('root_path')).path
+
         return args
 
-    # TODO: modify later since not used now
+    # TODO: update to put back in use later.
     def set_inputs(self, args, loaded_inputs):
         # inputs_in_args = any([item.startswith('input_') for item in cmd_args.keys()])
         # if inputs_in_args:
@@ -862,7 +872,7 @@ class Job_Args_Parser():
         else:
             return args.get('inputs', {})
 
-    # TODO: modify later since not used now
+    # TODO: update to put back in use later.
     # def set_output(self, cmd_args, yml_args):
     #     output_in_args = any([item == 'output_path' for item in cmd_args.keys()])
     #     if output_in_args:
@@ -882,11 +892,12 @@ class Job_Args_Parser():
         return any(['inc_field' in inputs[item] for item in inputs.keys()]) or 'inc_field' in output
 
     def validate(self):
-        if self.merged_args.get('py_job') is None:
-            raise Exception("Couldn't find py_job, i.e. the python job to execute the code."
+        if self.merged_args.get('py_job') is None and self.merged_args.get('jar_job') is None:
+            raise Exception("Couldn't find py_job nor jar_job, i.e. the job to execute the code."
                             "It should be either the name of the job if it ends with .py, "
-                            "or it should be set in a parameter called py_job.")
+                            "or it should be set in a parameter called py_job or jar_job.")
         if (self.merged_args.get('sql_file') is None and
+                self.merged_args.get('jar_job') is None and
                 (self.merged_args['py_job'].endswith('sql_pandas_job.py') or
                     self.merged_args['py_job'].endswith('sql_spark_job.py'))):
             raise Exception("Couldn't find sql_file, i.e. the sql file with the transformation."
@@ -897,11 +908,18 @@ class Job_Args_Parser():
 
 class Path_Handler():
     def __init__(self, path, base_path=None, root_path=None):
-        if base_path and '{base_path}' in path:
-            path = path.replace('{base_path}', base_path)
-        if root_path and '{root_path}' in path:
-            path = path.replace('{root_path}', root_path)
         self.path = path
+        self.base_path = base_path
+        self.root_path = root_path
+        self.path = self.expand_base()  # TODO: make it separate from __init__() to allow running it separately.
+
+    def expand_base(self):
+        path = self.path
+        if self.base_path and '{base_path}' in path:
+            path = path.replace('{base_path}', self.base_path)
+        if self.root_path and '{root_path}' in path:
+            path = path.replace('{root_path}', self.root_path)
+        return path
 
     def expand_later(self):
         path = self.path
@@ -948,18 +966,25 @@ class Runner():
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
         # Building "job", which will include all job args.
-        if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file"
-            jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, loaded_inputs={})
-            Job = get_job_class(jargs.py_job)
-            job = Job(jargs=jargs)
-        else:  # when job run from "python some_job.py", (or from jupyter notebooks)
+        if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file", Implies 'job_name' available in cmd_args.
+            jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})
+            if jargs.merged_args.get('py_job'):
+                Job = get_job_class(jargs.py_job)
+                job = Job(jargs=jargs)
+            elif jargs.merged_args.get('jar_job'):
+                job = None
+        else:  # when job run from "python some_job.py", i.e. python job, Implies Job class exist, so it is a python job, so 'job_name' will be derived from Job class.
             job = Job(pre_jargs={'defaults_args': defaults_args, 'job_args': job_args, 'cmd_args': cmd_args})  # can provide jargs directly here since job_file (and so job_name) needs to be extracted from job first. So, letting job build jargs.
+            jargs = job.jargs
+        # Loading from jupyter notebooks for dashboarding goes through 'InputLoader', away from this if sequence.
 
         # Executing or deploying
-        if job.jargs.deploy in ('none'):  # when executing job code
+        if jargs.deploy == 'none' and jargs.merged_args.get('py_job'):  # when running python job on the spot
             job = self.launch_run_mode(job)
-        elif job.jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
-            self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
+        elif jargs.deploy == 'local_spark_submit' or (jargs.deploy == 'none' and jargs.merged_args.get('jar_job')):  # when running job on the spot through spark-submit.
+            self.launch_run_mode_spark_submit(jargs)
+        elif jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
+            self.launch_deploy_mode(jargs.get_deploy_args(), jargs.get_app_args())
         return job
 
     @staticmethod
@@ -976,7 +1001,7 @@ class Runner():
         # Defined here separatly from parsing for overridability.
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code']), help="Choose where to run the job.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
@@ -999,7 +1024,6 @@ class Runner():
             'deploy': 'none',
             'mode': 'dev_local',
             'job_param_file': JOBS_METADATA_FILE,
-            'job_name': None,
             'sql_file': None,
             'connection_file': CONNECTION_FILE,
             'jobs_folder': JOB_FOLDER,
@@ -1023,6 +1047,7 @@ class Runner():
             'add_created_at': 'true',  # set as string to be overrideable in cmdline.
             'no_fw_cache': False,
             'spark_boot': True,  # options ('spark', 'pandas') (experimental).
+            # 'dry_run': False,
         }
         redshift = ['enable_redshift_push', 'schema', 'redshift_s3_tmp_dir', 'redshift_s3_tmp_dir']
         spark = ['no_fw_cache', 'spark_boot', 'spark_version']
@@ -1063,6 +1088,49 @@ class Runner():
         # Load deploy lib here instead of at module level to remove dependency on it when running code locally
         from yaetos.deploy import DeployPySparkScriptOnAws
         DeployPySparkScriptOnAws(deploy_args, app_args).run()
+
+    def launch_run_mode_spark_submit(self, jargs):
+        cmdline = self.create_spark_submit(jargs)
+        cmdline_str = " ".join(cmdline)
+        logger.info(f'About to run spark submit command line: {cmdline_str}')
+        if not jargs.merged_args.get('dry_run'):
+            os.system(cmdline_str)
+
+    @staticmethod
+    def create_spark_submit(jargs):
+        # TODO: refactor that code to avoid repetition.
+        launcher_file = jargs.merged_args.get('jar_job') or jargs.merged_args['py_job']
+
+        spark_submit_cmd = ["spark-submit"]
+
+        # Get spark submit args (i.e. before launcher)
+        if jargs.merged_args.get('spark_submit_args'):
+            spark_submit_cmd.append(jargs.spark_submit_args)
+        spark_submit_keys = jargs.merged_args.get('spark_submit_keys', '')
+        spark_submit_keys_lst = [item for item in spark_submit_keys.split('--') if item != '']
+        for item in spark_submit_keys_lst:
+            if item not in jargs.merged_args.keys():
+                raise Exception(f"The param '{item}' set from spark-submit (see list in spark_submit_args) is missing in your list of params '{jargs.merged_args}'.")
+
+            kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
+            spark_submit_cmd.append(kv)
+
+        # Add launcher
+        spark_submit_cmd.append(launcher_file)
+
+        # Get spark app args (i.e. after launcher)
+        if jargs.merged_args.get('spark_app_args'):
+            spark_submit_cmd.append(jargs.spark_app_args)
+        spark_app_keys = jargs.merged_args.get('spark_app_keys', '')
+        spark_app_keys_lst = [item for item in spark_app_keys.split('--') if item != '']
+        for item in spark_app_keys_lst:
+            if item not in jargs.merged_args.keys():
+                raise Exception(f"The param '{item}' set from spark-submit (see list in spark_app_args) is missing in your list of params '{jargs.merged_args}'.")
+
+            kv = f"--{item}={jargs.merged_args[item]}" if jargs.merged_args.get(item) != 'no value' else f"--{item}"
+            spark_submit_cmd.append(kv)
+
+        return spark_submit_cmd
 
     @staticmethod
     def create_contexts(app_name, jargs):
@@ -1110,7 +1178,8 @@ class Runner():
 
         sc = spark.sparkContext
         sc_sql = SQLContext(sc)
-        logger.info('Spark Config: {}'.format(sc.getConf().getAll()))
+        logger.info(f'Spark Version: {sc.version}')
+        logger.info(f'Spark Config: {sc.getConf().getAll()}')
         return sc, sc_sql
 
 
@@ -1169,7 +1238,7 @@ class Flow():
                         loaded_inputs[in_name] = df[in_properties['from']]
 
             # Get jargs
-            jargs = Job_Args_Parser(self.launch_jargs.defaults_args, yml_args, self.launch_jargs.job_args, self.launch_jargs.cmd_args, loaded_inputs=loaded_inputs)
+            jargs = Job_Args_Parser(self.launch_jargs.defaults_args, yml_args, self.launch_jargs.job_args, self.launch_jargs.cmd_args, build_yml_args=False, loaded_inputs=loaded_inputs)
 
             Job = get_job_class(yml_args['py_job'])
             job = Job(jargs=jargs, loaded_inputs=loaded_inputs)
