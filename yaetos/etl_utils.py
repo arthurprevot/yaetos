@@ -911,7 +911,7 @@ class Path_Handler():
         self.path = path
         self.base_path = base_path
         self.root_path = root_path
-        self.path = self.expand_base()
+        self.path = self.expand_base()  # TODO: make it separate from __init__() to allow running it separately.
 
     def expand_base(self):
         path = self.path
@@ -1098,6 +1098,7 @@ class Runner():
 
     @staticmethod
     def create_spark_submit(jargs):
+        # TODO: refactor that code to avoid repetition.
         launcher_file = jargs.merged_args.get('jar_job') or jargs.merged_args['py_job']
 
         spark_submit_cmd = ["spark-submit"]

@@ -488,7 +488,6 @@ class DeployPySparkScriptOnAws(object):
         :return:
         """
         cmd_runner_args = self.get_spark_submit_args(app_file, app_args)
-        # import ipdb; ipdb.set_trace()
 
         response = c.add_job_flow_steps(
             JobFlowId=self.cluster_id,
