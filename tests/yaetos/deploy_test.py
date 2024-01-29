@@ -49,23 +49,6 @@ class Test_DeployPySparkScriptOnAws(object):
         assert actual == expected
         # TODO: other test for 'lib'
 
-    # def test_get_spark_submit_args(self, app_args):
-    #     app_args['mode'] = 'mode_x'
-    #     app_file = 'some_file.py'
-    #     actual = Dep.get_spark_submit_args(app_file, app_args)
-    #     expected = [
-    #         'spark-submit',
-    #         '--verbose',
-    #         '--py-files=/home/hadoop/app/scripts.zip',
-    #         '/home/hadoop/app/some_file.py',
-    #         '--mode=mode_x',
-    #         '--deploy=none',
-    #         '--storage=s3',
-    #         '--rerun_criteria=None',
-    #         '--job_name=some_job_name',
-    #         ]
-    #     assert actual == expected
-
     def test_get_spark_submit_args(self, app_args):
         # Test base case
         app_args['mode'] = 'mode_x'

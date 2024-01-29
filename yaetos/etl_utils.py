@@ -911,11 +911,6 @@ class Path_Handler():
         self.path = path
         self.base_path = base_path
         self.root_path = root_path
-        
-        # if base_path and '{base_path}' in path:
-        #     path = path.replace('{base_path}', base_path)
-        # if root_path and '{root_path}' in path:
-        #     path = path.replace('{root_path}', root_path)
         self.path = self.expand_base()
 
     def expand_base(self):
@@ -984,16 +979,12 @@ class Runner():
         # Loading from jupyter notebooks for dashboarding goes through 'InputLoader', away from this if sequence.
 
         # Executing or deploying
-        # import ipdb; ipdb.set_trace()
         if jargs.deploy == 'none' and jargs.merged_args.get('py_job'):  # when running python job on the spot
             job = self.launch_run_mode(job)
         elif jargs.deploy == 'local_spark_submit' or (jargs.deploy == 'none' and jargs.merged_args.get('jar_job')):  # when running job on the spot through spark-submit.
             self.launch_run_mode_spark_submit(jargs)
         elif jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
-            # self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
             self.launch_deploy_mode(jargs.get_deploy_args(), jargs.get_app_args())
-        # elif jargs.deploy in ('local_spark_submit'):
-        #     self.launch_run_mode_spark_submit(jargs)
         return job
 
     @staticmethod
@@ -1130,7 +1121,6 @@ class Runner():
         if jargs.merged_args.get('spark_app_args'):
             spark_submit_cmd.append(jargs.spark_app_args)
         spark_app_keys = jargs.merged_args.get('spark_app_keys', '')
-        # spark_app_keys_lst = [] if spark_app_keys.split('--') == [''] else spark_app_keys.split('--')
         spark_app_keys_lst = [item for item in spark_app_keys.split('--') if item != '']
         for item in spark_app_keys_lst:
             if item not in jargs.merged_args.keys():

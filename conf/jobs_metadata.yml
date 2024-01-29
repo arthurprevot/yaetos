@@ -267,7 +267,6 @@ jobs:
     scala_job: 'jobs/examples/ex12_scala_job/src/spark_scala_job.scala'  # for ref, compilation to be done manually
     sbt: 'jobs/examples/ex12_scala_job/build.sbt'  # for ref, compilation to be done manually
     spark_submit_args: '--verbose'
-    # spark_app_args: 'jobs/examples/ex12_scala_job/some_text.txt'
     spark_app_args: '{base_path}/wordcount_example/input/sample_text.txt'
     load_connectors: none
   
