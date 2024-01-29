@@ -5,7 +5,8 @@ on: [push]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     # TODO: try using container (ex below) to have setup consistent with local.
     # ex at https://github.community/t/cant-set-pythonpath-appropriately-for-pytest-in-github-actions/116931/5
     # container:
@@ -35,7 +36,7 @@ jobs:
         pip install -r yaetos/scripts/requirements_base.txt
     - name: Test with pytest
       run: |
-        pip install pytest
+        pip install pytest==7.4.4
         pytest --ignore=yaetos/scripts/
         # TODO: change pytest cmdline above to "pytest tests/ --extraargs?" and find if extraargs exists that gets test running from work dir (i.e. not changing to 'tests/')
     - name: Lint with flake8
