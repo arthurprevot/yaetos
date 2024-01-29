@@ -853,6 +853,9 @@ class Job_Args_Parser():
         args['is_incremental'] = self.set_is_incremental(args.get('inputs', {}), args.get('output', {}))
         if args.get('output'):
             args['output']['type'] = args.pop('output.type', None) or args['output'].get('type', 'none')
+        if args.get('spark_app_args'):  # hack to have scala sample job working. TODO: remove hardcoded case when made more generic
+            args['spark_app_args'] = Path_Handler(args['spark_app_args'], args.get('base_path'), args.get('root_path')).path
+
         return args
 
     # TODO: update to put back in use later.
@@ -905,11 +908,22 @@ class Job_Args_Parser():
 
 class Path_Handler():
     def __init__(self, path, base_path=None, root_path=None):
-        if base_path and '{base_path}' in path:
-            path = path.replace('{base_path}', base_path)
-        if root_path and '{root_path}' in path:
-            path = path.replace('{root_path}', root_path)
         self.path = path
+        self.base_path = base_path
+        self.root_path = root_path
+        
+        # if base_path and '{base_path}' in path:
+        #     path = path.replace('{base_path}', base_path)
+        # if root_path and '{root_path}' in path:
+        #     path = path.replace('{root_path}', root_path)
+        self.path = self.expand_base()
+
+    def expand_base(self):
+        if self.base_path and '{base_path}' in self.path:
+            path = self.path.replace('{base_path}', self.base_path)
+        if self.root_path and '{root_path}' in self.path:
+            path = self.path.replace('{root_path}', self.root_path)
+        return path
 
     def expand_later(self):
         path = self.path
