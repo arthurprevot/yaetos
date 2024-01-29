@@ -5,8 +5,7 @@ on: [push]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
-    # runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest  # works with "ubuntu-22.04" at least.
     # TODO: try using container (ex below) to have setup consistent with local.
     # ex at https://github.community/t/cant-set-pythonpath-appropriately-for-pytest-in-github-actions/116931/5
     # container:
