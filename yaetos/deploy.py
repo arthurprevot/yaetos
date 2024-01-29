@@ -515,15 +515,13 @@ class DeployPySparkScriptOnAws(object):
                 'spark_submit_args': '--verbose',
                 'spark_submit_keys': 'py-files',
                 'spark_app_args': '',
-                'spark_app_keys': 'mode--deploy--storage',
-                }
+                'spark_app_keys': 'mode--deploy--storage'}
         else:
             overridable_args = {
                 'spark_submit_args': '--verbose',
                 'spark_submit_keys': '',
                 'spark_app_args': '',
-                'spark_app_keys': '',
-                }
+                'spark_app_keys': ''}
 
         overridable_args.update(app_args)
         args = overridable_args.copy()
@@ -533,8 +531,7 @@ class DeployPySparkScriptOnAws(object):
             'mode': 'dev_EMR' if app_args.get('mode') == 'dev_local' else app_args.get('mode'),
             'deploy': 'none',
             'storage': 's3',
-            'jar_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('jar_job') or app_args.get('launcher_file')),
-            }
+            'jar_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('jar_job') or app_args.get('launcher_file'))}
         args.update(unoverridable_args)
 
         if app_args.get('load_connectors', '') == 'all':
@@ -544,10 +541,10 @@ class DeployPySparkScriptOnAws(object):
 
         if app_args.get('dependencies'):
             args['spark_app_args'] += ' --dependencies'
-        
+
         if app_args.get('chain_dependencies'):
             args['spark_app_args'] += ' --chain_dependencies'
-        
+
         if app_args.get('job_param_file') and app_args.get('py_job'):
             args['job_param_file'] = eu.CLUSTER_APP_FOLDER + app_args['job_param_file']
             args['spark_app_keys'] += '--job_param_file'
@@ -563,7 +560,7 @@ class DeployPySparkScriptOnAws(object):
         # TODO: implement better way to handle params, less case by case, to only deal with overloaded params
         jargs = eu.Job_Args_Parser(defaults_args={}, yml_args={}, job_args=args, cmd_args={}, build_yml_args=False, loaded_inputs={})
         return eu.Runner.create_spark_submit(jargs)
-    
+
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
         if self.deploy_args.get('push_secrets', False):

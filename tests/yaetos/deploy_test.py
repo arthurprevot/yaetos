@@ -62,8 +62,7 @@ class Test_DeployPySparkScriptOnAws(object):
             '--mode=mode_x',
             '--deploy=none',
             '--storage=s3',
-            '--job_name=some_job_name',
-            ]
+            '--job_name=some_job_name']
         assert actual == expected
 
         # Test adding args
@@ -82,14 +81,12 @@ class Test_DeployPySparkScriptOnAws(object):
     def test_get_spark_submit_args_jar(self):
         app_args = {
             'jar_job': 'some/job.jar',
-            'spark_app_args': 'some_arg',
-            }
+            'spark_app_args': 'some_arg'}
         app_file = app_args['jar_job']
         actual = Dep.get_spark_submit_args(app_file, app_args)
         expected = [
             'spark-submit',
             '--verbose',
             '/home/hadoop/app/some/job.jar',
-            'some_arg',
-            ]
+            'some_arg']
         assert actual == expected
