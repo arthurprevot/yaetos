@@ -983,12 +983,16 @@ class Runner():
         # Loading from jupyter notebooks for dashboarding goes through 'InputLoader', away from this if sequence.
 
         # Executing or deploying
-        if jargs.deploy in ('none'):  # when executing job code
+        # import ipdb; ipdb.set_trace()
+        if jargs.deploy == 'none' and jargs.merged_args.get('py_job'):  # when running python job on the spot
             job = self.launch_run_mode(job)
-        elif jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
-            self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
-        elif jargs.deploy in ('local_spark_submit'):
+        elif jargs.deploy == 'local_spark_submit' or (jargs.deploy == 'none' and jargs.merged_args.get('jar_job')):  # when running job on the spot through spark-submit.
             self.launch_run_mode_spark_submit(jargs)
+        elif jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
+            # self.launch_deploy_mode(job.jargs.get_deploy_args(), job.jargs.get_app_args())
+            self.launch_deploy_mode(jargs.get_deploy_args(), jargs.get_app_args())
+        # elif jargs.deploy in ('local_spark_submit'):
+        #     self.launch_run_mode_spark_submit(jargs)
         return job
 
     @staticmethod
