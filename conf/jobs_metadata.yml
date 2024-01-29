@@ -264,10 +264,12 @@ jobs:
   examples/run_scala_job:
     description: "Sample spark scala code (compiled into a jar), executed through spark-submit"
     jar_job: 'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar'
-    scala_job: 'jobs/examples/ex12_scala_job/src/spark_scala_job.scala'
-    sbt: 'jobs/examples/ex12_scala_job/build.sbt'
+    scala_job: 'jobs/examples/ex12_scala_job/src/spark_scala_job.scala'  # for ref, compilation to be done manually
+    sbt: 'jobs/examples/ex12_scala_job/build.sbt'  # for ref, compilation to be done manually
     spark_submit_args: '--verbose'
-    spark_app_args: 'jobs/examples/ex12_scala_job/some_text.txt'
+    # spark_app_args: 'jobs/examples/ex12_scala_job/some_text.txt'
+    spark_app_args: '{base_path}/wordcount_example/input/sample_text.txt'
+    load_connectors: none
   
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
