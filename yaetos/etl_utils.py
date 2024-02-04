@@ -614,15 +614,13 @@ class ETL_Base(object):
     def register_to_athena(self, df):
         from yaetos.athena import register_table
         from yaetos.db_utils import pandas_types_to_hive_types
-        # connection_profile = self.jargs.copy_to_redshift['creds']
         schema, name_tb = self.jargs.register_to_athena['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         output_info = self.jargs.output
         pdf = df if isinstance(df, pd.DataFrame) else df.toPandas()
         hive_types = pandas_types_to_hive_types(pdf)
-        # import ipdb; ipdb.set_trace()
-        register_table(hive_types, name_tb, schema, output_info, creds, self.jargs.is_incremental)
+        register_table(hive_types, name_tb, schema, output_info, creds)
 
     def copy_to_clickhouse(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
