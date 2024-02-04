@@ -45,9 +45,7 @@ def register_table(types, name_tb, schema, output_info, args):
         config = ConfigParser()
         assert os.path.isfile(args.get('aws_config_file'))
         config.read(args.get('aws_config_file'))
-        # profile_name = config.get(args.get('aws_setup'), 'profile_name')
         region_name = config.get(args.get('aws_setup'), 's3_region')
-        # region_name = boto3.Session(profile_name=profile_name).region_name
     else:
         region_name = boto3.Session().region_name
 
