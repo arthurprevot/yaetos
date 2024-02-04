@@ -620,7 +620,8 @@ class ETL_Base(object):
         pdf = df if isinstance(df, pd.DataFrame) else df.toPandas()
         hive_types = pandas_types_to_hive_types(pdf)
         description = self.jargs.merged_args.get('table_description')
-        register_table(hive_types, name_tb, schema, output_info, description)
+        args = self.jargs.merged_args
+        register_table(hive_types, name_tb, schema, output_info, args)
 
     def copy_to_clickhouse(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).

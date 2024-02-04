@@ -282,6 +282,7 @@ jobs:
     enable_db_push: True
     aws_config_file:  conf/aws_config.cfg
     aws_setup: dev
+    athena_out: s3://mylake-dev/pipelines_data/athena_data/
     load_connectors: all
 
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
