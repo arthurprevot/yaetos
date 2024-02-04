@@ -4,9 +4,8 @@ from yaetos.logger import setup_logging
 logger = setup_logging('Athena')
 
 
-def register_table(types, name_tb, schema, output_info, creds_or_file, description=None):
+def register_table(types, name_tb, schema, output_info, description=None):
     # TODO: Check to support "is_incremental"
-    description = 'some description'
     description_statement = f'COMMENT "{description}"' if description else ''
     output_folder = output_info['path_expanded'].replace('s3a', 's3')
     query_folder = 's3://mylake-dev/pipelines_data/athena_data/'
