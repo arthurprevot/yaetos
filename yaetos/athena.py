@@ -29,7 +29,7 @@ def register_table(types, name_tb, schema, output_info, args):
         """
         logger.info(f"Table registration with : \n{create_table_query} \n")
     else:
-        raise Exception('Athena table registration not setup for other than csv files.')    
+        raise Exception('Athena table registration not setup for other than csv files.')
 
     # Start the query execution
     if args.get('mode') == 'dev_local':
@@ -50,4 +50,3 @@ def register_table(types, name_tb, schema, output_info, args):
     )
     logger.info(f"Registered table to athena '{schema}.{name_tb}', with QueryExecutionId: {response['QueryExecutionId']}.")
     # TODO: Check to support "is_incremental"
-
