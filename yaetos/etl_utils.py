@@ -179,13 +179,13 @@ class ETL_Base(object):
             schemas.save_yaml(self.jargs.job_name)
         # self.save_metadata(elapsed)  # disable for now to avoid spark parquet reading issues. TODO: check to re-enable.
 
-        if self.jargs.merged_args.get('copy_to_redshift') and self.jargs.enable_redshift_push:
+        if self.jargs.merged_args.get('copy_to_redshift') and self.jargs.enable_db_push:
             self.copy_to_redshift_using_spark(output)  # to use pandas: self.copy_to_redshift_using_pandas(output, self.OUTPUT_TYPES)
-        if self.jargs.merged_args.get('copy_to_clickhouse') and self.jargs.enable_redshift_push:  # TODO: rename enable_redshift_push to enable_db_push since not redshift here.
+        if self.jargs.merged_args.get('copy_to_clickhouse') and self.jargs.enable_db_push:  # TODO: rename enable_db_push to enable_db_push since not redshift here.
             self.copy_to_clickhouse(output)
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
-        if self.jargs.merged_args.get('register_to_athena') and self.jargs.enable_redshift_push:
+        if self.jargs.merged_args.get('register_to_athena') and self.jargs.enable_db_push:
             self.register_to_athena(output)
             # import ipdb; ipdb.set_trace()
 
@@ -1054,7 +1054,7 @@ class Runner():
             'leave_on': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
             'push_secrets': False,  # will be overriden by default in cmdline arg unless cmdline args disabled (ex: unitests)
             # -- Not added in command line args:
-            'enable_redshift_push': True,
+            'enable_db_push': True,
             'base_path': '',
             'save_schemas': False,
             'manage_git_info': False,
@@ -1063,7 +1063,7 @@ class Runner():
             'spark_boot': True,  # options ('spark', 'pandas') (experimental).
             # 'dry_run': False,
         }
-        redshift = ['enable_redshift_push', 'schema', 'redshift_s3_tmp_dir', 'redshift_s3_tmp_dir']
+        redshift = ['enable_db_push', 'schema', 'redshift_s3_tmp_dir', 'redshift_s3_tmp_dir']
         spark = ['no_fw_cache', 'spark_boot', 'spark_version']
         aws = ['aws_config_file', 'aws_setup', 'emr_core_instances', 'jobs_folder', 'push_secrets', 'ec2_instance_master', 'ec2_instance_slaves']
         emr_deploy = ['leave_on'] + aws

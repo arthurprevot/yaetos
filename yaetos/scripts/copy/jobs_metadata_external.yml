@@ -77,7 +77,7 @@ common_params:
       aws_setup:        pro
       jobs_folder:      jobs/
       load_connectors: all
-      enable_redshift_push: True
+      enable_db_push: True
       save_schemas: False
       manage_git_info: True
     dev_EMR:
@@ -88,7 +88,7 @@ common_params:
       aws_setup:        dev
       jobs_folder:      jobs/
       load_connectors: all
-      enable_redshift_push: False
+      enable_db_push: False
       save_schemas: False
       manage_git_info: True
     dev_local:
@@ -97,6 +97,6 @@ common_params:
       schema: sandbox
       load_connectors: none
       aws_config_file:  none
-      enable_redshift_push: False
+      enable_db_push: False
       save_schemas: True
       manage_git_info: False

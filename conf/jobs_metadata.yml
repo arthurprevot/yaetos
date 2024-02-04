@@ -202,7 +202,7 @@ jobs:
       table_to_copy: {'type':'mysql', 'db_table': 'some_schema.some_table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
     output: {'path':'{base_path}/db_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
     load_connectors: all
-    enable_redshift_push: True
+    enable_db_push: True
 
   examples/ex9_clickhouse_job.py:
     db_inputs: {'creds': 'some_clickhouse_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
@@ -215,7 +215,7 @@ jobs:
     output: {'path':'{base_path}/db_example/output_ex9_clickhouse_direct/{now}/', 'type':'csv'}
     copy_to_clickhouse: {'creds': 'some_clickhouse_cred_section', 'table': 'public.test_push_arthur'}
     load_connectors: all
-    enable_redshift_push: True
+    enable_db_push: True
 
   examples/ex10_excel_load_job:
     py_job: jobs/generic/copy_job.py
@@ -279,7 +279,7 @@ jobs:
     output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/', 'type':'csv'}
     base_path: 's3a://mylake-dev/pipelines_data'
     register_to_athena: {'table': 'sandbox.ex1_frameworked'}  # implies sandbox schema created, to be done with "CREATE DATABASE sandbox;" in SQL editor
-    enable_redshift_push: True
+    enable_db_push: True
     aws_config_file:  conf/aws_config.cfg
     aws_setup: dev
     load_connectors: all
@@ -373,7 +373,7 @@ common_params:
       aws_setup:        pro
       jobs_folder:      jobs/
       load_connectors: all
-      enable_redshift_push: True
+      enable_db_push: True
       save_schemas: False
       manage_git_info: True
     dev_EMR:
@@ -384,7 +384,7 @@ common_params:
       aws_setup:        dev
       jobs_folder:      jobs/
       load_connectors: all
-      enable_redshift_push: False
+      enable_db_push: False
       save_schemas: False
       manage_git_info: True
     dev_local:
@@ -393,6 +393,6 @@ common_params:
       schema: sandbox
       load_connectors: none
       aws_config_file:  none
-      enable_redshift_push: False
+      enable_db_push: False
       save_schemas: True
       manage_git_info: False
