@@ -1114,7 +1114,7 @@ class Runner():
 
     @staticmethod
     def create_spark_submit(jargs):
-        # TODO: refactor that code to avoid repetition.
+        # TODO: refactor code below to avoid repetition.
         launcher_file = jargs.merged_args.get('jar_job') or jargs.merged_args['py_job']
 
         spark_submit_cmd = ["spark-submit"]

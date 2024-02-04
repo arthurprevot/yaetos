@@ -261,7 +261,7 @@ jobs:
       - examples/ex1_sql_job.sql
       - examples/ex7_pandas_job.py
 
-  examples/run_scala_job:
+  examples/ex12_run_scala_job:
     description: "Sample spark scala code (compiled into a jar), executed through spark-submit"
     jar_job: 'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar'
     scala_job: 'jobs/examples/ex12_scala_job/src/spark_scala_job.scala'  # for ref, compilation to be done manually
