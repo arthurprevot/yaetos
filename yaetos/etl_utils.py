@@ -185,6 +185,9 @@ class ETL_Base(object):
             self.copy_to_clickhouse(output)
         if self.jargs.merged_args.get('copy_to_kafka'):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
+        if self.jargs.merged_args.get('register_to_athena') and self.jargs.enable_redshift_push:
+            self.register_to_athena(output)
+            # import ipdb; ipdb.set_trace()
 
         if self.jargs.output.get('df_type', 'spark') == 'spark':
             output.unpersist()
@@ -607,6 +610,19 @@ class ETL_Base(object):
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '3.5'))
+
+    def register_to_athena(self, df):
+        from yaetos.athena import register_table
+        from yaetos.db_utils import pandas_types_to_hive_types
+        # connection_profile = self.jargs.copy_to_redshift['creds']
+        schema, name_tb = self.jargs.register_to_athena['table'].split('.')
+        schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
+        creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
+        output_info = self.jargs.output
+        pdf = df if isinstance(df, pd.DataFrame) else df.toPandas()
+        hive_types = pandas_types_to_hive_types(pdf)
+        # import ipdb; ipdb.set_trace()
+        register_table(hive_types, name_tb, schema, output_info, creds, self.jargs.is_incremental)
 
     def copy_to_clickhouse(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).

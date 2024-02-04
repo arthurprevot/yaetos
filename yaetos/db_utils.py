@@ -109,3 +109,43 @@ def pdf_to_sdf(df, output_types, sc, sc_sql):  # TODO: check suspicion that this
             .map(lambda row: cast_rec(row, output_types))
 
     return sc_sql.createDataFrame(rdd, schema=spark_schema, verifySchema=True)
+
+def pandas_types_to_hive_types(df):
+    """
+    Converts pandas DataFrame dtypes to Hive column types.
+    
+    :param df: pandas DataFrame
+    :return: Dictionary of column names and their Hive data types
+    """
+    type_mapping = {
+        'object': 'STRING',
+        'bool': 'BOOLEAN',
+        'datetime64[ns]': 'TIMESTAMP',
+        'timedelta[ns]': 'STRING',  # Hive does not have a direct equivalent
+        'category': 'STRING',  # Hive has no direct category type; consider using STRING or a specific type based on the category
+        
+        # Integer types
+        'int8': 'TINYINT',
+        'int16': 'SMALLINT',
+        'int32': 'INT',
+        'int64': 'BIGINT',
+        'uint8': 'SMALLINT',  # Hive does not have unsigned types, so use the next larger type
+        'uint16': 'INT',
+        'uint32': 'BIGINT',
+        'uint64': 'BIGINT',  # Note: Hive BIGINT might not cover the full range of uint64
+        
+        # Floating types
+        'float16': 'FLOAT',
+        'float32': 'FLOAT',
+        'float64': 'DOUBLE',
+        
+        # Special handling for decimals
+        # This is a placeholder; actual handling should consider the specific precision and scale
+        # 'decimal': 'DECIMAL',
+    }
+    hive_types = {}
+    for column, dtype in df.dtypes.iteritems():
+        dtype_name = dtype.name
+        hive_type = type_mapping.get(dtype_name, 'STRING')  # Default to STRING if no mapping found
+        hive_types[column] = hive_type
+    return hive_types

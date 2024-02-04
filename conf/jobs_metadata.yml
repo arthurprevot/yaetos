@@ -270,6 +270,26 @@ jobs:
     spark_app_args: '{base_path}/wordcount_example/input/sample_text.txt'
     load_connectors: none
   
+  examples/ex13_register_athena_job:
+    description: "Sample .... Setup to be run locally, while pushing data to cloud and registering data to athena in AWS."
+    # py_job: jobs/examples/ex7_pandas_job.py
+    py_job: jobs/examples/ex1_frameworked_job.py
+    inputs:
+      # some_events: {'path':"./data/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      # other_events: {'path':"./data/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      some_events: {'path':"./data/wiki_example/input/{latest}/", 'type':'csv'}
+      other_events: {'path':"./data/wiki_example/input/{latest}/", 'type':'csv'}
+    # output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/', 'type':'csv'}
+    base_path: 's3a://mylake-dev/pipelines_data'
+    # register_to_athena: {'table': '{schema}.ex1_frameworked'}
+    register_to_athena: {'table': 'database_testap.ex1_frameworked'}
+    enable_redshift_push: True
+    aws_config_file:  conf/aws_config.cfg
+    aws_setup: dev
+    load_connectors: all
+    # spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------
