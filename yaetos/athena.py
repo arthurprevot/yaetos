@@ -28,6 +28,15 @@ def register_table(types, name_tb, schema, output_info, args):
             TBLPROPERTIES ('classification' = 'csv');
         """
         logger.info(f"Table registration with : \n{create_table_query} \n")
+    elif output_info['type'] == 'parquet':
+        create_table_query = f"""
+            CREATE EXTERNAL TABLE IF NOT EXISTS `{schema}`.`{name_tb}` (
+            {types_str}
+            ) {description_statement}
+            STORED AS PARQUET
+            LOCATION '{output_folder}'
+        """
+        logger.info(f"Table registration with : \n{create_table_query} \n")
     else:
         raise Exception('Athena table registration not setup for other than csv files.')
 
