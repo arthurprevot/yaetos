@@ -10,7 +10,7 @@ jobs:
 
     steps:
     # Setup close to EMR7.0.0 (same python, same spark versions)
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
       uses: actions/setup-python@v1
       with:
@@ -34,7 +34,7 @@ jobs:
         pip install yaetos
     - name: Test with pytest
       run: |
-        pip install pytest
+        pip install pytest==7.4.4  # pb with 8.0.0
         export YAETOS_JOBS_HOME=/home/runner/work/yaetos_jobs/yaetos_jobs  # to be updated by repo name. TODO: find cleaner way
         export PYTHONPATH=$YAETOS_JOBS_HOME:$PYTHONPATH
         pytest
