@@ -412,12 +412,33 @@ class ETL_Base(object):
         # path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
         input['path_expanded'] = path
 
+        # Unstructured type
         if input_type == 'txt':
             rdd = self.sc.textFile(path)
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
             return rdd
 
-        # Tabular types
+        # Tabular, Pandas
+        # TODO: move block to pandas_util.py
+        if input.get('df_type') == 'pandas':
+            globy = input.get('globy')
+            if input_type == 'csv':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', globy=globy, read_func='read_csv', read_kwargs=input.get('read_kwargs', {}))
+            elif input_type == 'parquet':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', globy=globy, read_func='read_parquet', read_kwargs=input.get('read_kwargs', {}))
+            elif input_type == 'json':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='read_json', read_kwargs=input.get('read_kwargs', {}))
+            elif input_type == 'xlsx':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xlsx', globy=globy, read_func='read_excel', read_kwargs=input.get('read_kwargs', {}))
+            elif input_type == 'xls':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xls', globy=globy, read_func='read_excel', read_kwargs=input.get('read_kwargs', {}))
+            else:
+                raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, input.get('path'), self.PANDAS_DF_TYPES))
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))  # TODO adapt to pandas
+            return pdf
+
+        # Tabular types, Spark
         if input_type == 'csv':
             sdf = sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
