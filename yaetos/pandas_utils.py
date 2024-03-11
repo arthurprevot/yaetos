@@ -26,7 +26,7 @@ def load_multiple_csvs(path, read_kwargs):
 
 
 def load_multiple_files(path, globy='*.csv', read_func='read_csv', read_kwargs={}, add_file_fol=True):
-    files = glob.glob(os.path.join(path, globy))  # removes local files added by 
+    files = glob.glob(os.path.join(path, globy))  # removes local files
     files = [file for file in files if not os.path.basename(file).startswith('.')]  # remove sys files added by OS, ex .DS_store in mac.
     
     dfs = []
@@ -62,6 +62,7 @@ def load_dfs(path, file_type='csv', globy=None, read_func='read_csv', read_kwarg
     elif globy and matches_pattern:  # one file and extension is not explicite
         return load_df(path, read_func, read_kwargs)
     elif path.endswith('/'):  # multiple files.
+        globy = globy or f'*.{file_type}'
         return load_multiple_files(path, globy, read_func, read_kwargs)
     else:  # case where file has no extension. TODO: make above more generic by using glob.
         raise Exception("Path should end with '.{}' or '/'.".format(file_type))
