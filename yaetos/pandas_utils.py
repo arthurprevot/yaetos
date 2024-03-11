@@ -24,16 +24,24 @@ def load_multiple_csvs(path, read_kwargs):
     return df.reset_index(drop=True)
 
 
-def load_multiple_files(path, file_type='csv', read_func='read_csv', read_kwargs={}, add_file_fol=True):
-    files = glob.glob(os.path.join(path, "*.{}".format(file_type)))
-    func = getattr(pd, read_func)
+#def load_multiple_files(path, file_type='csv', read_func='read_csv', read_kwargs={}, add_file_fol=True):
+def load_multiple_files(path, globy='*.csv', read_func='read_csv', read_kwargs={}, add_file_fol=True):
+    # files = glob.glob(os.path.join(path, "*.{}".format(file_type)))
+    files = glob.glob(os.path.join(path, globy))  # removes local files added by OS, like .DS_store in mac.
+    files = [file for file in files if not os.path.basename(file).startswith('.')]
+    
+    # import ipdb; ipdb.set_trace()
+    # func = getattr(pd, read_func)
     dfs = []
     for fi in files:
-        df = func(fi, **read_kwargs)
+        # import ipdb; ipdb.set_trace()
+        # df = func(fi, **read_kwargs)
+        df = load_df(fi, read_func, read_kwargs)
         if add_file_fol:
             df['_source'] = fi
         dfs.append(df)
-    df = pd.concat(dfs)
+    df = pd.concat(dfs) if len(dfs) >= 1 else pd.DataFrame()
+    # import ipdb; ipdb.set_trace()
     return df.reset_index(drop=True)
 
 

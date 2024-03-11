@@ -136,14 +136,14 @@ class FS_Ops_Dispatcher():
 
     # --- load_pandas set of functions ----
 
-    def load_pandas(self, fname, file_type, read_func, read_kwargs):
-        return self.load_pandas_cluster(fname, file_type, read_func, read_kwargs) if self.is_s3_path(fname) else self.load_pandas_local(fname, file_type, read_func, read_kwargs)
+    def load_pandas(self, fname, file_type, globy, read_func, read_kwargs):
+        return self.load_pandas_cluster(fname, file_type, globy, read_func, read_kwargs) if self.is_s3_path(fname) else self.load_pandas_local(fname, file_type, globy, read_func, read_kwargs)
 
     @staticmethod
-    def load_pandas_local(fname, file_type, read_func, read_kwargs):
-        return load_df(fname, file_type, read_func, read_kwargs)
+    def load_pandas_local(fname, file_type, globy, read_func, read_kwargs):
+        return load_dfs(fname, file_type, globy, read_func, read_kwargs)
 
-    def load_pandas_cluster(self, fname, file_type, read_func, read_kwargs):
+    def load_pandas_cluster(self, fname, file_type, globy, read_func, read_kwargs):
         # import put here below to avoid loading it when working in local only.
         from cloudpathlib import CloudPath
         import uuid
@@ -151,9 +151,20 @@ class FS_Ops_Dispatcher():
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
         local_path = 'tmp/s3_copy_' + fname_parts[-1] + '_' + str(uuid.uuid4())
         cp = CloudPath(fname)  # TODO: add way to load it with specific profile_name or client, as in "s3c = boto3.Session(profile_name='default').client('s3')"
-        logger.info("Copying files from S3 '{}' to local '{}'. May take some time.".format(fname, local_path))
-        local_pathlib = cp.download_to(local_path)
-        local_path = local_path + '/' if local_pathlib.is_dir() else local_path
+        if globy:
+            logger.info(f"### Test '{globy}'")
+            cfiles = cp.glob(globy)
+            os.makedirs(local_path, exist_ok=True)
+            #import ipdb; ipdb.set_trace()
+            for cfile in cfiles:
+                local_file_path = os.path.join(local_path, cfile.name)
+                local_pathlib = cfile.download_to(local_file_path)
+                logger.info(f"Copying files from S3 '{cfile}' to local '{local_file_path}'")
+                local_path += '/'
+        else:
+            logger.info("Copying files from S3 '{}' to local '{}'. May take some time.".format(fname, local_path))
+            local_pathlib = cp.download_to(local_path)
+            local_path = local_path + '/' if local_pathlib.is_dir() else local_path
         logger.info("File copy finished")
         df = load_dfs(local_path, file_type, globy, read_func, read_kwargs)
         return df

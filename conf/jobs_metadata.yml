@@ -298,6 +298,14 @@ jobs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format2/dataset.json", 'type':'json', 'df_type':'pandas'}
     output: {'path':'{base_path}/load_example/json_format2/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
+
+  examples/ex16_glob_load_job:
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'glob':'part1*', 'df_type':'pandas'}
+    output: {'path':'{base_path}/load_example/glob_filtering/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------
