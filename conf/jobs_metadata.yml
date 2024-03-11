@@ -285,6 +285,43 @@ jobs:
     athena_out: s3://mylake-dev/pipelines_data/athena_data/
     load_connectors: all
 
+  examples/ex14_json_format1_load_job:
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format1/dataset.json", 'type':'json', 'df_type':'pandas', 'read_kwargs':{'lines':True}}
+    output: {'path':'{base_path}/load_example/json_format1/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
+  examples/ex14_json_format2_load_job:
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format2/dataset.json", 'type':'json', 'df_type':'pandas'}
+    output: {'path':'{base_path}/load_example/json_format2/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
+  examples/ex14_json_format3_load_job:
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format3/dataset.json", 'type':'json', 'df_type':'json_pandas'}
+    output: {'path':'{base_path}/load_example/json_format3/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
+  examples/ex15_copy_job_multi_path.py:
+    description: "Job to demo loading datasets with the same schemas spread over various folders, following structured path. The job will go through combinations of category and subcategory params defined below to extract datasets."
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_multipath/{category}/{subcategory}/dataset.csv", 'type':'csv', 'df_type':'pandas', 'load':False}
+    output: {'path':'{base_path}/load_example/multipath/{category}/{subcategory}/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    category: ['catA', 'catB']
+    subcategory: ['subcatA', 'subcatB']
+    spark_boot: False
+
+  examples/ex16_glob_load_job:
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'glob':'part1*', 'df_type':'pandas'}
+    output: {'path':'{base_path}/load_example/glob_filtering/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------

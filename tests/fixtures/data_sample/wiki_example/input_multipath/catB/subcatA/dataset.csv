@@ -1,0 +1,5 @@
+uuid,timestamp,session_id,group,action,checkin,page_id,n_results,result_position
+u1,2.0,s1,g1,searchResultPage,NaN,p1,5.0,NaN
+u2,2.0,s2,g2,searchResultPage,NaN,p2,9.0,NaN
+u3,2.0,s3,g3,checkin,30.0,p3,NaN,NaN
+

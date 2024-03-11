@@ -51,10 +51,10 @@ JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.13/redshi
 
 
 class ETL_Base(object):
-    TABULAR_TYPES = ('csv', 'parquet', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
-    SPARK_DF_TYPES = ('csv', 'parquet', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
-    PANDAS_DF_TYPES = ('csv', 'parquet', 'xlsx', 'xls', 'df')
-    FILE_TYPES = ('csv', 'parquet', 'xlsx', 'xls', 'txt')
+    TABULAR_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
+    SPARK_DF_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
+    PANDAS_DF_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'df')
+    FILE_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'txt')
     OTHER_TYPES = ('other', 'None')
     SUPPORTED_TYPES = set(TABULAR_TYPES) \
         .union(set(SPARK_DF_TYPES)) \
@@ -256,9 +256,9 @@ class ETL_Base(object):
                 continue
 
             # Skip "other" types
-            if self.jargs.inputs[item]['type'] == "other":
+            if self.jargs.inputs[item]['type'] == "other" or self.jargs.inputs[item].get('load') is False:
                 app_args[item] = None
-                logger.info("Input '{}' not loaded since type set to 'other'.".format(item))
+                logger.info("Input '{}' not loaded since type set to 'other' or used load=False flag.".format(item))
                 continue
 
             # Load from disk
@@ -347,15 +347,29 @@ class ETL_Base(object):
             return rdd
 
         # Tabular, Pandas
+        # TODO: move block to pandas_util.py
         if self.jargs.inputs[input_name].get('df_type') == 'pandas':
+            globy = self.jargs.inputs[input_name].get('glob')
             if input_type == 'csv':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', globy=globy, read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'parquet':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', globy=globy, read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+            elif input_type == 'json':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='read_json', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'xlsx':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xlsx', read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xlsx', globy=globy, read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'xls':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xls', read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xls', globy=globy, read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+            else:
+                raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))  # TODO adapt to pandas
+            return pdf
+
+        if self.jargs.inputs[input_name].get('df_type') == 'json_pandas':
+            globy = self.jargs.inputs[input_name].get('glob')
+            if input_type == 'json':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='json_parser', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))  # TODO: improve jsonlib name
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
@@ -370,6 +384,9 @@ class ETL_Base(object):
         elif input_type == 'parquet':
             sdf = self.sc_sql.read.parquet(path)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+        elif input_type == 'json':
+            sdf = self.sc_sql.read.json(path)
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'mysql':
             sdf = self.load_mysql(input_name)
             logger.info("Input '{}' loaded from mysql".format(input_name))
@@ -382,23 +399,44 @@ class ETL_Base(object):
         logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
-    def load_data_from_files(self, name, path, type, sc, sc_sql):
+    def load_data_from_files(self, name, path, type, sc, sc_sql, df_meta, **kwargs):
         """Loading any dataset (input or not) and only from file system (not from DBs). Used by incremental jobs to load previous output.
         Different from load_input() which only loads input (input jargs hardcoded) and from any source."""
         # TODO: integrate with load_input to remove duplicated code.
-        input_type = type
+        input = df_meta  # TODO: get 2 variables below from this one.
+        input_type = type  # TODO: remove 'input_' prefix in code below since not specific to input.
         input_name = name
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
         logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
-        path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
-        self.jargs.inputs[input_name]['path_expanded'] = path
+        path = self.expand_input_path(path, **kwargs)
 
+        # Unstructured type
         if input_type == 'txt':
             rdd = self.sc.textFile(path)
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
             return rdd
 
-        # Tabular types
+        # Tabular, Pandas
+        # TODO: move block to pandas_util.py
+        if input.get('df_type') == 'pandas':
+            globy = input.get('globy')
+            if input_type == 'csv':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', globy=globy, read_func='read_csv', read_kwargs=input.get('read_kwargs', {}))
+            elif input_type == 'parquet':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', globy=globy, read_func='read_parquet', read_kwargs=input.get('read_kwargs', {}))
+            elif input_type == 'json':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='read_json', read_kwargs=input.get('read_kwargs', {}))
+            elif input_type == 'xlsx':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xlsx', globy=globy, read_func='read_excel', read_kwargs=input.get('read_kwargs', {}))
+            elif input_type == 'xls':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xls', globy=globy, read_func='read_excel', read_kwargs=input.get('read_kwargs', {}))
+            else:
+                raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, input.get('path'), self.PANDAS_DF_TYPES))
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            # TODO: add equ for pandas : logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
+            return pdf
+
+        # Tabular types, Spark
         if input_type == 'csv':
             sdf = sc_sql.read.csv(path, header=True)  # TODO: add way to add .option("delimiter", ';'), useful for metric_budgeting.
             logger.info("Dataset '{}' loaded from files '{}'.".format(input_name, path))
@@ -417,6 +455,14 @@ class ETL_Base(object):
 
         logger.info("Dataset data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
+
+    def expand_input_path(self, path, **kwargs):
+        # Function call isolated to be overridable.
+        return Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
+
+    def expand_output_path(self, path, now_dt, **kwargs):
+        # Function call isolated to be overridable.
+        return Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
 
     def load_mysql(self, input_name):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
@@ -497,7 +543,7 @@ class ETL_Base(object):
         path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
         path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else ''  # '*' to go into output subfolders.
         try:
-            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql)
+            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql, df_meta=self.jargs.output)
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
             return None
@@ -520,9 +566,11 @@ class ETL_Base(object):
                               partitionby=self.jargs.output.get('inc_field') or self.jargs.merged_args.get('partitionby'),
                               file_tag=self.jargs.merged_args.get('file_tag'))  # TODO: make param standard in cmd_args ?
 
-    def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
+    def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None, **kwargs):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
-        path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
+        # import ipdb; ipdb.set_trace()
+        # path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt):
+        path = self.expand_output_path(path, now_dt, **kwargs)
         self.jargs.output['path_expanded'] = path
 
         if type == 'None':
@@ -544,6 +592,8 @@ class ETL_Base(object):
                 FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_csv', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             elif type == 'parquet':
                 FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_parquet', save_kwargs=self.jargs.output.get('save_kwargs', {}))
+            elif type == 'json':
+                FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_json', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             elif type in ('xlsx', 'xls'):
                 FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_excel', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             else:
@@ -558,6 +608,8 @@ class ETL_Base(object):
             output.write.partitionBy(*partitionby).mode(write_mode).parquet(path)
         elif type == 'csv':
             output.write.partitionBy(*partitionby).mode(write_mode).option("header", "true").csv(path)
+        elif type == 'json':
+            output.write.partitionBy(*partitionby).mode(write_mode).json(path)
         else:
             raise Exception("Need to specify supported output type, either txt, parquet or csv.")
 
