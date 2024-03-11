@@ -366,6 +366,16 @@ class ETL_Base(object):
             # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))  # TODO adapt to pandas
             return pdf
 
+        if self.jargs.inputs[input_name].get('df_type') == 'json_pandas':
+            globy = self.jargs.inputs[input_name].get('glob')
+            if input_type == 'json':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='json_parser', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))  # TODO: improve jsonlib name
+            else:
+                raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+            # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))  # TODO adapt to pandas
+            return pdf
+
         # Tabular types, Spark
         if input_type == 'csv':
             delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
@@ -393,7 +403,7 @@ class ETL_Base(object):
         """Loading any dataset (input or not) and only from file system (not from DBs). Used by incremental jobs to load previous output.
         Different from load_input() which only loads input (input jargs hardcoded) and from any source."""
         # TODO: integrate with load_input to remove duplicated code.
-        input_type = type
+        input_type = type  # TODO: remove 'input_' prefix in code below since not specific to input. 
         input_name = name
         input = df_meta  # TODO: get 2 variables above from this one.
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path

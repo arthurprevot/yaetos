@@ -3,6 +3,7 @@ Helper functions for pandas as engine.
 """
 import pandas as pd
 import glob
+import json
 import os
 from pathlib import Path
 from yaetos.logger import setup_logging
@@ -59,14 +60,41 @@ def load_csvs(path, read_kwargs):
 #def load_df(path, file_type='csv', read_func='read_csv', read_kwargs={}):
 def load_dfs(path, file_type='csv', globy=None, read_func='read_csv', read_kwargs={}):
     """Loading 1 file or multiple depending on path"""
-    if path.endswith(".{}".format(file_type)):
-        func = getattr(pd, read_func)
-        return func(path, **read_kwargs)
-    elif path.endswith('/'):
-        return load_multiple_files(path, file_type, read_func, read_kwargs)
-    else:
+    print(f"33333 {file_type}, {globy}")
+    if globy:
+        # TODO: improve check, make it usable with several files.
+        matching_paths = glob.glob(globy)
+        matches_pattern = os.path.normpath(path) in map(os.path.normpath, matching_paths)
+
+    # import ipdb; ipdb.set_trace()
+    if path.endswith(".{}".format(file_type)):  # one file and extension is explicite
+        # func = getattr(pd, read_func)
+        # return func(path, **read_kwargs)
+        return load_df(path, read_func, read_kwargs)
+    elif globy and matches_pattern:  # one file and extension is not explicite
+        # func = getattr(pd, read_func)
+        # return func(path, **read_kwargs)
+        return load_df(path, read_func, read_kwargs)
+    elif path.endswith('/'):  # multiple files.
+        # return load_multiple_files(path, file_type, read_func, read_kwargs)
+        return load_multiple_files(path, globy, read_func, read_kwargs)
+    else:  # case where file has no extension. TODO: make above more generic by using glob.
+        # func = getattr(pd, read_func)
+        # return func(path, **read_kwargs)
         raise Exception("Path should end with '.{}' or '/'.".format(file_type))
 
+def load_df(path, read_func='read_csv', read_kwargs={}):
+    """Loading 1 file or multiple depending on path"""
+
+    print(f"### load_df: {path}")
+
+    if read_func != 'json_parser':
+        func = getattr(pd, read_func)
+        return func(path, **read_kwargs)
+    else:
+        with open(path, 'r') as file:
+            data = json.load(file)
+        return pd.DataFrame(data['records'])
 
 # --- saving files ----
 
