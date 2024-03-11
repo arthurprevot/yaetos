@@ -387,16 +387,18 @@ class ETL_Base(object):
         logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
-    def load_data_from_files(self, name, path, type, sc, sc_sql):
+    def load_data_from_files(self, name, path, type, sc, sc_sql, df_meta, **kwargs):
         """Loading any dataset (input or not) and only from file system (not from DBs). Used by incremental jobs to load previous output.
         Different from load_input() which only loads input (input jargs hardcoded) and from any source."""
         # TODO: integrate with load_input to remove duplicated code.
         input_type = type
         input_name = name
+        input = df_meta  # TODO: get 2 variables above from this one.
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
         logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
-        path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
-        self.jargs.inputs[input_name]['path_expanded'] = path
+        path = self.expand_input_path(path, **kwargs)
+        # path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
+        input['path_expanded'] = path
 
         if input_type == 'txt':
             rdd = self.sc.textFile(path)
@@ -422,6 +424,14 @@ class ETL_Base(object):
 
         logger.info("Dataset data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
+
+    def expand_input_path(self, path, **kwargs):
+        # Function call isolated to be overridable.
+        return Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
+
+    def expand_output_path(self, path, now_dt, **kwargs):
+        # Function call isolated to be overridable.
+        return Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
 
     def load_mysql(self, input_name):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
@@ -502,7 +512,7 @@ class ETL_Base(object):
         path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
         path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else ''  # '*' to go into output subfolders.
         try:
-            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql)
+            df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql, df_meta=self.jargs.output)
         except Exception as e:  # TODO: don't catch all
             logger.info("Previous increment could not be loaded or doesn't exist. It will be ignored. Folder '{}' failed loading with error '{}'.".format(path, e))
             return None
@@ -525,9 +535,11 @@ class ETL_Base(object):
                               partitionby=self.jargs.output.get('inc_field') or self.jargs.merged_args.get('partitionby'),
                               file_tag=self.jargs.merged_args.get('file_tag'))  # TODO: make param standard in cmd_args ?
 
-    def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None):
+    def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None, **kwargs):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
-        path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
+        # import ipdb; ipdb.set_trace()
+        # path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt):
+        path = self.expand_output_path(path, now_dt, **kwargs)
         self.jargs.output['path_expanded'] = path
 
         if type == 'None':
