@@ -146,9 +146,10 @@ class FS_Ops_Dispatcher():
     def load_pandas_cluster(self, fname, file_type, read_func, read_kwargs):
         # import put here below to avoid loading it when working in local only.
         from cloudpathlib import CloudPath
+        import uuid
 
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
-        local_path = 'tmp/s3_copy_' + fname_parts[-1]
+        local_path = 'tmp/s3_copy_' + fname_parts[-1] + '_' + str(uuid.uuid4())
         cp = CloudPath(fname)  # TODO: add way to load it with specific profile_name or client, as in "s3c = boto3.Session(profile_name='default').client('s3')"
         logger.info("Copying files from S3 '{}' to local '{}'. May take some time.".format(fname, local_path))
         local_pathlib = cp.download_to(local_path)
