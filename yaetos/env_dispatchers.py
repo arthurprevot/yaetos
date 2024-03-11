@@ -7,7 +7,7 @@ from time import sleep
 from io import StringIO
 # from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
 from configparser import ConfigParser
-from yaetos.pandas_utils import load_df, save_pandas_local
+from yaetos.pandas_utils import load_dfs, save_pandas_local
 from yaetos.logger import setup_logging
 logger = setup_logging('Job')
 
@@ -155,7 +155,7 @@ class FS_Ops_Dispatcher():
         local_pathlib = cp.download_to(local_path)
         local_path = local_path + '/' if local_pathlib.is_dir() else local_path
         logger.info("File copy finished")
-        df = load_df(local_path, file_type, read_func, read_kwargs)
+        df = load_dfs(local_path, file_type, globy, read_func, read_kwargs)
         return df
 
     # --- save_pandas set of functions ----

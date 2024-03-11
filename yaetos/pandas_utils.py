@@ -39,7 +39,7 @@ def load_multiple_files(path, file_type='csv', read_func='read_csv', read_kwargs
 
 def load_csvs(path, read_kwargs):
     """Loading 1 csv or multiple depending on path"""
-    # TODO: to be made obsolete once load_df works
+    # TODO: to be made obsolete once load_dfs works
     if path.endswith('.csv'):
         return pd.read_csv(path, **read_kwargs)
     elif path.endswith('/'):
@@ -48,7 +48,8 @@ def load_csvs(path, read_kwargs):
         raise Exception("Path should end with '.csv' or '/'.".format())
 
 
-def load_df(path, file_type='csv', read_func='read_csv', read_kwargs={}):
+#def load_df(path, file_type='csv', read_func='read_csv', read_kwargs={}):
+def load_dfs(path, file_type='csv', globy=None, read_func='read_csv', read_kwargs={}):
     """Loading 1 file or multiple depending on path"""
     if path.endswith(".{}".format(file_type)):
         func = getattr(pd, read_func)
