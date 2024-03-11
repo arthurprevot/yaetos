@@ -256,9 +256,9 @@ class ETL_Base(object):
                 continue
 
             # Skip "other" types
-            if self.jargs.inputs[item]['type'] == "other":
+            if self.jargs.inputs[item]['type'] == "other" or self.jargs.inputs[item].get('load') == False:
                 app_args[item] = None
-                logger.info("Input '{}' not loaded since type set to 'other'.".format(item))
+                logger.info("Input '{}' not loaded since type set to 'other' or used load=False flag.".format(item))
                 continue
 
             # Load from disk
