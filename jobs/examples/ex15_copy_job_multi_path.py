@@ -4,7 +4,6 @@ from yaetos.etl_utils import ETL_Base, Commandliner, Path_Handler
 
 
 class Job(ETL_Base):
-
     def transform(self, table_to_copy):
         for category in self.jargs.category:
             for subcategory in self.jargs.subcategory:
