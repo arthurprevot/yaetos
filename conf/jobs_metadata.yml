@@ -306,6 +306,15 @@ jobs:
     output: {'path':'{base_path}/load_example/json_format3/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
+  examples/ex15_copy_job_multi_path.py:
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_multipath/{category}/{subcategory}/dataset.csv", 'type':'csv', 'df_type':'pandas', 'load':False}
+    output: {'path':'{base_path}/load_example/multipath/{category}/{subcategory}/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    category: ['catA', 'catB']
+    subcategory: ['subcatA', 'subcatB']
+    # looping: ['category', 'subcategory']
+    spark_boot: False
+
   examples/ex16_glob_load_job:
     py_job: jobs/generic/copy_job.py
     inputs:
