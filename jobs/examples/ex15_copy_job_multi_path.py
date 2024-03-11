@@ -1,4 +1,7 @@
 from yaetos.etl_utils import ETL_Base, Commandliner, Path_Handler
+# Improvements: 
+# - make that job generic, by adding a para 'looping': ['category', 'subcategory'] , in jobs_metadata.yml and using it below.
+
 
 
 class Job(ETL_Base):
@@ -29,6 +32,7 @@ class Job(ETL_Base):
         return None
 
     def transform_one(self, table_to_copy):
+        "Generic for spark and pandas, although this job is pandas only for now."
         if self.jargs.output.get('df_type', 'spark') == 'spark':
             table_to_copy.cache()
             if table_to_copy.count() < 500000:
@@ -47,8 +51,6 @@ class Job(ETL_Base):
     def expand_output_path(self, path, now_dt, **kwargs):
         category = kwargs['category']
         subcategory = kwargs['subcategory']
-        # base_path_expanded = self.jargs.base_path.replace('{region}', region)
-        # base_path_expanded = self.jargs.base_path.replace('{region}', region)
         base_path = self.jargs.base_path
         path_partly_expanded = path.replace('{category}', category) \
                                    .replace('{subcategory}', subcategory)

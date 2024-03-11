@@ -152,15 +152,13 @@ class FS_Ops_Dispatcher():
         local_path = 'tmp/s3_copy_' + fname_parts[-1] + '_' + str(uuid.uuid4())
         cp = CloudPath(fname)  # TODO: add way to load it with specific profile_name or client, as in "s3c = boto3.Session(profile_name='default').client('s3')"
         if globy:
-            logger.info(f"### Test '{globy}'")
             cfiles = cp.glob(globy)
             os.makedirs(local_path, exist_ok=True)
-            #import ipdb; ipdb.set_trace()
+            logger.info(f"Copying {len(cfile)} files from S3 to local '{local_path}'")
             for cfile in cfiles:
                 local_file_path = os.path.join(local_path, cfile.name)
                 local_pathlib = cfile.download_to(local_file_path)
-                logger.info(f"Copying files from S3 '{cfile}' to local '{local_file_path}'")
-                local_path += '/'
+            local_path += '/'
         else:
             logger.info("Copying files from S3 '{}' to local '{}'. May take some time.".format(fname, local_path))
             local_pathlib = cp.download_to(local_path)
