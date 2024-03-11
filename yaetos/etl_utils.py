@@ -51,10 +51,10 @@ JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.13/redshi
 
 
 class ETL_Base(object):
-    TABULAR_TYPES = ('csv', 'parquet', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
-    SPARK_DF_TYPES = ('csv', 'parquet', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
-    PANDAS_DF_TYPES = ('csv', 'parquet', 'xlsx', 'xls', 'df')
-    FILE_TYPES = ('csv', 'parquet', 'xlsx', 'xls', 'txt')
+    TABULAR_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
+    SPARK_DF_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
+    PANDAS_DF_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'df')
+    FILE_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'txt')
     OTHER_TYPES = ('other', 'None')
     SUPPORTED_TYPES = set(TABULAR_TYPES) \
         .union(set(SPARK_DF_TYPES)) \
@@ -352,6 +352,8 @@ class ETL_Base(object):
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', read_func='read_csv', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'parquet':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='parquet', read_func='read_parquet', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+            elif input_type == 'json':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='read_json', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'xlsx':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xlsx', read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'xls':
@@ -369,6 +371,9 @@ class ETL_Base(object):
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
             sdf = self.sc_sql.read.parquet(path)
+            logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+        elif input_type == 'json':
+            sdf = self.sc_sql.read.json(path)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'mysql':
             sdf = self.load_mysql(input_name)
@@ -544,6 +549,8 @@ class ETL_Base(object):
                 FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_csv', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             elif type == 'parquet':
                 FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_parquet', save_kwargs=self.jargs.output.get('save_kwargs', {}))
+            elif type == 'json':
+                FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_json', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             elif type in ('xlsx', 'xls'):
                 FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_excel', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             else:
@@ -558,6 +565,8 @@ class ETL_Base(object):
             output.write.partitionBy(*partitionby).mode(write_mode).parquet(path)
         elif type == 'csv':
             output.write.partitionBy(*partitionby).mode(write_mode).option("header", "true").csv(path)
+        elif type == 'json':
+            output.write.partitionBy(*partitionby).mode(write_mode).json(path)
         else:
             raise Exception("Need to specify supported output type, either txt, parquet or csv.")
 
