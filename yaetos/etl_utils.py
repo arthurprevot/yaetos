@@ -256,7 +256,7 @@ class ETL_Base(object):
                 continue
 
             # Skip "other" types
-            if self.jargs.inputs[item]['type'] == "other" or self.jargs.inputs[item].get('load') == False:
+            if self.jargs.inputs[item]['type'] == "other" or self.jargs.inputs[item].get('load') is False:
                 app_args[item] = None
                 logger.info("Input '{}' not loaded since type set to 'other' or used load=False flag.".format(item))
                 continue
@@ -403,13 +403,12 @@ class ETL_Base(object):
         """Loading any dataset (input or not) and only from file system (not from DBs). Used by incremental jobs to load previous output.
         Different from load_input() which only loads input (input jargs hardcoded) and from any source."""
         # TODO: integrate with load_input to remove duplicated code.
-        input_type = type  # TODO: remove 'input_' prefix in code below since not specific to input. 
+        input = df_meta  # TODO: get 2 variables below from this one.
+        input_type = type  # TODO: remove 'input_' prefix in code below since not specific to input.
         input_name = name
-        input = df_meta  # TODO: get 2 variables above from this one.
         path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
         logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
         path = self.expand_input_path(path, **kwargs)
-        input['path_expanded'] = path
 
         # Unstructured type
         if input_type == 'txt':

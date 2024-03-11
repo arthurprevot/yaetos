@@ -1,7 +1,6 @@
 from yaetos.etl_utils import ETL_Base, Commandliner, Path_Handler
-# Improvements: 
+# Improvements:
 # - make that job generic, by adding a para 'looping': ['category', 'subcategory'] , in jobs_metadata.yml and using it below.
-
 
 
 class Job(ETL_Base):
@@ -15,7 +14,7 @@ class Job(ETL_Base):
                 name = 'table_to_copy'
                 path_raw = self.jargs.inputs['table_to_copy']['path']
                 type = self.jargs.inputs['table_to_copy']['type']
-                sc, sc_sql = None, None 
+                sc, sc_sql = None, None
                 df_meta = self.jargs.inputs['table_to_copy']
                 kwargs = {}
                 kwargs['category'] = category

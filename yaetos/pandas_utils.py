@@ -28,7 +28,7 @@ def load_multiple_csvs(path, read_kwargs):
 def load_multiple_files(path, globy='*.csv', read_func='read_csv', read_kwargs={}, add_file_fol=True):
     files = glob.glob(os.path.join(path, globy))  # removes local files
     files = [file for file in files if not os.path.basename(file).startswith('.')]  # remove sys files added by OS, ex .DS_store in mac.
-    
+
     dfs = []
     for fi in files:
         df = load_df(fi, read_func, read_kwargs)
@@ -67,6 +67,7 @@ def load_dfs(path, file_type='csv', globy=None, read_func='read_csv', read_kwarg
     else:  # case where file has no extension. TODO: make above more generic by using glob.
         raise Exception("Path should end with '.{}' or '/'.".format(file_type))
 
+
 def load_df(path, read_func='read_csv', read_kwargs={}):
     """Loading 1 file or multiple depending on path"""
     if read_func != 'json_parser':
@@ -76,6 +77,7 @@ def load_df(path, read_func='read_csv', read_kwargs={}):
         with open(path, 'r') as file:
             data = json.load(file)
         return pd.DataFrame(data['records'])
+
 
 # --- saving files ----
 
@@ -107,7 +109,3 @@ def query_pandas(query_str, dfs):
         con.register(key, value)
     df = con.execute(query_str).df()
     return df
-
-
-if __name__ == '__main__':
-    pass
