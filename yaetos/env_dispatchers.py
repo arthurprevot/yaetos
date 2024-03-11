@@ -154,7 +154,7 @@ class FS_Ops_Dispatcher():
         if globy:
             cfiles = cp.glob(globy)
             os.makedirs(local_path, exist_ok=True)
-            logger.info(f"Copying {len(cfile)} files from S3 to local '{local_path}'")
+            logger.info(f"Copying {len(cfiles)} files from S3 to local '{local_path}'")
             for cfile in cfiles:
                 local_file_path = os.path.join(local_path, cfile.name)
                 local_pathlib = cfile.download_to(local_file_path)
