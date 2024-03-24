@@ -8,6 +8,5 @@ from yaetos.etl_utils import Commandliner
 args = {
     'job_param_file': 'conf/jobs_metadata.yml',
     'launcher_file': 'jobs/generic/launcher.py',
-    }
+}
 Commandliner(Job=None, **args)
-

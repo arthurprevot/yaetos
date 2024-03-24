@@ -1,10 +1,10 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
 import boto3
 import os
-from pathlib import Path as Pt
 from cloudpathlib import CloudPath as CPt
 import fnmatch
 import re
+
 
 class Job(ETL_Base):
 
