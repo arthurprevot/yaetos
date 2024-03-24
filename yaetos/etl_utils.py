@@ -371,7 +371,7 @@ class ETL_Base(object):
         if self.jargs.inputs[input_name].get('df_type') == 'json_pandas':
             globy = self.jargs.inputs[input_name].get('glob')
             if input_type == 'json':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='json_parser', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))  # TODO: improve jsonlib name
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='json_parser', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
