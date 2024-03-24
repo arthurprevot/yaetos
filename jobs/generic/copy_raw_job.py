@@ -16,8 +16,6 @@ class Job(ETL_Base):
         path_raw_in3 = CPt(path_raw_in2)
         path_raw_out = self.jargs.output['path']
         path_raw_out2 = self.expand_output_path(path_raw_out, now_dt=self.start_dt)
-        # globy = self.jargs.inputs['table_to_copy'].get('glob', '*')
-        # regy = self.jargs.inputs['table_to_copy'].get('regex', '*')
         if 'glob' in self.jargs.inputs['table_to_copy'].keys():
             pattern = self.jargs.inputs['table_to_copy']['glob']
             pattern_type = 'glob'
@@ -35,9 +33,7 @@ class Job(ETL_Base):
         bucket_name = path_raw_in3.bucket  # Replace with your bucket name
         prefix = path_raw_in3.key  # Replace with the folder path in your bucket
         local_directory = path_raw_out2  # Replace with your local directory path
-        # pattern =   # Replace with your glob pattern, e.g., '*.txt' for all text files
 
-        # import ipdb; ipdb.set_trace()
         file_number = self.get_size(s3, bucket_name, prefix, pattern, pattern_type)
         self.logger.info(f"Number of files to be downloaded {file_number}")
 
@@ -90,7 +86,6 @@ class Job(ETL_Base):
                         match = True
 
                     if match:
-                        # Increment the counter for each matching file
                         matching_files_count += 1
         return matching_files_count
 

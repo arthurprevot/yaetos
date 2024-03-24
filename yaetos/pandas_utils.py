@@ -56,8 +56,6 @@ def load_dfs(path, file_type='csv', globy=None, read_func='read_csv', read_kwarg
         # TODO: improve check, make it usable with several files.
         matching_paths = glob.glob(globy)
         matches_pattern = os.path.normpath(path) in map(os.path.normpath, matching_paths)
-        # import ipdb; ipdb.set_trace()
-        # is_file = Path(matching_paths).is_file()
         is_file = len(matching_paths) == 1
 
     if path.endswith(".{}".format(file_type)):  # one file and extension is explicite
@@ -79,9 +77,8 @@ def load_df(path, read_func='read_csv', read_kwargs={}):
     else:
         with open(path, 'r') as file:
             data = json.load(file)
-        # import ipdb; ipdb.set_trace()
+
         df = pd.DataFrame(data['records'])
-        # df['data'] = df['data'].fillna({})
         return df
 
 
