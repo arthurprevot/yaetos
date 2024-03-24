@@ -36,26 +36,6 @@ class Job(ETL_Base):
         self.logger.info("Finished downloading all files")
         return None
 
-    @staticmethod
-    def get_match(file_name, pattern, pattern_type):
-        if pattern_type == 'glob':
-            match = fnmatch.fnmatch(file_name, pattern)
-        elif pattern_type == 'regex':
-            match = re.match(pattern, file_name)
-        else:
-            match = True
-        return match
-
-    def s3_iterator(self, s3, bucket_name, prefix, pattern, pattern_type):
-        paginator = s3.get_paginator('list_objects_v2')
-        for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
-            if 'Contents' in page:
-                for obj in page['Contents']:
-                    file_name = obj['Key'][len(prefix):]
-                    match = self.get_match(file_name, pattern, pattern_type)
-                    if match:
-                        yield obj, file_name
-
     def download_files(self, s3, bucket_name, prefix, pattern, pattern_type, path_raw_out):
         # Create the local directory if it doesn't exist
         if not os.path.exists(path_raw_out):
@@ -79,6 +59,26 @@ class Job(ETL_Base):
             matching_files_count += 1
 
         return matching_files_count
+
+    def s3_iterator(self, s3, bucket_name, prefix, pattern, pattern_type):
+        paginator = s3.get_paginator('list_objects_v2')
+        for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
+            if 'Contents' in page:
+                for obj in page['Contents']:
+                    file_name = obj['Key'][len(prefix):]
+                    match = self.get_match(file_name, pattern, pattern_type)
+                    if match:
+                        yield obj, file_name
+
+    @staticmethod
+    def get_match(file_name, pattern, pattern_type):
+        if pattern_type == 'glob':
+            match = fnmatch.fnmatch(file_name, pattern)
+        elif pattern_type == 'regex':
+            match = re.match(pattern, file_name)
+        else:
+            match = True
+        return match
 
 
 if __name__ == "__main__":
