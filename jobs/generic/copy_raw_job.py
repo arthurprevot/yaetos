@@ -29,10 +29,6 @@ class Job(ETL_Base):
         session = get_aws_setup(self.jargs.merged_args)
         s3 = session.client('s3')
 
-        # bucket_name = path_raw_in.bucket
-        # prefix = path_raw_in.key
-        # local_directory = path_raw_out
-
         file_number = self.get_size(s3, path_raw_in.bucket, path_raw_in.key, pattern, pattern_type)
         self.logger.info(f"Number of files to be downloaded {file_number}")
 
@@ -46,12 +42,7 @@ class Job(ETL_Base):
             if 'Contents' in page:
                 for obj in page['Contents']:
                     file_name = obj['Key'][len(path_raw_in.key):]
-                    if pattern_type == 'glob':
-                        match = fnmatch.fnmatch(file_name, pattern)
-                    elif pattern_type == 'regex':
-                        match = re.match(pattern, file_name)
-                    else:
-                        match = True
+                    match = self.get_match(file_name, pattern, pattern_type)
 
                     if match:
                         # Extract the file name from the object key and create its local path
@@ -68,6 +59,17 @@ class Job(ETL_Base):
 
         return None
 
+    @staticmethod
+    def get_match(file_name, pattern, pattern_type):
+        if pattern_type == 'glob':
+            match = fnmatch.fnmatch(file_name, pattern)
+        elif pattern_type == 'regex':
+            match = re.match(pattern, file_name)
+        else:
+            match = True
+        return match
+
+
     def get_size(self, s3, bucket_name, prefix, pattern, pattern_type):
         matching_files_count = 0
 
@@ -77,12 +79,7 @@ class Job(ETL_Base):
             if 'Contents' in page:
                 for obj in page['Contents']:
                     file_name = obj['Key'][len(prefix):]
-                    if pattern_type == 'glob':
-                        match = fnmatch.fnmatch(file_name, pattern)
-                    elif pattern_type == 'regex':
-                        match = re.match(pattern, file_name)
-                    else:
-                        match = True
+                    match = self.get_match(file_name, pattern, pattern_type)
 
                     if match:
                         matching_files_count += 1
