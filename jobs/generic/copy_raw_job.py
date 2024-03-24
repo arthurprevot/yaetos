@@ -34,30 +34,6 @@ class Job(ETL_Base):
 
         self.download_files(s3, path_raw_in.bucket, path_raw_in.key, pattern, pattern_type, path_raw_out)
         self.logger.info("Finished downloading all files")
-        # # Create the local directory if it doesn't exist
-        # if not os.path.exists(path_raw_out):
-        #     os.makedirs(path_raw_out)
-
-        # List objects within the specified folder
-        # paginator = s3.get_paginator('list_objects_v2')
-        # for page in paginator.paginate(Bucket=path_raw_in.bucket, Prefix=path_raw_in.key):
-        #     if 'Contents' in page:
-        #         for obj in page['Contents']:
-        #             file_name = obj['Key'][len(path_raw_in.key):]
-        #             match = self.get_match(file_name, pattern, pattern_type)
-        #             if not match:
-        #                 continue
-
-                    # # Create subdirectories if they don't exist
-                    # local_file_path = os.path.join(path_raw_out, file_name)
-                    # local_file_directory = os.path.dirname(local_file_path)
-                    # if not os.path.exists(local_file_directory):
-                    #     os.makedirs(local_file_directory)
-
-                    # # Download the file
-                    # s3.download_file(path_raw_in.bucket, obj['Key'], local_file_path)
-                    # print(f"Downloaded {obj['Key']} to {local_file_path}")
-
         return None
 
     @staticmethod
@@ -70,7 +46,6 @@ class Job(ETL_Base):
             match = True
         return match
 
-
     def s3_iterator(self, s3, bucket_name, prefix, pattern, pattern_type):
         paginator = s3.get_paginator('list_objects_v2')
         for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
@@ -80,20 +55,6 @@ class Job(ETL_Base):
                     match = self.get_match(file_name, pattern, pattern_type)
                     if match:
                         yield obj, file_name
-
-        # for item in data:
-        #     # Complex loop operations
-        #     yield item
-
-    # @staticmethod
-    # def apply_over_files(self, func, s3, bucket_name, prefix, pattern, pattern_type):
-    #     paginator = s3.get_paginator('list_objects_v2')
-    #     for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
-    #         if 'Contents' in page:
-    #             for obj in page['Contents']:
-    #                 file_name = obj['Key'][len(prefix):]
-    #                 match = self.get_match(file_name, pattern, pattern_type)
-    #                 func(match)
 
     def download_files(self, s3, bucket_name, prefix, pattern, pattern_type, path_raw_out):
         # Create the local directory if it doesn't exist
@@ -117,15 +78,6 @@ class Job(ETL_Base):
         for (obj, file_name) in self.s3_iterator(s3, bucket_name, prefix, pattern, pattern_type):
             matching_files_count += 1
 
-        # # List objects within the specified folder
-        # paginator = s3.get_paginator('list_objects_v2')
-        # for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
-        #     if 'Contents' in page:
-        #         for obj in page['Contents']:
-        #             file_name = obj['Key'][len(prefix):]
-        #             match = self.get_match(file_name, pattern, pattern_type)
-        #             if match:
-        #                 matching_files_count += 1
         return matching_files_count
 
 
