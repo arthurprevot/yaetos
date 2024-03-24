@@ -13,6 +13,7 @@ cp conf/connections.cfg.example yaetos/scripts/copy/connections.cfg.example
 cp conf/aws_config.cfg.example yaetos/scripts/copy/aws_config.cfg.example
 ## Jobs
 cp jobs/generic/copy_job.py yaetos/libs/generic_jobs/copy_job.py
+cp jobs/generic/copy_raw_job.py yaetos/libs/generic_jobs/copy_raw_job.py
 cp jobs/generic/deployer.py yaetos/libs/generic_jobs/deployer.py
 cp jobs/generic/dummy_job.py yaetos/libs/generic_jobs/dummy_job.py
 cp jobs/generic/launcher.py yaetos/libs/generic_jobs/launcher.py
