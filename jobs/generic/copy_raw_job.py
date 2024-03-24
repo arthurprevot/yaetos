@@ -12,8 +12,8 @@ class Job(ETL_Base):
 
         # Paths
         path_raw_in = self.jargs.inputs['table_to_copy']['path']
-        path_raw_in2 = self.expand_input_path(path_raw_in)
-        path_raw_in3 = CPt(path_raw_in2)
+        path_raw_in = self.expand_input_path(path_raw_in)
+        path_raw_in = CPt(path_raw_in)
         path_raw_out = self.jargs.output['path']
         path_raw_out2 = self.expand_output_path(path_raw_out, now_dt=self.start_dt)
         if 'glob' in self.jargs.inputs['table_to_copy'].keys():
@@ -30,8 +30,8 @@ class Job(ETL_Base):
         session = boto3.session.Session()
         s3 = session.client('s3')
 
-        bucket_name = path_raw_in3.bucket  # Replace with your bucket name
-        prefix = path_raw_in3.key  # Replace with the folder path in your bucket
+        bucket_name = path_raw_in.bucket  # Replace with your bucket name
+        prefix = path_raw_in.key  # Replace with the folder path in your bucket
         local_directory = path_raw_out2  # Replace with your local directory path
 
         file_number = self.get_size(s3, bucket_name, prefix, pattern, pattern_type)
