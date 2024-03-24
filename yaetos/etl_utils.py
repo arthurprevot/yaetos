@@ -431,7 +431,7 @@ class ETL_Base(object):
         # Tabular, Pandas
         # TODO: move block to pandas_util.py
         if input.get('df_type') == 'pandas':
-            globy = input.get('globy')
+            globy = input.get('glob')
             if input_type == 'csv':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', globy=globy, read_func='read_csv', read_kwargs=input.get('read_kwargs', {}))
             elif input_type == 'parquet':
