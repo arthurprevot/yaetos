@@ -378,6 +378,16 @@ class ETL_Base(object):
             # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))  # TODO adapt to pandas
             return pdf
 
+        # if self.jargs.inputs[input_name].get('df_type') == 'json':
+        #     globy = self.jargs.inputs[input_name].get('glob')
+        #     if input_type == 'json':
+        #         json_data = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='json_parser', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+        #     else:
+        #         raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
+        #     logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
+        #     # logger.info("Input data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))  # TODO adapt to pandas
+        #     return json_data
+
         # Tabular types, Spark
         if input_type == 'csv':
             delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
