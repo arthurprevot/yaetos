@@ -6,15 +6,14 @@ import re
 
 
 class Job(ETL_Base):
-
     def transform(self, files_to_copy):
-
-        # Paths
         path_raw_in = self.jargs.inputs['files_to_copy']['path']
         path_raw_in = self.expand_input_path(path_raw_in)
         path_raw_in = CPt(path_raw_in)
         path_raw_out = self.jargs.output['path']
         path_raw_out = self.expand_output_path(path_raw_out, now_dt=self.start_dt)
+
+        # Get pattern and pattern_type
         if 'glob' in self.jargs.inputs['files_to_copy'].keys():
             pattern = self.jargs.inputs['files_to_copy']['glob']
             pattern_type = 'glob'
@@ -56,7 +55,6 @@ class Job(ETL_Base):
         matching_files_count = 0
         for (obj, file_name) in self.s3_iterator(s3, bucket_name, prefix, pattern, pattern_type):
             matching_files_count += 1
-
         return matching_files_count
 
     def s3_iterator(self, s3, bucket_name, prefix, pattern, pattern_type):
