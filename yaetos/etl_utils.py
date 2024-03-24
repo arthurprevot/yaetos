@@ -51,10 +51,10 @@ JARS = 'https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.13/redshi
 
 
 class ETL_Base(object):
-    TABULAR_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
+    TABULAR_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'pickle', 'df', 'mysql', 'clickhouse')
     SPARK_DF_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'df', 'mysql', 'clickhouse')
-    PANDAS_DF_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'df')
-    FILE_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'txt')
+    PANDAS_DF_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'pickle', 'df')
+    FILE_TYPES = ('csv', 'parquet', 'json', 'xlsx', 'xls', 'txt', 'pickle')
     OTHER_TYPES = ('other', 'None')
     SUPPORTED_TYPES = set(TABULAR_TYPES) \
         .union(set(SPARK_DF_TYPES)) \
@@ -360,6 +360,8 @@ class ETL_Base(object):
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xlsx', globy=globy, read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             elif input_type == 'xls':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xls', globy=globy, read_func='read_excel', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
+            elif input_type == 'pickle':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='pickle', globy=globy, read_func='read_pickle', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
@@ -369,7 +371,7 @@ class ETL_Base(object):
         if self.jargs.inputs[input_name].get('df_type') == 'json_pandas':
             globy = self.jargs.inputs[input_name].get('glob')
             if input_type == 'json':
-                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='json_parser', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))  # TODO: improve jsonlib name
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='json', globy=globy, read_func='json_parser', read_kwargs=self.jargs.inputs[input_name].get('read_kwargs', {}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, self.jargs.inputs[input_name].get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
@@ -419,7 +421,7 @@ class ETL_Base(object):
         # Tabular, Pandas
         # TODO: move block to pandas_util.py
         if input.get('df_type') == 'pandas':
-            globy = input.get('globy')
+            globy = input.get('glob')
             if input_type == 'csv':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='csv', globy=globy, read_func='read_csv', read_kwargs=input.get('read_kwargs', {}))
             elif input_type == 'parquet':
@@ -430,6 +432,8 @@ class ETL_Base(object):
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xlsx', globy=globy, read_func='read_excel', read_kwargs=input.get('read_kwargs', {}))
             elif input_type == 'xls':
                 pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='xls', globy=globy, read_func='read_excel', read_kwargs=input.get('read_kwargs', {}))
+            elif input_type == 'pickle':
+                pdf = FS_Ops_Dispatcher().load_pandas(path, file_type='pickle', globy=globy, read_func='read_pickle', read_kwargs=input.get('read_kwargs', {}))
             else:
                 raise Exception("Unsupported input type '{}' for path '{}'. Supported types for pandas are: {}. ".format(input_type, input.get('path'), self.PANDAS_DF_TYPES))
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
@@ -596,6 +600,8 @@ class ETL_Base(object):
                 FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_json', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             elif type in ('xlsx', 'xls'):
                 FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_excel', save_kwargs=self.jargs.output.get('save_kwargs', {}))
+            elif type == 'pickle':
+                FS_Ops_Dispatcher().save_pandas(output, path, save_method='to_pickle', save_kwargs=self.jargs.output.get('save_kwargs', {}))
             else:
                 raise Exception("Need to specify supported output type for pandas, csv, parquet, xls or xlsx.")
             logger.info('Wrote output to ' + path)
@@ -1204,7 +1210,6 @@ class Runner():
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
-        from configparser import ConfigParser
 
         conf = SparkConf()
         # TODO: move spark-submit params here since it is more generic than in spark submit, params like "spark.driver.memoryOverhead" cause pb in spark submit.
@@ -1215,13 +1220,7 @@ class Runner():
         if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
             # Setup below not needed when running from EMR because setup there is done through spark-submit.
             # Env vars for S3 access
-            config = ConfigParser()
-            assert os.path.isfile(jargs.aws_config_file)
-            config.read(jargs.aws_config_file)
-            profile_name = config.get(jargs.aws_setup, 'profile_name')
-            credentials = boto3.Session(profile_name=profile_name).get_credentials()
-            os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
-            os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+            get_aws_setup(jargs.merged_args)
 
             # JARs
             package_str = ','.join(PACKAGES_LOCAL_SPARK_3_5)
@@ -1247,6 +1246,21 @@ class Runner():
         logger.info(f'Spark Version: {sc.version}')
         logger.info(f'Spark Config: {sc.getConf().getAll()}')
         return sc, sc_sql
+
+
+def get_aws_setup(args):
+    from configparser import ConfigParser
+    config = ConfigParser()
+    assert os.path.isfile(args['aws_config_file'])
+    config.read(args['aws_config_file'])
+    profile_name = config.get(args['aws_setup'], 'profile_name')
+    session = boto3.Session(profile_name=profile_name)
+
+    # Save creds to env
+    credentials = session.get_credentials()
+    os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
+    os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+    return session
 
 
 class InputLoader():
