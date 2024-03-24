@@ -239,7 +239,7 @@ jobs:
     description: "Copy data from cloud to local. Not loading file content. To be run locally."
     py_job: jobs/generic/copy_raw_job.py
     inputs:
-      table_to_copy: {'path':"{base_path}/load_example/test_files/", 'glob':'*/*.csv', 'type':'other'}
+      files_to_copy: {'path':"{base_path}/load_example/test_files/", 'glob':'*/*.csv', 'type':'other'}
     output: {'path':'./data/load_example/test_files/{now}/'}
     base_path: 's3://mylake-dev/pipelines_data'
     aws_config_file:  conf/aws_config.cfg

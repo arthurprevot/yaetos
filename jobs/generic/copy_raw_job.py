@@ -8,19 +8,19 @@ import re
 
 class Job(ETL_Base):
 
-    def transform(self, table_to_copy):
+    def transform(self, files_to_copy):
 
         # Paths
-        path_raw_in = self.jargs.inputs['table_to_copy']['path']
+        path_raw_in = self.jargs.inputs['files_to_copy']['path']
         path_raw_in = self.expand_input_path(path_raw_in)
         path_raw_in = CPt(path_raw_in)
         path_raw_out = self.jargs.output['path']
         path_raw_out2 = self.expand_output_path(path_raw_out, now_dt=self.start_dt)
-        if 'glob' in self.jargs.inputs['table_to_copy'].keys():
-            pattern = self.jargs.inputs['table_to_copy']['glob']
+        if 'glob' in self.jargs.inputs['files_to_copy'].keys():
+            pattern = self.jargs.inputs['files_to_copy']['glob']
             pattern_type = 'glob'
-        elif 'regex' in self.jargs.inputs['table_to_copy'].keys():
-            pattern = self.jargs.inputs['table_to_copy']['regex']
+        elif 'regex' in self.jargs.inputs['files_to_copy'].keys():
+            pattern = self.jargs.inputs['files_to_copy']['regex']
             pattern_type = 'regex'
         else:
             pattern = '*'
