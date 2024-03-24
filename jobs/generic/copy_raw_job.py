@@ -43,19 +43,18 @@ class Job(ETL_Base):
                 for obj in page['Contents']:
                     file_name = obj['Key'][len(path_raw_in.key):]
                     match = self.get_match(file_name, pattern, pattern_type)
+                    if not match:
+                        continue
 
-                    if match:
-                        # Extract the file name from the object key and create its local path
-                        local_file_path = os.path.join(path_raw_out, file_name)
+                    # Create subdirectories if they don't exist
+                    local_file_path = os.path.join(path_raw_out, file_name)
+                    local_file_directory = os.path.dirname(local_file_path)
+                    if not os.path.exists(local_file_directory):
+                        os.makedirs(local_file_directory)
 
-                        # Create subdirectories if they don't exist
-                        local_file_directory = os.path.dirname(local_file_path)
-                        if not os.path.exists(local_file_directory):
-                            os.makedirs(local_file_directory)
-
-                        # Download the file
-                        s3.download_file(path_raw_in.bucket, obj['Key'], local_file_path)
-                        print(f"Downloaded {obj['Key']} to {local_file_path}")
+                    # Download the file
+                    s3.download_file(path_raw_in.bucket, obj['Key'], local_file_path)
+                    print(f"Downloaded {obj['Key']} to {local_file_path}")
 
         return None
 
@@ -80,7 +79,6 @@ class Job(ETL_Base):
                 for obj in page['Contents']:
                     file_name = obj['Key'][len(prefix):]
                     match = self.get_match(file_name, pattern, pattern_type)
-
                     if match:
                         matching_files_count += 1
         return matching_files_count
