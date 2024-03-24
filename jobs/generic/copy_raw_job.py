@@ -26,28 +26,26 @@ class Job(ETL_Base):
             pattern = '*'
             pattern_type = 'glob'
 
-        # Initialize a boto3 session
-        # session = boto3.session.Session(profile_name=self.profile_name)
         session = get_aws_setup(self.jargs.merged_args)
         s3 = session.client('s3')
 
-        bucket_name = path_raw_in.bucket  # Replace with your bucket name
-        prefix = path_raw_in.key  # Replace with the folder path in your bucket
-        local_directory = path_raw_out  # Replace with your local directory path
+        # bucket_name = path_raw_in.bucket
+        # prefix = path_raw_in.key
+        # local_directory = path_raw_out
 
-        file_number = self.get_size(s3, bucket_name, prefix, pattern, pattern_type)
+        file_number = self.get_size(s3, path_raw_in.bucket, path_raw_in.key, pattern, pattern_type)
         self.logger.info(f"Number of files to be downloaded {file_number}")
 
         # Create the local directory if it doesn't exist
-        if not os.path.exists(local_directory):
-            os.makedirs(local_directory)
+        if not os.path.exists(path_raw_out):
+            os.makedirs(path_raw_out)
 
         # List objects within the specified folder
         paginator = s3.get_paginator('list_objects_v2')
-        for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
+        for page in paginator.paginate(Bucket=path_raw_in.bucket, Prefix=path_raw_in.key):
             if 'Contents' in page:
                 for obj in page['Contents']:
-                    file_name = obj['Key'][len(prefix):]
+                    file_name = obj['Key'][len(path_raw_in.key):]
                     if pattern_type == 'glob':
                         match = fnmatch.fnmatch(file_name, pattern)
                     elif pattern_type == 'regex':
@@ -57,7 +55,7 @@ class Job(ETL_Base):
 
                     if match:
                         # Extract the file name from the object key and create its local path
-                        local_file_path = os.path.join(local_directory, file_name)
+                        local_file_path = os.path.join(path_raw_out, file_name)
 
                         # Create subdirectories if they don't exist
                         local_file_directory = os.path.dirname(local_file_path)
@@ -65,7 +63,7 @@ class Job(ETL_Base):
                             os.makedirs(local_file_directory)
 
                         # Download the file
-                        s3.download_file(bucket_name, obj['Key'], local_file_path)
+                        s3.download_file(path_raw_in.bucket, obj['Key'], local_file_path)
                         print(f"Downloaded {obj['Key']} to {local_file_path}")
 
         return None
