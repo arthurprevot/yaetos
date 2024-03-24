@@ -1,5 +1,4 @@
 from yaetos.etl_utils import ETL_Base, Commandliner, get_aws_setup
-import boto3
 import os
 from cloudpathlib import CloudPath as CPt
 import fnmatch
