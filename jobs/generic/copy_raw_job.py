@@ -1,4 +1,4 @@
-from yaetos.etl_utils import ETL_Base, Commandliner
+from yaetos.etl_utils import ETL_Base, Commandliner, get_aws_setup
 import boto3
 import os
 from cloudpathlib import CloudPath as CPt
@@ -27,7 +27,8 @@ class Job(ETL_Base):
             pattern_type = 'glob'
 
         # Initialize a boto3 session
-        session = boto3.session.Session()
+        # session = boto3.session.Session(profile_name=self.profile_name)
+        session = get_aws_setup(self.jargs.merged_args)
         s3 = session.client('s3')
 
         bucket_name = path_raw_in.bucket  # Replace with your bucket name

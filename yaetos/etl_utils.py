@@ -1210,7 +1210,6 @@ class Runner():
         from pyspark.sql import SQLContext
         from pyspark.sql import SparkSession
         from pyspark import SparkConf
-        from configparser import ConfigParser
 
         conf = SparkConf()
         # TODO: move spark-submit params here since it is more generic than in spark submit, params like "spark.driver.memoryOverhead" cause pb in spark submit.
@@ -1221,13 +1220,7 @@ class Runner():
         if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
             # Setup below not needed when running from EMR because setup there is done through spark-submit.
             # Env vars for S3 access
-            config = ConfigParser()
-            assert os.path.isfile(jargs.aws_config_file)
-            config.read(jargs.aws_config_file)
-            profile_name = config.get(jargs.aws_setup, 'profile_name')
-            credentials = boto3.Session(profile_name=profile_name).get_credentials()
-            os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
-            os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+            get_aws_setup(jargs.merged_args)
 
             # JARs
             package_str = ','.join(PACKAGES_LOCAL_SPARK_3_5)
@@ -1253,6 +1246,21 @@ class Runner():
         logger.info(f'Spark Version: {sc.version}')
         logger.info(f'Spark Config: {sc.getConf().getAll()}')
         return sc, sc_sql
+
+
+def get_aws_setup(args):
+    from configparser import ConfigParser
+    config = ConfigParser()
+    assert os.path.isfile(args['aws_config_file'])
+    config.read(args['aws_config_file'])
+    profile_name = config.get(args['aws_setup'], 'profile_name')
+    session = boto3.Session(profile_name=profile_name)
+
+    # Save creds to env
+    credentials = session.get_credentials()
+    os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
+    os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+    return session
 
 
 class InputLoader():
