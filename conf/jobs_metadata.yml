@@ -286,6 +286,7 @@ jobs:
     load_connectors: all
 
   examples/ex14_json_format1_load_job:
+    description: "Format with basic json, with rows as lines, without []."
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format1/dataset.json", 'type':'json', 'df_type':'pandas', 'read_kwargs':{'lines':True}}
@@ -293,6 +294,7 @@ jobs:
     spark_boot: False
 
   examples/ex14_json_format2_load_job:
+    description: "Format with basic valid json, with rows inside brackets, ex [rows_here]."
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format2/dataset.json", 'type':'json', 'df_type':'pandas'}
@@ -300,6 +302,7 @@ jobs:
     spark_boot: False
 
   examples/ex14_json_format3_load_job:
+    description: "Format with rows inside structure like {'records':[rows_here]}."
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format3/dataset.json", 'type':'json', 'df_type':'json_pandas'}
