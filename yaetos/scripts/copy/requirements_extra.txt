@@ -2,7 +2,7 @@
 
 # Libraries below needed for some of the example jobs.
 # They can be removed if the example jobs are removed.
-requests==2.31.0  # necessary for demo job
+requests==2.32.0  # necessary for demo job
 # transformers==4.30.2 # latest 4.36.2  # necessary for extended set of demo job
 # tensorflow==2.11.0 # latest 2.15.0  # necessary for extended set of demo job
 # sentencepiece==0.1.99  # necessary for extended set of demo job
