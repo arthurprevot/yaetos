@@ -156,7 +156,7 @@ class DeployPySparkScriptOnAws(object):
                 self.step_run_setup_scripts(c)
             except botocore.exceptions.ClientError as e:
                 self.describe_status(c)
-                print(f"botocore.exceptions.ClientError : {e}")
+                logger.error(f"botocore.exceptions.ClientError : {e}")
                 raise 
         else:
             logger.info("Reusing existing cluster, name: %s, and id: %s" % (cluster['name'], cluster['id']))
