@@ -152,6 +152,12 @@ class DeployPySparkScriptOnAws(object):
             self.start_spark_cluster(c, self.emr_version)
             logger.info("cluster name: %s, and id: %s" % (self.pipeline_name, self.cluster_id))
             self.step_run_setup_scripts(c)
+            try:
+                self.step_run_setup_scripts(c)
+            except botocore.exceptions.ClientError as e:
+                self.describe_status(c)
+                print(f"botocore.exceptions.ClientError : {e}")
+                raise 
         else:
             logger.info("Reusing existing cluster, name: %s, and id: %s" % (cluster['name'], cluster['id']))
             self.cluster_id = cluster['id']
@@ -455,6 +461,10 @@ class DeployPySparkScriptOnAws(object):
                 logger.info('Job is finished')
             logger.info('Cluster state:' + state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
+
+    def describe_status(self, c):
+        description = c.describe_cluster(ClusterId=self.cluster_id)
+        logger.info(f'Cluster description: {description}')
 
     def step_run_setup_scripts(self, c):
         """
