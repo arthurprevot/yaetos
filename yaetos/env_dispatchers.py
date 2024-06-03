@@ -4,7 +4,7 @@ Set of operations that require dispatching between local and cloud environment.
 import boto3
 import os
 from time import sleep
-from io import StringIO
+from io import StringIO, BytesIO
 # from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
 from configparser import ConfigParser
 from yaetos.pandas_utils import load_dfs, save_pandas_local
@@ -179,7 +179,12 @@ class FS_Ops_Dispatcher():
     def save_pandas_cluster(self, df, fname, save_method, save_kwargs):
         # code below can be simplified using "df.to_csv(fname, **save_kwargs)", relying on s3fs library, but implies lots of dependencies, that break in cloud run.
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
-        with StringIO() as file_buffer:
+        if save_method in ('to_csv', 'to_json'):  # TODO: add more options or have code find if it in StringIO or BytesIO
+            streamingIO = StringIO
+        if save_method in ('to_parquet', 'to_pickle'):  # TODO: add more options.
+            streamingIO = BytesIO
+
+        with streamingIO() as file_buffer:
             save_pandas_local(df, file_buffer, save_method, save_kwargs)
             s3c = boto3.Session(profile_name='default').client('s3')
             response = s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=file_buffer.getvalue())
