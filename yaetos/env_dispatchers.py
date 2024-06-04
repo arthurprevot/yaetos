@@ -4,7 +4,7 @@ Set of operations that require dispatching between local and cloud environment.
 import boto3
 import os
 from time import sleep
-from io import StringIO
+from io import StringIO, BytesIO
 # from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
 from configparser import ConfigParser
 from yaetos.pandas_utils import load_dfs, save_pandas_local
@@ -149,11 +149,14 @@ class FS_Ops_Dispatcher():
         import uuid
 
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
-        local_path = 'tmp/s3_copy_' + fname_parts[-1] + '_' + str(uuid.uuid4())
+        uuid_path = str(uuid.uuid4())
+        local_path = 'tmp/s3_copy_' + uuid_path + '_' + fname_parts[-1] + '/' + fname_parts[-1]  # First fname_parts[-1] is to show fname part in folder name for easier debugging in AWS. Second is to isolate fname part in sub folder.
+        local_folder = 'tmp/s3_copy_' + uuid_path + '_' + fname_parts[-1]  # to be based on above
+        os.makedirs(local_folder, exist_ok=True)
         cp = CloudPath(fname)  # TODO: add way to load it with specific profile_name or client, as in "s3c = boto3.Session(profile_name='default').client('s3')"
         if globy:
             cfiles = cp.glob(globy)
-            os.makedirs(local_path, exist_ok=True)
+            os.makedirs(local_path, exist_ok=True)  # assuming it is folder. TODO: confirm in code.
             logger.info(f"Copying {len(cfiles)} files from S3 to local '{local_path}'")
             for cfile in cfiles:
                 local_file_path = os.path.join(local_path, cfile.name)
@@ -163,7 +166,7 @@ class FS_Ops_Dispatcher():
             logger.info("Copying files from S3 '{}' to local '{}'. May take some time.".format(fname, local_path))
             local_pathlib = cp.download_to(local_path)
             local_path = local_path + '/' if local_pathlib.is_dir() else local_path
-        logger.info("File copy finished")
+        logger.info(f"File copy finished, to {local_path}")
         df = load_dfs(local_path, file_type, globy, read_func, read_kwargs)
         return df
 
@@ -179,7 +182,12 @@ class FS_Ops_Dispatcher():
     def save_pandas_cluster(self, df, fname, save_method, save_kwargs):
         # code below can be simplified using "df.to_csv(fname, **save_kwargs)", relying on s3fs library, but implies lots of dependencies, that break in cloud run.
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
-        with StringIO() as file_buffer:
+        if save_method in ('to_csv', 'to_json'):  # TODO: add more options or have code find if it in StringIO or BytesIO
+            streamingIO = StringIO
+        if save_method in ('to_parquet', 'to_pickle'):  # TODO: add more options.
+            streamingIO = BytesIO
+
+        with streamingIO() as file_buffer:
             save_pandas_local(df, file_buffer, save_method, save_kwargs)
             s3c = boto3.Session(profile_name='default').client('s3')
             response = s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=file_buffer.getvalue())
