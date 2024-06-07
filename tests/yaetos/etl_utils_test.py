@@ -173,6 +173,23 @@ class Test_Runner(object):
             '--arg2=value2']
         assert cmd_lst_real == cmd_lst_expected
 
+    def test_create_spark_submit_python_job_with_launcher(self):
+        job_args = {
+            'launcher_file': 'jobs/generic/launcher.py',
+            'py_job': 'jobs/examples/ex7_pandas_job.py',
+            'py-files': 'some/files.zip',
+            'spark_submit_keys': 'py-files',
+            'spark_app_keys': ''}
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args={}, job_args=job_args, cmd_args={}, build_yml_args=False, loaded_inputs={})
+        cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
+        cmd_lst_expected = [
+            'spark-submit',
+            '--py-files=some/files.zip',
+            'jobs/examples/ex7_pandas_job.py',  # launcher.py not carried over. may want to change behavior.
+            # '--job_name=some_job',
+            ]
+        assert cmd_lst_real == cmd_lst_expected
+
     def test_create_spark_submit_jar_job(self):
         job_args = {
             'jar_job': 'jobs/examples/ex12_scala_job/target/spark_scala_job_2.13-1.0.jar',
