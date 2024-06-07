@@ -156,17 +156,11 @@ class FS_Ops_Dispatcher():
         cp = CloudPath(fname)  # no need to specify profile_name as aws creds taken from cluster env.
         if globy:
             cfiles = cp.glob(globy)  # careful to loop through cfiles only once as it will be consumed.
-            # print('####----- load_pandas_cluster files 1', list(cfiles))
-            # cfiles = cp.glob(globy)
             os.makedirs(local_path, exist_ok=True)
             logger.info(f"Copying files from S3 '{fname}' to local '{local_path}'")
-            # cfiles = cp.glob(globy)
             for cfile in cfiles:
-                # print('####----- load_pandas_cluster file copy 2', cfile.parent, fname, cfile.name)
                 glob_folders = str(cfile.parent).replace(fname, '')  # goes from s3://some_bucket/path/folder_from_glob/file.parquet to /folder_from_glob/file.parquet
-                # print('####----- load_pandas_cluster file copy 2', cfile.parent, fname, glob_folders, cfile.name)
                 os.makedirs(os.path.join(local_path, glob_folders), exist_ok=True)
-                # local_path2 = 
                 local_file_path = os.path.join(local_path, glob_folders, cfile.name)
                 local_pathlib = cfile.download_to(local_file_path)
             local_path += '/'
