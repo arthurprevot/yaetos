@@ -231,12 +231,26 @@ class ETL_Base(object):
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
+        # Set job_name
         if 'job_name' not in pre_jargs['job_args']:
             py_job = self.set_py_job()
             job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
         else:
             job_name = pre_jargs['job_args']['job_name']
-        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, build_yml_args=True, loaded_inputs=loaded_inputs)
+        
+        # Set jargs
+        jargs = Job_Args_Parser(
+            defaults_args=pre_jargs['defaults_args'], 
+            yml_args=None, 
+            job_args=pre_jargs['job_args'], 
+            cmd_args=pre_jargs['cmd_args'], 
+            job_name=job_name, 
+            build_yml_args=True, 
+            loaded_inputs=loaded_inputs)
+
+        # Room for jargs mods at job level.
+        jargs = self.expand_params(jargs)
+        return jargs
 
     def set_py_job(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -459,6 +473,10 @@ class ETL_Base(object):
 
         logger.info("Dataset data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
+
+    @staticmethod
+    def expand_params(jargs, **kwargs):
+        return jargs
 
     def expand_input_path(self, path, **kwargs):
         # Function call isolated to be overridable.
