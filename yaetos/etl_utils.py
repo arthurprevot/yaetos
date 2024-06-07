@@ -1268,7 +1268,7 @@ class Runner():
 
 def get_aws_setup(args):
     if os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'):
-        session = boto3.Session()
+        session = boto3.Session()  # to check : credentials = session.get_credentials(); print(credentials.access_key); print(credentials.secret_key)
         return session
 
     from configparser import ConfigParser
