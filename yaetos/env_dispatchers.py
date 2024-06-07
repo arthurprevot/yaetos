@@ -156,18 +156,27 @@ class FS_Ops_Dispatcher():
         cp = CloudPath(fname)  # TODO: add way to load it with specific profile_name or client, as in "s3c = boto3.Session(profile_name='default').client('s3')"
         if globy:
             cfiles = cp.glob(globy)
-            os.makedirs(local_path, exist_ok=True)  # assuming it is folder. TODO: confirm in code.
-            logger.info(f"Copying {len(cfiles)} files from S3 to local '{local_path}'")
+            # print('####----- load_pandas_cluster files 1', list(cfiles))
+            # cfiles = cp.glob(globy)
+            os.makedirs(local_path, exist_ok=True)
+            logger.info(f"Copying files from S3 '{fname}' to local '{local_path}'")  # don't put "Copying {len(list(cfiles))} files" or it will consume generator.
+            # cfiles = cp.glob(globy)
             for cfile in cfiles:
-                local_file_path = os.path.join(local_path, cfile.name)
+                # print('####----- load_pandas_cluster file copy 2', cfile.parent, fname, cfile.name)
+                glob_folders = str(cfile.parent).replace(fname, '')  # goes from s3://some_bucket/path/folder_from_glob/file.parquet to /folder_from_glob/file.parquet
+                # print('####----- load_pandas_cluster file copy 2', cfile.parent, fname, glob_folders, cfile.name)
+                os.makedirs(os.path.join(local_path, glob_folders), exist_ok=True)
+                # local_path2 = 
+                local_file_path = os.path.join(local_path, glob_folders, cfile.name)
                 local_pathlib = cfile.download_to(local_file_path)
             local_path += '/'
         else:
-            logger.info("Copying files from S3 '{}' to local '{}'. May take some time.".format(fname, local_path))
+            logger.info(f"Copying files from S3 '{fname}' to local '{local_path}'. May take some time.")
             local_pathlib = cp.download_to(local_path)
             local_path = local_path + '/' if local_pathlib.is_dir() else local_path
         logger.info(f"File copy finished, to {local_path}")
         df = load_dfs(local_path, file_type, globy, read_func, read_kwargs)
+        logger.info(f"df loaded, size '{len(df)}'")
         return df
 
     # --- save_pandas set of functions ----
