@@ -150,16 +150,16 @@ class FS_Ops_Dispatcher():
 
         bucket_name, bucket_fname, fname_parts = self.split_s3_path(fname)
         uuid_path = str(uuid.uuid4())
-        local_path = 'tmp/s3_copy_' + uuid_path + '_' + fname_parts[-1] + '/' + fname_parts[-1]  # First fname_parts[-1] is to show fname part in folder name for easier debugging in AWS. Second is to isolate fname part in sub folder.
-        local_folder = 'tmp/s3_copy_' + uuid_path + '_' + fname_parts[-1]  # to be based on above
+        local_folder = 'tmp/s3_copy_' + uuid_path + '_' + fname_parts[-1]  # fname_parts[-1] put in folder name for easier debugging in AWS.
+        local_path = local_folder + '/' + fname_parts[-1]
         os.makedirs(local_folder, exist_ok=True)
-        cp = CloudPath(fname)  # TODO: add way to load it with specific profile_name or client, as in "s3c = boto3.Session(profile_name='default').client('s3')"
+        cp = CloudPath(fname)  # no need to specify profile_name as aws creds taken from cluster env.
         if globy:
-            cfiles = cp.glob(globy)
+            cfiles = cp.glob(globy)  # careful to loop through cfiles only once as it will be consumed.
             # print('####----- load_pandas_cluster files 1', list(cfiles))
             # cfiles = cp.glob(globy)
             os.makedirs(local_path, exist_ok=True)
-            logger.info(f"Copying files from S3 '{fname}' to local '{local_path}'")  # don't put "Copying {len(list(cfiles))} files" or it will consume generator.
+            logger.info(f"Copying files from S3 '{fname}' to local '{local_path}'")
             # cfiles = cp.glob(globy)
             for cfile in cfiles:
                 # print('####----- load_pandas_cluster file copy 2', cfile.parent, fname, cfile.name)
