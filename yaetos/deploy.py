@@ -523,13 +523,15 @@ class DeployPySparkScriptOnAws(object):
 
     @staticmethod
     def get_spark_submit_args(app_file, app_args):
+        """ app_file is launcher, might be py_job too, but may also be separate from py_job (ex python launcher.py --job_name=some_job_with_py_job)."""
+
         if app_args.get('py_job'):
             overridable_args = {
                 'spark_submit_args': '--verbose',
                 'spark_submit_keys': 'py-files',
                 'spark_app_args': '',
                 'spark_app_keys': 'mode--deploy--storage'}
-        else:  # for jar
+        else:  # for jar_job
             overridable_args = {
                 'spark_submit_args': '--verbose',
                 'spark_submit_keys': '',
@@ -548,8 +550,8 @@ class DeployPySparkScriptOnAws(object):
             py_job = None
 
         # set jar_job
-        if app_args.get('launcher_file') and app_args.get('jar_job'):
-            jar_job = eu.CLUSTER_APP_FOLDER + app_args.get('launcher_file')
+        if (app_args.get('launcher_file') or isinstance(app_file, str)) and app_args.get('jar_job'):  # TODO: check to enforce app_args.get('launcher_file')
+            jar_job = eu.CLUSTER_APP_FOLDER + app_args.get('jar_job')
         else:
             jar_job = None
         # TODO: simplify business of getting application code (2 blocks up) upstream, in etl_utils.py
