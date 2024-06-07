@@ -534,13 +534,29 @@ class DeployPySparkScriptOnAws(object):
 
         overridable_args.update(app_args)
         args = overridable_args.copy()
+
+        # set py_job
+        if app_args.get('launcher_file') and app_args.get('py_job'):
+            py_job = eu.CLUSTER_APP_FOLDER + app_args.get('launcher_file')
+        elif isinstance(app_file, str) and app_file.endswith('.py'):  # TODO: check values app_file can take
+            py_job = eu.CLUSTER_APP_FOLDER + app_file
+        else:
+            py_job = None
+
+        # set jar_job
+        if app_args.get('launcher_file') and app_args.get('jar_job'):
+            jar_job = eu.CLUSTER_APP_FOLDER + app_args.get('launcher_file')
+        else:
+            jar_job = None
+        # TODO: simplify business of getting application code (2 blocks up) upstream, in etl_utils.py
+
         unoverridable_args = {
-            'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip",
-            'py_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('py_job') or app_args.get('launcher_file')),  # TODO: simplify business of getting application code upstream
+            'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
+            'py_job': py_job,
             'mode': 'dev_EMR' if app_args.get('mode') == 'dev_local' else app_args.get('mode'),
             'deploy': 'none',
             'storage': 's3',
-            'jar_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('jar_job') or app_args.get('launcher_file'))}
+            'jar_job': jar_job}
         args.update(unoverridable_args)
 
         if app_args.get('load_connectors', '') == 'all':
