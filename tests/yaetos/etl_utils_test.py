@@ -186,7 +186,6 @@ class Test_Runner(object):
             'spark-submit',
             '--py-files=some/files.zip',
             'jobs/examples/ex7_pandas_job.py',  # launcher.py not carried over. may want to change behavior.
-            # '--job_name=some_job',
             ]
         assert cmd_lst_real == cmd_lst_expected
 
