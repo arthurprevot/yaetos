@@ -79,8 +79,6 @@ class Test_DeployPySparkScriptOnAws(object):
         assert actual == expected
 
     def test_get_spark_submit_args_with_launcher(self, app_args):
-        # Test base case
-        # app_args['mode'] = 'mode_x'
         app_args['job_name'] = 'some_job_name'
         app_file = 'jobs/generic/launcher.py'
         actual = Dep.get_spark_submit_args(app_file, app_args)
@@ -100,7 +98,6 @@ class Test_DeployPySparkScriptOnAws(object):
             'jar_job': 'some/job.jar',
             'spark_app_args': 'some_arg'}
         app_file = 'jobs/generic/launcher.py'
-        # app_file = app_args['jar_job']
         actual = Dep.get_spark_submit_args(app_file, app_args)
         expected = [
             'spark-submit',
