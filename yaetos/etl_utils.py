@@ -862,22 +862,15 @@ class Job_Yml_Parser():
             job_yml = yml['jobs'][job_name]
 
         yml_modes = yml_modes.split(',')
-        if yml_modes == 1:  # regular case
-            yml_mode = yml_modes[0]
+        mode_spec_yml = {}
+        for yml_mode in yml_modes:
             if yml_mode not in yml['common_params']['mode_specific_params']:
                 raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
 
-            mode_spec_yml = yml['common_params']['mode_specific_params'][yml_mode]
-        else:
-            mode_spec_yml = {}
-            for yml_mode in yml_modes:
-                if yml_mode not in yml['common_params']['mode_specific_params']:
-                    raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
+            mode_spec = yml['common_params']['mode_specific_params'][yml_mode]
+            mode_spec_yml.update(mode_spec)
 
-                mode_spec = yml['common_params']['mode_specific_params'][yml_mode]
-                mode_spec_yml.update(mode_spec)
-
-
+        # Stacking params in right order (all_mode_params->mode_specific_params->job_params)
         out = yml['common_params']['all_mode_params']
         out.update(mode_spec_yml)
         out.update(job_yml)
@@ -1105,7 +1098,6 @@ class Runner():
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
-        # parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
         parser.add_argument("-m", "--mode", help="Choose which set of params to use from jobs_metadata.yml file. Typically from ('dev_local', 'dev_EMR', 'prod_EMR') but could include others.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
