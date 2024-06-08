@@ -849,22 +849,35 @@ class Job_Yml_Parser():
         logger.info("sql_file: '{}', from job_name: '{}'".format(sql_file, job_name))
         return sql_file
 
-    def set_job_yml(self, job_name, job_param_file, yml_mode, skip_job):
+    def set_job_yml(self, job_name, job_param_file, yml_modes, skip_job):
         if job_param_file is None:
             return {}
         yml = self.load_meta(job_param_file)
 
         if job_name not in yml['jobs'] and not skip_job:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(job_name, job_param_file))
-        elif job_name not in yml['jobs'] and skip_job:
+        elif skip_job:
             job_yml = {}
         else:
             job_yml = yml['jobs'][job_name]
 
-        if yml_mode not in yml['common_params']['mode_specific_params']:
-            raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
+        yml_modes = yml_modes.split(',')
+        if yml_modes == 1:  # regular case
+            yml_mode = yml_modes[0]
+            if yml_mode not in yml['common_params']['mode_specific_params']:
+                raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
 
-        mode_spec_yml = yml['common_params']['mode_specific_params'][yml_mode]
+            mode_spec_yml = yml['common_params']['mode_specific_params'][yml_mode]
+        else:
+            mode_spec_yml = {}
+            for yml_mode in yml_modes:
+                if yml_mode not in yml['common_params']['mode_specific_params']:
+                    raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
+
+                mode_spec = yml['common_params']['mode_specific_params'][yml_mode]
+                mode_spec_yml.update(mode_spec)
+
+
         out = yml['common_params']['all_mode_params']
         out.update(mode_spec_yml)
         out.update(job_yml)
@@ -1092,7 +1105,8 @@ class Runner():
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
-        parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
+        # parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
+        parser.add_argument("-m", "--mode", help="Choose which set of params to use from jobs_metadata.yml file. Typically from ('dev_local', 'dev_EMR', 'prod_EMR') but could include others.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
         parser.add_argument("-q", "--sql_file", help="Path to an sql file to execute.")

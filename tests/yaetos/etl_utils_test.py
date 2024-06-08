@@ -101,7 +101,7 @@ class Test_Job_Yml_Parser(object):
         assert sql_file is None
 
     def test_set_mode_specific_params(self):
-        job_name = 'examples/ex0_extraction_job.py'
+        job_name = 'n/a'
         job_param_file = 'conf/jobs_metadata.yml'
         yml_modes = 'dev_EMR'
         skip_job = True
@@ -124,6 +124,18 @@ class Test_Job_Yml_Parser(object):
             'save_schemas': False,
             'schema': 'sandbox',
             'spark_version': '3.5'}
+        assert actual_params == expected_params
+
+    def test_set_modes(self):
+        yml_modes = 'dev_EMR,your_extra_tenant'  # i.e. using 2 modes
+        job_name = 'n/a'
+        job_param_file = 'conf/jobs_metadata.yml'
+        skip_job = True
+        expected_params = {
+            'root_path': 's3://mylake-tenant2',
+            'other_param': 'some_value'}
+        actual_params = Job_Yml_Parser(job_name, job_param_file, yml_modes, skip_job).set_job_yml(job_name, job_param_file, yml_modes, skip_job)
+        actual_params = {key: value for (key, value) in actual_params.items() if key in expected_params.keys()}
         assert actual_params == expected_params
 
 

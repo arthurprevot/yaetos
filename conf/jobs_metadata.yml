@@ -448,3 +448,6 @@ common_params:
       enable_db_push: False
       save_schemas: True
       manage_git_info: False
+    your_extra_tenant:  # useful for single tenant architecture, with data in separate locations
+      root_path: 's3://mylake-tenant2'
+      other_param: 'some_value'
