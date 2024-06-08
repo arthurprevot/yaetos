@@ -139,7 +139,6 @@ class Test_Job_Yml_Parser(object):
         assert actual_params == expected_params
 
 
-
 class Test_Job_Args_Parser(object):
     def test_no_param_override(self):
         defaults_args = {'py_job': 'some_job.py', 'mode': 'dev_local', 'deploy': 'code', 'output': {'path': 'n/a', 'type': 'csv'}}
