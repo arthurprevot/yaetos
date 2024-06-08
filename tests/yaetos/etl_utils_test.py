@@ -100,6 +100,33 @@ class Test_Job_Yml_Parser(object):
         sql_file = Job_Yml_Parser.set_sql_file_from_name('some/job_name')
         assert sql_file is None
 
+    def test_set_mode_specific_params(self):
+        job_name = 'examples/ex0_extraction_job.py'
+        job_param_file = 'conf/jobs_metadata.yml'
+        yml_modes = 'dev_EMR'
+        skip_job = True
+        actual_params = Job_Yml_Parser(job_name, job_param_file, yml_modes, skip_job).set_job_yml(job_name, job_param_file, yml_modes, skip_job)
+        expected_params = {
+            'aws_config_file': 'conf/aws_config.cfg',
+            'aws_setup': 'dev',
+            'base_path': '{root_path}/pipelines_data',
+            'connection_file': 'conf/connections.cfg',
+            'email_cred_section': 'some_email_cred_section',
+            'emr_core_instances': 0,
+            'enable_db_push': False,
+            'jobs_folder': 'jobs/',
+            'load_connectors': 'all',
+            'manage_git_info': True,
+            'redshift_s3_tmp_dir': 's3a://dev-spark/tmp_spark/',
+            'root_path': 's3://mylake-dev',
+            's3_dags': '{root_path}/pipelines_metadata/airflow_dags',
+            's3_logs': '{root_path}/pipelines_metadata',
+            'save_schemas': False,
+            'schema': 'sandbox',
+            'spark_version': '3.5'}
+        assert actual_params == expected_params
+
+
 
 class Test_Job_Args_Parser(object):
     def test_no_param_override(self):
