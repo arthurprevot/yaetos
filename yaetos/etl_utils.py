@@ -237,15 +237,15 @@ class ETL_Base(object):
             job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
         else:
             job_name = pre_jargs['job_args']['job_name']
-        
+
         # Set jargs
         jargs = Job_Args_Parser(
-            defaults_args=pre_jargs['defaults_args'], 
-            yml_args=None, 
-            job_args=pre_jargs['job_args'], 
-            cmd_args=pre_jargs['cmd_args'], 
-            job_name=job_name, 
-            build_yml_args=True, 
+            defaults_args=pre_jargs['defaults_args'],
+            yml_args=None,
+            job_args=pre_jargs['job_args'],
+            cmd_args=pre_jargs['cmd_args'],
+            job_name=job_name,
+            build_yml_args=True,
             loaded_inputs=loaded_inputs)
 
         # Room for jargs mods at job level.

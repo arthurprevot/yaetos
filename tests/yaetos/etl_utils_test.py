@@ -185,8 +185,7 @@ class Test_Runner(object):
         cmd_lst_expected = [
             'spark-submit',
             '--py-files=some/files.zip',
-            'jobs/examples/ex7_pandas_job.py',  # launcher.py not carried over. may want to change behavior.
-            ]
+            'jobs/examples/ex7_pandas_job.py']  # launcher.py not carried over. may want to change behavior.
         assert cmd_lst_real == cmd_lst_expected
 
     def test_create_spark_submit_jar_job(self):

@@ -431,8 +431,8 @@ class DeployPySparkScriptOnAws(object):
                 # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"], "spark.driver.memory": "40G", "maximizeResourceAllocation": "true"},
                 # }
             ],
-            JobFlowRole= self.emr_ec2_role, #'EMR_EC2_DefaultRole',
-            ServiceRole= self.emr_role, # 'EMR_DefaultRole',
+            JobFlowRole=self.emr_ec2_role,
+            ServiceRole=self.emr_role,
             VisibleToAllUsers=True,
             BootstrapActions=[{
                 'Name': 'setup_nodes',
