@@ -11,7 +11,7 @@ class Git_Config_Manager():
 
     def get_config(self, mode, **kwargs):
 
-        # Deal with multiple modes if any (Hacky. TODO: improve) 
+        # Deal with multiple modes if any (Hacky. TODO: improve)
         modes = mode.split(',')
         if 'dev_local' in modes:
             config = self.get_config_from_git(kwargs['local_app_folder'])
