@@ -1030,7 +1030,7 @@ class Path_Handler():
         path = self.path
         if '{now}' in path:
             current_time = now_dt.strftime('date%Y%m%d_time%H%M%S_utc')
-            path = path.format(now=current_time)
+            path = path.replace('{now}', current_time)
         return path
 
     def get_base(self):
