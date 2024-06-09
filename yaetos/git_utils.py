@@ -10,13 +10,20 @@ class Git_Config_Manager():
     FNAME = 'conf/git_config.yml'
 
     def get_config(self, mode, **kwargs):
-        if mode == 'dev_local':
+
+        # Deal with multiple modes if any (Hacky. TODO: improve) 
+        modes = mode.split(',')
+        required_mode = ('dev_local', 'dev_EMR', 'prod_EMR')
+
+        # if mode == 'dev_local':
+        if 'dev_local' in modes:
             config = self.get_config_from_git(kwargs['local_app_folder'])
             # For debug: self.save_yaml(config)
-        elif mode in ('dev_EMR', 'prod_EMR'):
+        # elif mode in ('dev_EMR', 'prod_EMR'):
+        elif 'dev_EMR' in modes or 'prod_EMR' in modes:
             config = self.get_config_from_file(kwargs['cluster_app_folder'])
         else:
-            raise Exception('Wrong mode')
+            raise Exception(f'Wrong mode, one of the mode should be in {required_mode}')
         return config
 
     def get_config_from_git(self, local_app_folder):

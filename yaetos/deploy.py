@@ -214,7 +214,17 @@ class DeployPySparkScriptOnAws(object):
     @staticmethod
     def generate_pipeline_name(mode, job_name, user):
         """Opposite of get_job_name()"""
-        mode_label = {'dev_EMR': 'dev', 'prod_EMR': 'prod'}[mode]
+
+        # Get deploy_env (Hacky. TODO: improve) 
+        modes = mode.split(',')
+        required_mode = ('dev_EMR', 'prod_EMR')
+        modes = [item for item in modes if item in required_mode]
+        if len(modes) == 1: 
+            deploy_env = modes[0]
+        else:
+            raise Exception(f"mode missing one of the required on {required_mode}")
+        
+        mode_label = {'dev_EMR': 'dev', 'prod_EMR': 'prod'}[deploy_env]
         pname = job_name.replace('.', '_d_').replace('/', '_s_')
         now = datetime.now().strftime("%Y%m%dT%H%M%S")
         name = f"yaetos__{mode_label}__{pname}__{now}"
