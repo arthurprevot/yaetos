@@ -111,7 +111,7 @@ class DeployPySparkScriptOnAws(object):
             raise Exception("Shouldn't get here.")
 
     def continue_post_git_check(self):
-        if self.app_args['mode'] != 'prod_EMR':
+        if 'prod_EMR' not in self.app_args['mode'].split(',') :
             logger.debug('Not pushing as "prod_EMR", so git check ignored')
             return True
         elif self.git_yml is None:
@@ -237,7 +237,7 @@ class DeployPySparkScriptOnAws(object):
         return pipeline_name.split('__')[2].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
 
     def get_job_log_path(self):
-        if self.deploy_args.get('mode') == 'prod_EMR':
+        if self.deploy_args.get('mode') and 'prod_EMR' in self.deploy_args.get('mode').split(',') :  # TODO: check if should be replaced by app_args
             return '{}/jobs_code/production'.format(self.metadata_folder)
         else:
             return '{}/jobs_code/{}'.format(self.metadata_folder, self.pipeline_name)
