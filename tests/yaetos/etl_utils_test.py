@@ -132,7 +132,7 @@ class Test_Job_Yml_Parser(object):
         job_param_file = 'conf/jobs_metadata.yml'
         skip_job = True
         expected_params = {
-            'root_path': 's3://mylake-tenant2',
+            'save_schemas': False,
             'other_param': 'some_value'}
         actual_params = Job_Yml_Parser(job_name, job_param_file, yml_modes, skip_job).set_job_yml(job_name, job_param_file, yml_modes, skip_job)
         actual_params = {key: value for (key, value) in actual_params.items() if key in expected_params.keys()}

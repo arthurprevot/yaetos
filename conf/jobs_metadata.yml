@@ -345,7 +345,6 @@ jobs:
       some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
       other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
     output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
-    dependencies: [examples/ex0_extraction_job.py]
     spark_boot: False
 
   examples/ex18_base_path_in_out_job:
@@ -357,7 +356,6 @@ jobs:
       some_events: {'path':"{base_path_in}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
       other_events: {'path':"{base_path_in}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
     output: {'path':'{base_path_out}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
-    dependencies: [examples/ex0_extraction_job.py]
     name_base_in_param: base_path_in
     name_base_out_param: base_path_out
     base_path_in: './data'
