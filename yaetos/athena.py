@@ -41,7 +41,7 @@ def register_table(types, name_tb, schema, output_info, args):
         raise Exception('Athena table registration not setup for other than csv files.')
 
     # Start the query execution
-    if args.get('mode') == 'dev_local':
+    if args.get('mode') and 'dev_local' in args['mode'].split(','):
         config = ConfigParser()
         assert os.path.isfile(args.get('aws_config_file'))
         config.read(args.get('aws_config_file'))

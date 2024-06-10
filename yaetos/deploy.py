@@ -570,7 +570,7 @@ class DeployPySparkScriptOnAws(object):
         unoverridable_args = {
             'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
             'py_job': py_job,
-            'mode': 'dev_EMR' if app_args.get('mode') == 'dev_local' else app_args.get('mode'),
+            'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
             'deploy': 'none',
             'storage': 's3',
             'jar_job': jar_job}

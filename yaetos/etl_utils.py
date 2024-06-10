@@ -349,7 +349,7 @@ class ETL_Base(object):
         input_type = self.jargs.inputs[input_name]['type']
         if input_type in self.FILE_TYPES:
             path = self.jargs.inputs[input_name]['path']
-            path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
+            path = path.replace('s3://', 's3a://') if 'dev_local' in self.jargs.mode.split(',') else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
             path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
             self.jargs.inputs[input_name]['path_expanded'] = path
@@ -422,7 +422,7 @@ class ETL_Base(object):
         input = df_meta  # TODO: get 2 variables below from this one.
         input_type = type  # TODO: remove 'input_' prefix in code below since not specific to input.
         input_name = name
-        path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
+        path = path.replace('s3://', 's3a://') if 'dev_local' in self.jargs.mode.split(',') else path
         logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
         path = self.expand_input_path(path, **kwargs)
 
@@ -931,7 +931,7 @@ class Job_Args_Parser():
 
     @staticmethod
     def get_default_mode(args):
-        if args.get('mode') == 'dev_local' and args.get('deploy') in ('EMR', 'EMR_Scheduled', 'airflow'):
+        if args.get('mode') and 'dev_local' in args['mode'].split(',') and args.get('deploy') in ('EMR', 'EMR_Scheduled', 'airflow'):
             return 'dev_EMR'
         else:
             return args.get('mode', 'None')
@@ -1241,7 +1241,7 @@ class Runner():
         if jargs.merged_args.get('driver-memoryOverhead'):  # For extra overhead for python in driver (typically pandas)
             conf = conf.set("spark.driver.memoryOverhead", jargs.merged_args['driver-memoryOverhead'])
 
-        if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
+        if 'dev_local' in jargs.mode.split(',')  and jargs.load_connectors == 'all':
             # Setup below not needed when running from EMR because setup there is done through spark-submit.
             # Env vars for S3 access
             get_aws_setup(jargs.merged_args)
