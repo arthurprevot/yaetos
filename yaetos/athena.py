@@ -59,7 +59,7 @@ def register_table(types, name_tb, schema, output_info, args):
     # TODO: Check to support "is_incremental"
 
 
-def register_table_sdf(df, name_tb, schema, output_info, args):
+def register_table_from_sdf_to_glue(df, name_tb, schema, output_info, args):
     output_folder = output_info['path_expanded'].replace('s3a', 's3')
 
     # Start the query execution

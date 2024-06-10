@@ -713,22 +713,18 @@ class ETL_Base(object):
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '3.5'))
 
     def register_to_athena(self, df):
-        from yaetos.athena import register_table, register_table_sdf
+        from yaetos.athena import register_table, register_table_from_sdf_to_glue
         from yaetos.db_utils import pandas_types_to_hive_types
         schema, name_tb = self.jargs.register_to_athena['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         output_info = self.jargs.output
-        # pdf = df if isinstance(df, pd.DataFrame) else df.limit(10).toPandas()
-        # hive_types = pandas_types_to_hive_types(pdf)
-        # args = self.jargs.merged_args
-        # register_table(hive_types, name_tb, schema, output_info, args)
         if isinstance(df, pd.DataFrame):
-            hive_types = pandas_types_to_hive_types(pdf)
+            hive_types = pandas_types_to_hive_types(df)
             args = self.jargs.merged_args
             register_table(hive_types, name_tb, schema, output_info, args)
         else:
             args = self.jargs.merged_args
-            register_table_sdf(df, name_tb, schema, output_info, args)
+            register_table_from_sdf_to_glue(df, name_tb, schema, output_info, args)
 
 
     def copy_to_clickhouse(self, sdf):
