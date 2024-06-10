@@ -6,7 +6,7 @@ from yaetos.logger import setup_logging
 logger = setup_logging('Athena')
 
 
-def register_table_from_pdf_to_athena_catalog(types, name_tb, schema, output_info, args):
+def register_table_to_athena_catalog(types, name_tb, schema, output_info, args):
     description_statement = f"""COMMENT "{args['description']}" """ if args.get('description') else ''
     output_folder = output_info['path_expanded'].replace('s3a', 's3')
 
@@ -59,7 +59,7 @@ def register_table_from_pdf_to_athena_catalog(types, name_tb, schema, output_inf
     # TODO: Check to support "is_incremental"
 
 
-def register_table_from_sdf_to_glue_catalog(schema_list, name_tb, schema, output_info, args):
+def register_table_to_glue_catalog(schema_list, name_tb, schema, output_info, args):
     output_folder = output_info['path_expanded'].replace('s3a', 's3')
 
     # Start the query execution
@@ -71,21 +71,16 @@ def register_table_from_sdf_to_glue_catalog(schema_list, name_tb, schema, output
     else:
         region_name = boto3.Session().region_name
 
-    # glue_client = boto3.client('glue')
     glue_client = boto3.client('glue', region_name=region_name)
 
-    database_name = schema  # The Glue database to add the table to
-    table_name = name_tb        # The new table name
+    database_name = schema
+    table_name = name_tb
     logger.info(f"Registering table to athena '{schema}.{name_tb}', schema {schema_list}.")
 
     # Define the table input
     table_input = {
         'Name': table_name,
         'StorageDescriptor': {
-            # 'Columns': [
-            #     {'Name': 'name', 'Type': 'string'},
-            #     {'Name': 'age', 'Type': 'int'}
-            # ],
             'Columns': schema_list,
             'Location': output_folder,
             'InputFormat': 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat',
