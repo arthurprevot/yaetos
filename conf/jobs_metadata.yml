@@ -336,6 +336,18 @@ jobs:
     output: {'path':'{base_path}/load_example/glob_filtering/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
+  examples/ex17_multimode_params_job:
+    description: |
+      Showing how to use multiple, useful for single tenant setup, where base_path need to change for various. see --mode=dev_local,your_extra_tenant below.
+      usage: python jobs/generic/launcher.py --job_name=examples/ex17_multimode_params_job --mode=dev_local,your_extra_tenant
+    py_job: jobs/examples/ex7_pandas_job.py
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+    dependencies: [examples/ex0_extraction_job.py]
+    spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------
