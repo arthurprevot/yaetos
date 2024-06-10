@@ -1241,7 +1241,7 @@ class Runner():
         if jargs.merged_args.get('driver-memoryOverhead'):  # For extra overhead for python in driver (typically pandas)
             conf = conf.set("spark.driver.memoryOverhead", jargs.merged_args['driver-memoryOverhead'])
 
-        if 'dev_local' in jargs.mode.split(',')  and jargs.load_connectors == 'all':
+        if 'dev_local' in jargs.mode.split(',') and jargs.load_connectors == 'all':
             # Setup below not needed when running from EMR because setup there is done through spark-submit.
             # Env vars for S3 access
             get_aws_setup(jargs.merged_args)
