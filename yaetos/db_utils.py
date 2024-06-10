@@ -145,7 +145,7 @@ def pandas_types_to_hive_types(df):
         # 'decimal': 'DECIMAL',
     }
     hive_types = {}
-    for column, dtype in df.dtypes.iteritems():
+    for column, dtype in df.dtypes.items():
         dtype_name = dtype.name
         hive_type = type_mapping.get(dtype_name, 'STRING')  # Default to STRING if no mapping found
         hive_types[column] = hive_type
