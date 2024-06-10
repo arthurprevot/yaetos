@@ -1056,7 +1056,8 @@ class Path_Handler():
             upstream_path = path.split('{latest}')[0]
             paths = FS_Ops_Dispatcher().listdir(upstream_path)
             latest_date = max(paths)
-            path = path.format(latest=latest_date)
+            # path = path.format(latest=latest_date)
+            path = path.replace('{latest}', latest_date)
         return path
 
     def expand_now(self, now_dt):
