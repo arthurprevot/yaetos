@@ -348,6 +348,22 @@ jobs:
     dependencies: [examples/ex0_extraction_job.py]
     spark_boot: False
 
+  examples/ex18_base_path_in_out_job:
+    description: |
+      Showing use of name_base_in_param and name_base_out_param, to set base_path different in input and output.
+      usage: python jobs/generic/launcher.py --job_name=examples/ex18_base_path_in_out_job #--mode=dev_local,your_extra_tenant
+    py_job: jobs/examples/ex7_pandas_job.py
+    inputs:
+      some_events: {'path':"{base_path_in}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{base_path_in}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{base_path_out}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+    dependencies: [examples/ex0_extraction_job.py]
+    name_base_in_param: base_path_in
+    name_base_out_param: base_path_out
+    base_path_in: './data'
+    base_path_out: './data_other'
+    spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------
@@ -461,5 +477,5 @@ common_params:
       save_schemas: True
       manage_git_info: False
     your_extra_tenant:  # useful for single tenant architecture, with data in separate locations
-      root_path: 's3://mylake-tenant2'
+      save_schemas: False
       other_param: 'some_value'

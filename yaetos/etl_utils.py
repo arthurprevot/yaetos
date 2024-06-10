@@ -351,7 +351,16 @@ class ETL_Base(object):
             path = self.jargs.inputs[input_name]['path']
             path = path.replace('s3://', 's3a://') if 'dev_local' in self.jargs.mode.split(',') else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-            path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
+
+            # Get base_path. TODO: centralize
+            if self.jargs.merged_args.get('name_base_in_param'):
+                base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
+                path = path.replace('{'+self.jargs.merged_args.get('name_base_in_param')+'}', '{base_path}')
+            else:
+                base_path = self.jargs.merged_args['base_path']
+            # import ipdb; ipdb.set_trace()
+
+            path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_later()
             self.jargs.inputs[input_name]['path_expanded'] = path
 
         # Unstructured type
@@ -480,11 +489,25 @@ class ETL_Base(object):
 
     def expand_input_path(self, path, **kwargs):
         # Function call isolated to be overridable.
-        return Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
+        # Get base_path. TODO: centralize
+        if self.jargs.merged_args.get('name_base_in_param'):
+            base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
+            path = path.replace('{'+self.jargs.merged_args.get('name_base_in_param')+'}', '{base_path}')
+        else:
+            base_path = self.jargs.merged_args['base_path']
+
+        return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_later()
 
     def expand_output_path(self, path, now_dt, **kwargs):
         # Function call isolated to be overridable.
-        return Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
+        # Get base_path. TODO: centralize
+        if self.jargs.merged_args.get('name_base_out_param'):
+            base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_out_param')]
+            path = path.replace('{'+self.jargs.merged_args.get('name_base_out_param')+'}', '{base_path}')
+        else:
+            base_path = self.jargs.merged_args['base_path']
+
+        return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
 
     def load_mysql(self, input_name):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
@@ -950,7 +973,14 @@ class Job_Args_Parser():
         if args.get('output'):
             args['output']['type'] = args.pop('output.type', None) or args['output'].get('type', 'none')
         if args.get('spark_app_args'):  # hack to have scala sample job working. TODO: remove hardcoded case when made more generic
-            args['spark_app_args'] = Path_Handler(args['spark_app_args'], args.get('base_path'), args.get('root_path')).path
+
+            # Get base_path. TODO: centralize
+            if args.get('name_base_in_param'):  # TODO: check if requires name_base_in_param or name_base_out_param
+                base_path = args[args.get('name_base_in_param')]
+                args['spark_app_args'] = args['spark_app_args'].replace('{'+self.jargs.merged_args.get('name_base_in_param')+'}', '{base_path}')
+            else:
+                base_path = args.get('base_path')
+            args['spark_app_args'] = Path_Handler(args['spark_app_args'], base_path, args.get('root_path')).path
 
         return args
 
