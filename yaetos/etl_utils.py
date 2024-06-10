@@ -402,14 +402,18 @@ class ETL_Base(object):
             return pdf
 
         # Tabular types, Spark
+        globy = self.jargs.inputs[input_name].get('glob')
         if input_type == 'csv':
             delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
+            path = path+globy if globy else path
             sdf = self.sc_sql.read.option("delimiter", delimiter).csv(path, header=True)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
+            path = path+globy if globy else path
             sdf = self.sc_sql.read.parquet(path)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'json':
+            path = path+globy if globy else path
             sdf = self.sc_sql.read.json(path)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'mysql':
@@ -613,8 +617,6 @@ class ETL_Base(object):
 
     def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None, **kwargs):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
-        # import ipdb; ipdb.set_trace()
-        # path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt):
         path = self.expand_output_path(path, now_dt, **kwargs)
         self.jargs.output['path_expanded'] = path
 
@@ -1034,6 +1036,7 @@ class Job_Args_Parser():
 
 class Path_Handler():
     def __init__(self, path, base_path=None, root_path=None):
+        # TODO: rewrite full class. too hacky.
         self.path = path
         self.base_path = base_path
         self.root_path = root_path
