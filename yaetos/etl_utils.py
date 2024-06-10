@@ -355,7 +355,7 @@ class ETL_Base(object):
             # Get base_path. TODO: centralize
             if self.jargs.merged_args.get('name_base_in_param'):
                 base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-                path = path.replace('{'+self.jargs.merged_args.get('name_base_in_param')+'}', '{base_path}')
+                path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
             else:
                 base_path = self.jargs.merged_args['base_path']
             # import ipdb; ipdb.set_trace()
@@ -405,15 +405,15 @@ class ETL_Base(object):
         globy = self.jargs.inputs[input_name].get('glob')
         if input_type == 'csv':
             delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
-            path = path+globy if globy else path
+            path = path + globy if globy else path
             sdf = self.sc_sql.read.option("delimiter", delimiter).csv(path, header=True)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
-            path = path+globy if globy else path
+            path = path + globy if globy else path
             sdf = self.sc_sql.read.parquet(path)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'json':
-            path = path+globy if globy else path
+            path = path + globy if globy else path
             sdf = self.sc_sql.read.json(path)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'mysql':
@@ -496,7 +496,7 @@ class ETL_Base(object):
         # Get base_path. TODO: centralize
         if self.jargs.merged_args.get('name_base_in_param'):
             base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-            path = path.replace('{'+self.jargs.merged_args.get('name_base_in_param')+'}', '{base_path}')
+            path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
         else:
             base_path = self.jargs.merged_args['base_path']
 
@@ -507,7 +507,7 @@ class ETL_Base(object):
         # Get base_path. TODO: centralize
         if self.jargs.merged_args.get('name_base_out_param'):
             base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_out_param')]
-            path = path.replace('{'+self.jargs.merged_args.get('name_base_out_param')+'}', '{base_path}')
+            path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{base_path}')
         else:
             base_path = self.jargs.merged_args['base_path']
 
@@ -726,7 +726,6 @@ class ETL_Base(object):
             hive_types = spark_types_to_hive_types(df)
             args = self.jargs.merged_args
             register_table_from_sdf_to_glue_catalog(hive_types, name_tb, schema, output_info, args)
-
 
     def copy_to_clickhouse(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
@@ -984,7 +983,7 @@ class Job_Args_Parser():
             # Get base_path. TODO: centralize
             if args.get('name_base_in_param'):  # TODO: check if requires name_base_in_param or name_base_out_param
                 base_path = args[args.get('name_base_in_param')]
-                args['spark_app_args'] = args['spark_app_args'].replace('{'+self.jargs.merged_args.get('name_base_in_param')+'}', '{base_path}')
+                args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
             else:
                 base_path = args.get('base_path')
             args['spark_app_args'] = Path_Handler(args['spark_app_args'], base_path, args.get('root_path')).path

@@ -70,7 +70,7 @@ def register_table_from_sdf_to_glue_catalog(schema_list, name_tb, schema, output
         region_name = config.get(args.get('aws_setup'), 's3_region')
     else:
         region_name = boto3.Session().region_name
-    
+
     # glue_client = boto3.client('glue')
     glue_client = boto3.client('glue', region_name=region_name)
 
