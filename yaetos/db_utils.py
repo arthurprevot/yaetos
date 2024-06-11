@@ -161,7 +161,7 @@ def pandas_types_to_hive_types(df, format='glue'):
 
 def spark_type_to_hive_type(data_type):
     """ Convert Spark data types to a detailed readable string format, handling nested structures. """
-    from pyspark.sql.types import StructType, ArrayType, FloatType, DecimalType, TimestampType  # StructField, IntegerType, StringType, 
+    from pyspark.sql.types import StructType, ArrayType, FloatType, DecimalType, TimestampType  # StructField, IntegerType, StringType,
 
     if isinstance(data_type, StructType):
         # Handle nested struct by recursively processing each field

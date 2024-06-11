@@ -55,7 +55,7 @@ def register_table_to_athena_catalog(types, name_tb, schema, output_info, args):
         QueryExecutionContext={'Database': schema},
         ResultConfiguration={'OutputLocation': args.get('athena_out')},
     )
-    logger.info(f"Registered table to athena '{schema}.{name_tb}', with QueryExecutionId: {response['QueryExecutionId']}.")
+    logger.info(f"Registered table to athena '{schema}.{name_tb}', pointing to {output_folder}, with QueryExecutionId: {response['QueryExecutionId']}.")
     # TODO: Check to support "is_incremental"
 
 
@@ -100,16 +100,13 @@ def register_table_to_glue_catalog(schema_list, name_tb, schema, output_info, ar
     }
 
     try:
-        # Try deleting the table first
         glue_client.delete_table(DatabaseName=database_name, Name=table_name)
         print("Existing table deleted.")
     except glue_client.exceptions.EntityNotFoundException:
         print("No table to delete.")
 
-    # Create or update the table in Glue Catalog
     response = glue_client.create_table(
         DatabaseName=database_name,
         TableInput=table_input
     )
-    # logger.info(f"Registered table to athena '{schema}.{name_tb}', with QueryExecutionId: {response['QueryExecutionId']}.")
-    logger.info(f"Registered table to athena '{schema}.{name_tb}', with query response: {response}.")
+    logger.info(f"Registered table to athena '{schema}.{name_tb}', pointing to {output_folder} with query response: {response}.")
