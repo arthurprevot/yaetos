@@ -118,6 +118,7 @@ def pandas_types_to_hive_types(df, format='glue'):
     :param df: pandas DataFrame
     :return: Dictionary or list of dictionaries of column names and their Hive data types
     """
+    # TODO: add support for nested fields, just like in spark version
     type_mapping = {
         'object': 'STRING',
         'bool': 'BOOLEAN',
