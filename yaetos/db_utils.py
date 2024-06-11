@@ -111,12 +111,12 @@ def pdf_to_sdf(df, output_types, sc, sc_sql):  # TODO: check suspicion that this
     return sc_sql.createDataFrame(rdd, schema=spark_schema, verifySchema=True)
 
 
-def pandas_types_to_hive_types(df):
+def pandas_types_to_hive_types(df, format='glue'):
     """
     Converts pandas DataFrame dtypes to Hive column types.
 
     :param df: pandas DataFrame
-    :return: Dictionary of column names and their Hive data types
+    :return: Dictionary or list of dictionaries of column names and their Hive data types
     """
     type_mapping = {
         'object': 'STRING',
@@ -144,12 +144,19 @@ def pandas_types_to_hive_types(df):
         # This is a placeholder; actual handling should consider the specific precision and scale
         # 'decimal': 'DECIMAL',
     }
-    hive_types = {}
-    for column, dtype in df.dtypes.items():
-        dtype_name = dtype.name
-        hive_type = type_mapping.get(dtype_name, 'STRING')  # Default to STRING if no mapping found
-        hive_types[column] = hive_type
-    return hive_types
+    if format == 'athena':
+        hive_types = {}
+        for column, dtype in df.dtypes.items():
+            dtype_name = dtype.name
+            hive_type = type_mapping.get(dtype_name, 'STRING')
+            hive_types[column] = hive_type
+        return hive_types
+    elif format == 'glue':
+        hive_types = []
+        for column_name, dtype in df.dtypes.items():
+            hive_type = type_mapping.get(str(dtype), 'string')
+            hive_types.append({'Name': column_name, 'Type': hive_type})
+        return hive_types
 
 
 def spark_type_to_hive_type(data_type):
