@@ -4,7 +4,9 @@ ec2_key_name         : to_be_filled
 user                 : to_be_filled
 s3_region            : to_be_filled
 ec2_subnet_id        : to_be_filled
-extra_security_gp    : None
+extra_security_gp    : to_be_filled # optional
+emr_ec2_role         : to_be_filled # optional
+emr_role             : to_be_filled # optional
 
 [prod]
 profile_name         : to_be_filled
@@ -12,4 +14,6 @@ ec2_key_name         : to_be_filled
 user                 : to_be_filled
 s3_region            : to_be_filled
 ec2_subnet_id        : to_be_filled
-extra_security_gp    : None
+extra_security_gp    : to_be_filled # optional
+emr_ec2_role         : to_be_filled # optional
+emr_role             : to_be_filled # optional

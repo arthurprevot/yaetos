@@ -1,3 +1,6 @@
+"""
+Job meant to run locally to get data from AWS S3 to local. Updates require to run in cluster.
+"""
 from yaetos.etl_utils import ETL_Base, Commandliner, get_aws_setup
 import os
 from cloudpathlib import CloudPath as CPt
