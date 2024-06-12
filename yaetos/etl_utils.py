@@ -187,7 +187,6 @@ class ETL_Base(object):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
         if self.jargs.merged_args.get('register_to_athena') and self.jargs.enable_db_push:
             self.register_to_athena(output)
-            # import ipdb; ipdb.set_trace()
 
         if self.jargs.output.get('df_type', 'spark') == 'spark':
             output.unpersist()
@@ -358,7 +357,6 @@ class ETL_Base(object):
                 path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
             else:
                 base_path = self.jargs.merged_args['base_path']
-            # import ipdb; ipdb.set_trace()
 
             path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_later()
             self.jargs.inputs[input_name]['path_expanded'] = path
@@ -1060,7 +1058,6 @@ class Path_Handler():
             upstream_path = path.split('{latest}')[0]
             paths = FS_Ops_Dispatcher().listdir(upstream_path)
             latest_date = max(paths)
-            # path = path.format(latest=latest_date)
             path = path.replace('{latest}', latest_date)
         return path
 
