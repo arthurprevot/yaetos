@@ -111,13 +111,14 @@ def pdf_to_sdf(df, output_types, sc, sc_sql):  # TODO: check suspicion that this
     return sc_sql.createDataFrame(rdd, schema=spark_schema, verifySchema=True)
 
 
-def pandas_types_to_hive_types(df):
+def pandas_types_to_hive_types(df, format='glue'):
     """
     Converts pandas DataFrame dtypes to Hive column types.
 
     :param df: pandas DataFrame
-    :return: Dictionary of column names and their Hive data types
+    :return: Dictionary or list of dictionaries of column names and their Hive data types
     """
+    # TODO: add support for nested fields, just like in spark version
     type_mapping = {
         'object': 'STRING',
         'bool': 'BOOLEAN',
@@ -144,9 +145,44 @@ def pandas_types_to_hive_types(df):
         # This is a placeholder; actual handling should consider the specific precision and scale
         # 'decimal': 'DECIMAL',
     }
-    hive_types = {}
-    for column, dtype in df.dtypes.iteritems():
-        dtype_name = dtype.name
-        hive_type = type_mapping.get(dtype_name, 'STRING')  # Default to STRING if no mapping found
-        hive_types[column] = hive_type
-    return hive_types
+    if format == 'athena':
+        hive_types = {}
+        for column, dtype in df.dtypes.items():
+            dtype_name = dtype.name
+            hive_type = type_mapping.get(dtype_name, 'STRING')
+            hive_types[column] = hive_type
+        return hive_types
+    elif format == 'glue':
+        hive_types = []
+        for column_name, dtype in df.dtypes.items():
+            hive_type = type_mapping.get(str(dtype), 'string')
+            hive_types.append({'Name': column_name, 'Type': hive_type})
+        return hive_types
+
+
+def spark_type_to_hive_type(data_type):
+    """ Convert Spark data types to a detailed readable string format, handling nested structures. """
+    from pyspark.sql.types import StructType, ArrayType, FloatType, DecimalType, TimestampType  # StructField, IntegerType, StringType,
+
+    if isinstance(data_type, StructType):
+        # Handle nested struct by recursively processing each field
+        fields = [f"{field.name}: {spark_types_to_hive_types(field.dataType)}" for field in data_type.fields]
+        return f"struct<{', '.join(fields)}>"
+    elif isinstance(data_type, ArrayType):
+        # Handle arrays by describing element types
+        element_type = spark_types_to_hive_types(data_type.elementType)
+        return f"array<{element_type}>"
+    elif isinstance(data_type, TimestampType):
+        return "timestamp"
+    elif isinstance(data_type, FloatType):
+        return "float"
+    elif isinstance(data_type, DecimalType):
+        return f"decimal({data_type.precision},{data_type.scale})"
+    else:
+        # Fallback for other types with default string representation
+        return data_type.simpleString()
+
+
+def spark_types_to_hive_types(sdf):
+    schema_list = [{"Name": field.name, "Type": spark_type_to_hive_type(field.dataType)} for field in sdf.schema]
+    return schema_list

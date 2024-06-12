@@ -336,6 +336,32 @@ jobs:
     output: {'path':'{base_path}/load_example/glob_filtering/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
+  examples/ex17_multimode_params_job:
+    description: |
+      Showing how to use multiple, useful for single tenant setup, where base_path need to change for various. see --mode=dev_local,your_extra_tenant below.
+      usage: python jobs/generic/launcher.py --job_name=examples/ex17_multimode_params_job --mode=dev_local,your_extra_tenant
+    py_job: jobs/examples/ex7_pandas_job.py
+    inputs:
+      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+    spark_boot: False
+
+  examples/ex18_base_path_in_out_job:
+    description: |
+      Showing use of name_base_in_param and name_base_out_param, to set base_path different in input and output.
+      usage: python jobs/generic/launcher.py --job_name=examples/ex18_base_path_in_out_job #--mode=dev_local,your_extra_tenant
+    py_job: jobs/examples/ex7_pandas_job.py
+    inputs:
+      some_events: {'path':"{base_path_in}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{base_path_in}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{base_path_out}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+    name_base_in_param: base_path_in
+    name_base_out_param: base_path_out
+    base_path_in: './data'
+    base_path_out: './data_other'
+    spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------
@@ -448,3 +474,6 @@ common_params:
       enable_db_push: False
       save_schemas: True
       manage_git_info: False
+    your_extra_tenant:  # useful for single tenant architecture, with data in separate locations
+      save_schemas: False
+      other_param: 'some_value'
