@@ -34,7 +34,7 @@ class Job(ETL_Base):
             print(message)
             return pd.DataFrame()
 
-        # Comparing dataset content, fuzzy 
+        # Comparing dataset content, fuzzy
         pks1 = self.jargs.inputs['tableA']['pk']
         pks2 = self.jargs.inputs['tableB']['pk']
         compare1 = list(set(tableA.columns) - set(pks1))

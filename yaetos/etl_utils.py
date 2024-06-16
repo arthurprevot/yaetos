@@ -775,7 +775,7 @@ class ETL_Base(object):
                 logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
                 return True
         elif df_type == 'pandas':
-            count =len(df)
+            count = len(df)
             count_pk = len(df[pks].drop_duplicates())
             if count != count_pk:
                 logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
@@ -785,7 +785,6 @@ class ETL_Base(object):
                 return True
         else:
             raise Exception(f"shouldn't get here, set df_type to 'spark' or 'pandas'. It is set in {df_type}")
-
 
     def identify_non_unique_pks(self, df, pks):
         return su.identify_non_unique_pks(df, pks)
