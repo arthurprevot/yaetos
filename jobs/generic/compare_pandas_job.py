@@ -6,7 +6,6 @@ import pandas as pd
 class Job(ETL_Base):
 
     def transform(self, tableA, tableB):
-        # tableA['action'].iloc[2] = 'other action'  # only for testing.
 
         # Comparing columns
         diff_columns = list(set(tableA.columns) - set(tableB.columns))
