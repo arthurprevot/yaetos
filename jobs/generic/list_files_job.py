@@ -27,7 +27,7 @@ class Job(ETL_Base):
             pattern_type = 'glob'
 
         session = get_aws_setup(self.jargs.merged_args)
-        
+
         s3 = session.client('s3')
 
         if not CPt(f"s3://{path_raw_in.bucket}").exists() and self.jargs.merged_args.get('ignore_empty_bucket'):
@@ -42,7 +42,7 @@ class Job(ETL_Base):
     def get_filenames(self, s3, bucket_name, prefix, pattern, pattern_type):
         files = []
         for (obj, file_name) in self.s3_iterator(s3, bucket_name, prefix, pattern, pattern_type):
-            files.append('s3://'+bucket_name + '/' + obj['Key'])
+            files.append('s3://' + bucket_name + '/' + obj['Key'])
         return files
 
     def s3_iterator(self, s3, bucket_name, prefix, pattern, pattern_type):
