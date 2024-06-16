@@ -35,7 +35,7 @@ jobs:
         pip install pyspark==3.5.0
         pip install -r yaetos/scripts/requirements_base.txt
     - name: Add project directory to PYTHONPATH
-      run: echo "PYTHONPATH=${{ github.workspace }}" >> $GITHUB_ENV
+      run: echo "PYTHONPATH=${{ env.PYTHONPATH }}:${{ github.workspace }}" >> $GITHUB_ENV
     - name: Test with pytest
       run: |
         pip install pytest==8.2.2  # pb with 8.0.0
