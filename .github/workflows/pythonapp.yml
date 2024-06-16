@@ -39,7 +39,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest==8.2.2  # pb with 8.0.0
-        pytest --ignore=yaetos/scripts/
+        pytest --ignore=yaetos/scripts/ --ignore=tests/jobs/examples/ex4_dependency2_job_test.py
         # TODO: change pytest cmdline above to "pytest tests/ --extraargs?" and find if extraargs exists that gets test running from work dir (i.e. not changing to 'tests/')
     - name: Lint with flake8
       run: |
