@@ -12,7 +12,7 @@ duckdb==1.0.0
 
 # libs required for some functionalities but not required for initial yaetos import statements
 # some may be commented since rarely used. Can be added back on a case by case basis in requirements_extra.txt.
-pyarrow==14.0.2  # necessary for saving pandas to parquet.
+pyarrow==16.1.0  # necessary for saving pandas to parquet.
 openpyxl==3.1.2  # used to open excel files. needed for unit-tests.
 # pymysql==1.1.0
 # psycopg2-binary==2.9.9   # necesary for sqlalchemy-redshift, psycopg2==2.8.5 install fails.
