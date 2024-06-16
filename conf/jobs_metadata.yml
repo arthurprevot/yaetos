@@ -371,6 +371,14 @@ jobs:
     output: {'path':'{base_path}/wiki_example/output_ex19_compare/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
+  examples/ex20_list_files_job:
+    description: "Job to create a dataset from a file list. Meant to work in aws only."
+    py_job: jobs/generic/list_files_job.py
+    inputs:
+      files: {'path':"{base_path}/wiki_example/input/{latest}/", 'glob':'*/*.csv', 'type':'other'}
+    output: {'path':'{base_path}/wiki_example/output_ex20_filelist/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------
