@@ -162,18 +162,20 @@ def pandas_types_to_hive_types(df, format='glue'):
 
 def spark_type_to_hive_type(data_type):
     """ Convert Spark data types to a detailed readable string format, handling nested structures. """
-    from pyspark.sql.types import StructType, ArrayType, FloatType, DecimalType, TimestampType  # StructField, IntegerType, StringType,
+    from pyspark.sql.types import StructType, ArrayType, FloatType, DecimalType, TimestampType, IntegerType  # StructField, StringType,
 
     if isinstance(data_type, StructType):
         # Handle nested struct by recursively processing each field
-        fields = [f"{field.name}: {spark_types_to_hive_types(field.dataType)}" for field in data_type.fields]
+        fields = [f"{field.name}: {spark_type_to_hive_type(field.dataType)}" for field in data_type.fields]
         return f"struct<{', '.join(fields)}>"
     elif isinstance(data_type, ArrayType):
         # Handle arrays by describing element types
-        element_type = spark_types_to_hive_types(data_type.elementType)
+        element_type = spark_type_to_hive_type(data_type.elementType)
         return f"array<{element_type}>"
     elif isinstance(data_type, TimestampType):
         return "timestamp"
+    elif isinstance(data_type, IntegerType):
+        return "int"
     elif isinstance(data_type, FloatType):
         return "float"
     elif isinstance(data_type, DecimalType):

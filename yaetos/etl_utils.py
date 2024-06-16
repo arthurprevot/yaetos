@@ -764,15 +764,27 @@ class ETL_Base(object):
         self.send_msg(message)
 
     @staticmethod
-    def check_pk(df, pks):
-        count = df.count()
-        count_pk = df.select(pks).dropDuplicates().count()
-        if count != count_pk:
-            logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
-            return False
+    def check_pk(df, pks, df_type='spark'):
+        if df_type == 'spark':
+            count = df.count()
+            count_pk = df.select(pks).dropDuplicates().count()
+            if count != count_pk:
+                logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
+                return False
+            else:
+                logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
+                return True
+        elif df_type == 'pandas':
+            count = len(df)
+            count_pk = len(df[pks].drop_duplicates())
+            if count != count_pk:
+                logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
+                return False
+            else:
+                logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
+                return True
         else:
-            logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
-            return True
+            raise Exception(f"shouldn't get here, set df_type to 'spark' or 'pandas'. It is set in {df_type}")
 
     def identify_non_unique_pks(self, df, pks):
         return su.identify_non_unique_pks(df, pks)

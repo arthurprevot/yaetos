@@ -69,6 +69,7 @@ def drop_if_needed(df, name, folder, to_csv_args, db_type='n/a', elapsed='n/a', 
 
 def diff_dfs(df1, df2):
     print('Looking into diffs between previous and new dataset.')
+    # TODO: check columns before checking content.
     try:
         hash1 = hashlib.sha256(pd.util.hash_pandas_object(df1, index=True).values).hexdigest()
         hash2 = hashlib.sha256(pd.util.hash_pandas_object(df2, index=True).values).hexdigest()
@@ -181,18 +182,35 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
         else:
             return np.abs(np.divide((row[item1] - row[item2]), float(row[item1]))) * 100
 
-    # Check deltas
+    # Check deltas (numerical values)
     np.seterr(divide='ignore')  # to handle the division by 0 in divide().
     for ii in range(len(compare1)):
+        # import ipdb; ipdb.set_trace()
         item1 = compare1[ii]
         item2 = compare2[ii]
-        assert item1 != item2  # necessary for next step. See comment below.
-        try:
-            df_joined['_delta_' + item1] = df_joined.apply(lambda row: (row[item1] if not pd.isna(row[item1]) else 0.0) - (row[item2] if not pd.isna(row[item2]) else 0.0), axis=1)  # need to deal with case where df1 and df2 have same col name and merge adds suffix _1 and _2
-            df_joined['_delta_' + item1 + '_%'] = df_joined.apply(check_delta, axis=1)
-            df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1 + '_%'] < threshold, axis=1)
-        except Exception as err:
-            raise Exception("Failed item={}, error: \n{}".format(item1, err))
+        if item1 == item2:  # check necessary for next step. See comment below.
+            item1 = item1 + '_1'
+            item2 = item2 + '_2'
+        is_numeric_1 = pd.api.types.is_numeric_dtype(df_joined[item1])
+        is_numeric_2 = pd.api.types.is_numeric_dtype(df_joined[item2])
+        is_str_1 = pd.api.types.is_string_dtype(df_joined[item1])
+        is_str_2 = pd.api.types.is_string_dtype(df_joined[item2])
+        print(f'Starting to compare column ({item1} and {item2}), with types ({df_joined[item1].dtype} and {df_joined[item2].dtype})')
+        if is_numeric_1 and is_numeric_2:
+            try:
+                df_joined['_delta_' + item1] = df_joined.apply(lambda row: (row[item1] if not pd.isna(row[item1]) else 0.0) - (row[item2] if not pd.isna(row[item2]) else 0.0), axis=1)
+                df_joined['_delta_' + item1 + '_%'] = df_joined.apply(check_delta, axis=1)
+                df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1 + '_%'] < threshold, axis=1)
+                print(f"Column summary, all_equal = {df_joined['_delta_' + item1 + '_%'].apply(lambda cell: cell < threshold).all()}. within treshold of {threshold}")
+            except Exception as err:
+                raise Exception("Failed item={}, error: \n{}".format(item1, err))
+        elif is_str_1 and is_str_2:
+            df_joined['_delta_' + item1 + '_equal'] = df_joined.apply(lambda row: row[item1] == row[item2], axis=1)
+            df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1 + '_equal'], axis=1)
+            print(f"Column summary, all_equal = {df_joined['_delta_' + item1 + '_equal'].all()}.")
+        else:
+            df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is False, axis=1)
+            print(f'Column summary, all_equal = False. The columns to compare (i.e. {item1} and {item2}) have mismatched types, or are not numerical nor strings.')
 
     np.seterr(divide='raise')
     if filter_deltas:
