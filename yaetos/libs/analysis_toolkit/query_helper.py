@@ -196,19 +196,19 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
         is_numeric_2 = pd.api.types.is_numeric_dtype(df_joined[item2])
         is_str_1 = pd.api.types.is_string_dtype(df_joined[item1])
         is_str_2 = pd.api.types.is_string_dtype(df_joined[item2])
-        print(f'About to compare column ({item1} and {item2}), with types ({df_joined[item1].dtype} and {df_joined[item2].dtype})')
+        print(f'Starting to compare column ({item1} and {item2}), with types ({df_joined[item1].dtype} and {df_joined[item2].dtype})')
         if is_numeric_1 and is_numeric_2:
             try:
                 df_joined['_delta_' + item1] = df_joined.apply(lambda row: (row[item1] if not pd.isna(row[item1]) else 0.0) - (row[item2] if not pd.isna(row[item2]) else 0.0), axis=1)
                 df_joined['_delta_' + item1 + '_%'] = df_joined.apply(check_delta, axis=1)
                 df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1 + '_%'] < threshold, axis=1)
-                print(f"Column summary, all_equal = {df_joined['_delta_' + item1 + '_%'].apply(lambda cell: cell < threshold).all()}. within treshold {threshold}")
+                print(f"Column summary, all_equal = {df_joined['_delta_' + item1 + '_%'].apply(lambda cell: cell < threshold).all()}. within treshold of {threshold}")
             except Exception as err:
                 raise Exception("Failed item={}, error: \n{}".format(item1, err))
         elif is_str_1 and is_str_2:
-            df_joined['_delta_' + item1] = df_joined.apply(lambda row: row[item1] == row[item2], axis=1)
-            df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1], axis=1)
-            print(f"Column summary, all_equal = {df_joined['_delta_' + item1].all()}.")
+            df_joined['_delta_' + item1 + '_equal'] = df_joined.apply(lambda row: row[item1] == row[item2], axis=1)
+            df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1 + '_equal'], axis=1)
+            print(f"Column summary, all_equal = {df_joined['_delta_' + item1 + '_equal'].all()}.")
         else:
             df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is False, axis=1)
             print(f'Column summary, all_equal = False. The columns to compare (i.e. {item1} and {item2}) have mismatched types, or are not numerical nor strings.')

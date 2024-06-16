@@ -31,8 +31,7 @@ class Job(ETL_Base):
         if is_identical:
             message = 'datasets are identical' if not diff_columns else 'datasets (with columns in common) are identical'
             print(message)
-            df = pd.DataFrame()
-            return df
+            return pd.DataFrame()
 
         # Comparing dataset content, fuzzy 
         pks1 = self.jargs.inputs['tableA']['pk']
