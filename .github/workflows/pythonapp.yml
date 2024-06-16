@@ -35,7 +35,7 @@ jobs:
         pip install -r yaetos/scripts/requirements_base.txt
     - name: Test with pytest
       run: |
-        pip install pytest==7.4.4  # pb with 8.0.0
+        pip install pytest==8.2.2  # pb with 8.0.0
         pytest --ignore=yaetos/scripts/
         # TODO: change pytest cmdline above to "pytest tests/ --extraargs?" and find if extraargs exists that gets test running from work dir (i.e. not changing to 'tests/')
     - name: Lint with flake8
