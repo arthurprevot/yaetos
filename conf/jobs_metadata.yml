@@ -362,6 +362,15 @@ jobs:
     base_path_out: './data_other'
     spark_boot: False
 
+  examples/ex19_compare_pandas_job:
+    description: "Showcasing a job to compare 2 datasets"
+    py_job: jobs/generic/compare_pandas_job.py
+    inputs:
+      tableA: {'path':"{base_path}/wiki_example/input/{latest}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}
+      tableB: {'path':"{base_path}/wiki_example/input/{latest}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{base_path}/wiki_example/output_ex19_compare/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------
