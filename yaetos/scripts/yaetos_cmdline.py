@@ -152,6 +152,7 @@ def setup_env(args):
     copyfile(Pt(f'{package_path}/libs/generic_jobs/launcher.py'), Pt(f'{cwd}/jobs/generic/launcher.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/sql_spark_job.py'), Pt(f'{cwd}/jobs/generic/sql_spark_job.py'))
     copyfile(Pt(f'{package_path}/libs/generic_jobs/sql_pandas_job.py'), Pt(f'{cwd}/jobs/generic/sql_pandas_job.py'))
+    copyfile(Pt(f'{package_path}/libs/generic_jobs/compare_pandas_job.py'), Pt(f'{cwd}/jobs/generic/compare_pandas_job.py'))
 
     # Sample jobs
     os.makedirs(Pt('jobs/examples/'), exist_ok=True)
