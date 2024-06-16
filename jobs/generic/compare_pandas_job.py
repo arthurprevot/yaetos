@@ -6,7 +6,7 @@ import pandas as pd
 class Job(ETL_Base):
 
     def transform(self, tableA, tableB):
-        tableA['action'].iloc[2] = 'other action'  # only for testing.
+        # tableA['action'].iloc[2] = 'other action'  # only for testing.
 
         # Comparing columns
         diff_columns = list(set(tableA.columns) - set(tableB.columns))
@@ -44,10 +44,10 @@ class Job(ETL_Base):
         filter_deltas = True
 
         if not self.check_pk(tableA, pks1, df_type='pandas'):
-            print('The select PKs are not real PKs. Retry with modified PK input.')
+            print('The chosen PKs are not actual PKs (i.e. not unique). Retry with modified PK inputs.')
             return pd.DataFrame()
         elif not self.check_pk(tableB, pks2, df_type='pandas'):
-            print('The select PKs are not real PKs. Retry with modified PK input.')
+            print('The chosen PKs are not actual PKs (i.e. not unique). Retry with modified PK inputs.')
             return pd.DataFrame()
 
         print('About to compare, column by column.')
