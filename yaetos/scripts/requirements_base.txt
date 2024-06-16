@@ -8,7 +8,7 @@ cloudpathlib==0.16.0
 pandas==2.2.2  # latest is 2.2.2. latest for python3.8 is 2.0.3
 sqlalchemy==1.4.51
 networkx==3.1 # latest is 3.2.1. latest for python3.8 is 3.1
-duckdb==0.9.2
+duckdb==1.0.0
 
 # libs required for some functionalities but not required for initial yaetos import statements
 # some may be commented since rarely used. Can be added back on a case by case basis in requirements_extra.txt.
