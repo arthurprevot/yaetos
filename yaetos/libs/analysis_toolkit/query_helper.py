@@ -191,7 +191,6 @@ def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_del
         if item1 == item2:  # check necessary for next step. See comment below.
             item1 = item1 + '_1'
             item2 = item2 + '_2'
-            # raise Exception(f'Error. item1: {item1}, item2: {item2}')
         is_numeric_1 = pd.api.types.is_numeric_dtype(df_joined[item1])
         is_numeric_2 = pd.api.types.is_numeric_dtype(df_joined[item2])
         is_str_1 = pd.api.types.is_string_dtype(df_joined[item1])

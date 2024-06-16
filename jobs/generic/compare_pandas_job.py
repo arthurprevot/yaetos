@@ -16,8 +16,9 @@ class Job(ETL_Base):
             print('The deltas in columns are: ', diff_columns)
             print('The columns in common are: ', common_columns)
             print('Rest of the comparison will be based on columns in common')
-            tableA = tableA[common_columns]
-            tableB = tableB[common_columns]
+
+        tableA = tableA[common_columns]  # applied even if columns are all the same to make sure they are in the same order (impt for checks below)
+        tableB = tableB[common_columns]
 
         # Comparing datasets length
         diff_row_count = len(tableA) != len(tableB)
@@ -52,7 +53,6 @@ class Job(ETL_Base):
         df_out = compare_dfs(tableA, pks1, compare1, tableB, pks2, compare2, strip, filter_deltas, threshold=0.01)
         print('Finishing compare, column by column.')
 
-        # import ipdb; ipdb.set_trace()
         return df_out
 
 
