@@ -100,6 +100,44 @@ class Test_Job_Yml_Parser(object):
         sql_file = Job_Yml_Parser.set_sql_file_from_name('some/job_name')
         assert sql_file is None
 
+    def test_set_mode_specific_params(self):
+        job_name = 'n/a'
+        job_param_file = 'conf/jobs_metadata.yml'
+        yml_modes = 'dev_EMR'
+        skip_job = True
+        actual_params = Job_Yml_Parser(job_name, job_param_file, yml_modes, skip_job).set_job_yml(job_name, job_param_file, yml_modes, skip_job)
+        expected_params = {
+            'aws_config_file': 'conf/aws_config.cfg',
+            'aws_setup': 'dev',
+            'base_path': '{root_path}/pipelines_data',
+            'connection_file': 'conf/connections.cfg',
+            'email_cred_section': 'some_email_cred_section',
+            'emr_core_instances': 0,
+            'enable_db_push': False,
+            'jobs_folder': 'jobs/',
+            'load_connectors': 'all',
+            'manage_git_info': True,
+            'redshift_s3_tmp_dir': 's3a://dev-spark/tmp_spark/',
+            'root_path': 's3://mylake-dev',
+            's3_dags': '{root_path}/pipelines_metadata/airflow_dags',
+            's3_logs': '{root_path}/pipelines_metadata',
+            'save_schemas': False,
+            'schema': 'sandbox',
+            'spark_version': '3.5'}
+        assert actual_params == expected_params
+
+    def test_set_modes(self):
+        yml_modes = 'dev_EMR,your_extra_tenant'  # i.e. using 2 modes
+        job_name = 'n/a'
+        job_param_file = 'conf/jobs_metadata.yml'
+        skip_job = True
+        expected_params = {
+            'save_schemas': False,
+            'other_param': 'some_value'}
+        actual_params = Job_Yml_Parser(job_name, job_param_file, yml_modes, skip_job).set_job_yml(job_name, job_param_file, yml_modes, skip_job)
+        actual_params = {key: value for (key, value) in actual_params.items() if key in expected_params.keys()}
+        assert actual_params == expected_params
+
 
 class Test_Job_Args_Parser(object):
     def test_no_param_override(self):
@@ -171,6 +209,21 @@ class Test_Runner(object):
             'jobs/examples/ex7_pandas_job.py',
             '--arg1=value1',
             '--arg2=value2']
+        assert cmd_lst_real == cmd_lst_expected
+
+    def test_create_spark_submit_python_job_with_launcher(self):
+        job_args = {
+            'launcher_file': 'jobs/generic/launcher.py',
+            'py_job': 'jobs/examples/ex7_pandas_job.py',
+            'py-files': 'some/files.zip',
+            'spark_submit_keys': 'py-files',
+            'spark_app_keys': ''}
+        launch_jargs = Job_Args_Parser(defaults_args={}, yml_args={}, job_args=job_args, cmd_args={}, build_yml_args=False, loaded_inputs={})
+        cmd_lst_real = Runner.create_spark_submit(jargs=launch_jargs)
+        cmd_lst_expected = [
+            'spark-submit',
+            '--py-files=some/files.zip',
+            'jobs/examples/ex7_pandas_job.py']  # launcher.py not carried over. may want to change behavior.
         assert cmd_lst_real == cmd_lst_expected
 
     def test_create_spark_submit_jar_job(self):

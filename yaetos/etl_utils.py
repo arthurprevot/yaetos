@@ -83,7 +83,7 @@ class ETL_Base(object):
             else:
                 output = self.etl_multi_pass(sc, sc_sql, self.loaded_inputs)
         except Exception as err:
-            if self.jargs.mode in ('prod_EMR') and self.jargs.merged_args.get('owners'):
+            if self.jargs.merged_args.get('send_emails') and self.jargs.merged_args.get('owners'):
                 self.send_job_failure_email(err)
             raise Exception("Job failed, error: \n{}".format(err))
         self.out_df = output
@@ -187,7 +187,6 @@ class ETL_Base(object):
             self.push_to_kafka(output, self.OUTPUT_TYPES)
         if self.jargs.merged_args.get('register_to_athena') and self.jargs.enable_db_push:
             self.register_to_athena(output)
-            # import ipdb; ipdb.set_trace()
 
         if self.jargs.output.get('df_type', 'spark') == 'spark':
             output.unpersist()
@@ -231,12 +230,26 @@ class ETL_Base(object):
 
     def set_jargs(self, pre_jargs, loaded_inputs={}):
         """ jargs means job args. Function called only if running the job directly, i.e. "python some_job.py"""
+        # Set job_name
         if 'job_name' not in pre_jargs['job_args']:
             py_job = self.set_py_job()
             job_name = Job_Yml_Parser.set_job_name_from_file(py_job)
         else:
             job_name = pre_jargs['job_args']['job_name']
-        return Job_Args_Parser(defaults_args=pre_jargs['defaults_args'], yml_args=None, job_args=pre_jargs['job_args'], cmd_args=pre_jargs['cmd_args'], job_name=job_name, build_yml_args=True, loaded_inputs=loaded_inputs)
+
+        # Set jargs
+        jargs = Job_Args_Parser(
+            defaults_args=pre_jargs['defaults_args'],
+            yml_args=None,
+            job_args=pre_jargs['job_args'],
+            cmd_args=pre_jargs['cmd_args'],
+            job_name=job_name,
+            build_yml_args=True,
+            loaded_inputs=loaded_inputs)
+
+        # Room for jargs mods at job level.
+        jargs = self.expand_params(jargs)
+        return jargs
 
     def set_py_job(self):
         """ Returns the file being executed. For ex, when running "python some_job.py", this functions returns "some_job.py".
@@ -335,9 +348,17 @@ class ETL_Base(object):
         input_type = self.jargs.inputs[input_name]['type']
         if input_type in self.FILE_TYPES:
             path = self.jargs.inputs[input_name]['path']
-            path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
+            path = path.replace('s3://', 's3a://') if 'dev_local' in self.jargs.mode.split(',') else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-            path = Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
+
+            # Get base_path. TODO: centralize
+            if self.jargs.merged_args.get('name_base_in_param'):
+                base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
+                path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
+            else:
+                base_path = self.jargs.merged_args['base_path']
+
+            path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_later()
             self.jargs.inputs[input_name]['path_expanded'] = path
 
         # Unstructured type
@@ -379,14 +400,18 @@ class ETL_Base(object):
             return pdf
 
         # Tabular types, Spark
+        globy = self.jargs.inputs[input_name].get('glob')
         if input_type == 'csv':
             delimiter = self.jargs.merged_args.get('csv_delimiter', ',')
+            path = path + globy if globy else path
             sdf = self.sc_sql.read.option("delimiter", delimiter).csv(path, header=True)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'parquet':
+            path = path + globy if globy else path
             sdf = self.sc_sql.read.parquet(path)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'json':
+            path = path + globy if globy else path
             sdf = self.sc_sql.read.json(path)
             logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
         elif input_type == 'mysql':
@@ -408,7 +433,7 @@ class ETL_Base(object):
         input = df_meta  # TODO: get 2 variables below from this one.
         input_type = type  # TODO: remove 'input_' prefix in code below since not specific to input.
         input_name = name
-        path = path.replace('s3://', 's3a://') if self.jargs.mode == 'dev_local' else path
+        path = path.replace('s3://', 's3a://') if 'dev_local' in self.jargs.mode.split(',') else path
         logger.info("Dataset '{}' to be loaded from files '{}'.".format(input_name, path))
         path = self.expand_input_path(path, **kwargs)
 
@@ -460,13 +485,31 @@ class ETL_Base(object):
         logger.info("Dataset data types: {}".format(pformat([(fd.name, fd.dataType) for fd in sdf.schema.fields])))
         return sdf
 
+    @staticmethod
+    def expand_params(jargs, **kwargs):
+        return jargs
+
     def expand_input_path(self, path, **kwargs):
         # Function call isolated to be overridable.
-        return Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_later()
+        # Get base_path. TODO: centralize
+        if self.jargs.merged_args.get('name_base_in_param'):
+            base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
+            path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
+        else:
+            base_path = self.jargs.merged_args['base_path']
+
+        return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_later()
 
     def expand_output_path(self, path, now_dt, **kwargs):
         # Function call isolated to be overridable.
-        return Path_Handler(path, self.jargs.base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
+        # Get base_path. TODO: centralize
+        if self.jargs.merged_args.get('name_base_out_param'):
+            base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_out_param')]
+            path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{base_path}')
+        else:
+            base_path = self.jargs.merged_args['base_path']
+
+        return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
 
     def load_mysql(self, input_name):
         creds = Cred_Ops_Dispatcher().retrieve_secrets(self.jargs.storage, aws_creds=AWS_SECRET_ID, local_creds=self.jargs.connection_file)
@@ -572,8 +615,6 @@ class ETL_Base(object):
 
     def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None, **kwargs):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
-        # import ipdb; ipdb.set_trace()
-        # path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt):
         path = self.expand_output_path(path, now_dt, **kwargs)
         self.jargs.output['path_expanded'] = path
 
@@ -670,15 +711,19 @@ class ETL_Base(object):
         create_table(sdf, connection_profile, name_tb, schema, creds, self.jargs.is_incremental, self.jargs.redshift_s3_tmp_dir, self.jargs.merged_args.get('spark_version', '3.5'))
 
     def register_to_athena(self, df):
-        from yaetos.athena import register_table
-        from yaetos.db_utils import pandas_types_to_hive_types
+        from yaetos.athena import register_table_to_glue_catalog  # TODO: add register_table_to_athena_catalog
+        from yaetos.db_utils import pandas_types_to_hive_types, spark_types_to_hive_types
         schema, name_tb = self.jargs.register_to_athena['table'].split('.')
         schema = schema.format(schema=self.jargs.schema) if '{schema}' in schema else schema
         output_info = self.jargs.output
-        pdf = df if isinstance(df, pd.DataFrame) else df.toPandas()
-        hive_types = pandas_types_to_hive_types(pdf)
-        args = self.jargs.merged_args
-        register_table(hive_types, name_tb, schema, output_info, args)
+        if isinstance(df, pd.DataFrame):
+            hive_types = pandas_types_to_hive_types(df)
+            args = self.jargs.merged_args
+            register_table_to_glue_catalog(hive_types, name_tb, schema, output_info, args)
+        else:
+            hive_types = spark_types_to_hive_types(df)
+            args = self.jargs.merged_args
+            register_table_to_glue_catalog(hive_types, name_tb, schema, output_info, args)
 
     def copy_to_clickhouse(self, sdf):
         # import put here below to avoid loading heavy libraries when not needed (optional feature).
@@ -719,15 +764,27 @@ class ETL_Base(object):
         self.send_msg(message)
 
     @staticmethod
-    def check_pk(df, pks):
-        count = df.count()
-        count_pk = df.select(pks).dropDuplicates().count()
-        if count != count_pk:
-            logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
-            return False
+    def check_pk(df, pks, df_type='spark'):
+        if df_type == 'spark':
+            count = df.count()
+            count_pk = df.select(pks).dropDuplicates().count()
+            if count != count_pk:
+                logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
+                return False
+            else:
+                logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
+                return True
+        elif df_type == 'pandas':
+            count = len(df)
+            count_pk = len(df[pks].drop_duplicates())
+            if count != count_pk:
+                logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
+                return False
+            else:
+                logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
+                return True
         else:
-            logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
-            return True
+            raise Exception(f"shouldn't get here, set df_type to 'spark' or 'pandas'. It is set in {df_type}")
 
     def identify_non_unique_pks(self, df, pks):
         return su.identify_non_unique_pks(df, pks)
@@ -831,22 +888,28 @@ class Job_Yml_Parser():
         logger.info("sql_file: '{}', from job_name: '{}'".format(sql_file, job_name))
         return sql_file
 
-    def set_job_yml(self, job_name, job_param_file, yml_mode, skip_job):
+    def set_job_yml(self, job_name, job_param_file, yml_modes, skip_job):
         if job_param_file is None:
             return {}
         yml = self.load_meta(job_param_file)
 
         if job_name not in yml['jobs'] and not skip_job:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(job_name, job_param_file))
-        elif job_name not in yml['jobs'] and skip_job:
+        elif skip_job:
             job_yml = {}
         else:
             job_yml = yml['jobs'][job_name]
 
-        if yml_mode not in yml['common_params']['mode_specific_params']:
-            raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
+        yml_modes = yml_modes.split(',')
+        mode_spec_yml = {}
+        for yml_mode in yml_modes:
+            if yml_mode not in yml['common_params']['mode_specific_params']:
+                raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
 
-        mode_spec_yml = yml['common_params']['mode_specific_params'][yml_mode]
+            mode_spec = yml['common_params']['mode_specific_params'][yml_mode]
+            mode_spec_yml.update(mode_spec)
+
+        # Stacking params in right order (all_mode_params->mode_specific_params->job_params)
         out = yml['common_params']['all_mode_params']
         out.update(mode_spec_yml)
         out.update(job_yml)
@@ -907,7 +970,7 @@ class Job_Args_Parser():
 
     @staticmethod
     def get_default_mode(args):
-        if args.get('mode') == 'dev_local' and args.get('deploy') in ('EMR', 'EMR_Scheduled', 'airflow'):
+        if args.get('mode') and 'dev_local' in args['mode'].split(',') and args.get('deploy') in ('EMR', 'EMR_Scheduled', 'airflow'):
             return 'dev_EMR'
         else:
             return args.get('mode', 'None')
@@ -926,7 +989,14 @@ class Job_Args_Parser():
         if args.get('output'):
             args['output']['type'] = args.pop('output.type', None) or args['output'].get('type', 'none')
         if args.get('spark_app_args'):  # hack to have scala sample job working. TODO: remove hardcoded case when made more generic
-            args['spark_app_args'] = Path_Handler(args['spark_app_args'], args.get('base_path'), args.get('root_path')).path
+
+            # Get base_path. TODO: centralize
+            if args.get('name_base_in_param'):  # TODO: check if requires name_base_in_param or name_base_out_param
+                base_path = args[args.get('name_base_in_param')]
+                args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
+            else:
+                base_path = args.get('base_path')
+            args['spark_app_args'] = Path_Handler(args['spark_app_args'], base_path, args.get('root_path')).path
 
         return args
 
@@ -980,6 +1050,7 @@ class Job_Args_Parser():
 
 class Path_Handler():
     def __init__(self, path, base_path=None, root_path=None):
+        # TODO: rewrite full class. too hacky.
         self.path = path
         self.base_path = base_path
         self.root_path = root_path
@@ -999,14 +1070,14 @@ class Path_Handler():
             upstream_path = path.split('{latest}')[0]
             paths = FS_Ops_Dispatcher().listdir(upstream_path)
             latest_date = max(paths)
-            path = path.format(latest=latest_date)
+            path = path.replace('{latest}', latest_date)
         return path
 
     def expand_now(self, now_dt):
         path = self.path
         if '{now}' in path:
             current_time = now_dt.strftime('date%Y%m%d_time%H%M%S_utc')
-            path = path.format(now=current_time)
+            path = path.replace('{now}', current_time)
         return path
 
     def get_base(self):
@@ -1074,7 +1145,7 @@ class Runner():
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
-        parser.add_argument("-m", "--mode", choices=set(['dev_local', 'dev_EMR', 'prod_EMR']), help="Choose which set of params to use from jobs_metadata.yml file.")
+        parser.add_argument("-m", "--mode", help="Choose which set of params to use from jobs_metadata.yml file. Typically from ('dev_local', 'dev_EMR', 'prod_EMR') but could include others.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
         parser.add_argument("-q", "--sql_file", help="Path to an sql file to execute.")
@@ -1217,7 +1288,7 @@ class Runner():
         if jargs.merged_args.get('driver-memoryOverhead'):  # For extra overhead for python in driver (typically pandas)
             conf = conf.set("spark.driver.memoryOverhead", jargs.merged_args['driver-memoryOverhead'])
 
-        if jargs.mode == 'dev_local' and jargs.load_connectors == 'all':
+        if 'dev_local' in jargs.mode.split(',') and jargs.load_connectors == 'all':
             # Setup below not needed when running from EMR because setup there is done through spark-submit.
             # Env vars for S3 access
             get_aws_setup(jargs.merged_args)
@@ -1249,6 +1320,10 @@ class Runner():
 
 
 def get_aws_setup(args):
+    if os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'):
+        session = boto3.Session()  # to check : credentials = session.get_credentials()
+        return session
+
     from configparser import ConfigParser
     config = ConfigParser()
     assert os.path.isfile(args['aws_config_file'])

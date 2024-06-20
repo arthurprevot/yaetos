@@ -50,18 +50,23 @@ class DeployPySparkScriptOnAws(object):
         self.app_args = app_args
         self.app_file = app_args['py_job']  # TODO: remove all refs to app_file to be consistent.
         self.aws_setup = aws_setup
+        # From aws_config.cfg:
         self.ec2_key_name = config.get(aws_setup, 'ec2_key_name')
         self.s3_region = config.get(aws_setup, 's3_region')
         self.user = config.get(aws_setup, 'user')
         self.profile_name = config.get(aws_setup, 'profile_name')
         self.ec2_subnet_id = config.get(aws_setup, 'ec2_subnet_id')
-        self.extra_security_gp = config.get(aws_setup, 'extra_security_gp')
+        self.extra_security_gp = config.get(aws_setup, 'extra_security_gp', fallback=None)
+        self.emr_ec2_role = config.get(aws_setup, 'emr_ec2_role', fallback='EMR_EC2_DefaultRole')
+        self.emr_role = config.get(aws_setup, 'emr_role', fallback='EMR_DefaultRole')
+        # From jobs_metadata.yml:
         self.emr_core_instances = int(app_args.get('emr_core_instances', 1))  # TODO: make this update EMR_Scheduled mode too.
         self.deploy_args = deploy_args
         self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  # 'm5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
-        # Paths
-        self.s3_logs = CPt(app_args.get('s3_logs', 's3://').replace('{root_path}', self.app_args.get('root_path', '')))
+        # Computed params:
+        s3_logs = app_args.get('s3_logs', 's3://').replace('{root_path}', self.app_args.get('root_path', ''))
+        self.s3_logs = CPt(s3_logs)
         self.s3_bucket_logs = self.s3_logs.bucket
         self.metadata_folder = 'pipelines_metadata'  # TODO remove
         self.pipeline_name = self.generate_pipeline_name(self.deploy_args['mode'], self.app_args['job_name'], self.user)  # format: some_job.some_user.20181204.153429
@@ -93,7 +98,7 @@ class DeployPySparkScriptOnAws(object):
         if self.continue_post_git_check() is False:
             return False
 
-        self.session = boto3.Session(profile_name=self.profile_name)  # aka AWS IAM profile
+        self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
         if self.deploy_args['deploy'] == 'EMR':
             self.run_direct()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
@@ -106,7 +111,7 @@ class DeployPySparkScriptOnAws(object):
             raise Exception("Shouldn't get here.")
 
     def continue_post_git_check(self):
-        if self.app_args['mode'] != 'prod_EMR':
+        if 'prod_EMR' not in self.app_args['mode'].split(','):
             logger.debug('Not pushing as "prod_EMR", so git check ignored')
             return True
         elif self.git_yml is None:
@@ -152,6 +157,12 @@ class DeployPySparkScriptOnAws(object):
             self.start_spark_cluster(c, self.emr_version)
             logger.info("cluster name: %s, and id: %s" % (self.pipeline_name, self.cluster_id))
             self.step_run_setup_scripts(c)
+            try:
+                self.step_run_setup_scripts(c)
+            except botocore.exceptions.ClientError as e:
+                self.describe_status(c)
+                logger.error(f"botocore.exceptions.ClientError : {e}")
+                raise
         else:
             logger.info("Reusing existing cluster, name: %s, and id: %s" % (cluster['name'], cluster['id']))
             self.cluster_id = cluster['id']
@@ -203,7 +214,17 @@ class DeployPySparkScriptOnAws(object):
     @staticmethod
     def generate_pipeline_name(mode, job_name, user):
         """Opposite of get_job_name()"""
-        mode_label = {'dev_EMR': 'dev', 'prod_EMR': 'prod'}[mode]
+
+        # Get deploy_env (Hacky. TODO: improve)
+        modes = mode.split(',')
+        required_mode = ('dev_EMR', 'prod_EMR')
+        modes = [item for item in modes if item in required_mode]
+        if len(modes) == 1:
+            deploy_env = modes[0]
+        else:
+            raise Exception(f"mode missing one of the required on {required_mode}")
+
+        mode_label = {'dev_EMR': 'dev', 'prod_EMR': 'prod'}[deploy_env]
         pname = job_name.replace('.', '_d_').replace('/', '_s_')
         now = datetime.now().strftime("%Y%m%dT%H%M%S")
         name = f"yaetos__{mode_label}__{pname}__{now}"
@@ -216,7 +237,7 @@ class DeployPySparkScriptOnAws(object):
         return pipeline_name.split('__')[2].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
 
     def get_job_log_path(self):
-        if self.deploy_args.get('mode') == 'prod_EMR':
+        if self.deploy_args.get('mode') and 'prod_EMR' in self.deploy_args.get('mode').split(','):  # TODO: check if should be replaced by app_args
             return '{}/jobs_code/production'.format(self.metadata_folder)
         else:
             return '{}/jobs_code/{}'.format(self.metadata_folder, self.pipeline_name)
@@ -336,7 +357,7 @@ class DeployPySparkScriptOnAws(object):
             base = Pt(eu.LOCAL_FRAMEWORK_FOLDER)
         elif self.app_args['code_source'] == 'dir':
             base = Pt(self.app_args['code_source_path'])
-        logger.debug("Source of yaetos code to be shipped: {}".format(base / 'yaetos/'))
+        logger.info("Source of yaetos code to be shipped: {}".format(base / 'yaetos/'))
         # TODO: move code_source and code_source_path to deploy_args, involves adding it to DEPLOY_ARGS_LIST
         return base
 
@@ -420,8 +441,8 @@ class DeployPySparkScriptOnAws(object):
                 # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"], "spark.driver.memory": "40G", "maximizeResourceAllocation": "true"},
                 # }
             ],
-            JobFlowRole='EMR_EC2_DefaultRole',
-            ServiceRole='EMR_DefaultRole',
+            JobFlowRole=self.emr_ec2_role,
+            ServiceRole=self.emr_role,
             VisibleToAllUsers=True,
             BootstrapActions=[{
                 'Name': 'setup_nodes',
@@ -455,6 +476,10 @@ class DeployPySparkScriptOnAws(object):
                 logger.info('Job is finished')
             logger.info('Cluster state:' + state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
+
+    def describe_status(self, c):
+        description = c.describe_cluster(ClusterId=self.cluster_id)
+        logger.info(f'Cluster description: {description}')
 
     def step_run_setup_scripts(self, c):
         """
@@ -509,13 +534,15 @@ class DeployPySparkScriptOnAws(object):
 
     @staticmethod
     def get_spark_submit_args(app_file, app_args):
+        """ app_file is launcher, might be py_job too, but may also be separate from py_job (ex python launcher.py --job_name=some_job_with_py_job)."""
+
         if app_args.get('py_job'):
             overridable_args = {
                 'spark_submit_args': '--verbose',
                 'spark_submit_keys': 'py-files',
                 'spark_app_args': '',
                 'spark_app_keys': 'mode--deploy--storage'}
-        else:
+        else:  # for jar_job
             overridable_args = {
                 'spark_submit_args': '--verbose',
                 'spark_submit_keys': '',
@@ -524,13 +551,29 @@ class DeployPySparkScriptOnAws(object):
 
         overridable_args.update(app_args)
         args = overridable_args.copy()
+
+        # set py_job
+        if app_args.get('launcher_file') and app_args.get('py_job'):
+            py_job = eu.CLUSTER_APP_FOLDER + app_args.get('launcher_file')
+        elif isinstance(app_file, str) and app_file.endswith('.py'):  # TODO: check values app_file can take
+            py_job = eu.CLUSTER_APP_FOLDER + app_file
+        else:
+            py_job = None
+
+        # set jar_job
+        if (app_args.get('launcher_file') or isinstance(app_file, str)) and app_args.get('jar_job'):  # TODO: check to enforce app_args.get('launcher_file')
+            jar_job = eu.CLUSTER_APP_FOLDER + app_args.get('jar_job')
+        else:
+            jar_job = None
+        # TODO: simplify business of getting application code (2 blocks up) upstream, in etl_utils.py
+
         unoverridable_args = {
-            'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip",
-            'py_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('py_job') or app_args.get('launcher_file')),  # TODO: simplify business of getting application code upstream
-            'mode': 'dev_EMR' if app_args.get('mode') == 'dev_local' else app_args.get('mode'),
+            'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
+            'py_job': py_job,
+            'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
             'deploy': 'none',
             'storage': 's3',
-            'jar_job': eu.CLUSTER_APP_FOLDER + (app_file or app_args.get('jar_job') or app_args.get('launcher_file'))}
+            'jar_job': jar_job}
         args.update(unoverridable_args)
 
         if app_args.get('load_connectors', '') == 'all':
