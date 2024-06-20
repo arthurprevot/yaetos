@@ -3,7 +3,7 @@
 # Libraries below needed for some of the example jobs.
 # They can be removed if the example jobs are removed.
 requests==2.32.2
-transformers==4.36.0 # latest 4.36.2
+transformers==4.38.0 # latest 4.36.2
 tensorflow==2.11.1 # latest 2.15.0
 sentencepiece==0.1.99
 # add more as needed.
