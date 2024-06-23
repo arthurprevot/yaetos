@@ -1038,51 +1038,28 @@ class Job_Args_Parser():
                             "or it should be set in a parameter called sql_file.")
         # TODO: add more.
 
+
 def deep_recursive_replace(params):
-    """
-    Recursively replaces placeholders in the dictionary values including nested dictionaries and lists with corresponding key values.
-    This version supports double-braced placeholders like {{key}}.
-    
-    Args:
-    params (dict): Dictionary potentially containing lists and nested dictionaries as values.
-    
-    Returns:
-    dict: Updated dictionary where all placeholders are replaced with their corresponding values.
-    """
-    import re
-    
     # Regular expression to find placeholders like {{key}}
     placeholder_pattern = re.compile(r'\{\{(\w+)\}\}')
     
     def replace_placeholders(item, params):
         """ Recursively replace placeholders based on item type. """
-        print('////0', item, params)
         if isinstance(item, str):
-            # Replace placeholders in string using regex
-            print('////1', placeholder_pattern.findall(item))
             matches = placeholder_pattern.findall(item)
-            # while (matches := placeholder_pattern.findall(item)):
-            # while (matches := placeholder_pattern.findall(item)):
-                # print('////2', matches)
             for key in matches:
-                print('////3', key)
                 if key in params:
-                    # item = item.replace(f'{{{{key}}}}'.replace("key", key), str(params[key]))
                     item = item.replace(f'{{{{--key--}}}}'.replace("--key--", key), str(params[key]))
             return item
         elif isinstance(item, dict):
-            # If item is a dictionary, apply this function to each value
             return {k: replace_placeholders(v, params) for k, v in item.items()}
         elif isinstance(item, list):
-            # If item is a list, apply this function to each element
             return [replace_placeholders(elem, params) for elem in item]
         else:
-            # Return the item as is if it's not a string, list, or dict
             return item
     
-    # Apply the replacement function to each value in the original dictionary
+    # Replace values for each key found in the original dictionary
     params = {k: replace_placeholders(v, params) for k, v in params.items()}
-    
     return params
 
 
