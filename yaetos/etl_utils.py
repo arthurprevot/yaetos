@@ -23,6 +23,7 @@ import smtplib
 import ssl
 from dateutil.relativedelta import relativedelta
 from importlib import import_module
+import re
 import yaetos.spark_utils as su
 import yaetos.pandas_utils as pu
 from yaetos.git_utils import Git_Config_Manager
@@ -1039,11 +1040,11 @@ class Job_Args_Parser():
         # TODO: add more.
 
 
-def deep_recursive_replace(params):
+def replace_placeholders(params):
     # Regular expression to find placeholders like {{key}}
     placeholder_pattern = re.compile(r'\{\{(\w+)\}\}')
     
-    def replace_placeholders(item, params):
+    def replace_placeholders_recursively(item, params):
         """ Recursively replace placeholders based on item type. """
         if isinstance(item, str):
             matches = placeholder_pattern.findall(item)
@@ -1052,14 +1053,14 @@ def deep_recursive_replace(params):
                     item = item.replace(f'{{{{--key--}}}}'.replace("--key--", key), str(params[key]))
             return item
         elif isinstance(item, dict):
-            return {k: replace_placeholders(v, params) for k, v in item.items()}
+            return {k: replace_placeholders_recursively(v, params) for k, v in item.items()}
         elif isinstance(item, list):
-            return [replace_placeholders(elem, params) for elem in item]
+            return [replace_placeholders_recursively(elem, params) for elem in item]
         else:
             return item
     
     # Replace values for each key found in the original dictionary
-    params = {k: replace_placeholders(v, params) for k, v in params.items()}
+    params = {k: replace_placeholders_recursively(v, params) for k, v in params.items()}
     return params
 
 
