@@ -777,7 +777,7 @@ class ETL_Base(object):
         if df_type == 'spark':
             return su.identify_non_unique_pks(df, pks)
         elif df_type == 'pandas':
-            raise Exception(f"Function 'identify_non_unique_pks()' not implemented yet for pandas dfs. Feel free to contribute.")
+            raise Exception("Function 'identify_non_unique_pks()' not implemented yet for pandas dfs. Feel free to contribute.")
         else:
             raise Exception(f"shouldn't get here, set df_type to 'spark' or 'pandas'. It is set in {df_type}")
 
@@ -1043,7 +1043,7 @@ class Job_Args_Parser():
     @staticmethod
     def replace_placeholders(params):
         placeholder_pattern = re.compile(r'\{\{(\w+)\}\}')  # regex to find placeholders like {{key}}
-        
+
         def replace_placeholders_recursively(item, params):
             """ Recursively replace placeholders based on item type. """
             if isinstance(item, str):
@@ -1051,7 +1051,7 @@ class Job_Args_Parser():
                 for key in matches:
                     if key in params:
                         print(f"Found placeholder in '{item}', replaced '{key}' by '{params[key]}'.")
-                        item = item.replace(f'{{{{--key--}}}}'.replace("--key--", key), str(params[key]))
+                        item = item.replace('{{{{--key--}}}}'.replace("--key--", key), str(params[key]))
                 return item
             elif isinstance(item, dict):
                 return {k: replace_placeholders_recursively(v, params) for k, v in item.items()}
@@ -1059,7 +1059,7 @@ class Job_Args_Parser():
                 return [replace_placeholders_recursively(elem, params) for elem in item]
             else:
                 return item
-        
+
         # Replace values for each key found in the original dictionary
         params = {k: replace_placeholders_recursively(v, params) for k, v in params.items()}
         return params

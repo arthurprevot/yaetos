@@ -192,8 +192,7 @@ class Test_Job_Args_Parser(object):
             'key3': {'other_key': 'a long string with value_2 in value_3'},
             'key4': 'value_2',
             'key5': 'value_3'}
-        assert actual==expected
-
+        assert actual == expected
 
     def test_replace_placeholders_missing_cases(self):
         params = {
@@ -208,7 +207,7 @@ class Test_Job_Args_Parser(object):
             'key2': 'some_value',
             'key3': {'other_key': 'a long string with value_2 in {{key5}} and value_2'},
             'key4': 'value_2'}
-        assert actual==expected
+        assert actual == expected
 
 
 class Test_Runner(object):

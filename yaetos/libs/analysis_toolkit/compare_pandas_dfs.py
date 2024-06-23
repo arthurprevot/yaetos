@@ -85,7 +85,7 @@ def compare_dfs_fuzzy(df1, pks1, compare1, df2, pks2, compare2, strip=True, filt
                 df_joined['_delta_' + item1 + '_equal'] = df_joined.apply(lambda row: row[item1] == row[item2], axis=1)
                 df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1 + '_equal'], axis=1)
                 print(f"Column summary, all_equal = {df_joined['_delta_' + item1 + '_equal'].all()}.")
-            except Exception as err: 
+            except Exception:
                 df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is False, axis=1)
             print(f'Column summary, all_equal = False. The columns to compare (i.e. {item1} and {item2}) have mismatched types, or are not numerical nor strings.')
 

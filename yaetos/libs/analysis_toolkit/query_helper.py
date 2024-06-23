@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from time import time
-from compare_pandas_dfs import compare_dfs_exact 
+from compare_pandas_dfs import compare_dfs_exact
 
 
 def query_and_cache(query_str, name, folder, to_csv_args={}, dbargs={}, db_type='oracle', force_rerun=False, show=False):

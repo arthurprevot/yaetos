@@ -23,7 +23,7 @@ def compare_dfs(tableA, tableB, pksA, pksB, compareA, compareB):
     print('Stats for both tables (numerical columns only)')
     print('tableA: ', tableA.describe())
     print('tableB: ', tableB.describe())
-    
+
     # Comparing columns
     print('Comparing columns')
     diff_columns = list(set(tableA.columns) ^ set(tableB.columns))
