@@ -1051,7 +1051,7 @@ class Job_Args_Parser():
                 for key in matches:
                     if key in params:
                         print(f"Found placeholder in '{item}', replaced '{key}' by '{params[key]}'.")
-                        item = item.replace('{{{{--key--}}}}'.replace("--key--", key), str(params[key]))
+                        item = item.replace(f'{{{{--key--}}}}'.replace(f"--key--", key), str(params[key]))  # noqa
                 return item
             elif isinstance(item, dict):
                 return {k: replace_placeholders_recursively(v, params) for k, v in item.items()}
