@@ -7,10 +7,12 @@ import pandas as pd
 class Job(ETL_Base):
 
     def transform(self, tableA, tableB):
-        return compare_dfs(tableA, tableB)
+        pksA = self.jargs.inputs['tableA']['pk']
+        pksB = self.jargs.inputs['tableB']['pk']
+        return compare_dfs(tableA, tableB, pksA, pksB)
 
 
-def compare_dfs(tableA, tableB):
+def compare_dfs(tableA, tableB, pksA, pksB):
     # Comparing columns
     diff_columns = list(set(tableA.columns) - set(tableB.columns))
     common_columns = list(set(tableA.columns) & set(tableB.columns))
@@ -39,17 +41,15 @@ def compare_dfs(tableA, tableB):
         return pd.DataFrame()
 
     # Comparing dataset content, fuzzy
-    pks1 = self.jargs.inputs['tableA']['pk']
-    pks2 = self.jargs.inputs['tableB']['pk']
     compare1 = list(set(tableA.columns) - set(pks1))
     compare2 = list(set(tableB.columns) - set(pks2))
     strip = False
     filter_deltas = True
 
-    if not self.check_pk(tableA, pks1, df_type='pandas'):
+    if not pu.check_pk(tableA, pks1, df_type='pandas'):
         print('The chosen PKs are not actual PKs (i.e. not unique). Retry with modified PK inputs.')
         return pd.DataFrame()
-    elif not self.check_pk(tableB, pks2, df_type='pandas'):
+    elif not pu.check_pk(tableB, pks2, df_type='pandas'):
         print('The chosen PKs are not actual PKs (i.e. not unique). Retry with modified PK inputs.')
         return pd.DataFrame()
 
