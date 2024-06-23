@@ -7,14 +7,26 @@ import pandas as pd
 class Job(ETL_Base):
 
     def transform(self, tableA, tableB):
-        pksA = self.jargs.inputs['tableA']['pk']
-        pksB = self.jargs.inputs['tableB']['pk']
-        return compare_dfs(tableA, tableB, pksA, pksB)
+        pksA = self.jargs.inputs['tableA']['pk'] if self.jargs.inputs['tableA'].get('pk') else list(tableA.columns)
+        pksB = self.jargs.inputs['tableB']['pk'] if self.jargs.inputs['tableB'].get('pk') else list(tableB.columns)
+        compareA = self.jargs.inputs['tableA']['compare'] if self.jargs.inputs['tableA'].get('compare') else list(set(tableA.columns) - set(pksA))
+        compareB = self.jargs.inputs['tableB']['compare'] if self.jargs.inputs['tableB'].get('compare') else list(set(tableB.columns) - set(pksB))
+
+        return compare_dfs(tableA, tableB, pksA, pksB, compareA, compareB)
 
 
-def compare_dfs(tableA, tableB, pksA, pksB):
+def compare_dfs(tableA, tableB, pksA, pksB, compareA, compareB):
     # Comparing columns
-    diff_columns = list(set(tableA.columns) - set(tableB.columns))
+    tableA.reset_index(drop=True, inplace=True)
+    tableB.reset_index(drop=True, inplace=True)
+
+    print('Stats for both tables (numerical columns only)')
+    print('tableA: ', tableA.describe())
+    print('tableB: ', tableB.describe())
+    
+    # Comparing columns
+    print('Comparing columns')
+    diff_columns = list(set(tableA.columns) ^ set(tableB.columns))
     common_columns = list(set(tableA.columns) & set(tableB.columns))
 
     if diff_columns:
@@ -22,11 +34,17 @@ def compare_dfs(tableA, tableB, pksA, pksB):
         print('The deltas in columns are: ', diff_columns)
         print('The columns in common are: ', common_columns)
         print('Rest of the comparison will be based on columns in common')
-
+        # tableA = tableA.drop_duplicates()
+        # tableB = tableB.drop_duplicates()
+    else:
+        print(f'datasets have same columns, i.e. {common_columns}')
+    print(f'TableA columns {tableA.columns}')
+    print(f'TableB columns {tableB.columns}')
     tableA = tableA[common_columns]  # applied even if columns are all the same to make sure they are in the same order (impt for checks below)
     tableB = tableB[common_columns]
 
     # Comparing datasets length
+    print('Comparing row count')
     diff_row_count = len(tableA) != len(tableB)
     if diff_row_count:
         print('datasets have different row count')
@@ -34,6 +52,7 @@ def compare_dfs(tableA, tableB, pksA, pksB):
         print('Length TableB: ', len(tableB))
 
     # Comparing dataset content, exact
+    print('Comparing dataset - exact content match')
     is_identical = compare_dfs_exact(tableA, tableB)
     if is_identical:
         message = 'datasets are identical' if not diff_columns else 'datasets (with columns in common) are identical'
@@ -41,10 +60,9 @@ def compare_dfs(tableA, tableB, pksA, pksB):
         return pd.DataFrame()
 
     # Comparing dataset content, fuzzy
-    compare1 = list(set(tableA.columns) - set(pksA))
-    compare2 = list(set(tableB.columns) - set(pksB))
+    print('Comparing dataset - fuzzy content match (match specific columns, and check float deltas within threshold)')
     strip = False
-    filter_deltas = True
+    filter_deltas = False
 
     if not pu.check_pk(tableA, pksA):
         print('The chosen PKs are not actual PKs (i.e. not unique). Retry with modified PK inputs.')
