@@ -31,8 +31,8 @@ def compare_dfs_exact(df1, df2):
 
 def compare_dfs_fuzzy(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_deltas=True, threshold=0.01):
     """Note: Doesn't support both dfs having same column names (or at least the ones that need to be compared.)"""
-    print('Length df1', len(df1), df1[pks1].nunique())
-    print('Length df2', len(df2), df2[pks2].nunique())
+    print('Length df1', len(df1), '. Unique values in each field :\n', df1[pks1].nunique())
+    print('Length df2', len(df2), '. Unique values in each field :\n', df2[pks2].nunique())
 
     if strip:
         df1 = df1[pks1 + compare1]
@@ -40,8 +40,8 @@ def compare_dfs_fuzzy(df1, pks1, compare1, df2, pks2, compare2, strip=True, filt
 
     # Join datasets
     df_joined = pd.merge(left=df1, right=df2, how='outer', left_on=pks1, right_on=pks2, indicator=True, suffixes=('_1', '_2'))
-    print('Length df_joined', len(df_joined))
-    df_joined['_no_deltas'] = True  # init
+    print('Length df_joined (before filtering if any)', len(df_joined))
+    df_joined['_no_deltas'] = df_joined['_merge'].apply(lambda cell: True if cell == 'both' else False)  # init to True for 'both'. To be updated later.
 
     def check_delta(row):
         if pd.isna(row[item1]) and pd.isna(row[item2]):
@@ -58,7 +58,6 @@ def compare_dfs_fuzzy(df1, pks1, compare1, df2, pks2, compare2, strip=True, filt
     # Check deltas (numerical values)
     np.seterr(divide='ignore')  # to handle the division by 0 in divide().
     for ii in range(len(compare1)):
-        # import ipdb; ipdb.set_trace()
         item1 = compare1[ii]
         item2 = compare2[ii]
         if item1 == item2:  # check necessary for next step. See comment below.
@@ -82,11 +81,17 @@ def compare_dfs_fuzzy(df1, pks1, compare1, df2, pks2, compare2, strip=True, filt
             df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1 + '_equal'], axis=1)
             print(f"Column summary, all_equal = {df_joined['_delta_' + item1 + '_equal'].all()}.")
         else:
-            df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is False, axis=1)
+            try:
+                df_joined['_delta_' + item1 + '_equal'] = df_joined.apply(lambda row: row[item1] == row[item2], axis=1)
+                df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is True and row['_delta_' + item1 + '_equal'], axis=1)
+                print(f"Column summary, all_equal = {df_joined['_delta_' + item1 + '_equal'].all()}.")
+            except Exception as err: 
+                df_joined['_no_deltas'] = df_joined.apply(lambda row: row['_no_deltas'] is False, axis=1)
             print(f'Column summary, all_equal = False. The columns to compare (i.e. {item1} and {item2}) have mismatched types, or are not numerical nor strings.')
 
     np.seterr(divide='raise')
     if filter_deltas:
         df_joined = df_joined[df_joined.apply(lambda row: row['_no_deltas'] is False, axis=1)].reset_index()
+        print('Length df_joined (post filtering)', len(df_joined))
     df_joined.sort_values(by=['_merge'] + pks1, inplace=True)
     return df_joined
