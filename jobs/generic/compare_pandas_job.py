@@ -1,5 +1,5 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
-from yaetos.libs.analysis_toolkit.compare_pandas_dfs import compare_dfs, diff_dfs
+from yaetos.libs.analysis_toolkit.compare_pandas_dfs import compare_dfs_fuzzy, compare_dfs_exact
 import yaetos.pandas_utils as pu
 import pandas as pd
 
@@ -9,7 +9,7 @@ class Job(ETL_Base):
     def transform(self, tableA, tableB):
         pksA = self.jargs.inputs['tableA']['pk']
         pksB = self.jargs.inputs['tableB']['pk']
-        return compare_dfs(tableA, tableB, pksA, pksB)
+        return compare_dfs_fuzzy(tableA, tableB, pksA, pksB)
 
 
 def compare_dfs(tableA, tableB, pksA, pksB):
@@ -34,27 +34,27 @@ def compare_dfs(tableA, tableB, pksA, pksB):
         print('Length TableB: ', len(tableB))
 
     # Comparing dataset content, exact
-    is_identical = diff_dfs(tableA, tableB)
+    is_identical = compare_dfs_exact(tableA, tableB)
     if is_identical:
         message = 'datasets are identical' if not diff_columns else 'datasets (with columns in common) are identical'
         print(message)
         return pd.DataFrame()
 
     # Comparing dataset content, fuzzy
-    compare1 = list(set(tableA.columns) - set(pks1))
-    compare2 = list(set(tableB.columns) - set(pks2))
+    compare1 = list(set(tableA.columns) - set(pksA))
+    compare2 = list(set(tableB.columns) - set(pksB))
     strip = False
     filter_deltas = True
 
-    if not pu.check_pk(tableA, pks1, df_type='pandas'):
+    if not pu.check_pk(tableA, pksA):
         print('The chosen PKs are not actual PKs (i.e. not unique). Retry with modified PK inputs.')
         return pd.DataFrame()
-    elif not pu.check_pk(tableB, pks2, df_type='pandas'):
+    elif not pu.check_pk(tableB, pksB):
         print('The chosen PKs are not actual PKs (i.e. not unique). Retry with modified PK inputs.')
         return pd.DataFrame()
 
     print('About to compare, column by column.')
-    df_out = compare_dfs(tableA, pks1, compare1, tableB, pks2, compare2, strip, filter_deltas, threshold=0.01)
+    df_out = compare_dfs_fuzzy(tableA, pksA, compare1, tableB, pksB, compare2, strip, filter_deltas, threshold=0.01)
     print('Finishing compare, column by column.')
 
     return df_out

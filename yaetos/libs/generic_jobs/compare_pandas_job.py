@@ -1,5 +1,5 @@
 from yaetos.etl_utils import ETL_Base, Commandliner
-from yaetos.libs.analysis_toolkit.query_helper import compare_dfs, diff_dfs
+from yaetos.libs.analysis_toolkit.query_helper import compare_dfs_fuzzy, compare_dfs_exact
 import pandas as pd
 
 
@@ -28,7 +28,7 @@ class Job(ETL_Base):
             print('Length TableB: ', len(tableB))
 
         # Comparing dataset content, exact
-        is_identical = diff_dfs(tableA, tableB)
+        is_identical = compare_dfs_exact(tableA, tableB)
         if is_identical:
             message = 'datasets are identical' if not diff_columns else 'datasets (with columns in common) are identical'
             print(message)
@@ -50,7 +50,7 @@ class Job(ETL_Base):
             return pd.DataFrame()
 
         print('About to compare, column by column.')
-        df_out = compare_dfs(tableA, pks1, compare1, tableB, pks2, compare2, strip, filter_deltas, threshold=0.01)
+        df_out = compare_dfs_fuzzy(tableA, pks1, compare1, tableB, pks2, compare2, strip, filter_deltas, threshold=0.01)
         print('Finishing compare, column by column.')
 
         return df_out

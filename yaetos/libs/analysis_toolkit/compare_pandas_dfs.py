@@ -3,7 +3,7 @@ import numpy as np
 import hashlib
 
 
-def diff_dfs(df1, df2):
+def compare_dfs_exact(df1, df2):
     print('Looking into diffs between previous and new dataset.')
     # TODO: check columns before checking content.
     try:
@@ -29,7 +29,7 @@ def diff_dfs(df1, df2):
     return False
 
 
-def compare_dfs(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_deltas=True, threshold=0.01):
+def compare_dfs_fuzzy(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_deltas=True, threshold=0.01):
     """Note: Doesn't support both dfs having same column names (or at least the ones that need to be compared.)"""
     print('Length df1', len(df1), df1[pks1].nunique())
     print('Length df2', len(df2), df2[pks2].nunique())

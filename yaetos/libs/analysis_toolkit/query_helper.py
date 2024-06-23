@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from time import time
-from compare_pandas_dfs import diff_dfs 
+from compare_pandas_dfs import compare_dfs_exact 
 
 
 def query_and_cache(query_str, name, folder, to_csv_args={}, dbargs={}, db_type='oracle', force_rerun=False, show=False):
@@ -47,7 +47,7 @@ def drop_if_needed(df, name, folder, to_csv_args, db_type='n/a', elapsed='n/a', 
     prev_file_exist = os.path.isfile(fname_pykl)
     if force_rerun and prev_file_exist:
         df_pre = pd.read_pickle(fname_pykl)
-        is_same = diff_dfs(df_pre, df)
+        is_same = compare_dfs_exact(df_pre, df)
         if is_same:
             print("Output is the same as the previous one (from '{}') so not re-dropping it.".format(fname_pykl))
             # TODO: should still drop the sql file in case it has changed.
