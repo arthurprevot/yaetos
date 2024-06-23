@@ -112,3 +112,14 @@ def query_pandas(query_str, dfs):
         con.register(key, value)
     df = con.execute(query_str).df()
     return df
+
+
+def check_pk(df, pks):
+    count = len(df)
+    count_pk = len(df[pks].drop_duplicates())
+    if count != count_pk:
+        logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
+        return False
+    else:
+        logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
+        return True

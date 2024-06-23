@@ -29,5 +29,16 @@ def create_empty_sdf(sc_sql):
     return sc_sql.createDataFrame([], StructType([]))
 
 
+def check_pk(df, pks):
+    count = df.count()
+    count_pk = df.select(pks).dropDuplicates().count()
+    if count != count_pk:
+        logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
+        return False
+    else:
+        logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
+        return True
+
+
 if __name__ == '__main__':
     pass
