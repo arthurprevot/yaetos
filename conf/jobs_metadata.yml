@@ -146,7 +146,7 @@ jobs:
     api_inputs: {'api_creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
     output: {'path':'{base_path}/mysql_example/output_ex6_mysql/{now}/', 'type':'csv'}
 
-  job_with_no_output:
+  examples/job_with_no_output:
     description: "shows job with no output (still requiring table as output but not dumped to disk)"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
@@ -154,7 +154,7 @@ jobs:
       other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'n/a', 'type':'None'}
 
-  job_with_more_resources:
+  examples/job_with_more_resources:
     description: "To show how to change the machine specs and size of the cluster. See ec2_instance_master and emr_core_instances params below"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
@@ -164,6 +164,7 @@ jobs:
     ec2_instance_master: 'm5.4xlarge'
     ec2_instance_slaves: 'm5.4xlarge'
     emr_core_instances: 3
+    emr_applications: [{'Name': 'Hadoop'}, {'Name': 'Spark'}, {'Name': 'Livy'}, {'Name': 'JupyterHub'}]
 
   examples/ex7_pandas_with_sql_job.py:
     description: "job loading and processing data with pandas. No spark involved."

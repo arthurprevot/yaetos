@@ -428,7 +428,7 @@ class DeployPySparkScriptOnAws(object):
                 'Ec2SubnetId': self.ec2_subnet_id,
                 # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
             },
-            Applications=self.emr_applications  # should be at a minimum [{'Name': 'Hadoop'}, {'Name': 'Spark'}],
+            Applications=self.emr_applications,  # should be at a minimum [{'Name': 'Hadoop'}, {'Name': 'Spark'}],
             Configurations=[
                 {  # Section to force python3 since emr-5.x uses python2 by default.
                     "Classification": "spark-env",
