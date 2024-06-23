@@ -364,7 +364,7 @@ jobs:
 
   examples/ex19_compare_pandas_job:
     description: "Showcasing a job to compare 2 datasets"
-    py_job: jobs/generic/compare_pandas_job.py
+    py_job: jobs/generic/compare_job.py
     inputs:
       tableA: {'path':"{base_path}/wiki_example/input/{latest}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}
       tableB: {'path':"{base_path}/wiki_example/input/{latest}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}
