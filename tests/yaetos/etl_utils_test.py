@@ -178,15 +178,13 @@ class Test_Job_Args_Parser(object):
             assert False, f"'test_validate_params' raised an exception: {exc}"
 
 
-@pytest.mark.skip(reason="This test is still being developed")
 def test_deep_recursive_replace():
     params = {
         'key1': ['I like {{key2}} pie', 'other_value'],
         'key2': 'some_value',
         'key3': {'other_key': 'a long string with {{key4}} in {{key5}}'},
         'key4': 'value_2',
-        'key5': 'value_3',
-    }
+        'key5': 'value_3'}
     actual = deep_recursive_replace(params)
 
     expected = {
@@ -194,27 +192,23 @@ def test_deep_recursive_replace():
         'key2': 'some_value',
         'key3': {'other_key': 'a long string with value_2 in value_3'},
         'key4': 'value_2',
-        'key5': 'value_3',
-    }
+        'key5': 'value_3'}
     assert actual==expected
 
 
-@pytest.mark.skip(reason="This test is still being developed")
 def test_deep_recursive_replace_missing_cases():
     params = {
         'key1': ['I like {{key2}} pie', 'other_value'],
         'key2': 'some_value',
-        'key3': {'other_key': 'a long string with {{key4}} in {{key5}}'},
-        'key4': 'value_2',
-    }
+        'key3': {'other_key': 'a long string with {{key4}} in {{key5}} and {{key4}}'},
+        'key4': 'value_2'}
     actual = deep_recursive_replace(params)
 
     expected = {
         'key1': ['I like some_value pie', 'other_value'],
         'key2': 'some_value',
-        'key3': {'other_key': 'a long string with value_2 in {{key5}}'},
-        'key4': 'value_2',
-    }
+        'key3': {'other_key': 'a long string with value_2 in {{key5}} and value_2'},
+        'key4': 'value_2'}
     assert actual==expected
 
 
