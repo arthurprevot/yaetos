@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import os
 from time import time
 from compare_pandas_dfs import diff_dfs 
