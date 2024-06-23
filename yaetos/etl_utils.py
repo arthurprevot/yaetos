@@ -1039,29 +1039,29 @@ class Job_Args_Parser():
                             "or it should be set in a parameter called sql_file.")
         # TODO: add more.
 
-
-def replace_placeholders(params):
-    # Regular expression to find placeholders like {{key}}
-    placeholder_pattern = re.compile(r'\{\{(\w+)\}\}')
-    
-    def replace_placeholders_recursively(item, params):
-        """ Recursively replace placeholders based on item type. """
-        if isinstance(item, str):
-            matches = placeholder_pattern.findall(item)
-            for key in matches:
-                if key in params:
-                    item = item.replace(f'{{{{--key--}}}}'.replace("--key--", key), str(params[key]))
-            return item
-        elif isinstance(item, dict):
-            return {k: replace_placeholders_recursively(v, params) for k, v in item.items()}
-        elif isinstance(item, list):
-            return [replace_placeholders_recursively(elem, params) for elem in item]
-        else:
-            return item
-    
-    # Replace values for each key found in the original dictionary
-    params = {k: replace_placeholders_recursively(v, params) for k, v in params.items()}
-    return params
+    @staticmethod
+    def replace_placeholders(params):
+        # Regular expression to find placeholders like {{key}}
+        placeholder_pattern = re.compile(r'\{\{(\w+)\}\}')
+        
+        def replace_placeholders_recursively(item, params):
+            """ Recursively replace placeholders based on item type. """
+            if isinstance(item, str):
+                matches = placeholder_pattern.findall(item)
+                for key in matches:
+                    if key in params:
+                        item = item.replace(f'{{{{--key--}}}}'.replace("--key--", key), str(params[key]))
+                return item
+            elif isinstance(item, dict):
+                return {k: replace_placeholders_recursively(v, params) for k, v in item.items()}
+            elif isinstance(item, list):
+                return [replace_placeholders_recursively(elem, params) for elem in item]
+            else:
+                return item
+        
+        # Replace values for each key found in the original dictionary
+        params = {k: replace_placeholders_recursively(v, params) for k, v in params.items()}
+        return params
 
 
 class Path_Handler():
