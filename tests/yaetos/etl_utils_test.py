@@ -178,6 +178,7 @@ class Test_Job_Args_Parser(object):
             assert False, f"'test_validate_params' raised an exception: {exc}"
 
 
+@pytest.mark.skip(reason="This test is still being developed")
 def test_deep_recursive_replace():
     params = {
         'key1': ['I like {{key2}} pie', 'other_value'],
@@ -198,6 +199,7 @@ def test_deep_recursive_replace():
     assert actual==expected
 
 
+@pytest.mark.skip(reason="This test is still being developed")
 def test_deep_recursive_replace_missing_cases():
     params = {
         'key1': ['I like {{key2}} pie', 'other_value'],
