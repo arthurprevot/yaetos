@@ -1493,12 +1493,3 @@ def send_email(message, receiver_email, sender_email, password, smtp_server, por
         server.starttls(context=context)
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message)
-
-if __name__ == "__main__":
-    params = {
-        'key1': ['I like {{key2}} pie', 'other_value'],
-        'key2': 'some_value',
-        'key3': {'other_key': 'a long string with {{key4}} in {{key5}}'},
-        'key4': 'value_2',
-    }
-    actual = deep_recursive_replace(params)
