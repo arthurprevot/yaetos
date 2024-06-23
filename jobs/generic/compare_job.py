@@ -72,7 +72,7 @@ def compare_dfs(tableA, tableB, pksA, pksB, compareA, compareB):
         return pd.DataFrame()
 
     print('About to compare, column by column.')
-    df_out = compare_dfs_fuzzy(tableA, pksA, compare1, tableB, pksB, compare2, strip, filter_deltas, threshold=0.01)
+    df_out = compare_dfs_fuzzy(tableA, pksA, compareA, tableB, pksB, compareB, strip, filter_deltas, threshold=0.01)
     print('Finishing compare, column by column.')
 
     return df_out
