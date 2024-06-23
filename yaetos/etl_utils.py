@@ -766,14 +766,19 @@ class ETL_Base(object):
     @staticmethod
     def check_pk(df, pks, df_type='spark'):
         if df_type == 'spark':
-            su.check_pk(df, pks)
+            return su.check_pk(df, pks)
         elif df_type == 'pandas':
-            pu.check_pk(df, pks)
+            return pu.check_pk(df, pks)
         else:
             raise Exception(f"shouldn't get here, set df_type to 'spark' or 'pandas'. It is set in {df_type}")
 
-    def identify_non_unique_pks(self, df, pks):
-        return su.identify_non_unique_pks(df, pks)
+    def identify_non_unique_pks(self, df, pks, df_type='spark'):
+        if df_type == 'spark':
+            return su.identify_non_unique_pks(df, pks)
+        elif df_type == 'pandas':
+            raise Exception(f"Function 'identify_non_unique_pks()' not implemented yet for pandas dfs. Feel free to contribute.")
+        else:
+            raise Exception(f"shouldn't get here, set df_type to 'spark' or 'pandas'. It is set in {df_type}")
 
 
 class Period_Builder():

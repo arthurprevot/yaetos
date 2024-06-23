@@ -9,7 +9,7 @@ class Job(ETL_Base):
     def transform(self, tableA, tableB):
         pksA = self.jargs.inputs['tableA']['pk']
         pksB = self.jargs.inputs['tableB']['pk']
-        return compare_dfs_fuzzy(tableA, tableB, pksA, pksB)
+        return compare_dfs(tableA, tableB, pksA, pksB)
 
 
 def compare_dfs(tableA, tableB, pksA, pksB):
