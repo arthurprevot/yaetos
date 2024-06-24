@@ -1,7 +1,7 @@
 # Configuration file for the Sphinx documentation builder.
+import os
 import sys; sys.path.insert(0, os.path.abspath('../yaetos'))
 from yaetos.__version__ import __version__
-# import os
 # import re
 
 # def read_version():
