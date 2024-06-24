@@ -5,7 +5,6 @@ import hashlib
 
 def compare_dfs_exact(df1, df2):
     print('Looking into diffs between previous and new dataset.')
-    # TODO: check columns before checking content.
     try:
         hash1 = hashlib.sha256(pd.util.hash_pandas_object(df1, index=True).values).hexdigest()
         hash2 = hashlib.sha256(pd.util.hash_pandas_object(df2, index=True).values).hexdigest()
@@ -30,7 +29,6 @@ def compare_dfs_exact(df1, df2):
 
 
 def compare_dfs_fuzzy(df1, pks1, compare1, df2, pks2, compare2, strip=True, filter_deltas=True, threshold=0.01):
-    """Note: Doesn't support both dfs having same column names (or at least the ones that need to be compared.)"""
     print('Length df1', len(df1), '. Unique values in each field :\n', df1[pks1].nunique())
     print('Length df2', len(df2), '. Unique values in each field :\n', df2[pks2].nunique())
 
