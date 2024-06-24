@@ -2,12 +2,13 @@
 import os
 
 
-# Pull version
 def read_version():
     version_file = os.path.join(os.path.dirname(__file__), '../yaetos', '__version__.py')
     with open(version_file) as f:
         exec(f.read())
     return locals()['__version__']
+
+
 __version__ = read_version()
 
 
