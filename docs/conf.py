@@ -1,4 +1,5 @@
 # Configuration file for the Sphinx documentation builder.
+from yaetos.__version__ import __version__
 
 # -- Project information
 
@@ -6,8 +7,8 @@ project = 'Yaetos'
 copyright = '2018, Arthur Prevot'
 author = 'Arthur Prevot'
 
-release = '0.11'
-version = '0.11.8'
+release = '.'.join(__version__.split('.')[:2])
+version = __version__
 
 # -- General configuration
 
