@@ -21,6 +21,7 @@ long_description = '\n'.join(long_description.split('\n')[3:])  # To remove head
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
+
 def read_version():
     version_file = os.path.join(os.path.dirname(__file__), 'yaetos', '__version__.py')
     with open(version_file) as f:
