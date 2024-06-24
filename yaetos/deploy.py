@@ -64,6 +64,7 @@ class DeployPySparkScriptOnAws(object):
         self.deploy_args = deploy_args
         self.ec2_instance_master = app_args.get('ec2_instance_master', 'm5.xlarge')  # 'm5.12xlarge', # used m3.2xlarge (8 vCPU, 30 Gib RAM), and earlier m3.xlarge (4 vCPU, 15 Gib RAM)
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
+        self.emr_applications = app_args.get('emr_applications', [{'Name': 'Hadoop'}, {'Name': 'Spark'}])
         # Computed params:
         s3_logs = app_args.get('s3_logs', 's3://').replace('{root_path}', self.app_args.get('root_path', ''))
         self.s3_logs = CPt(s3_logs)
@@ -427,7 +428,7 @@ class DeployPySparkScriptOnAws(object):
                 'Ec2SubnetId': self.ec2_subnet_id,
                 # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
             },
-            Applications=[{'Name': 'Hadoop'}, {'Name': 'Spark'}],
+            Applications=self.emr_applications,  # should be at a minimum [{'Name': 'Hadoop'}, {'Name': 'Spark'}],
             Configurations=[
                 {  # Section to force python3 since emr-5.x uses python2 by default.
                     "Classification": "spark-env",

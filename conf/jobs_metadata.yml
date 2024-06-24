@@ -146,7 +146,7 @@ jobs:
     api_inputs: {'api_creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
     output: {'path':'{base_path}/mysql_example/output_ex6_mysql/{now}/', 'type':'csv'}
 
-  job_with_no_output:
+  examples/job_with_no_output:
     description: "shows job with no output (still requiring table as output but not dumped to disk)"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
@@ -154,7 +154,7 @@ jobs:
       other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
     output: {'path':'n/a', 'type':'None'}
 
-  job_with_more_resources:
+  examples/job_with_more_resources:
     description: "To show how to change the machine specs and size of the cluster. See ec2_instance_master and emr_core_instances params below"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
@@ -164,6 +164,7 @@ jobs:
     ec2_instance_master: 'm5.4xlarge'
     ec2_instance_slaves: 'm5.4xlarge'
     emr_core_instances: 3
+    emr_applications: [{'Name': 'Hadoop'}, {'Name': 'Spark'}, {'Name': 'Livy'}, {'Name': 'JupyterHub'}]
 
   examples/ex7_pandas_with_sql_job.py:
     description: "job loading and processing data with pandas. No spark involved."
@@ -347,24 +348,22 @@ jobs:
     output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     spark_boot: False
 
-  examples/ex18_base_path_in_out_job:
+  examples/ex18_placeholder_param_replacement_job:
     description: |
-      Showing use of name_base_in_param and name_base_out_param, to set base_path different in input and output.
-      usage: python jobs/generic/launcher.py --job_name=examples/ex18_base_path_in_out_job #--mode=dev_local,your_extra_tenant
+      Showing use of key replacement in strings parameters, i.e. see {{base_path_in}} and {{base_path_out}} below, automatically replace by value of 'base_path_in' and 'base_path_out' params below.
+      usage: python jobs/generic/launcher.py --job_name=examples/ex18_placeholder_param_replacement_job
     py_job: jobs/examples/ex7_pandas_job.py
     inputs:
-      some_events: {'path':"{base_path_in}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
-      other_events: {'path':"{base_path_in}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
-    output: {'path':'{base_path_out}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
-    name_base_in_param: base_path_in
-    name_base_out_param: base_path_out
+      some_events: {'path':"{{base_path_in}}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{{base_path_in}}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{{base_path_out}}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     base_path_in: './data'
     base_path_out: './data_other'
     spark_boot: False
 
   examples/ex19_compare_pandas_job:
     description: "Showcasing a job to compare 2 datasets"
-    py_job: jobs/generic/compare_pandas_job.py
+    py_job: jobs/generic/compare_job.py
     inputs:
       tableA: {'path':"{base_path}/wiki_example/input/{latest}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}
       tableB: {'path':"{base_path}/wiki_example/input/{latest}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}

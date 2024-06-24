@@ -23,6 +23,7 @@ import smtplib
 import ssl
 from dateutil.relativedelta import relativedelta
 from importlib import import_module
+import re
 import yaetos.spark_utils as su
 import yaetos.pandas_utils as pu
 from yaetos.git_utils import Git_Config_Manager
@@ -351,7 +352,7 @@ class ETL_Base(object):
             path = path.replace('s3://', 's3a://') if 'dev_local' in self.jargs.mode.split(',') else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
 
-            # Get base_path. TODO: centralize
+            # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
             if self.jargs.merged_args.get('name_base_in_param'):
                 base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
                 path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
@@ -766,28 +767,19 @@ class ETL_Base(object):
     @staticmethod
     def check_pk(df, pks, df_type='spark'):
         if df_type == 'spark':
-            count = df.count()
-            count_pk = df.select(pks).dropDuplicates().count()
-            if count != count_pk:
-                logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
-                return False
-            else:
-                logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
-                return True
+            return su.check_pk(df, pks)
         elif df_type == 'pandas':
-            count = len(df)
-            count_pk = len(df[pks].drop_duplicates())
-            if count != count_pk:
-                logger.error("Given fields ({}) are not PKs since not unique. count={}, count_pk={}".format(pks, count, count_pk))
-                return False
-            else:
-                logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
-                return True
+            return pu.check_pk(df, pks)
         else:
             raise Exception(f"shouldn't get here, set df_type to 'spark' or 'pandas'. It is set in {df_type}")
 
-    def identify_non_unique_pks(self, df, pks):
-        return su.identify_non_unique_pks(df, pks)
+    def identify_non_unique_pks(self, df, pks, df_type='spark'):
+        if df_type == 'spark':
+            return su.identify_non_unique_pks(df, pks)
+        elif df_type == 'pandas':
+            raise Exception("Function 'identify_non_unique_pks()' not implemented yet for pandas dfs. Feel free to contribute.")
+        else:
+            raise Exception(f"shouldn't get here, set df_type to 'spark' or 'pandas'. It is set in {df_type}")
 
 
 class Period_Builder():
@@ -955,7 +947,9 @@ class Job_Args_Parser():
         args.update(job_args)
         args.update(cmd_args)
         args['mode'] = self.get_default_mode(args)
+        logger.info("Job args: \n{}".format(pformat(args)))
         args = self.update_args(args, loaded_inputs)
+        args = self.replace_placeholders(args)
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
         # Other access to vars
@@ -964,7 +958,6 @@ class Job_Args_Parser():
         self.yml_args = yml_args
         self.job_args = job_args
         self.cmd_args = cmd_args
-        logger.info("Job args: \n{}".format(pformat(args)))
         if validate:
             self.validate()
 
@@ -990,13 +983,13 @@ class Job_Args_Parser():
             args['output']['type'] = args.pop('output.type', None) or args['output'].get('type', 'none')
         if args.get('spark_app_args'):  # hack to have scala sample job working. TODO: remove hardcoded case when made more generic
 
-            # Get base_path. TODO: centralize
+            # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
             if args.get('name_base_in_param'):  # TODO: check if requires name_base_in_param or name_base_out_param
                 base_path = args[args.get('name_base_in_param')]
                 args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
             else:
                 base_path = args.get('base_path')
-            args['spark_app_args'] = Path_Handler(args['spark_app_args'], base_path, args.get('root_path')).path
+            args['spark_app_args'] = Path_Handler(args['spark_app_args'], base_path, args.get('root_path')).path  # TODO: remove root_path since it is now done with replace_placeholders
 
         return args
 
@@ -1046,6 +1039,30 @@ class Job_Args_Parser():
                             "It should be either the name of the job if it ends with .sql, "
                             "or it should be set in a parameter called sql_file.")
         # TODO: add more.
+
+    @staticmethod
+    def replace_placeholders(params):
+        placeholder_pattern = re.compile(r'\{\{(\w+)\}\}')  # regex to find placeholders like {{key}}
+
+        def replace_placeholders_recursively(item, params):
+            """ Recursively replace placeholders based on item type. """
+            if isinstance(item, str):
+                matches = placeholder_pattern.findall(item)
+                for key in matches:
+                    if key in params:
+                        print(f"Found placeholder in '{item}', replaced '{key}' by '{params[key]}'.")
+                        item = item.replace(f'{{{{--key--}}}}'.replace(f"--key--", key), str(params[key]))  # noqa: F541
+                return item
+            elif isinstance(item, dict):
+                return {k: replace_placeholders_recursively(v, params) for k, v in item.items()}
+            elif isinstance(item, list):
+                return [replace_placeholders_recursively(elem, params) for elem in item]
+            else:
+                return item
+
+        # Replace values for each key found in the original dictionary
+        params = {k: replace_placeholders_recursively(v, params) for k, v in params.items()}
+        return params
 
 
 class Path_Handler():

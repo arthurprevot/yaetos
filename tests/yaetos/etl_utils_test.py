@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 from yaetos.etl_utils import ETL_Base, \
     Period_Builder, Job_Args_Parser, Job_Yml_Parser, Runner, Flow, \
-    get_job_class, LOCAL_JOB_FOLDER, JOBS_METADATA_FILE
+    get_job_class, \
+    LOCAL_JOB_FOLDER, JOBS_METADATA_FILE
 
 
 class Test_ETL_Base(object):
@@ -175,6 +176,38 @@ class Test_Job_Args_Parser(object):
             job.validate()
         except Exception as exc:
             assert False, f"'test_validate_params' raised an exception: {exc}"
+
+    def test_replace_placeholders(self):
+        params = {
+            'key1': ['I like {{key2}} pie', 'other_value'],
+            'key2': 'some_value',
+            'key3': {'other_key': 'a long string with {{key4}} in {{key5}}'},
+            'key4': 'value_2',
+            'key5': 'value_3'}
+        actual = Job_Args_Parser.replace_placeholders(params)
+
+        expected = {
+            'key1': ['I like some_value pie', 'other_value'],
+            'key2': 'some_value',
+            'key3': {'other_key': 'a long string with value_2 in value_3'},
+            'key4': 'value_2',
+            'key5': 'value_3'}
+        assert actual == expected
+
+    def test_replace_placeholders_missing_cases(self):
+        params = {
+            'key1': ['I like {{key2}} pie', 'other_value'],
+            'key2': 'some_value',
+            'key3': {'other_key': 'a long string with {{key4}} in {{key5}} and {{key4}}'},
+            'key4': 'value_2'}
+        actual = Job_Args_Parser.replace_placeholders(params)
+
+        expected = {
+            'key1': ['I like some_value pie', 'other_value'],
+            'key2': 'some_value',
+            'key3': {'other_key': 'a long string with value_2 in {{key5}} and value_2'},
+            'key4': 'value_2'}
+        assert actual == expected
 
 
 class Test_Runner(object):

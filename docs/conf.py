@@ -1,4 +1,16 @@
 # Configuration file for the Sphinx documentation builder.
+import os
+
+
+def read_version():
+    version_file = os.path.join(os.path.dirname(__file__), '../yaetos', '__version__.py')
+    with open(version_file) as f:
+        exec(f.read())
+    return locals()['__version__']
+
+
+__version__ = read_version()
+
 
 # -- Project information
 
@@ -6,8 +18,8 @@ project = 'Yaetos'
 copyright = '2018, Arthur Prevot'
 author = 'Arthur Prevot'
 
-release = '0.11'
-version = '0.11.8'
+version = __version__
+release = '.'.join(version.split('.')[:2])
 
 # -- General configuration
 

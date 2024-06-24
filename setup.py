@@ -9,6 +9,8 @@ https://github.com/arthurprevot/yaetos
 # Always prefer setuptools over distutils
 from setuptools import setup
 import pathlib
+import os
+
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -18,6 +20,14 @@ long_description = '\n'.join(long_description.split('\n')[3:])  # To remove head
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
+
+
+def read_version():
+    version_file = os.path.join(os.path.dirname(__file__), 'yaetos', '__version__.py')
+    with open(version_file) as f:
+        exec(f.read())
+    return locals()['__version__']
+
 
 setup(
     # This is the name of your project. The first time you publish this
@@ -39,7 +49,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version='0.11.8',  # Required
+    version=read_version(),  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
