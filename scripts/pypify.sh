@@ -19,7 +19,7 @@ cp jobs/generic/dummy_job.py yaetos/libs/generic_jobs/dummy_job.py
 cp jobs/generic/launcher.py yaetos/libs/generic_jobs/launcher.py
 cp jobs/generic/sql_spark_job.py yaetos/libs/generic_jobs/sql_spark_job.py
 cp jobs/generic/sql_pandas_job.py yaetos/libs/generic_jobs/sql_pandas_job.py
-cp jobs/generic/compare_pandas_job.py yaetos/libs/generic_jobs/compare_pandas_job.py
+cp jobs/generic/compare_job.py yaetos/libs/generic_jobs/compare_job.py
 cp jobs/generic/list_files_job.py yaetos/libs/generic_jobs/list_files_job.py
 cp jobs/examples/ex0_extraction_job.py yaetos/scripts/copy/ex0_extraction_job.py
 cp jobs/examples/ex1_sql_job.sql yaetos/scripts/copy/ex1_sql_job.sql
