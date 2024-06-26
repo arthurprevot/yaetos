@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-worker
+spec:
+  replicas: 2  # Two worker nodes
+  selector:
+    matchLabels:
+      component: spark-worker
+  template:
+    metadata:
+      labels:
+        component: spark-worker
+    spec:
+      containers:
+      - name: spark-worker
+        image: pyspark_yaetos:latest
+        ports:
+        - containerPort: 8081
+        command: ["/bin/bash", "-c"]
+        args: ["/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"]
