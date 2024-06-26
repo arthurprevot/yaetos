@@ -28,7 +28,7 @@
     local:///path/to/your_script.py \
     [application arguments]
 
-# for me
+# For basic spark job, in local kubernetes (using Docker Desktop)
 spark-submit \
     --master k8s://https://kubernetes.docker.internal:6443 \
     --deploy-mode cluster \
@@ -47,7 +47,7 @@ spark-submit \
     --conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/scripts/k8s_setup/ \
     --conf spark.kubernetes.file.upload.path=file:///data/ \
     local:///data/sample_spark_job.py
-    
+    # works.
 
     # Params removed
     # --conf spark.kubernetes.authenticate.driver.serviceAccountName=default \

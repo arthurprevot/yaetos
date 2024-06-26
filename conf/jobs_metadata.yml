@@ -470,7 +470,7 @@ common_params:
       enable_db_push: True
       save_schemas: False
       manage_git_info: True
-    dev_EMR:
+    dev_EMR:  # TODO: change to dev_aws
       root_path: s3://mylake-dev  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0

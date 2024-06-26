@@ -102,6 +102,8 @@ class DeployPySparkScriptOnAws(object):
         self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
         if self.deploy_args['deploy'] == 'EMR':
             self.run_direct()
+        elif self.deploy_args['deploy'] == 'k8s':
+            self.run_direct_k8s()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
             self.run_aws_data_pipeline()
         elif self.deploy_args['deploy'] in ('airflow'):
@@ -179,13 +181,140 @@ class DeployPySparkScriptOnAws(object):
             s3 = self.session.resource('s3')
             self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
 
+    def run_direct_k8s(self):
+        """Useful to run job on cluster on the spot, without going through scheduler."""
+        # self.s3_ops(self.session)
+        self.local_file_ops()
+        if self.deploy_args.get('push_secrets', False):
+            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
+
+        logger.info("Sending spark-submit to k8s cluster")
+        cmdline = self.get_spark_submit_args_k8s(self.app_file, self.app_args)
+        self.launch_spark_submit_k8s(cmdline)
+
+
+    @staticmethod
+    def get_spark_submit_args_k8s(app_file, app_args):
+        """ app_file is launcher, might be py_job too, but may also be separate from py_job (ex python launcher.py --job_name=some_job_with_py_job)."""
+
+        # # set py_job
+        # if app_args.get('launcher_file') and app_args.get('py_job'):
+        #     py_job = eu.CLUSTER_APP_FOLDER + app_args.get('launcher_file')
+        # elif isinstance(app_file, str) and app_file.endswith('.py'):  # TODO: check values app_file can take
+        #     py_job = eu.CLUSTER_APP_FOLDER + app_file
+        # else:
+        #     py_job = None
+
+        # # set jar_job
+        # if (app_args.get('launcher_file') or isinstance(app_file, str)) and app_args.get('jar_job'):  # TODO: check to enforce app_args.get('launcher_file')
+        #     jar_job = eu.CLUSTER_APP_FOLDER + app_args.get('jar_job')
+        # else:
+        #     jar_job = None
+        # # TODO: simplify business of getting application code (2 blocks up) upstream, in etl_utils.py
+
+
+        # # pyspark job only for now.
+        # spark_submit_cmd = [
+        #     "spark-submit",
+        #     "--master", app_args['master_k8s_address'],
+        #     "--deploy-mode", "cluster",
+        #     "--name", app_args['job_name'],
+        #     "--conf", "spark.kubernetes.pyspark.pythonVersion=3",
+        #     "--conf", "spark.kubernetes.container.image={url}",
+        #     "--conf", "spark.kubernetes.file.upload.path={s3_url}",
+        #     "--conf", "spark.kubernetes.driver.podTemplateFile={yaml_driver}",
+        #     "--conf", "spark.kubernetes.executor.podTemplateFile={yaml_executor}",
+        #     "--py-files", self.output_path,
+        #     py_job
+        # ]
+
+        # if app_args.get('py_job'):
+        #     overridable_args = {
+        #         'spark_submit_args': '--verbose',
+        #         'spark_submit_keys': 'py-files',
+        #         'spark_app_args': '',
+        #         'spark_app_keys': 'mode--deploy--storage'}
+        # else:  # for jar_job
+        #     overridable_args = {
+        #         'spark_submit_args': '--verbose',
+        #         'spark_submit_keys': '',
+        #         'spark_app_args': '',
+        #         'spark_app_keys': ''}
+
+        # overridable_args.update(app_args)
+        # args = overridable_args.copy()
+
+        # unoverridable_args = {
+        #     'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
+        #     'py_job': py_job,
+        #     'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
+        #     'deploy': 'none',
+        #     'storage': 's3',
+        #     'jar_job': jar_job}
+        # args.update(unoverridable_args)
+
+        # if app_args.get('dependencies'):
+        #     args['spark_app_args'] += ' --dependencies'
+
+        # if app_args.get('job_param_file') and app_args.get('py_job'):
+        #     args['job_param_file'] = eu.CLUSTER_APP_FOLDER + app_args['job_param_file']
+        #     args['spark_app_keys'] += '--job_param_file'
+
+        # if app_args.get('job_name') and app_args.get('py_job'):
+        #     args['job_name'] = app_args['job_name']
+        #     args['spark_app_keys'] += '--job_name'
+
+        # # TODO: implement better way to handle params, less case by case, to only deal with overloaded params
+        # jargs = eu.Job_Args_Parser(defaults_args={}, yml_args={}, job_args=args, cmd_args={}, build_yml_args=False, loaded_inputs={})
+        # # return eu.Runner.create_spark_submit(jargs)
+
+        spark_submit = [
+            'spark-submit',
+            '--master k8s://https://kubernetes.docker.internal:6443',
+            '--deploy-mode cluster',
+            '--name my-pyspark-job',
+            '--conf spark.kubernetes.namespace=default',
+            '--conf spark.kubernetes.container.image=pyspark_yaetos',
+            '--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark-service-account',
+            '--conf spark.executor.instances=2',
+            '--conf spark.kubernetes.pyspark.pythonVersion=3',
+            '--conf spark.pyspark.python=python3',
+            '--conf spark.pyspark.driver.python=python3',
+            # '--conf spark.kubernetes.driver.pod.name=my-pyspark-pod',
+            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
+            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
+            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
+            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
+            '--conf spark.kubernetes.file.upload.path=file:///yaetos_jobs/tmp/files_to_ship/scripts.zip',
+            '--py-files local:///mnt/yaetos_jobs/tmp/files_to_ship/scripts.zip',
+            # 'local:///data/sample_spark_job.py',
+            'local:///mnt/yaetos_jobs/jobs/generic/launcher.py',
+            '--mode=dev_local',
+            '--deploy=none',
+            '--storage=s3',
+            '--job_name=examples/ex0_extraction_job.py'
+            ]
+        return spark_submit
+
+    def launch_spark_submit_k8s(self, cmdline):
+        cmdline_str = " ".join(cmdline)
+        logger.info(f'About to run spark submit command line: {cmdline_str}')
+        # if not jargs.merged_args.get('dry_run'):
+        os.system(cmdline_str)
+
     def s3_ops(self, session):
         s3 = session.resource('s3')
         self.temp_bucket_exists(s3)
-        self.tar_python_scripts()
+        # self.tar_python_scripts()
+        # self.convert_tar_to_zip()
+        self.local_file_ops()
         self.move_bash_to_local_temp()
         self.upload_temp_files(s3)
         return s3
+
+    def local_file_ops(self):
+        self.tar_python_scripts()
+        self.convert_tar_to_zip()
 
     def get_active_clusters(self, c):
         response = c.list_clusters(
@@ -319,6 +448,30 @@ class DeployPySparkScriptOnAws(object):
             logger.debug("Added %s to tar-file" % f)
         t_file.close()
         logger.debug("Added all spark app files to {}".format(output_path))
+        self.output_path = output_path
+
+    def convert_tar_to_zip(self):
+        import tarfile
+        import zipfile
+        
+        tar_gz_path = self.output_path
+        zip_path = self.TMP / "scripts.zip"
+        # Open the tar.gz file
+        with tarfile.open(tar_gz_path, 'r:gz') as tar:
+            # Create a ZipFile object in write mode
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                # Iterate over each member in the tar.gz file
+                for member in tar.getmembers():
+                    # Check if the member is a file
+                    if member.isfile():
+                        # Extract the file contents as a file object
+                        fileobj = tar.extractfile(member)
+                        # Read the contents of the file object
+                        file_data = fileobj.read()
+                        # Write the contents to the zip file
+                        zipf.writestr(member.name, file_data)
+        logger.info(f"Converted '{tar_gz_path}' to '{zip_path}'.")
+
 
     def move_bash_to_local_temp(self):
         """Moving file from local repo to local tmp folder for later upload to S3."""
