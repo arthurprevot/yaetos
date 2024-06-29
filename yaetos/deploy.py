@@ -304,7 +304,7 @@ class DeployPySparkScriptOnAws(object):
             f'--master {app_args["k8s_url"]}',
             '--deploy-mode cluster',
             f'--name {app_args["k8s_name"]}',
-            f'--conf spark.executor.instances={app_args["executor_instances"]}',
+            f'--conf spark.executor.instances={app_args["k8s_executor_instances"]}',
             '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
             f'--conf spark.kubernetes.namespace={app_args["k8s_namespace"]}',
             f'--conf spark.kubernetes.container.image={app_args["k8s_image_service"]}',
