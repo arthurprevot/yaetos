@@ -1125,6 +1125,16 @@ class Runner():
         parser, defaults_args, categories = self.define_commandline_args()  # TODO: use categories below to remove non applicable params.
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
+        print(f'#### --- os.getcwd(): {os.getcwd()}')
+        if cmd_args.get('runs_on')=='k8s':
+        # if cmd_args.get('runs_on') != 'macos':
+            from zipfile import ZipFile
+            zip_path = 'scripts.zip'
+            extract_to_path = os.getcwd()
+            with ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(extract_to_path)
+
+
         # Building "job", which will include all job args.
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file", Implies 'job_name' available in cmd_args.
             jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})

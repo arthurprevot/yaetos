@@ -192,7 +192,19 @@ class FS_Ops_Dispatcher():
 
         with streamingIO() as file_buffer:
             save_pandas_local(df, file_buffer, save_method, save_kwargs)
-            s3c = boto3.Session(profile_name='default').client('s3')
+            import logging
+            from botocore.exceptions import ClientError
+            # boto3.set_stream_logger('', logging.DEBUG)
+            try:
+                # s3_client = boto3.client('s3')
+                # s3_client.put_object(Bucket='your-bucket-name', Key='your-object-key', Body=b'Your file contents')
+                s3c = boto3.client('s3')
+                response = s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=file_buffer.getvalue())
+            except ClientError as error:
+                raise Exception(error)
+
+            # s3c = boto3.Session(profile_name='default').client('s3')
+            s3c = boto3.client('s3')
             response = s3c.put_object(Bucket=bucket_name, Key=bucket_fname, Body=file_buffer.getvalue())
 
         response_code = response['ResponseMetadata']['HTTPStatusCode']

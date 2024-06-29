@@ -2,7 +2,8 @@
 
 1. build the image locally
     - $ cd repo root
-    - $ docker build -t pyspark_yaetos:latest -f Dockerfile_k8s . # builds from Dockerfile  # -> works
+    - $ docker build -t pyspark_yaetos:latest -f Dockerfile_k8s . # builds from Dockerfile_k8s for arm64 # -> works
+    - $ docker buildx build -f Dockerfile_k8s --platform linux/amd64 --tag pyspark_yaetos:latest --load .  # builds from Dockerfile_k8s for amd64 for shipping to ECR # -> works
     - $ docker run -it \
       -h spark \
       pyspark_yaetos \

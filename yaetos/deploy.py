@@ -268,6 +268,7 @@ class DeployPySparkScriptOnAws(object):
         # jargs = eu.Job_Args_Parser(defaults_args={}, yml_args={}, job_args=args, cmd_args={}, build_yml_args=False, loaded_inputs={})
         # # return eu.Runner.create_spark_submit(jargs)
 
+        # For k8s on docker_desktop on macOS
         spark_submit = [
             'spark-submit',
             '--master k8s://https://kubernetes.docker.internal:6443',
@@ -293,6 +294,38 @@ class DeployPySparkScriptOnAws(object):
             '--deploy=none',
             '--storage=s3',
             '--job_name=examples/ex0_extraction_job.py'
+            ]
+
+        # import ipdb; ipdb.set_trace()
+
+        # For k8s in AWS, for yaetos jobs.
+        spark_submit = [
+            'spark-submit',
+            f'--master {app_args["k8s_url"]}',
+            '--deploy-mode cluster',
+            f'--name {app_args["k8s_name"]}',
+            f'--conf spark.executor.instances={app_args["executor_instances"]}',
+            '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
+            f'--conf spark.kubernetes.namespace={app_args["k8s_namespace"]}',
+            f'--conf spark.kubernetes.container.image={app_args["k8s_image_service"]}',
+            f'--conf spark.kubernetes.file.upload.path={app_args["k8s_upload_path"]}',
+            f'--conf spark.kubernetes.driver.podTemplateFile={app_args["k8s_driver_podTemplateFile"]}',
+            f'--conf spark.kubernetes.executor.podTemplateFile={app_args["k8s_executor_podTemplateFile"]}',
+            '--conf spark.jars.ivy=/tmp/.ivy2',
+            '--conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider',
+            '--conf spark.hadoop.fs.s3a.access.key="${AWS_ACCESS_KEY_ID}"',
+            '--conf spark.hadoop.fs.s3a.secret.key="${AWS_SECRET_ACCESS_KEY}"',
+            '--conf spark.hadoop.fs.s3a.session.token="${AWS_SESSION_TOKEN}"',
+            '--conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem',
+            f'--conf spark.hadoop.fs.s3a.endpoint=s3.{app_args["aws_region"]}.amazonaws.com',
+            f'--conf spark.kubernetes.driver.pod.name={app_args["k8s_podname"]}',
+            '--py-files tmp/files_to_ship/scripts.zip',
+            'jobs/generic/launcher.py',
+            f'--mode={app_args["mode"]}', # need to make sure it uses a mode compatible with k8s
+            '--deploy=none',
+            '--storage=s3',
+            f'--job_name={app_args["job_name"]}',
+            '--runs_on=k8s',
             ]
         return spark_submit
 
@@ -391,7 +424,7 @@ class DeployPySparkScriptOnAws(object):
 
     def tar_python_scripts(self):
         package = self.get_package_path()
-        logger.info(f"Package (.tar.gz) to be created from files in '{package}', to be put in {self.TMP}, and pushed to S3")
+        logger.info(f"Package (tar.gz) to be created from files in '{package}', to be put in {self.TMP}")
         output_path = self.TMP / "scripts.tar.gz"
 
         # Create tar.gz file
