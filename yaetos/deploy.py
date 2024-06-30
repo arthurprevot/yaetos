@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 import time
 import tarfile
+import zipfile
 import boto3
 import botocore
 import uuid
@@ -471,28 +472,17 @@ class DeployPySparkScriptOnAws(object):
         logger.debug("Added all spark app files to {}".format(output_path))
         self.output_path = output_path
 
-    def convert_tar_to_zip(self):
-        import tarfile
-        import zipfile
-        
+    def convert_tar_to_zip(self):        
         tar_gz_path = self.output_path
         zip_path = self.TMP / "scripts.zip"
-        # Open the tar.gz file
         with tarfile.open(tar_gz_path, 'r:gz') as tar:
-            # Create a ZipFile object in write mode
             with zipfile.ZipFile(zip_path, 'w') as zipf:
-                # Iterate over each member in the tar.gz file
                 for member in tar.getmembers():
-                    # Check if the member is a file
                     if member.isfile():
-                        # Extract the file contents as a file object
                         fileobj = tar.extractfile(member)
-                        # Read the contents of the file object
                         file_data = fileobj.read()
-                        # Write the contents to the zip file
                         zipf.writestr(member.name, file_data)
         logger.info(f"Converted '{tar_gz_path}' to '{zip_path}'.")
-
 
     def move_bash_to_local_temp(self):
         """Moving file from local repo to local tmp folder for later upload to S3."""
