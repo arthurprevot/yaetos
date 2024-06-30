@@ -247,7 +247,8 @@ class DeployPySparkScriptOnAws(object):
         # unoverridable_args = {
         #     'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
         #     'py_job': py_job,
-        #     'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
+        #     #'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
+        #     'mode': app_args.get('default_aws_modes', 'dev_EMR'),
         #     'deploy': 'none',
         #     'storage': 's3',
         #     'jar_job': jar_job}
@@ -377,20 +378,9 @@ class DeployPySparkScriptOnAws(object):
     @staticmethod
     def generate_pipeline_name(mode, job_name, user):
         """Opposite of get_job_name()"""
-
-        # Get deploy_env (Hacky. TODO: improve)
-        modes = mode.split(',')
-        required_mode = ('dev_EMR', 'prod_EMR')
-        modes = [item for item in modes if item in required_mode]
-        if len(modes) == 1:
-            deploy_env = modes[0]
-        else:
-            raise Exception(f"mode missing one of the required on {required_mode}")
-
-        mode_label = {'dev_EMR': 'dev', 'prod_EMR': 'prod'}[deploy_env]
         pname = job_name.replace('.', '_d_').replace('/', '_s_')
         now = datetime.now().strftime("%Y%m%dT%H%M%S")
-        name = f"yaetos__{mode_label}__{pname}__{now}"
+        name = f"yaetos__{pname}__{now}"
         logger.info('Pipeline Name "{}":'.format(name))
         return name
 
@@ -757,7 +747,8 @@ class DeployPySparkScriptOnAws(object):
         unoverridable_args = {
             'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
             'py_job': py_job,
-            'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
+            # 'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
+            'mode': app_args.get('default_aws_modes', 'dev_EMR'),
             'deploy': 'none',
             'storage': 's3',
             'jar_job': jar_job}
@@ -1120,7 +1111,7 @@ def deploy_standalone(job_args_update={}):
     job_args = {
         # --- regular job params ---
         'job_param_file': None,
-        'mode': 'dev_EMR',
+        'mode': 'dev_EMR',  # TODO: make independent from dev_EMR
         'output': {'path': 'n_a', 'type': 'csv'},
         'job_name': 'n_a',
         # --- params specific to running this file directly, can be overriden by command line ---
