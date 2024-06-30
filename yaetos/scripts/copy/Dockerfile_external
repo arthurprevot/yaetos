@@ -11,7 +11,7 @@ RUN apt update \
 RUN python -m pip install --upgrade pip
 RUN pip3 install --no-deps yaetos==0.11.10
 # Force latest version to avoid using previous ones.
-RUN pip3 install -r /opt/bitnami/python/lib/python3.8/site-packages/yaetos/scripts/requirements_base.txt
+RUN pip3 install -r /opt/bitnami/python/lib/python3.11/site-packages/yaetos/scripts/requirements_base.txt
 # Installing libraries required by Yaetos and more. Using this since requirements_base.txt has exact versions.
 COPY conf/requirements_extra.txt /tmp/requirements_extra.txt
 RUN pip3 install -r /tmp/requirements_extra.txt
