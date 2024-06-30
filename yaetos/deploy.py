@@ -649,7 +649,8 @@ class DeployPySparkScriptOnAws(object):
             'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
             'py_job': py_job,
             # 'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
-            'mode': app_args.get('default_aws_modes', 'dev_EMR'),
+            # 'mode': app_args.get('default_aws_modes', 'dev_EMR'),
+            'mode': app_args.get('default_aws_modes', 'dev_EMR') if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
             'deploy': 'none',
             'storage': 's3',
             'jar_job': jar_job}

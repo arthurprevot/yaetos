@@ -5,11 +5,11 @@ from pathlib import Path as Pt
 
 class Test_DeployPySparkScriptOnAws(object):
     def test_generate_pipeline_name(self):
-        mode = 'dev_EMR'
+        mode = 'n/a'  # TODO: remove need for mode param in generate_pipeline_name()
         job_name = 'jobs.some_folder.job'
         user = 'n/a'
         actual = Dep.generate_pipeline_name(mode, job_name, user)
-        expected = 'yaetos__dev__jobs_d_some_folder_d_job__20220629T205103'
+        expected = 'yaetos__jobs_d_some_folder_d_job__20220629T205103'
         assert actual[:-15] == expected[:-15]  # [:-15] to remove timestamp
 
     def test_get_job_name(self):
@@ -26,10 +26,10 @@ class Test_DeployPySparkScriptOnAws(object):
         assert actual == expected
 
     def test_get_job_log_path_dev(self, deploy_args, app_args):
-        deploy_args['mode'] = 'dev_EMR'
+        # deploy_args['mode'] = 'dev_EMR'
         dep = Dep(deploy_args, app_args)
         actual = dep.get_job_log_path()
-        expected = 'pipelines_metadata/jobs_code/yaetos__dev__some_job_name__20220629T211146'
+        expected = 'pipelines_metadata/jobs_code/yaetos__some_job_name__20220629T211146'
         assert actual[:-15] == expected[:-15]  # [:-15] to remove timestamp
 
     def test_get_package_path(self, deploy_args, app_args):
@@ -131,6 +131,7 @@ class Test_DeployPySparkScriptOnAws(object):
     def test_get_spark_submit_k8s_aws(self, app_args):
         app_args = {
             'job_name': 'a_job_name',
+            'mode': 'a_mode',
             'k8s_url': 'a_k8s_url',
             'k8s_name': 'a_k8s_name',
             'k8s_executor_instances': 'a_k8s_executor_instances',
@@ -144,7 +145,6 @@ class Test_DeployPySparkScriptOnAws(object):
             'spark_app_args': [],
             }
 
-        # app_args['job_name'] = 'some_job_name'
         app_file = 'jobs/generic/launcher.py'
         actual = Dep.get_spark_submit_args_k8s(app_file, app_args)
         expected = [  # spark-submit command that works in k8s in AWS EKS
