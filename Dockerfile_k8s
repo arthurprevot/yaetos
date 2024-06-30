@@ -1,13 +1,6 @@
 FROM docker.io/bitnami/spark:3.5.0
 USER root
 
-# Lib installs
-# RUN apt update \
-#   && apt install -y git \
-#   && apt install -y g++ \
-#   && apt install -y nodejs
-# 2 lines above for jupyterlab
-
 RUN python -m pip install --upgrade pip
 RUN pip3 install --no-deps yaetos==0.11.10
 # Force latest version to avoid using previous ones.
@@ -24,7 +17,6 @@ ENV YAETOS_JOBS_HOME /mnt/yaetos_jobs/
 # SparkContext web UI on 4040 -- only available for the duration of the application.
 # Spark master’s web UI on 8080.
 # Spark worker web UI on 8081.
-# Jupyter web UI on 8888.
 EXPOSE 4040 8080 8081
 
 WORKDIR /mnt/yaetos_jobs/
