@@ -15,16 +15,8 @@ spec:
       containers:
       - name: spark-master
         image: pyspark_yaetos:latest
-        # volumeMounts:
-        # - name: spark-scripts
-        #   mountPath: /opt/spark/work-dir
         ports:
         - containerPort: 7077
         - containerPort: 8080
         command: ["/bin/bash", "-c"]
         args: ["/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master -h spark-master"]
-      # volumes:
-      # - name: spark-scripts
-      #   hostPath:
-      #     path: /Users/aprevot/Synced/github/code/code_perso/yaetos/scripts/k8s_setup
-      #     type: Directory

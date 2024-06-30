@@ -184,7 +184,6 @@ class DeployPySparkScriptOnAws(object):
 
     def run_direct_k8s(self):
         """Useful to run job on cluster on the spot, without going through scheduler."""
-        # self.s3_ops(self.session)
         self.local_file_ops()
         if self.deploy_args.get('push_secrets', False):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
@@ -222,7 +221,6 @@ class DeployPySparkScriptOnAws(object):
             '--conf spark.hadoop.fs.s3a.session.token="${AWS_SESSION_TOKEN}"',
             '--conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem',
             f'--conf spark.hadoop.fs.s3a.endpoint=s3.{app_args["aws_region"]}.amazonaws.com',
-            # f'--conf spark.kubernetes.driver.pod.name={app_args["k8s_podname"]}',
             '--py-files tmp/files_to_ship/scripts.zip']
 
         spark_submit_conf_extra = app_args.get('spark_deploy_args', [])
@@ -648,8 +646,6 @@ class DeployPySparkScriptOnAws(object):
         unoverridable_args = {
             'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
             'py_job': py_job,
-            # 'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
-            # 'mode': app_args.get('default_aws_modes', 'dev_EMR'),
             'mode': app_args.get('default_aws_modes', 'dev_EMR') if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
             'deploy': 'none',
             'storage': 's3',

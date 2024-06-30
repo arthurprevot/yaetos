@@ -98,7 +98,6 @@ class Test_DeployPySparkScriptOnAws(object):
     #         'job_name': 'some_job_name',
     #         'spark_app_args': 'some_arg'
     #         } # TBD
-
     #     app_file = 'jobs/generic/launcher.py'  # TBD
     #     actual = Dep.get_spark_submit_args_k8s(app_file, app_args)
     #     expected = [  # spark-submit command that works in local k8s with docker desktop
