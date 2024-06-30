@@ -23,6 +23,7 @@ import gc
 from pprint import pformat
 import smtplib
 import ssl
+from zipfile import ZipFile
 from dateutil.relativedelta import relativedelta
 from importlib import import_module
 import re
@@ -1129,15 +1130,8 @@ class Runner():
         parser, defaults_args, categories = self.define_commandline_args()  # TODO: use categories below to remove non applicable params.
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
-        print(f'#### --- os.getcwd(): {os.getcwd()}')
         if cmd_args.get('runs_on')=='k8s':
-        # if cmd_args.get('runs_on') != 'macos':
-            from zipfile import ZipFile
-            zip_path = 'scripts.zip'
-            extract_to_path = os.getcwd()
-            with ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(extract_to_path)
-
+            self.unzip_package()
 
         # Building "job", which will include all job args.
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file", Implies 'job_name' available in cmd_args.
@@ -1160,6 +1154,13 @@ class Runner():
         elif jargs.deploy in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(jargs.get_deploy_args(), jargs.get_app_args())
         return job
+
+    @staticmethod
+    def unzip_package():
+        zip_path = 'scripts.zip'
+        extract_to_path = os.getcwd()
+        with ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_to_path)
 
     @staticmethod
     def set_commandline_args(parser):
