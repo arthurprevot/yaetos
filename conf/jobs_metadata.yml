@@ -3,7 +3,7 @@ jobs:
   examples/ex0_extraction_job.py:
     description: "Sample API extraction job, pulling public wikipedia data."
     api_inputs: {'path': 'https://raw.githubusercontent.com/wikimedia-research/Discovery-Hiring-Analyst-2016/master/events_log.csv.gz'}
-    output: {'path':'{base_path}/wiki_example/input/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/wiki_example/input/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     frequency: '@once'
     spark_boot: False
 
@@ -11,9 +11,9 @@ jobs:
     description: "shows sql job, easiest when sql is enough"
     py_job: 'jobs/generic/sql_pandas_job.py'
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
-    output: {'path':'{base_path}/wiki_example_sql/output_ex1_sql_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/wiki_example_sql/output_ex1_sql_pandas/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     dependencies: [examples/ex0_extraction_job.py]
     spark_boot: False
     frequency: '@daily'
@@ -23,9 +23,9 @@ jobs:
   examples/ex7_pandas_job.py:
     description: "job loading and processing data with pandas. No spark involved."
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
-    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{{base_path}}/wiki_example/output_ex7_pandas/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     dependencies: [examples/ex0_extraction_job.py]
     frequency: '@once'
     airflow.default_args.retries: 3
@@ -37,9 +37,9 @@ jobs:
     py_job: 'jobs/generic/sql_spark_job.py'
     sql_file: 'jobs/examples/ex1_sql_job.sql'
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example_sql/output_ex1_sql_spark/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example_sql/output_ex1_sql_spark/{{now}}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
     repartition: 1
     frequency: '@once'
@@ -48,9 +48,9 @@ jobs:
   examples/ex1_frameworked_job.py:
     description: "shows frameworked pyspark ops, same as ex1_sql_job but gives access to spark ops to expand on sql."
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex1_frameworked/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex1_frameworked/{{now}}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
     frequency: 1 day
     start_date: "{today}T07:00:00+00:00"
@@ -60,9 +60,9 @@ jobs:
     description: "to show how to reuse existing job code"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex1_frameworked_p2/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex1_frameworked_p2/{{now}}/', 'type':'csv'}
     dependencies: [examples/ex0_extraction_job.py]
 
   examples/ex1_raw_job.py:
@@ -72,9 +72,9 @@ jobs:
   examples/ex2_frameworked_job.py:
     description: "more complex version of ex1_frameworked_job"
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex2/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex2/{{now}}/', 'type':'csv'}
     frequency: 1 day
     start_date: "{today}T07:00:00+00:00"
     emails: ['some_email@address.com']
@@ -82,8 +82,8 @@ jobs:
   examples/ex3_incremental_job.py:
     description: "focus on incremental loading and dropping"
     inputs:
-      processed_events: {'path':"{base_path}/wiki_example/output_ex3_dep/{latest}/", 'type':'csv', 'inc_field': 'timestamp_obj'}
-    output: {'path':'{base_path}/wiki_example/output_ex3_inc/incremental_build_v1/', 'type':'csv', 'inc_field': 'other_timestamp'}
+      processed_events: {'path':"{{base_path}}/wiki_example/output_ex3_dep/{{latest}}/", 'type':'csv', 'inc_field': 'timestamp_obj'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex3_inc/incremental_build_v1/', 'type':'csv', 'inc_field': 'other_timestamp'}
     dependencies: [examples/ex3_incremental_prep_job.py]
     frequency: 24h
     emails: ['some_email@address.com']
@@ -91,76 +91,76 @@ jobs:
   examples/ex3_incremental_prep_job.py:
     description: "shows computation of dependency as necessary for ex3_incremental_job"
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex3_dep/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex3_dep/{{now}}/', 'type':'csv'}
     frequency: 24h
     emails: ['some_email@address.com']
 
   examples/ex4_dependency1_job.py:
     description: "shows dependency"
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex4_dep1/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex4_dep1/{{now}}/', 'type':'csv'}
 
   examples/ex4_dependency2_job.py:
     description: "shows dependency without specifying inputs path since it is pulled from upstream."
     inputs:
-      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep1/{latest}/', 'type':'csv', 'df_type':'pandas'}
-    output: {'path':'{base_path}/wiki_example/output_ex4_dep2/{now}/dataset.csv', 'df_type':'pandas', 'type':'csv'}
+      some_events: {'path':'{{base_path}}/wiki_example/output_ex4_dep1/{{latest}}/', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex4_dep2/{{now}}/dataset.csv', 'df_type':'pandas', 'type':'csv'}
     dependencies: [examples/ex4_dependency1_job.py]
 
   examples/ex4_dependency3_job.sql:
     description: "shows dependency with sql"
     py_job: 'jobs/generic/sql_pandas_job.py'
     inputs:
-      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep2/{latest}/', 'type':'csv', 'df_type':'pandas', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
-    output: {'path':'{base_path}/wiki_example/output_ex4_dep3/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      some_events: {'path':'{{base_path}}/wiki_example/output_ex4_dep2/{{latest}}/', 'type':'csv', 'df_type':'pandas', 'from':'examples/ex4_dependency2_job.py'}  # 'path' not needed when run as dependency
+    output: {'path':'{{base_path}}/wiki_example/output_ex4_dep3/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     dependencies: [examples/ex4_dependency2_job.py, examples/ex4_dependency1_job.py]
     spark_boot: False
 
   examples/ex4_dependency4_job.py:
     description: "shows dependency"
     inputs:
-      some_events: {'path':'{base_path}/wiki_example/output_ex4_dep3/{latest}/', 'type':'csv', 'from':'examples/ex4_dependency3_job.sql'}
-    output: {'path':'{base_path}/wiki_example/output_ex4_dep4/{now}/', 'type':'csv'}
+      some_events: {'path':'{{base_path}}/wiki_example/output_ex4_dep3/{{latest}}/', 'type':'csv', 'from':'examples/ex4_dependency3_job.sql'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex4_dep4/{{now}}/', 'type':'csv'}
     dependencies: [examples/ex4_dependency3_job.sql]
 
   examples/ex5_copy_to_oracle_job.py:
     description: "shows frameworked pyspark ops, same as ex1_sql_job but gives access to spark ops to expand on sql."
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex5_copy_to_oracle/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex5_copy_to_oracle/{{now}}/', 'type':'csv'}
     copy_to_oracle: {'creds': 'oracle', 'table': 'sandbox.test_ex5_pyspark_job'}
 
   examples/ex5_copy_to_redshift_job.py:
     description: "shows frameworked pyspark ops, same as ex1_sql_job but gives access to spark ops to expand on sql."
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex5_copy_to_oracle/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex5_copy_to_oracle/{{now}}/', 'type':'csv'}
     copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': '{schema}.test_ex5_pyspark_job'}
 
   examples/ex6_mysql_job.py:
     description: "requires mysql instance running"
     api_inputs: {'api_creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
-    output: {'path':'{base_path}/mysql_example/output_ex6_mysql/{now}/', 'type':'csv'}
+    output: {'path':'{{base_path}}/mysql_example/output_ex6_mysql/{{now}}/', 'type':'csv'}
 
   examples/job_with_no_output:
     description: "shows job with no output (still requiring table as output but not dumped to disk)"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
     output: {'path':'n/a', 'type':'None'}
 
   examples/job_with_more_resources:
     description: "To show how to change the machine specs and size of the cluster. See ec2_instance_master and emr_core_instances params below"
     py_job: 'jobs/examples/ex1_frameworked_job.py'
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex1_frameworked_p3/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex1_frameworked_p3/{{now}}/', 'type':'csv'}
     ec2_instance_master: 'm5.4xlarge'
     ec2_instance_slaves: 'm5.4xlarge'
     emr_core_instances: 3
@@ -169,51 +169,51 @@ jobs:
   examples/ex7_pandas_with_sql_job.py:
     description: "job loading and processing data with pandas. No spark involved."
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
-    output: {'path':'{base_path}/wiki_example/output_ex7_pandas_with_sql/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{{base_path}}/wiki_example/output_ex7_pandas_with_sql/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     spark_boot: False
 
   examples/ex7_hybrid_pandas_spark_job.py:
     description: "Job processing in pandas, loading and dropping done with spark."
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex7_hybrid_pandas_spark/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex7_hybrid_pandas_spark/{{now}}/', 'type':'csv'}
 
   examples/ex8_koalas_job.py:
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex8_koalas/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex8_koalas/{{now}}/', 'type':'csv'}
 
   examples/ex9_redshift_job.py:
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex9_redshift/{now}/', 'type':'csv'}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex9_redshift/{{now}}/', 'type':'csv'}
     copy_to_redshift: {'creds': 'some_redshift_cred_section', 'table': '{schema}.test_ex9_redshift'}
 
   examples/ex9_mysql_job.py:
     db_inputs: {'creds': 'some_mysql_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
-    output: {'path':'{base_path}/wiki_example/output_ex9_mysql/{now}/', 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex9_mysql/{{now}}/', 'type':'csv'}
 
   examples/ex9_mysql_framework_load_job:
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'type':'mysql', 'db_table': 'some_schema.some_table', 'creds': 'some_mysql_cred_section', 'note':'creds defined in conf/connections.cfg'}
-    output: {'path':'{base_path}/db_example/output_ex9_mysql_direct/{now}/', 'type':'csv'}
+    output: {'path':'{{base_path}}/db_example/output_ex9_mysql_direct/{{now}}/', 'type':'csv'}
     load_connectors: all
     enable_db_push: True
 
   examples/ex9_clickhouse_job.py:
     db_inputs: {'creds': 'some_clickhouse_cred_section', 'note':'API Job that relies on creds from conf/connections.cfg'}
-    output: {'path':'{base_path}/db_example/output_ex9_clickhouse/{now}/', 'type':'csv'}
+    output: {'path':'{{base_path}}/db_example/output_ex9_clickhouse/{{now}}/', 'type':'csv'}
 
   examples/ex9_clickhouse_framework_load_job:
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'type':'clickhouse', 'db_table': 'some_schema.some_table', 'creds': 'some_clickhouse_cred_section', 'note':'creds defined in conf/connections.cfg'}
-    output: {'path':'{base_path}/db_example/output_ex9_clickhouse_direct/{now}/', 'type':'csv'}
+    output: {'path':'{{base_path}}/db_example/output_ex9_clickhouse_direct/{{now}}/', 'type':'csv'}
     copy_to_clickhouse: {'creds': 'some_clickhouse_cred_section', 'table': 'public.test_push_arthur'}
     load_connectors: all
     enable_db_push: True
@@ -222,7 +222,7 @@ jobs:
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_excel/parts.xlsx", 'type':'xlsx', 'df_type':'pandas', 'read_kwargs':{'engine': 'openpyxl', 'sheet_name': 0, 'header': 1}}  # for xls files, use 'type':'xls' and 'engine': 'xlrd'
-    output: {'path':'{base_path}/load_example/excel/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/load_example/excel/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   examples/copy_local_to_cloud_job:
@@ -230,7 +230,7 @@ jobs:
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input/", 'type':'csv'}
-    output: {'path':'{base_path}/load_example/test_files/{now}/', 'type':'csv'}
+    output: {'path':'{{base_path}}/load_example/test_files/{{now}}/', 'type':'csv'}
     base_path: 's3a://mylake-dev/pipelines_data'
     aws_config_file:  conf/aws_config.cfg
     aws_setup: dev
@@ -240,8 +240,8 @@ jobs:
     description: "Copy data from cloud to local. Not loading file content. To be run locally."
     py_job: jobs/generic/copy_raw_job.py
     inputs:
-      files_to_copy: {'path':"{base_path}/load_example/test_files/", 'glob':'*/*.csv', 'type':'other'}
-    output: {'path':'./data/load_example/test_files/{now}/'}
+      files_to_copy: {'path':"{{base_path}}/load_example/test_files/", 'glob':'*/*.csv', 'type':'other'}
+    output: {'path':'./data/load_example/test_files/{{now}}/'}
     base_path: 's3://mylake-dev/pipelines_data'
     aws_config_file:  conf/aws_config.cfg
     aws_setup: dev
@@ -250,16 +250,16 @@ jobs:
   examples/ex11_run_gpu_for_deeplearning.py:
     description: ""
     inputs:
-      training_set: {'path':'{base_path}/gen_ai/finetuned_albert/raw/{latest}/', 'type':'csv', 'df_type':'pandas'}  # file available in repo in ./tests/fixtures/data_sample/gen_ai/text_classification.csv
-    output: {'path':'{base_path}/load_example/test_files/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      training_set: {'path':'{{base_path}}/gen_ai/finetuned_albert/raw/{{latest}}/', 'type':'csv', 'df_type':'pandas'}  # file available in repo in ./tests/fixtures/data_sample/gen_ai/text_classification.csv
+    output: {'path':'{{base_path}}/load_example/test_files/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     ec2_instance_master: 'g4dn.xlarge'  # access to this GPU instance may requires special request to AWS.
     emr_core_instances: 0
 
   examples/wordcount_frameworked_job.py:
     description: "shows raw pyspark rdd ops in framework, same as wordcount_raw_job"
     inputs:
-      lines: {'path':"{base_path}/wordcount_example/input/sample_text.txt", 'type':'txt'}
-    output: {'path':'{base_path}/wordcount_example/output_frameworked/{now}/', 'type':'txt'}
+      lines: {'path':"{{base_path}}/wordcount_example/input/sample_text.txt", 'type':'txt'}
+    output: {'path':'{{base_path}}/wordcount_example/output_frameworked/{{now}}/', 'type':'txt'}
     dependencies: [] # list here if any
     frequency: 24h
     emails: ['some_email@address.com']
@@ -279,16 +279,16 @@ jobs:
     scala_job: 'jobs/examples/ex12_scala_job/src/spark_scala_job.scala'  # for ref, compilation to be done manually
     sbt: 'jobs/examples/ex12_scala_job/build.sbt'  # for ref, compilation to be done manually
     spark_submit_args: '--verbose'
-    spark_app_args: '{base_path}/wordcount_example/input/sample_text.txt'
+    spark_app_args: '{{base_path}}/wordcount_example/input/sample_text.txt'
     load_connectors: none
   
   examples/ex13_register_athena_job:
     description: "Job to demo registering data to Athena. Setup to be run locally, while pushing data to cloud and registering data to athena in AWS."
     py_job: jobs/examples/ex1_frameworked_job.py
     inputs:
-      some_events: {'path':"./data/wiki_example/input/{latest}/", 'type':'csv'}
-      other_events: {'path':"./data/wiki_example/input/{latest}/", 'type':'csv'}
-    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/', 'type':'csv'}
+      some_events: {'path':"./data/wiki_example/input/{{latest}}/", 'type':'csv'}
+      other_events: {'path':"./data/wiki_example/input/{{latest}}/", 'type':'csv'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex7_pandas/{{now}}/', 'type':'csv'}
     base_path: 's3a://mylake-dev/pipelines_data'
     register_to_athena: {'table': 'sandbox.ex1_frameworked'}  # implies sandbox schema created, to be done with "CREATE DATABASE sandbox;" in SQL editor
     enable_db_push: True
@@ -302,7 +302,7 @@ jobs:
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format1/dataset.json", 'type':'json', 'df_type':'pandas', 'read_kwargs':{'lines':True}}
-    output: {'path':'{base_path}/load_example/json_format1/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/load_example/json_format1/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   examples/ex14_json_format2_load_job:
@@ -310,7 +310,7 @@ jobs:
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format2/dataset.json", 'type':'json', 'df_type':'pandas'}
-    output: {'path':'{base_path}/load_example/json_format2/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/load_example/json_format2/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   examples/ex14_json_format3_load_job:
@@ -318,14 +318,14 @@ jobs:
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format3/dataset.json", 'type':'json', 'df_type':'json_pandas'}
-    output: {'path':'{base_path}/load_example/json_format3/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/load_example/json_format3/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   examples/ex15_copy_job_multi_path.py:
     description: "Job to demo loading datasets with the same schemas spread over various folders, following structured path. The job will go through combinations of category and subcategory params defined below to extract datasets."
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_multipath/{category}/{subcategory}/dataset.csv", 'type':'csv', 'df_type':'pandas', 'load':False}
-    output: {'path':'{base_path}/load_example/multipath/{category}/{subcategory}/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/load_example/multipath/{category}/{subcategory}/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     category: ['catA', 'catB']
     subcategory: ['subcatA', 'subcatB']
     spark_boot: False
@@ -334,7 +334,7 @@ jobs:
     py_job: jobs/generic/copy_job.py
     inputs:
       table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input/", 'type':'csv', 'glob':'part1*', 'df_type':'pandas'}
-    output: {'path':'{base_path}/load_example/glob_filtering/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/load_example/glob_filtering/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   examples/ex17_multimode_params_job:
@@ -343,9 +343,9 @@ jobs:
       usage: python jobs/generic/launcher.py --job_name=examples/ex17_multimode_params_job --mode=dev_local,your_extra_tenant
     py_job: jobs/examples/ex7_pandas_job.py
     inputs:
-      some_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
-      other_events: {'path':"{base_path}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
-    output: {'path':'{base_path}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+      some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{{base_path}}/wiki_example/output_ex7_pandas/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     spark_boot: False
 
   examples/ex18_placeholder_param_replacement_job:
@@ -354,9 +354,9 @@ jobs:
       usage: python jobs/generic/launcher.py --job_name=examples/ex18_placeholder_param_replacement_job
     py_job: jobs/examples/ex7_pandas_job.py
     inputs:
-      some_events: {'path':"{{base_path_in}}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas'}
-      other_events: {'path':"{{base_path_in}}/wiki_example/input/{latest}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
-    output: {'path':'{{base_path_out}}/wiki_example/output_ex7_pandas/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
+      some_events: {'path':"{{base_path_in}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas'}
+      other_events: {'path':"{{base_path_in}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
+    output: {'path':'{{base_path_out}}/wiki_example/output_ex7_pandas/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
     base_path_in: './data'
     base_path_out: './data_other'
     spark_boot: False
@@ -365,17 +365,17 @@ jobs:
     description: "Showcasing a job to compare 2 datasets"
     py_job: jobs/generic/compare_job.py
     inputs:
-      tableA: {'path':"{base_path}/wiki_example/input/{latest}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}
-      tableB: {'path':"{base_path}/wiki_example/input/{latest}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}
-    output: {'path':'{base_path}/wiki_example/output_ex19_compare/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      tableA: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}
+      tableB: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'pk':['uuid'], 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex19_compare/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   examples/ex20_list_files_job:
     description: "Job to create a dataset from a file list. Meant to work in aws only."
     py_job: jobs/generic/list_files_job.py
     inputs:
-      files: {'path':"{base_path}/wiki_example/input/{latest}/", 'glob':'*/*.csv', 'type':'other'}
-    output: {'path':'{base_path}/wiki_example/output_ex20_filelist/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      files: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'glob':'*/*.csv', 'type':'other'}
+    output: {'path':'{{base_path}}/wiki_example/output_ex20_filelist/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
@@ -386,15 +386,15 @@ jobs:
     api_inputs: {'creds': 'github'}
     inputs:
       github_accounts_man: {'path':"./data_manual/github/github_accounts.csv", 'type':'csv', 'df_type':'pandas'}
-    output: {'path':'{base_path}/github/users/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/github/users/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   marketing/github_repos_extraction_job.py:
     description: "Github API extraction job, pulling repo data."
     api_inputs: {'creds': 'github'}
     inputs:
-      github_accounts: {'path':"{base_path}/github/users/{latest}/dataset.csv", 'type':'csv', 'df_type':'pandas'}
-    output: {'path':'{base_path}/github/user_repos/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      github_accounts: {'path':"{{base_path}}/github/users/{{latest}}/dataset.csv", 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/github/user_repos/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     dependencies: [marketing/github_accounts_extraction_job.py]
     spark_boot: False
 
@@ -402,8 +402,8 @@ jobs:
     description: "Github API extraction job, pulling contributor data."
     api_inputs: {'creds': 'github'}
     inputs:
-      repos: {'path':"{base_path}/github/user_repos/{latest}/dataset.csv", 'type':'csv', 'df_type':'pandas'}
-    output: {'path':'{base_path}/github/contributors/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      repos: {'path':"{{base_path}}/github/user_repos/{{latest}}/dataset.csv", 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/github/contributors/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     dependencies: [marketing/github_repos_extraction_job.py]
     spark_boot: False
 
@@ -411,15 +411,15 @@ jobs:
     description: "Github API extraction job, pulling committer data, especially email."
     api_inputs: {'creds': 'github'}
     inputs:
-      contributors: {'path':"{base_path}/github/contributors/{latest}/dataset.csv", 'type':'csv', 'df_type':'pandas'}
-    output: {'path':'{base_path}/github/committers/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      contributors: {'path':"{{base_path}}/github/contributors/{{latest}}/dataset.csv", 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/github/committers/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     dependencies: [marketing/github_contributors_extraction_job.py]
     spark_boot: False
 
   marketing/github_repo_list_extraction_job.py:
     description: "Github API extraction job, pulling repo data."
     api_inputs: {'creds': 'github'}
-    output: {'path':'{base_path}/github/repos/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/github/repos/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   marketing/github_traffic_extraction_job.py:
@@ -427,7 +427,7 @@ jobs:
     inputs:
       my_repos: {'path':"./data_manual/github/my_github_repos.csv", 'type':'csv', 'df_type':'pandas'}
     api_inputs: {'creds': 'github'}
-    output: {'path':'{base_path}/github/traffic/{now}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    output: {'path':'{{base_path}}/github/traffic/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
   marketing/people_merge_job.py:
@@ -435,14 +435,14 @@ jobs:
     inputs:
       perso: {'path':"./data_manual/people/people.csv", 'type':'csv'}
       linkedin: {'path':"./data_manual/linkedin/export/Connections_mod.csv", 'type':'csv'}
-    output: {'path':'{base_path}/people/{now}/', 'type':'csv'}
+    output: {'path':'{{base_path}}/people/{now}/', 'type':'csv'}
 
   # ----- Dashboards--------
   dashboards/wikipedia_demo_dashboard.ipynb:
     description: "Showcase a Dashboard using 'panel', based on dummy wikipedia data (experimental)."
     inputs:
-      ex1_sql: {'path':'{base_path}/wiki_example_sql/output_ex1_sql_pandas/{latest}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
-      ex7_pandas: {'path':'{base_path}/wiki_example/output_ex7_pandas/{latest}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'read_kwargs':{'sep':'|'}}
+      ex1_sql: {'path':'{{base_path}}/wiki_example_sql/output_ex1_sql_pandas/{{latest}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+      ex7_pandas: {'path':'{{base_path}}/wiki_example/output_ex7_pandas/{{latest}}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'read_kwargs':{'sep':'|'}}
     dependencies:
       - examples/ex1_sql_job.sql
       - examples/ex7_pandas_job.py
@@ -451,13 +451,16 @@ jobs:
 # ----- Params -------
 common_params:
   all_mode_params:
-    base_path: '{root_path}/pipelines_data'  # don't add '/' at the end
-    s3_dags: '{root_path}/pipelines_metadata/airflow_dags'  # determines which airflow instance to use.
-    s3_logs: '{root_path}/pipelines_metadata'
+    base_path: '{{root_path}}/pipelines_data'  # don't add '/' at the end
+    s3_dags: '{{root_path}}/pipelines_metadata/airflow_dags'  # determines which airflow instance to use.
+    s3_logs: '{{root_path}}/pipelines_metadata'
     connection_file:  conf/connections.cfg
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
     spark_version: '3.5' # options: '2.4', '3.0', '3.4' or '3.5'
+    default_aws_modes: 'dev_EMR'
+    default_local_modes: 'dev_local'
+    aws_modes: ['dev_EMR','prod_EMR']
   mode_specific_params:
     prod_EMR:
       root_path: s3://mylake-prod  # don't add '/' at the end
@@ -470,7 +473,7 @@ common_params:
       enable_db_push: True
       save_schemas: False
       manage_git_info: True
-    dev_EMR:
+    dev_EMR:  # TODO: change to dev_aws
       root_path: s3://mylake-dev  # don't add '/' at the end
       schema: sandbox
       emr_core_instances: 0
@@ -483,7 +486,7 @@ common_params:
       manage_git_info: True
     dev_local:
       root_path: '.'  # don't add '/' at the end
-      base_path: '{root_path}/data'  # don't add '/' at the end
+      base_path: '{{root_path}}/data'  # don't add '/' at the end
       schema: sandbox
       load_connectors: none
       aws_config_file:  none

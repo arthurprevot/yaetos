@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 import time
 import tarfile
+import zipfile
 import boto3
 import botocore
 import uuid
@@ -66,7 +67,7 @@ class DeployPySparkScriptOnAws(object):
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         self.emr_applications = app_args.get('emr_applications', [{'Name': 'Hadoop'}, {'Name': 'Spark'}])
         # Computed params:
-        s3_logs = app_args.get('s3_logs', 's3://').replace('{root_path}', self.app_args.get('root_path', ''))
+        s3_logs = app_args.get('s3_logs', 's3://').replace('{{root_path}}', self.app_args.get('root_path', ''))
         self.s3_logs = CPt(s3_logs)
         self.s3_bucket_logs = self.s3_logs.bucket
         self.metadata_folder = 'pipelines_metadata'  # TODO remove
@@ -102,6 +103,8 @@ class DeployPySparkScriptOnAws(object):
         self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
         if self.deploy_args['deploy'] == 'EMR':
             self.run_direct()
+        elif self.deploy_args['deploy'] == 'k8s':
+            self.run_direct_k8s()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
             self.run_aws_data_pipeline()
         elif self.deploy_args['deploy'] in ('airflow'):
@@ -179,13 +182,83 @@ class DeployPySparkScriptOnAws(object):
             s3 = self.session.resource('s3')
             self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
 
+    def run_direct_k8s(self):
+        """Useful to run job on cluster on the spot, without going through scheduler."""
+        self.local_file_ops()
+        if self.deploy_args.get('push_secrets', False):
+            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
+
+        logger.info("Sending spark-submit to k8s cluster")
+        cmdline = self.get_spark_submit_args_k8s(self.app_file, self.app_args)
+        self.launch_spark_submit_k8s(cmdline)
+
+    @staticmethod
+    def get_spark_submit_args_k8s(app_file, app_args):
+        """ app_file is launcher, might be py_job too, but may also be separate from py_job (ex python launcher.py --job_name=some_job_with_py_job)."""
+        # TODO: need to unify with get_spark_submit_args(), to account for jar jobs, to use eu.Runner.create_spark_submit()
+        # See spark-submit setup for k8s on docker_desktop.
+
+        if app_args.get('spark_submit'):
+            return app_args['spark_submit']
+
+        # For k8s in AWS, for yaetos jobs.
+        spark_submit_conf = [
+            'spark-submit',
+            f'--master {app_args["k8s_url"]}',
+            '--deploy-mode cluster',
+            f'--name {app_args["k8s_name"]}',
+            f'--conf spark.executor.instances={app_args["k8s_executor_instances"]}',
+            '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
+            f'--conf spark.kubernetes.namespace={app_args["k8s_namespace"]}',
+            f'--conf spark.kubernetes.container.image={app_args["k8s_image_service"]}',
+            f'--conf spark.kubernetes.file.upload.path={app_args["k8s_upload_path"]}',
+            f'--conf spark.kubernetes.driver.podTemplateFile={app_args["k8s_driver_podTemplateFile"]}',
+            f'--conf spark.kubernetes.executor.podTemplateFile={app_args["k8s_executor_podTemplateFile"]}',
+            '--conf spark.jars.ivy=/tmp/.ivy2',
+            '--conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider',
+            '--conf spark.hadoop.fs.s3a.access.key="${AWS_ACCESS_KEY_ID}"',
+            '--conf spark.hadoop.fs.s3a.secret.key="${AWS_SECRET_ACCESS_KEY}"',
+            '--conf spark.hadoop.fs.s3a.session.token="${AWS_SESSION_TOKEN}"',
+            '--conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem',
+            f'--conf spark.hadoop.fs.s3a.endpoint=s3.{app_args["aws_region"]}.amazonaws.com',
+            '--py-files tmp/files_to_ship/scripts.zip']
+
+        spark_submit_conf_extra = app_args.get('spark_deploy_args', [])
+        spark_submit_jobs = [
+            'jobs/generic/launcher.py',
+            f'--mode={app_args["mode"]}',  # need to make sure it uses a mode compatible with k8s
+            '--deploy=none',
+            '--storage=s3',
+            f'--job_name={app_args["job_name"]}',
+            '--runs_on=k8s']
+
+        spark_submit_jobs_extra = app_args.get('spark_app_args', [])
+        if app_args.get('dependencies'):
+            spark_submit_jobs_extra += ['--dependencies']
+
+        spark_submit = spark_submit_conf \
+            + spark_submit_conf_extra \
+            + spark_submit_jobs \
+            + spark_submit_jobs_extra
+        return spark_submit
+
+    def launch_spark_submit_k8s(self, cmdline):
+        cmdline_str = " ".join(cmdline)
+        logger.info(f'About to run spark submit command line: {cmdline_str}')
+        if not self.jargs.merged_args.get('dry_run'):
+            os.system(cmdline_str)
+
     def s3_ops(self, session):
         s3 = session.resource('s3')
         self.temp_bucket_exists(s3)
-        self.tar_python_scripts()
+        self.local_file_ops()
         self.move_bash_to_local_temp()
         self.upload_temp_files(s3)
         return s3
+
+    def local_file_ops(self):
+        self.tar_python_scripts()
+        self.convert_tar_to_zip()
 
     def get_active_clusters(self, c):
         response = c.list_clusters(
@@ -215,20 +288,9 @@ class DeployPySparkScriptOnAws(object):
     @staticmethod
     def generate_pipeline_name(mode, job_name, user):
         """Opposite of get_job_name()"""
-
-        # Get deploy_env (Hacky. TODO: improve)
-        modes = mode.split(',')
-        required_mode = ('dev_EMR', 'prod_EMR')
-        modes = [item for item in modes if item in required_mode]
-        if len(modes) == 1:
-            deploy_env = modes[0]
-        else:
-            raise Exception(f"mode missing one of the required on {required_mode}")
-
-        mode_label = {'dev_EMR': 'dev', 'prod_EMR': 'prod'}[deploy_env]
         pname = job_name.replace('.', '_d_').replace('/', '_s_')
         now = datetime.now().strftime("%Y%m%dT%H%M%S")
-        name = f"yaetos__{mode_label}__{pname}__{now}"
+        name = f"yaetos__{pname}__{now}"
         logger.info('Pipeline Name "{}":'.format(name))
         return name
 
@@ -262,7 +324,7 @@ class DeployPySparkScriptOnAws(object):
 
     def tar_python_scripts(self):
         package = self.get_package_path()
-        logger.info(f"Package (.tar.gz) to be created from files in '{package}', to be put in {self.TMP}, and pushed to S3")
+        logger.info(f"Package (tar.gz) to be created from files in '{package}', to be put in {self.TMP}")
         output_path = self.TMP / "scripts.tar.gz"
 
         # Create tar.gz file
@@ -319,6 +381,19 @@ class DeployPySparkScriptOnAws(object):
             logger.debug("Added %s to tar-file" % f)
         t_file.close()
         logger.debug("Added all spark app files to {}".format(output_path))
+        self.output_path = output_path
+
+    def convert_tar_to_zip(self):
+        tar_gz_path = self.output_path
+        zip_path = self.TMP / "scripts.zip"
+        with tarfile.open(tar_gz_path, 'r:gz') as tar:
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for member in tar.getmembers():
+                    if member.isfile():
+                        fileobj = tar.extractfile(member)
+                        file_data = fileobj.read()
+                        zipf.writestr(member.name, file_data)
+        logger.info(f"Converted '{tar_gz_path}' to '{zip_path}'.")
 
     def move_bash_to_local_temp(self):
         """Moving file from local repo to local tmp folder for later upload to S3."""
@@ -571,7 +646,7 @@ class DeployPySparkScriptOnAws(object):
         unoverridable_args = {
             'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
             'py_job': py_job,
-            'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
+            'mode': app_args.get('default_aws_modes', 'dev_EMR') if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
             'deploy': 'none',
             'storage': 's3',
             'jar_job': jar_job}
@@ -817,7 +892,7 @@ class DeployPySparkScriptOnAws(object):
         Move the dag files to S3
         """
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
-        s3_dags = self.app_args['s3_dags'].replace('{root_path}', self.app_args['root_path'])
+        s3_dags = self.app_args['s3_dags'].replace('{{root_path}}', self.app_args['root_path'])
         s3_dags = CPt(s3_dags + '/' + job_dag_name)
 
         s3.Object(s3_dags.bucket, s3_dags.key)\
@@ -934,7 +1009,7 @@ def deploy_standalone(job_args_update={}):
     job_args = {
         # --- regular job params ---
         'job_param_file': None,
-        'mode': 'dev_EMR',
+        'mode': 'dev_EMR',  # TODO: make independent from dev_EMR
         'output': {'path': 'n_a', 'type': 'csv'},
         'job_name': 'n_a',
         # --- params specific to running this file directly, can be overriden by command line ---

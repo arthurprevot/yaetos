@@ -16,10 +16,10 @@ class Git_Config_Manager():
         if 'dev_local' in modes:
             config = self.get_config_from_git(kwargs['local_app_folder'])
             # For debug: self.save_yaml(config)
-        elif 'dev_EMR' in modes or 'prod_EMR' in modes:
+        elif 'dev_EMR' in modes or 'prod_EMR' in modes:  # TODO: remove dependency on 'dev_EMR' and 'prod_EMR'.
             config = self.get_config_from_file(kwargs['cluster_app_folder'])
         else:
-            required_mode = ('dev_local', 'dev_EMR', 'prod_EMR')
+            required_mode = ('dev_local', 'dev_EMR', 'prod_EMR')  # TODO: same
             raise Exception(f'Wrong mode, one of the mode should be in {required_mode}')
         return config
 

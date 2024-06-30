@@ -6,6 +6,8 @@ Helper functions. Setup to run locally and on cluster.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line (EMR and airflow).
+# - create airflow template for k8s jobs.
+# - make it easier to pull the right lib for deploy zip to ship (avoir having to use --code_source=repo when running from repo for ex).
 
 
 import inspect
@@ -21,6 +23,7 @@ import gc
 from pprint import pformat
 import smtplib
 import ssl
+from zipfile import ZipFile
 from dateutil.relativedelta import relativedelta
 from importlib import import_module
 import re
@@ -355,7 +358,7 @@ class ETL_Base(object):
             # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
             if self.jargs.merged_args.get('name_base_in_param'):
                 base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-                path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
+                path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
             else:
                 base_path = self.jargs.merged_args['base_path']
 
@@ -495,7 +498,7 @@ class ETL_Base(object):
         # Get base_path. TODO: centralize
         if self.jargs.merged_args.get('name_base_in_param'):
             base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-            path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
+            path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
         else:
             base_path = self.jargs.merged_args['base_path']
 
@@ -506,7 +509,7 @@ class ETL_Base(object):
         # Get base_path. TODO: centralize
         if self.jargs.merged_args.get('name_base_out_param'):
             base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_out_param')]
-            path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{base_path}')
+            path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{{base_path}}')
         else:
             base_path = self.jargs.merged_args['base_path']
 
@@ -588,7 +591,7 @@ class ETL_Base(object):
         return sdf
 
     def get_previous_output_max_timestamp(self, sc, sc_sql):
-        path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
+        path = self.jargs.output['path']  # implies output path is incremental (no "{{now}}" in string.)
         path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else ''  # '*' to go into output subfolders.
         try:
             df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql, df_meta=self.jargs.output)
@@ -963,8 +966,8 @@ class Job_Args_Parser():
 
     @staticmethod
     def get_default_mode(args):
-        if args.get('mode') and 'dev_local' in args['mode'].split(',') and args.get('deploy') in ('EMR', 'EMR_Scheduled', 'airflow'):
-            return 'dev_EMR'
+        if args.get('mode') and 'dev_local' in args['mode'].split(',') and args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow'):
+            return args.get('default_aws_modes', 'dev_EMR')
         else:
             return args.get('mode', 'None')
 
@@ -986,7 +989,7 @@ class Job_Args_Parser():
             # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
             if args.get('name_base_in_param'):  # TODO: check if requires name_base_in_param or name_base_out_param
                 base_path = args[args.get('name_base_in_param')]
-                args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
+                args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
             else:
                 base_path = args.get('base_path')
             args['spark_app_args'] = Path_Handler(args['spark_app_args'], base_path, args.get('root_path')).path  # TODO: remove root_path since it is now done with replace_placeholders
@@ -1075,33 +1078,33 @@ class Path_Handler():
 
     def expand_base(self):
         path = self.path
-        if self.base_path and '{base_path}' in path:
-            path = path.replace('{base_path}', self.base_path)
-        if self.root_path and '{root_path}' in path:
-            path = path.replace('{root_path}', self.root_path)
+        if self.base_path and '{{base_path}}' in path:
+            path = path.replace('{{base_path}}', self.base_path)
+        if self.root_path and '{{root_path}}' in path:
+            path = path.replace('{{root_path}}', self.root_path)
         return path
 
     def expand_later(self):
         path = self.path
-        if '{latest}' in path:
-            upstream_path = path.split('{latest}')[0]
+        if '{{latest}}' in path:
+            upstream_path = path.split('{{latest}}')[0]
             paths = FS_Ops_Dispatcher().listdir(upstream_path)
             latest_date = max(paths)
-            path = path.replace('{latest}', latest_date)
+            path = path.replace('{{latest}}', latest_date)
         return path
 
     def expand_now(self, now_dt):
         path = self.path
-        if '{now}' in path:
+        if '{{now}}' in path:
             current_time = now_dt.strftime('date%Y%m%d_time%H%M%S_utc')
-            path = path.replace('{now}', current_time)
+            path = path.replace('{{now}}', current_time)
         return path
 
     def get_base(self):
-        if '{latest}' in self.path:
-            return self.path.split('{latest}')[0]
-        elif '{now}' in self.path:
-            return self.path.split('{now}')[0]
+        if '{{latest}}' in self.path:
+            return self.path.split('{{latest}}')[0]
+        elif '{{now}}' in self.path:
+            return self.path.split('{{now}}')[0]
         else:
             return self.path
 
@@ -1125,6 +1128,9 @@ class Runner():
         parser, defaults_args, categories = self.define_commandline_args()  # TODO: use categories below to remove non applicable params.
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
+        if cmd_args.get('runs_on') == 'k8s':
+            self.unzip_package()
+
         # Building "job", which will include all job args.
         if Job is None:  # when job run from "python launcher.py --job_name=some_name_from_job_metadata_file", Implies 'job_name' available in cmd_args.
             jargs = Job_Args_Parser(defaults_args=defaults_args, yml_args=None, job_args=job_args, cmd_args=cmd_args, build_yml_args=True, loaded_inputs={})
@@ -1143,9 +1149,16 @@ class Runner():
             job = self.launch_run_mode(job)
         elif jargs.deploy == 'local_spark_submit' or (jargs.deploy == 'none' and jargs.merged_args.get('jar_job')):  # when running job on the spot through spark-submit.
             self.launch_run_mode_spark_submit(jargs)
-        elif jargs.deploy in ('EMR', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
+        elif jargs.deploy in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(jargs.get_deploy_args(), jargs.get_app_args())
         return job
+
+    @staticmethod
+    def unzip_package():
+        zip_path = 'scripts.zip'
+        extract_to_path = os.getcwd()
+        with ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_to_path)
 
     @staticmethod
     def set_commandline_args(parser):
@@ -1161,7 +1174,7 @@ class Runner():
         # Defined here separatly from parsing for overridability.
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", help="Choose which set of params to use from jobs_metadata.yml file. Typically from ('dev_local', 'dev_EMR', 'prod_EMR') but could include others.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")

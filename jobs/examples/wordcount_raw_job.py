@@ -6,8 +6,8 @@ from yaetos.etl_utils import Path_Handler
 
 # inputs = "s3://bucket-scratch/wordcount_test/input/sample_text.txt"  # cluster
 inputs = "data/wordcount_example/input/sample_text.txt"  # local
-# output = "s3://bucket-scratch/wordcount_test/output_raw/{now}/"  # cluster
-output = "data/wordcount_example/output_raw/{now}/"  # local
+# output = "s3://bucket-scratch/wordcount_test/output_raw/{{now}}/"  # cluster
+output = "data/wordcount_example/output_raw/{{now}}/"  # local
 output = Path_Handler(output).expand_now()
 
 
