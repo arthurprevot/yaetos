@@ -193,115 +193,17 @@ class DeployPySparkScriptOnAws(object):
         cmdline = self.get_spark_submit_args_k8s(self.app_file, self.app_args)
         self.launch_spark_submit_k8s(cmdline)
 
-
     @staticmethod
     def get_spark_submit_args_k8s(app_file, app_args):
         """ app_file is launcher, might be py_job too, but may also be separate from py_job (ex python launcher.py --job_name=some_job_with_py_job)."""
+        # TODO: need to unify with get_spark_submit_args(), to account for jar jobs, to use eu.Runner.create_spark_submit()
+        # See spark-submit setup for k8s on docker_desktop.
 
-        # # set py_job
-        # if app_args.get('launcher_file') and app_args.get('py_job'):
-        #     py_job = eu.CLUSTER_APP_FOLDER + app_args.get('launcher_file')
-        # elif isinstance(app_file, str) and app_file.endswith('.py'):  # TODO: check values app_file can take
-        #     py_job = eu.CLUSTER_APP_FOLDER + app_file
-        # else:
-        #     py_job = None
-
-        # # set jar_job
-        # if (app_args.get('launcher_file') or isinstance(app_file, str)) and app_args.get('jar_job'):  # TODO: check to enforce app_args.get('launcher_file')
-        #     jar_job = eu.CLUSTER_APP_FOLDER + app_args.get('jar_job')
-        # else:
-        #     jar_job = None
-        # # TODO: simplify business of getting application code (2 blocks up) upstream, in etl_utils.py
-
-
-        # # pyspark job only for now.
-        # spark_submit_cmd = [
-        #     "spark-submit",
-        #     "--master", app_args['master_k8s_address'],
-        #     "--deploy-mode", "cluster",
-        #     "--name", app_args['job_name'],
-        #     "--conf", "spark.kubernetes.pyspark.pythonVersion=3",
-        #     "--conf", "spark.kubernetes.container.image={url}",
-        #     "--conf", "spark.kubernetes.file.upload.path={s3_url}",
-        #     "--conf", "spark.kubernetes.driver.podTemplateFile={yaml_driver}",
-        #     "--conf", "spark.kubernetes.executor.podTemplateFile={yaml_executor}",
-        #     "--py-files", self.output_path,
-        #     py_job
-        # ]
-
-        # if app_args.get('py_job'):
-        #     overridable_args = {
-        #         'spark_submit_args': '--verbose',
-        #         'spark_submit_keys': 'py-files',
-        #         'spark_app_args': '',
-        #         'spark_app_keys': 'mode--deploy--storage'}
-        # else:  # for jar_job
-        #     overridable_args = {
-        #         'spark_submit_args': '--verbose',
-        #         'spark_submit_keys': '',
-        #         'spark_app_args': '',
-        #         'spark_app_keys': ''}
-
-        # overridable_args.update(app_args)
-        # args = overridable_args.copy()
-
-        # unoverridable_args = {
-        #     'py-files': f"{eu.CLUSTER_APP_FOLDER}scripts.zip" if py_job else None,
-        #     'py_job': py_job,
-        #     #'mode': 'dev_EMR' if app_args.get('mode') and 'dev_local' in app_args['mode'].split(',') else app_args.get('mode'),
-        #     'mode': app_args.get('default_aws_modes', 'dev_EMR'),
-        #     'deploy': 'none',
-        #     'storage': 's3',
-        #     'jar_job': jar_job}
-        # args.update(unoverridable_args)
-
-        # if app_args.get('dependencies'):
-        #     args['spark_app_args'] += ' --dependencies'
-
-        # if app_args.get('job_param_file') and app_args.get('py_job'):
-        #     args['job_param_file'] = eu.CLUSTER_APP_FOLDER + app_args['job_param_file']
-        #     args['spark_app_keys'] += '--job_param_file'
-
-        # if app_args.get('job_name') and app_args.get('py_job'):
-        #     args['job_name'] = app_args['job_name']
-        #     args['spark_app_keys'] += '--job_name'
-
-        # # TODO: implement better way to handle params, less case by case, to only deal with overloaded params
-        # jargs = eu.Job_Args_Parser(defaults_args={}, yml_args={}, job_args=args, cmd_args={}, build_yml_args=False, loaded_inputs={})
-        # # return eu.Runner.create_spark_submit(jargs)
-
-        # For k8s on docker_desktop on macOS
-        spark_submit = [
-            'spark-submit',
-            '--master k8s://https://kubernetes.docker.internal:6443',
-            '--deploy-mode cluster',
-            '--name my-pyspark-job',
-            '--conf spark.kubernetes.namespace=default',
-            '--conf spark.kubernetes.container.image=pyspark_yaetos',
-            '--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark-service-account',
-            '--conf spark.executor.instances=2',
-            '--conf spark.kubernetes.pyspark.pythonVersion=3',
-            '--conf spark.pyspark.python=python3',
-            '--conf spark.pyspark.driver.python=python3',
-            # '--conf spark.kubernetes.driver.pod.name=my-pyspark-pod',
-            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
-            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
-            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
-            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
-            '--conf spark.kubernetes.file.upload.path=file:///yaetos_jobs/tmp/files_to_ship/scripts.zip',
-            '--py-files local:///mnt/yaetos_jobs/tmp/files_to_ship/scripts.zip',
-            # 'local:///data/sample_spark_job.py',
-            'local:///mnt/yaetos_jobs/jobs/generic/launcher.py',
-            '--mode=dev_local',
-            '--deploy=none',
-            '--storage=s3',
-            '--job_name=examples/ex0_extraction_job.py'
-            ]
-
-        # import ipdb; ipdb.set_trace()
+        if app_args.get('spark_submit'):
+            return app_args['spark_submit']
 
         # For k8s in AWS, for yaetos jobs.
-        spark_submit = [
+        spark_submit_conf = [
             'spark-submit',
             f'--master {app_args["k8s_url"]}',
             '--deploy-mode cluster',
@@ -320,15 +222,26 @@ class DeployPySparkScriptOnAws(object):
             '--conf spark.hadoop.fs.s3a.session.token="${AWS_SESSION_TOKEN}"',
             '--conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem',
             f'--conf spark.hadoop.fs.s3a.endpoint=s3.{app_args["aws_region"]}.amazonaws.com',
-            f'--conf spark.kubernetes.driver.pod.name={app_args["k8s_podname"]}',
-            '--py-files tmp/files_to_ship/scripts.zip',
+            # f'--conf spark.kubernetes.driver.pod.name={app_args["k8s_podname"]}',
+            '--py-files tmp/files_to_ship/scripts.zip']
+
+        spark_submit_conf_extra = app_args.get('spark_deploy_args', [])
+        spark_submit_jobs = [
             'jobs/generic/launcher.py',
             f'--mode={app_args["mode"]}', # need to make sure it uses a mode compatible with k8s
             '--deploy=none',
             '--storage=s3',
             f'--job_name={app_args["job_name"]}',
-            '--runs_on=k8s',
-            ]
+            '--runs_on=k8s']
+
+        spark_submit_jobs_extra = app_args.get('spark_app_args', [])
+        if app_args.get('dependencies'):
+            spark_submit_jobs_extra += ['--dependencies']
+
+        spark_submit = spark_submit_conf \
+            + spark_submit_conf_extra \
+            + spark_submit_jobs \
+            + spark_submit_jobs_extra
         return spark_submit
 
     def launch_spark_submit_k8s(self, cmdline):
