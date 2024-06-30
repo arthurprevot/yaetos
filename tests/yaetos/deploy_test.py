@@ -131,7 +131,8 @@ class Test_DeployPySparkScriptOnAws(object):
     def test_get_spark_submit_k8s_aws(self, app_args):
         app_args = {
             'job_name': 'a_job_name',
-            'mode': 'a_mode',
+            'mode': 'dev_k8s',
+            'dependencies': True,
             'k8s_url': 'a_k8s_url',
             'k8s_name': 'a_k8s_name',
             'k8s_executor_instances': 'a_k8s_executor_instances',
@@ -141,7 +142,7 @@ class Test_DeployPySparkScriptOnAws(object):
             'k8s_driver_podTemplateFile': 'a_k8s_driver_podTemplateFile',
             'k8s_executor_podTemplateFile': 'a_k8s_executor_podTemplateFile',
             'aws_region': 'a_aws_region',
-            'spark_deploy_args': ['--conf spark.kubernetes.driver.pod.name=some_name'],
+            'spark_deploy_args': ['--conf spark.kubernetes.driver.pod.name=a_k8s_podname'],
             'spark_app_args': [],
             }
 
@@ -166,13 +167,13 @@ class Test_DeployPySparkScriptOnAws(object):
             '--conf spark.hadoop.fs.s3a.session.token="${AWS_SESSION_TOKEN}"',
             '--conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem',
             '--conf spark.hadoop.fs.s3a.endpoint=s3.a_aws_region.amazonaws.com',
-            '--conf spark.kubernetes.driver.pod.name=a_k8s_podname',
             '--py-files tmp/files_to_ship/scripts.zip',
+            '--conf spark.kubernetes.driver.pod.name=a_k8s_podname',
             'jobs/generic/launcher.py',
             '--mode=dev_k8s',
             '--deploy=none',
             '--storage=s3',
-            '--job_name=some_job_name',
+            '--job_name=a_job_name',
             '--runs_on=k8s',
             '--dependencies',
             ]

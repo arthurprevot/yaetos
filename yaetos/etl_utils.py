@@ -967,8 +967,6 @@ class Job_Args_Parser():
     @staticmethod
     def get_default_mode(args):
         if args.get('mode') and 'dev_local' in args['mode'].split(',') and args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow'):
-        # if args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow'):
-            # return 'dev_EMR'
             return args.get('default_aws_modes', 'dev_EMR')
         else:
             return args.get('mode', 'None')
