@@ -355,7 +355,7 @@ class ETL_Base(object):
             # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
             if self.jargs.merged_args.get('name_base_in_param'):
                 base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-                path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
+                path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
             else:
                 base_path = self.jargs.merged_args['base_path']
 
@@ -495,7 +495,7 @@ class ETL_Base(object):
         # Get base_path. TODO: centralize
         if self.jargs.merged_args.get('name_base_in_param'):
             base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-            path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
+            path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
         else:
             base_path = self.jargs.merged_args['base_path']
 
@@ -506,7 +506,7 @@ class ETL_Base(object):
         # Get base_path. TODO: centralize
         if self.jargs.merged_args.get('name_base_out_param'):
             base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_out_param')]
-            path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{base_path}')
+            path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{{base_path}}')
         else:
             base_path = self.jargs.merged_args['base_path']
 
@@ -588,7 +588,7 @@ class ETL_Base(object):
         return sdf
 
     def get_previous_output_max_timestamp(self, sc, sc_sql):
-        path = self.jargs.output['path']  # implies output path is incremental (no "{now}" in string.)
+        path = self.jargs.output['path']  # implies output path is incremental (no "{{now}}" in string.)
         path += '*' if self.jargs.merged_args.get('incremental_type') == 'no_schema' else ''  # '*' to go into output subfolders.
         try:
             df = self.load_data_from_files(name='output', path=path, type=self.jargs.output['type'], sc=sc, sc_sql=sc_sql, df_meta=self.jargs.output)
@@ -986,7 +986,7 @@ class Job_Args_Parser():
             # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
             if args.get('name_base_in_param'):  # TODO: check if requires name_base_in_param or name_base_out_param
                 base_path = args[args.get('name_base_in_param')]
-                args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{base_path}')
+                args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
             else:
                 base_path = args.get('base_path')
             args['spark_app_args'] = Path_Handler(args['spark_app_args'], base_path, args.get('root_path')).path  # TODO: remove root_path since it is now done with replace_placeholders
@@ -1075,33 +1075,33 @@ class Path_Handler():
 
     def expand_base(self):
         path = self.path
-        if self.base_path and '{base_path}' in path:
-            path = path.replace('{base_path}', self.base_path)
+        if self.base_path and '{{base_path}}' in path:
+            path = path.replace('{{base_path}}', self.base_path)
         if self.root_path and '{root_path}' in path:
             path = path.replace('{root_path}', self.root_path)
         return path
 
     def expand_later(self):
         path = self.path
-        if '{latest}' in path:
-            upstream_path = path.split('{latest}')[0]
+        if '{{latest}}' in path:
+            upstream_path = path.split('{{latest}}')[0]
             paths = FS_Ops_Dispatcher().listdir(upstream_path)
             latest_date = max(paths)
-            path = path.replace('{latest}', latest_date)
+            path = path.replace('{{latest}}', latest_date)
         return path
 
     def expand_now(self, now_dt):
         path = self.path
-        if '{now}' in path:
+        if '{{now}}' in path:
             current_time = now_dt.strftime('date%Y%m%d_time%H%M%S_utc')
-            path = path.replace('{now}', current_time)
+            path = path.replace('{{now}}', current_time)
         return path
 
     def get_base(self):
-        if '{latest}' in self.path:
-            return self.path.split('{latest}')[0]
-        elif '{now}' in self.path:
-            return self.path.split('{now}')[0]
+        if '{{latest}}' in self.path:
+            return self.path.split('{{latest}}')[0]
+        elif '{{now}}' in self.path:
+            return self.path.split('{{now}}')[0]
         else:
             return self.path
 
