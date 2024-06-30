@@ -66,7 +66,7 @@ class DeployPySparkScriptOnAws(object):
         self.ec2_instance_slaves = app_args.get('ec2_instance_slaves', 'm5.xlarge')
         self.emr_applications = app_args.get('emr_applications', [{'Name': 'Hadoop'}, {'Name': 'Spark'}])
         # Computed params:
-        s3_logs = app_args.get('s3_logs', 's3://').replace('{root_path}', self.app_args.get('root_path', ''))
+        s3_logs = app_args.get('s3_logs', 's3://').replace('{{root_path}}', self.app_args.get('root_path', ''))
         self.s3_logs = CPt(s3_logs)
         self.s3_bucket_logs = self.s3_logs.bucket
         self.metadata_folder = 'pipelines_metadata'  # TODO remove
@@ -1003,7 +1003,7 @@ class DeployPySparkScriptOnAws(object):
         Move the dag files to S3
         """
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
-        s3_dags = self.app_args['s3_dags'].replace('{root_path}', self.app_args['root_path'])
+        s3_dags = self.app_args['s3_dags'].replace('{{root_path}}', self.app_args['root_path'])
         s3_dags = CPt(s3_dags + '/' + job_dag_name)
 
         s3.Object(s3_dags.bucket, s3_dags.key)\

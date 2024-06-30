@@ -1077,8 +1077,8 @@ class Path_Handler():
         path = self.path
         if self.base_path and '{{base_path}}' in path:
             path = path.replace('{{base_path}}', self.base_path)
-        if self.root_path and '{root_path}' in path:
-            path = path.replace('{root_path}', self.root_path)
+        if self.root_path and '{{root_path}}' in path:
+            path = path.replace('{{root_path}}', self.root_path)
         return path
 
     def expand_later(self):

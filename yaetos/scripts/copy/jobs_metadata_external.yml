@@ -61,9 +61,9 @@ jobs:
 # ----- Params -------
 common_params:
   all_mode_params:
-    base_path: '{root_path}/pipelines_data'  # don't add '/' at the end
-    s3_dags: '{root_path}/pipelines_metadata/airflow_dags'
-    s3_logs: '{root_path}/pipelines_metadata'
+    base_path: '{{root_path}}/pipelines_data'  # don't add '/' at the end
+    s3_dags: '{{root_path}}/pipelines_metadata/airflow_dags'
+    s3_logs: '{{root_path}}/pipelines_metadata'
     connection_file:  conf/connections.cfg
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
@@ -93,7 +93,7 @@ common_params:
       manage_git_info: True
     dev_local:
       root_path: '.'  # don't add '/' at the end
-      base_path: '{root_path}/data'  # don't add '/' at the end
+      base_path: '{{root_path}}/data'  # don't add '/' at the end
       schema: sandbox
       load_connectors: none
       aws_config_file:  none

@@ -110,7 +110,7 @@ class Test_Job_Yml_Parser(object):
         expected_params = {
             'aws_config_file': 'conf/aws_config.cfg',
             'aws_setup': 'dev',
-            'base_path': '{root_path}/pipelines_data',
+            'base_path': '{{root_path}}/pipelines_data',
             'connection_file': 'conf/connections.cfg',
             'email_cred_section': 'some_email_cred_section',
             'emr_core_instances': 0,
@@ -120,8 +120,8 @@ class Test_Job_Yml_Parser(object):
             'manage_git_info': True,
             'redshift_s3_tmp_dir': 's3a://dev-spark/tmp_spark/',
             'root_path': 's3://mylake-dev',
-            's3_dags': '{root_path}/pipelines_metadata/airflow_dags',
-            's3_logs': '{root_path}/pipelines_metadata',
+            's3_dags': '{{root_path}}/pipelines_metadata/airflow_dags',
+            's3_logs': '{{root_path}}/pipelines_metadata',
             'save_schemas': False,
             'schema': 'sandbox',
             'spark_version': '3.5'}
