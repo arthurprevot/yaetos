@@ -143,8 +143,7 @@ class Test_DeployPySparkScriptOnAws(object):
             'k8s_executor_podTemplateFile': 'a_k8s_executor_podTemplateFile',
             'aws_region': 'a_aws_region',
             'spark_deploy_args': ['--conf spark.kubernetes.driver.pod.name=a_k8s_podname'],
-            'spark_app_args': [],
-            }
+            'spark_app_args': []}
 
         app_file = 'jobs/generic/launcher.py'
         actual = Dep.get_spark_submit_args_k8s(app_file, app_args)
@@ -175,8 +174,7 @@ class Test_DeployPySparkScriptOnAws(object):
             '--storage=s3',
             '--job_name=a_job_name',
             '--runs_on=k8s',
-            '--dependencies',
-            ]
+            '--dependencies']
         assert actual == expected
 
     def test_get_spark_submit_args_jar(self):

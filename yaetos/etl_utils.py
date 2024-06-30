@@ -6,7 +6,7 @@ Helper functions. Setup to run locally and on cluster.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line (EMR and airflow).
-# - create airflow template for k8s jobs. 
+# - create airflow template for k8s jobs.
 # - make it easier to pull the right lib for deploy zip to ship (avoir having to use --code_source=repo when running from repo for ex).
 
 
@@ -1128,7 +1128,7 @@ class Runner():
         parser, defaults_args, categories = self.define_commandline_args()  # TODO: use categories below to remove non applicable params.
         cmd_args = self.set_commandline_args(parser) if job_args.get('parse_cmdline') else {}
 
-        if cmd_args.get('runs_on')=='k8s':
+        if cmd_args.get('runs_on') == 'k8s':
             self.unzip_package()
 
         # Building "job", which will include all job args.

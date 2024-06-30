@@ -228,7 +228,7 @@ class DeployPySparkScriptOnAws(object):
         spark_submit_conf_extra = app_args.get('spark_deploy_args', [])
         spark_submit_jobs = [
             'jobs/generic/launcher.py',
-            f'--mode={app_args["mode"]}', # need to make sure it uses a mode compatible with k8s
+            f'--mode={app_args["mode"]}',  # need to make sure it uses a mode compatible with k8s
             '--deploy=none',
             '--storage=s3',
             f'--job_name={app_args["job_name"]}',
@@ -385,7 +385,7 @@ class DeployPySparkScriptOnAws(object):
         logger.debug("Added all spark app files to {}".format(output_path))
         self.output_path = output_path
 
-    def convert_tar_to_zip(self):        
+    def convert_tar_to_zip(self):
         tar_gz_path = self.output_path
         zip_path = self.TMP / "scripts.zip"
         with tarfile.open(tar_gz_path, 'r:gz') as tar:
