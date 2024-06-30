@@ -333,14 +333,12 @@ class DeployPySparkScriptOnAws(object):
     def launch_spark_submit_k8s(self, cmdline):
         cmdline_str = " ".join(cmdline)
         logger.info(f'About to run spark submit command line: {cmdline_str}')
-        # if not jargs.merged_args.get('dry_run'):
-        os.system(cmdline_str)
+        if not self.jargs.merged_args.get('dry_run'):
+            os.system(cmdline_str)
 
     def s3_ops(self, session):
         s3 = session.resource('s3')
         self.temp_bucket_exists(s3)
-        # self.tar_python_scripts()
-        # self.convert_tar_to_zip()
         self.local_file_ops()
         self.move_bash_to_local_temp()
         self.upload_temp_files(s3)
