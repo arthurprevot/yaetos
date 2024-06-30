@@ -6,6 +6,8 @@ Helper functions. Setup to run locally and on cluster.
 # - get inputs and output by commandline (with all related params used in yml, like 'type', 'incr'...).
 # - better check that db copy is in sync with S3.
 # - way to run all jobs from 1 cmd line (EMR and airflow).
+# - create airflow template for k8s jobs. 
+# - make it easier to pull the right lib for deploy zip to ship (avoir having to use --code_source=repo when running from repo for ex).
 
 
 import inspect
