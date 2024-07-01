@@ -93,44 +93,59 @@ class Test_DeployPySparkScriptOnAws(object):
             '--job_name=some_job_name']
         assert actual == expected
 
-    # def test_get_spark_submit_k8s_docker_desktop(self, app_args):
-    #     app_args = {
-    #         'job_name': 'some_job_name',
-    #         'spark_app_args': 'some_arg'
-    #         } # TBD
-    #     app_file = 'jobs/generic/launcher.py'  # TBD
-    #     actual = Dep.get_spark_submit_args_k8s(app_file, app_args)
-    #     expected = [  # spark-submit command that works in local k8s with docker desktop
-    #         'spark-submit',
-    #         '--master k8s://https://kubernetes.docker.internal:6443',
-    #         '--deploy-mode cluster',
-    #         '--name my-pyspark-job',
-    #         '--conf spark.kubernetes.namespace=default',
-    #         '--conf spark.kubernetes.container.image=pyspark_yaetos',
-    #         '--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark-service-account',
-    #         '--conf spark.executor.instances=2',
-    #         '--conf spark.kubernetes.pyspark.pythonVersion=3',
-    #         '--conf spark.pyspark.python=python3',
-    #         '--conf spark.pyspark.driver.python=python3',
-    #         # '--conf spark.kubernetes.driver.pod.name=my-pyspark-pod',
-    #         '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
-    #         '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
-    #         '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
-    #         '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
-    #         '--conf spark.kubernetes.file.upload.path=file:///yaetos_jobs/tmp/files_to_ship/scripts.zip',
-    #         '--py-files local:///mnt/yaetos_jobs/tmp/files_to_ship/scripts.zip',
-    #         'local:///mnt/yaetos_jobs/jobs/generic/launcher.py',
-    #         '--mode=dev_local',
-    #         '--deploy=none',
-    #         '--storage=s3',
-    #         '--job_name=examples/ex0_extraction_job.py'
-    #         ]
-    #     assert actual == expected
+    def test_get_spark_submit_k8s_docker_desktop(self, app_args):
+        app_args = {
+            'job_name': 'examples/ex0_extraction_job.py',
+            'mode': 'dev_k8s',
+            'k8s_mode': 'k8s_docker_desktop',
+            'dependencies': True,
+            'k8s_url': 'k8s://https://kubernetes.docker.internal:6443',
+            'k8s_name': 'my-pyspark-job',
+            'k8s_executor_instances': '2',
+            'k8s_namespace': 'a_k8s_namespace',
+            'k8s_image_service': 'a_k8s_image_service',
+            'k8s_upload_path': 'a_k8s_upload_path',
+            'k8s_driver_podTemplateFile': 'a_k8s_driver_podTemplateFile',
+            'k8s_executor_podTemplateFile': 'a_k8s_executor_podTemplateFile',
+            'aws_region': 'a_aws_region',
+            'spark_deploy_args': ['--conf spark.kubernetes.driver.pod.name=a_k8s_podname'],
+            'spark_app_args': []}
+
+        app_file = 'jobs/generic/launcher.py'
+        actual = Dep.get_spark_submit_args_k8s(app_file, app_args)
+        expected = [  # spark-submit command that works in local k8s with docker desktop
+            'spark-submit',
+            '--master k8s://https://kubernetes.docker.internal:6443',
+            '--deploy-mode cluster',
+            '--name my-pyspark-job',
+            '--conf spark.executor.instances=2',
+            '--conf spark.kubernetes.namespace=a_k8s_namespace',
+            '--conf spark.kubernetes.container.image=a_k8s_image_service',
+            '--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark-service-account',
+            '--conf spark.kubernetes.pyspark.pythonVersion=3',
+            '--conf spark.pyspark.python=python3',
+            '--conf spark.pyspark.driver.python=python3',
+            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
+            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
+            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
+            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
+            '--conf spark.kubernetes.file.upload.path=file:///yaetos_jobs/tmp/files_to_ship/scripts.zip',
+            '--py-files local:///mnt/yaetos_jobs/tmp/files_to_ship/scripts.zip',
+            '--conf spark.kubernetes.driver.pod.name=a_k8s_podname',
+            'local:///mnt/yaetos_jobs/jobs/generic/launcher.py',
+            '--mode=dev_k8s',
+            '--deploy=none',
+            '--storage=s3',
+            '--job_name=examples/ex0_extraction_job.py',
+            '--runs_on=k8s',
+            '--dependencies']
+        assert actual == expected
 
     def test_get_spark_submit_k8s_aws(self, app_args):
         app_args = {
             'job_name': 'a_job_name',
             'mode': 'dev_k8s',
+            'k8s_mode': 'k8s_aws',
             'dependencies': True,
             'k8s_url': 'a_k8s_url',
             'k8s_name': 'a_k8s_name',
@@ -152,9 +167,9 @@ class Test_DeployPySparkScriptOnAws(object):
             '--deploy-mode cluster',
             '--name a_k8s_name',
             '--conf spark.executor.instances=a_k8s_executor_instances',
-            '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
             '--conf spark.kubernetes.namespace=a_k8s_namespace',
             '--conf spark.kubernetes.container.image=a_k8s_image_service',
+            '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
             '--conf spark.kubernetes.file.upload.path=a_k8s_upload_path',
             '--conf spark.kubernetes.driver.podTemplateFile=a_k8s_driver_podTemplateFile',
             '--conf spark.kubernetes.executor.podTemplateFile=a_k8s_executor_podTemplateFile',

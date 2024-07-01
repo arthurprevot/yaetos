@@ -202,15 +202,18 @@ class DeployPySparkScriptOnAws(object):
             return app_args['spark_submit']
 
         # For k8s in AWS, for yaetos jobs.
-        spark_submit_conf = [
+        spark_submit_base = [
             'spark-submit',
             f'--master {app_args["k8s_url"]}',
             '--deploy-mode cluster',
             f'--name {app_args["k8s_name"]}',
             f'--conf spark.executor.instances={app_args["k8s_executor_instances"]}',
-            '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
             f'--conf spark.kubernetes.namespace={app_args["k8s_namespace"]}',
             f'--conf spark.kubernetes.container.image={app_args["k8s_image_service"]}',
+            ]
+
+        spark_submit_aws = [
+            '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
             f'--conf spark.kubernetes.file.upload.path={app_args["k8s_upload_path"]}',
             f'--conf spark.kubernetes.driver.podTemplateFile={app_args["k8s_driver_podTemplateFile"]}',
             f'--conf spark.kubernetes.executor.podTemplateFile={app_args["k8s_executor_podTemplateFile"]}',
@@ -223,9 +226,30 @@ class DeployPySparkScriptOnAws(object):
             f'--conf spark.hadoop.fs.s3a.endpoint=s3.{app_args["aws_region"]}.amazonaws.com',
             '--py-files tmp/files_to_ship/scripts.zip']
 
+        spark_submit_docker_desktop = [
+            '--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark-service-account',
+            '--conf spark.kubernetes.pyspark.pythonVersion=3',
+            '--conf spark.pyspark.python=python3',
+            '--conf spark.pyspark.driver.python=python3',
+            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
+            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
+            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
+            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
+            '--conf spark.kubernetes.file.upload.path=file:///yaetos_jobs/tmp/files_to_ship/scripts.zip',
+            '--py-files local:///mnt/yaetos_jobs/tmp/files_to_ship/scripts.zip']
+
+        if app_args.get('k8s_mode') == 'k8s_aws':
+            launcher = 'jobs/generic/launcher.py'
+            spark_submit_conf_plateform = spark_submit_aws
+        elif app_args.get('k8s_mode') == 'k8s_docker_desktop':
+            launcher = 'local:///mnt/yaetos_jobs/jobs/generic/launcher.py'
+            spark_submit_conf_plateform = spark_submit_docker_desktop
+        else:
+            raise Exception(f"k8s_mode not recognized, should be 'k8s_aws' or 'k8s_docker_desktop'. Set to {app_args.get('k8s_mode')}")
+
         spark_submit_conf_extra = app_args.get('spark_deploy_args', [])
         spark_submit_jobs = [
-            'jobs/generic/launcher.py',
+            launcher,
             f'--mode={app_args["mode"]}',  # need to make sure it uses a mode compatible with k8s
             '--deploy=none',
             '--storage=s3',
@@ -236,7 +260,8 @@ class DeployPySparkScriptOnAws(object):
         if app_args.get('dependencies'):
             spark_submit_jobs_extra += ['--dependencies']
 
-        spark_submit = spark_submit_conf \
+        spark_submit = spark_submit_base \
+            + spark_submit_conf_plateform \
             + spark_submit_conf_extra \
             + spark_submit_jobs \
             + spark_submit_jobs_extra
