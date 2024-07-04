@@ -362,7 +362,7 @@ class ETL_Base(object):
             else:
                 base_path = self.jargs.merged_args['base_path']
 
-            path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_later()
+            path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_latest()
             self.jargs.inputs[input_name]['path_expanded'] = path
 
         # Unstructured type
@@ -502,7 +502,7 @@ class ETL_Base(object):
         else:
             base_path = self.jargs.merged_args['base_path']
 
-        return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_later()
+        return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_latest()
 
     def expand_output_path(self, path, now_dt, **kwargs):
         # Function call isolated to be overridable.
@@ -1084,7 +1084,7 @@ class Path_Handler():
             path = path.replace('{{root_path}}', self.root_path)
         return path
 
-    def expand_later(self):
+    def expand_latest(self):
         path = self.path
         if '{{latest}}' in path:
             upstream_path = path.split('{{latest}}')[0]
