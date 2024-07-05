@@ -4,7 +4,10 @@
 # Parse arguments
 s3_bucket="$1"
 s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
-echo "--- S3 path to grab files: ", $s3_bucket
+echo "--- S3 folder to grab files: ", $s3_bucket
+echo "--- S3 code package: ", $s3_bucket_scripts
+
+echo "#### --- : TEST TEST TEST 1"
 
 # Function to print install info about libraries, to double check installs
 print_lib_install() {
@@ -40,12 +43,22 @@ print_lib_install() {
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
 echo "--- Copy S3 to EMR master ---"
-aws s3 cp $s3_bucket_scripts /home/hadoop/scripts.tar.gz  # TODO check step worked or exit with failure, instead of failing silently.
-aws s3 cp "$s3_bucket/setup_master.sh" /home/hadoop/setup_master.sh  # Added for debugging purposes only
-aws s3 cp "$s3_bucket/setup_nodes.sh" /home/hadoop/setup_nodes.sh  # Added for debugging purposes only
-aws s3 cp "$s3_bucket/requirements.txt" /home/hadoop/requirements.txt
-aws s3 cp "$s3_bucket/requirements_extra.txt" /home/hadoop/requirements_extra.txt
-aws s3 cp "$s3_bucket/terminate_idle_cluster.sh" /home/hadoop/terminate_idle_cluster.sh
+echo "#### --- : TEST TEST TEST 2"
+sudo pip3 install python-dateutil --ignore-installed  # necessary for aws s3 cp
+aws s3 cp $s3_bucket_scripts /home/hadoop/scripts.tar.gz --force 2>error.log  # TODO check step worked or exit with failure, instead of failing silently.
+# Checking if last command ran successfully
+if [ $? -eq 0 ]; then
+    echo "Copy operation was successful."
+else
+    echo "Copy operation failed."
+    echo "Error details:"
+    cat error.log    
+fi
+aws s3 cp "$s3_bucket/setup_master.sh" /home/hadoop/setup_master.sh --force  # Added for debugging purposes only
+aws s3 cp "$s3_bucket/setup_nodes.sh" /home/hadoop/setup_nodes.sh --force  # Added for debugging purposes only
+aws s3 cp "$s3_bucket/requirements.txt" /home/hadoop/requirements.txt --force
+aws s3 cp "$s3_bucket/requirements_extra.txt" /home/hadoop/requirements_extra.txt --force
+aws s3 cp "$s3_bucket/terminate_idle_cluster.sh" /home/hadoop/terminate_idle_cluster.sh --force
 
 # Install pip libs.
 echo "--- Updating pip ---"
