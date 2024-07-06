@@ -7,8 +7,6 @@ s3_bucket_scripts="$s3_bucket/scripts.tar.gz"
 echo "--- S3 folder to grab files: ", $s3_bucket
 echo "--- S3 code package: ", $s3_bucket_scripts
 
-echo "#### --- : TEST TEST TEST 1"
-
 # Function to print install info about libraries, to double check installs
 print_lib_install() {
     local FILENAME="$1"
@@ -43,7 +41,6 @@ print_lib_install() {
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
 echo "--- Copy S3 to EMR master ---"
-echo "#### --- : TEST TEST TEST 2"
 sudo pip3 install python-dateutil --ignore-installed  # necessary for aws s3 cp
 aws s3 cp $s3_bucket_scripts /home/hadoop/scripts.tar.gz --force 2>error.log  # TODO check step worked or exit with failure, instead of failing silently.
 # Checking if last command ran successfully
@@ -54,6 +51,7 @@ else
     echo "Error details:"
     cat error.log    
 fi
+# Continue with other cp
 aws s3 cp "$s3_bucket/setup_master.sh" /home/hadoop/setup_master.sh --force  # Added for debugging purposes only
 aws s3 cp "$s3_bucket/setup_nodes.sh" /home/hadoop/setup_nodes.sh --force  # Added for debugging purposes only
 aws s3 cp "$s3_bucket/requirements.txt" /home/hadoop/requirements.txt --force
