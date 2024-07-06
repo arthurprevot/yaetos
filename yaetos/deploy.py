@@ -100,7 +100,11 @@ class DeployPySparkScriptOnAws(object):
         if self.continue_post_git_check() is False:
             return False
 
-        self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
+        self.session = eu.get_aws_setup(self.deploy_args)
+        if not self.deploy_args.get('skip_aws_check', False):
+            eu.test_aws_connection(self.session)
+
+        # self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
         if self.deploy_args['deploy'] == 'EMR':
             self.run_direct()
         elif self.deploy_args['deploy'] == 'k8s':

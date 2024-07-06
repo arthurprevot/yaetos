@@ -1375,18 +1375,43 @@ def get_aws_setup(args):
         session = boto3.Session()  # to check : credentials = session.get_credentials()
         return session
 
+    # Pull creds from aws_config_file
     from configparser import ConfigParser
     config = ConfigParser()
     assert os.path.isfile(args['aws_config_file'])
     config.read(args['aws_config_file'])
     profile_name = config.get(args['aws_setup'], 'profile_name')
     session = boto3.Session(profile_name=profile_name)
+    # self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
 
     # Save creds to env
-    credentials = session.get_credentials()
+    credentials = session.get_frozen_credentials()  # other option get_credentials
     os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
     os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+    os.environ['AWS_SESSION_TOKEN'] = credentials.token
     return session
+
+
+def test_aws_connection(session):
+    from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
+
+    try:
+        sns_client = session.client('sns')
+        response = sns_client.list_topics()
+        print("AWS Connection Successful")
+        # print("Connection Successful. Here's the list of SNS topics:")
+        # print(response['Topics'])
+        # works = True
+    except NoCredentialsError:
+        raise Exception("Credentials not available")
+        # works = False
+    except PartialCredentialsError:
+        raise Exception("Incomplete credentials")
+        # works = False
+    except ClientError as e:
+        raise Exception("AWS Error:", e)
+        # works = False
+    # return works
 
 
 class InputLoader():
