@@ -884,10 +884,12 @@ class Job_Yml_Parser():
         return sql_file
 
     def set_job_yml(self, job_name, job_param_file, yml_modes, skip_job):
+        # Get full yml
         if job_param_file is None:
             return {}
         yml = self.load_meta(job_param_file)
 
+        # Get job_yml
         if job_name not in yml['jobs'] and not skip_job:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(job_name, job_param_file))
         elif skip_job:
@@ -895,8 +897,14 @@ class Job_Yml_Parser():
         else:
             job_yml = yml['jobs'][job_name]
 
+        # Get common_yml
+        common_yml = yml['common_params']['all_mode_params']
+
+        # Get mode_spec_yml
+        yml_modes = self.get_yml_mode(common_yml, yml_modes)
         yml_modes = yml_modes.split(',')
         mode_spec_yml = {}
+        # import ipdb; ipdb.set_trace()
         for yml_mode in yml_modes:
             if yml_mode not in yml['common_params']['mode_specific_params']:
                 raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
@@ -905,10 +913,20 @@ class Job_Yml_Parser():
             mode_spec_yml.update(mode_spec)
 
         # Stacking params in right order (all_mode_params->mode_specific_params->job_params)
-        out = yml['common_params']['all_mode_params']
+        out = common_yml
         out.update(mode_spec_yml)
         out.update(job_yml)
         return out
+
+    @staticmethod
+    def get_yml_mode(common_args, yml_modes):
+        """ Get mode if needed, from 'default_*_modes' param """
+        if yml_modes == 'EMR_compatible_mode_to_be_identified_in_yml':
+            # import ipdb; ipdb.set_trace()
+            return common_args.get('default_aws_modes')
+        elif yml_modes == 'local_compatible_mode_to_be_identified_in_yml':
+            # import ipdb; ipdb.set_trace()
+            return common_args.get('default_local_modes')
 
     @staticmethod
     def load_meta(fname):
@@ -939,7 +957,7 @@ class Job_Args_Parser():
             args.update(job_args)
             args.update(cmd_args)
             args.update({'job_name': job_name} if job_name else {})
-            args['mode'] = self.get_default_mode(args)
+            args['mode'] = self.get_mode(args)
             assert 'job_name' in args.keys()
             yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
 
@@ -949,7 +967,7 @@ class Job_Args_Parser():
         args.update(yml_args)
         args.update(job_args)
         args.update(cmd_args)
-        args['mode'] = self.get_default_mode(args)
+        # args['mode'] = self.get_mode(args)
         logger.info("Job args: \n{}".format(pformat(args)))
         args = self.update_args(args, loaded_inputs)
         args = self.replace_placeholders(args)
@@ -965,11 +983,14 @@ class Job_Args_Parser():
             self.validate()
 
     @staticmethod
-    def get_default_mode(args):
-        if args.get('mode') and 'dev_local' in args['mode'].split(',') and args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow'):
-            return args.get('default_aws_modes', 'dev_EMR')
+    def get_mode(args):
+        """Executed before (and after) loading yml, so no info """
+        if args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow') and args.get('mode') and 'dev_local' in args['mode'].split(','): # using 'dev_local' because set by default.
+            # import ipdb; ipdb.set_trace()
+            return args.get('default_aws_modes', 'EMR_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
         else:
-            return args.get('mode', 'None')
+            return args.get('default_local_modes', 'local_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
+            # return args.get('mode', 'None')
 
     def get_deploy_args(self):
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST or key.startswith('airflow.')}
