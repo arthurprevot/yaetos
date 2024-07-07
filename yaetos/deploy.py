@@ -28,6 +28,7 @@ import yaetos.etl_utils as eu
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.logger import setup_logging
 from yaetos.airflow_template import get_template
+from yaetos.airflow_template_k8s import get_template_k8s
 logger = setup_logging('Deploy')
 
 
@@ -111,7 +112,7 @@ class DeployPySparkScriptOnAws(object):
             self.run_direct_k8s()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
             self.run_aws_data_pipeline()
-        elif self.deploy_args['deploy'] in ('airflow'):
+        elif self.deploy_args['deploy'] in ('airflow', 'airflow_k8s'):
             self.run_aws_airflow()
         elif self.deploy_args['deploy'] in ('code'):
             self.run_push_code()
@@ -895,7 +896,14 @@ class DeployPySparkScriptOnAws(object):
 
         param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
 
-        content = get_template(params, param_extras)
+        # Get content
+        if self.deploy_args['deploy'] == 'airflow':
+            content = get_template(params, param_extras)
+        elif self.deploy_args['deploy'] == 'airflow_k8s':
+            content = get_template_k8s(params, param_extras)
+        else:
+            raise Exception("Should not get here")
+
         if not os.path.isdir(self.DAGS):
             os.mkdir(self.DAGS)
 
@@ -905,6 +913,8 @@ class DeployPySparkScriptOnAws(object):
         os.makedirs(fname.parent, exist_ok=True)
         with open(fname, 'w') as file:
             file.write(content)
+            logger.info(f'Airflow DAG file created at {fname}')
+
         return fname
 
     def set_job_dag_name(self, jobname):

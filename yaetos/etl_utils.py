@@ -985,7 +985,7 @@ class Job_Args_Parser():
     @staticmethod
     def get_mode(args):
         """Executed before (and after) loading yml, so no info """
-        if args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow') and args.get('mode') and 'dev_local' in args['mode'].split(','): # using 'dev_local' because set by default.
+        if args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s') and args.get('mode') and 'dev_local' in args['mode'].split(','): # using 'dev_local' because set by default.
             # import ipdb; ipdb.set_trace()
             return args.get('default_aws_modes', 'EMR_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
         else:
@@ -1170,7 +1170,7 @@ class Runner():
             job = self.launch_run_mode(job)
         elif jargs.deploy == 'local_spark_submit' or (jargs.deploy == 'none' and jargs.merged_args.get('jar_job')):  # when running job on the spot through spark-submit.
             self.launch_run_mode_spark_submit(jargs)
-        elif jargs.deploy in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
+        elif jargs.deploy in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(jargs.get_deploy_args(), jargs.get_app_args())
         return job
 
@@ -1195,7 +1195,7 @@ class Runner():
         # Defined here separatly from parsing for overridability.
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", help="Choose which set of params to use from jobs_metadata.yml file. Typically from ('dev_local', 'dev_EMR', 'prod_EMR') but could include others.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
