@@ -1,0 +1,51 @@
+apiVersion: "sparkoperator.k8s.io/v1beta2"
+kind: SparkApplication
+metadata:
+  name: a_k8s_name
+  namespace: a_k8s_namespace
+spec:
+  type: Scala
+  mode: cluster
+  image: a_k8s_image_service
+  imagePullPolicy: Always
+  mainApplicationFile: local:///jobs/generic/launcher.py
+  sparkVersion: 3.1.1
+  restartPolicy:
+    type: Never
+  sparkConf:
+    "spark.executor.instances": "a_k8s_executor_instances"
+    "spark.kubernetes.container.image": "a_k8s_image_service"
+    "spark.kubernetes.file.upload.path": "a_k8s_upload_path"
+    "spark.kubernetes.driver.podTemplateFile": "a_k8s_driver_podTemplateFile"
+    "spark.kubernetes.executor.podTemplateFile": "a_k8s_executor_podTemplateFile"
+    "spark.jars.ivy": "/tmp/.ivy2"
+    "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider"
+    "spark.hadoop.fs.s3a.access.key": "${AWS_ACCESS_KEY_ID}"
+    "spark.hadoop.fs.s3a.secret.key": "${AWS_SECRET_ACCESS_KEY}"
+    "spark.hadoop.fs.s3a.session.token": "${AWS_SESSION_TOKEN}"
+    "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    "spark.hadoop.fs.s3a.endpoint": "s3.a_aws_region.amazonaws.com"
+  deps:
+    pyFiles:
+      - local:///tmp/files_to_ship/scripts.zip
+  mainClass: org.apache.spark.deploy.PythonRunner
+  arguments:
+    - --mode=dev_k8s
+    - --deploy=none
+    - --storage=s3
+    - --job_name=a_job_name
+    - --runs_on=k8s
+    - --dependencies
+  hadoopConf:
+    "fs.s3a.access.key": "${AWS_ACCESS_KEY_ID}"
+    "fs.s3a.secret.key": "${AWS_SECRET_ACCESS_KEY}"
+    "fs.s3a.session.token": "${AWS_SESSION_TOKEN}"
+    "fs.s3a.endpoint": "s3.a_aws_region.amazonaws.com"
+  driver:
+    cores: 1
+    memory: "512m"
+    podName: a_k8s_podname
+  executor:
+    cores: 1
+    instances: a_k8s_executor_instances
+    memory: "512m"
