@@ -1,14 +1,10 @@
 """
-Function to create a generic airflow dag for EMR execution, generic enought to be used by any yaetos job.
-Partly based on https://docs.aws.amazon.com/mwaa/latest/userguide/samples-emr.html
+Function to create a generic airflow dag for spark-submit to AWS EKS, generic enought to be used by any yaetos job.
 """
 from textwrap import dedent, indent
 
 
 def get_template_k8s(params, param_extras):
-
-    # params['KeepJobFlowAliveWhenNoSteps'] = params['deploy_args'].get('leave_on', False)
-
 
     # Set extra params, params not available in template but overloadable
     lines = ''
@@ -50,29 +46,21 @@ def get_template_k8s(params, param_extras):
 
         spark_submit = SparkKubernetesOperator(
             task_id='spark_submit_task',
-            namespace='a_k8s_namespace',
-            application_file='spark-submit.yaml',
+            namespace='{a_k8s_namespace}',
+            application_file='{spark-submit_yaml}',
             kubernetes_conn_id='k8s_default',
             do_xcom_push=True,
         )
 
         spark_sensor = SparkKubernetesSensor(
             task_id='watch_step',
-            namespace='a_k8s_namespace',
+            namespace='{a_k8s_namespace}',
             application_name="{{{{ task_instance.xcom_pull(task_ids='spark_submit_task')['metadata']['name'] }}}}",
             kubernetes_conn_id='k8s_default',
             poke_interval=60,
             timeout=600,
         )
 
-        # step_checker = EmrStepSensor(
-        #     task_id='watch_step',
-        #     job_flow_id="{{{{ task_instance.xcom_pull('start_emr_cluster', key='return_value') }}}}",
-        #     step_id="{{{{ task_instance.xcom_pull(task_ids='add_steps', key='return_value')[1] }}}}",  # [1] to watch 2nd step, the spark application.
-        #     aws_conn_id='aws_default',
-        # )
-
-        # spark_submit
         spark_submit >> spark_sensor
     """.format(**params)
     return dedent(template)
