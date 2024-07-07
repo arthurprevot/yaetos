@@ -102,7 +102,8 @@ class DeployPySparkScriptOnAws(object):
             return False
 
         self.session = eu.get_aws_setup(self.deploy_args)
-        if not self.deploy_args.get('skip_aws_check', False):
+        # import ipdb; ipdb.set_trace()
+        if not self.app_args.get('skip_aws_check', False):
             eu.test_aws_connection(self.session)
 
         # self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
@@ -841,11 +842,12 @@ class DeployPySparkScriptOnAws(object):
         return parameterValues
 
     def run_aws_airflow(self):
+        fname = self.create_dags()
+
         s3 = self.s3_ops(self.session)
         if self.deploy_args.get('push_secrets', False):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
-        fname = self.create_dags()
         self.upload_dags(s3, fname)
 
     def create_dags(self):
@@ -874,32 +876,50 @@ class DeployPySparkScriptOnAws(object):
         else:
             schedule = f"'{freq_input}'"
 
-        params = {
-            'ec2_instance_slaves': self.ec2_instance_slaves,
-            'emr_core_instances': self.emr_core_instances,
-            'package_path_with_bucket': self.package_path_with_bucket,
-            'cmd_runner_args': self.get_spark_submit_args(self.app_file, self.app_args),
-            'pipeline_name': self.pipeline_name,
-            'emr_version': self.emr_version,
-            'ec2_instance_master': self.ec2_instance_master,
-            'deploy_args': self.deploy_args,
-            'ec2_key_name': self.ec2_key_name,
-            'ec2_subnet_id': self.ec2_subnet_id,
-            's3_bucket_logs': self.s3_bucket_logs,
-            'metadata_folder': self.metadata_folder,
-            'dag_nameid': self.app_args['job_name'].replace("/", "-"),
-            'start_date': start_date,
-            'schedule': schedule,
-            'emails': self.deploy_args.get('emails', '[]'),
-            'region': self.s3_region,
-        }
-
-        param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
-
         # Get content
         if self.deploy_args['deploy'] == 'airflow':
+            params = {
+                'ec2_instance_slaves': self.ec2_instance_slaves,
+                'emr_core_instances': self.emr_core_instances,
+                'package_path_with_bucket': self.package_path_with_bucket,
+                'cmd_runner_args': self.get_spark_submit_args(self.app_file, self.app_args),
+                'pipeline_name': self.pipeline_name,
+                'emr_version': self.emr_version,
+                'ec2_instance_master': self.ec2_instance_master,
+                'deploy_args': self.deploy_args,
+                'ec2_key_name': self.ec2_key_name,
+                'ec2_subnet_id': self.ec2_subnet_id,
+                's3_bucket_logs': self.s3_bucket_logs,
+                'metadata_folder': self.metadata_folder,
+                # airflow specific
+                'dag_nameid': self.app_args['job_name'].replace("/", "-"),
+                'start_date': start_date,
+                'schedule': schedule,
+                'emails': self.deploy_args.get('emails', '[]'),
+                'region': self.s3_region,
+            }
+            param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
             content = get_template(params, param_extras)
         elif self.deploy_args['deploy'] == 'airflow_k8s':
+            params = {
+                'k8s_url': self.deploy_args.get('k8s_url'),
+                'k8s_name': self.deploy_args.get('k8s_name'),
+                'k8s_executor_instances': self.deploy_args.get('k8s_executor_instances'),
+                'k8s_namespace': self.deploy_args.get('k8s_namespace'),
+                'k8s_image_service': self.deploy_args.get('k8s_image_service'),
+                'k8s_upload_path': self.deploy_args.get('k8s_upload_path'),
+                'k8s_driver_podTemplateFile': self.deploy_args.get('k8s_driver_podTemplateFile'),
+                'k8s_executor_podTemplateFile': self.deploy_args.get('k8s_executor_podTemplateFile'),
+                'aws_region': self.s3_region,
+                'k8s_podname': self.deploy_args.get('k8s_podname'),
+                'k8s_airflow_spark_submit_yaml': self.deploy_args.get('k8s_airflow_spark_submit_yaml'),
+                # airflow specific
+                'dag_nameid': self.app_args['job_name'].replace("/", "-"),
+                'start_date': start_date,
+                'schedule': schedule,
+                'emails': self.deploy_args.get('emails', '[]'),
+            }
+            param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
             content = get_template_k8s(params, param_extras)
         else:
             raise Exception("Should not get here")

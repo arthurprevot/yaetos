@@ -46,15 +46,15 @@ def get_template_k8s(params, param_extras):
 
         spark_submit = SparkKubernetesOperator(
             task_id='spark_submit_task',
-            namespace='{a_k8s_namespace}',
-            application_file='{spark-submit_yaml}',
+            namespace='{k8s_namespace}',
+            application_file='{k8s_airflow_spark_submit_yaml}',
             kubernetes_conn_id='k8s_default',
             do_xcom_push=True,
         )
 
         spark_sensor = SparkKubernetesSensor(
             task_id='watch_step',
-            namespace='{a_k8s_namespace}',
+            namespace='{k8s_namespace}',
             application_name="{{{{ task_instance.xcom_pull(task_ids='spark_submit_task')['metadata']['name'] }}}}",
             kubernetes_conn_id='k8s_default',
             poke_interval=60,
