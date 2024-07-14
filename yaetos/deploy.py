@@ -842,13 +842,13 @@ class DeployPySparkScriptOnAws(object):
         return parameterValues
 
     def run_aws_airflow(self):
-        fname = self.create_dags()
+        fname_local = self.create_dags()
 
         s3 = self.s3_ops(self.session)
         if self.deploy_args.get('push_secrets', False):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
-        self.upload_dags(s3, fname)
+        self.upload_dags(s3, fname_local)
 
     def create_dags(self):
         """
@@ -928,14 +928,14 @@ class DeployPySparkScriptOnAws(object):
             os.mkdir(self.DAGS)
 
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
-        fname = self.DAGS / Pt(job_dag_name)
+        fname_local = self.DAGS / Pt(job_dag_name)
 
-        os.makedirs(fname.parent, exist_ok=True)
-        with open(fname, 'w') as file:
+        os.makedirs(fname_local.parent, exist_ok=True)
+        with open(fname_local, 'w') as file:
             file.write(content)
-            logger.info(f'Airflow DAG file created at {fname}')
+            logger.info(f'Airflow DAG file created at {fname_local}')
 
-        return fname
+        return fname_local
 
     def set_job_dag_name(self, jobname):
         suffix = '_dag.py'
