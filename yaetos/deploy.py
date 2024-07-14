@@ -276,7 +276,7 @@ class DeployPySparkScriptOnAws(object):
     def launch_spark_submit_k8s(self, cmdline):
         cmdline_str = " ".join(cmdline)
         logger.info(f'About to run spark submit command line: {cmdline_str}')
-        if not self.jargs.merged_args.get('dry_run'):
+        if not self.app_args.get('dry_run'):
             os.system(cmdline_str)
 
     def s3_ops(self, session):

@@ -923,10 +923,13 @@ class Job_Yml_Parser():
         """ Get mode if needed, from 'default_*_modes' param """
         if yml_modes == 'EMR_compatible_mode_to_be_identified_in_yml':
             # import ipdb; ipdb.set_trace()
-            return common_args.get('default_aws_modes')
+            modes = common_args.get('default_aws_modes')
         elif yml_modes == 'local_compatible_mode_to_be_identified_in_yml':
             # import ipdb; ipdb.set_trace()
-            return common_args.get('default_local_modes')
+            modes = common_args.get('default_local_modes')
+        else:
+            modes = yml_modes
+        return modes
 
     @staticmethod
     def load_meta(fname):
@@ -987,10 +990,14 @@ class Job_Args_Parser():
         """Executed before (and after) loading yml, so no info """
         if args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s') and args.get('mode') and 'dev_local' in args['mode'].split(','): # using 'dev_local' because set by default.
             # import ipdb; ipdb.set_trace()
-            return args.get('default_aws_modes', 'EMR_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
+            mode = args.get('default_aws_modes', 'EMR_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
+        elif args.get('mode'):
+            mode = args['mode']
         else:
-            return args.get('default_local_modes', 'local_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
+            mode = args.get('default_local_modes', 'local_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
             # return args.get('mode', 'None')
+        print(f'###----- mode={mode}')
+        return mode
 
     def get_deploy_args(self):
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST or key.startswith('airflow.')}
