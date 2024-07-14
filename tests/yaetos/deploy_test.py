@@ -203,3 +203,23 @@ class Test_DeployPySparkScriptOnAws(object):
             '/home/hadoop/app/some/job.jar',
             'some_arg']
         assert actual == expected
+
+    # def test_run_aws_airflow(self, deploy_args, app_args):
+    #     # app_args = {
+    #     #     'jar_job': 'some/job.jar',
+    #     #     'spark_app_args': 'some_arg'}
+    #     # app_file = 'jobs/generic/launcher.py'
+    #     deploy_args['deploy'] = 'airflow'
+    #     dep = Dep(deploy_args, app_args)
+    #     ran = dep.run_aws_airflow()
+    #     assert ran
+
+    def test_create_dags(self, deploy_args, app_args):
+        # TODO: update test to not create local files, or to validate them
+        deploy_args['deploy'] = 'airflow'
+        dep = Dep(deploy_args, app_args)
+        fname_local, job_dag_name = dep.create_dags()
+        expected_fname_local = 'tmp/files_to_ship/dags/some_job_name_dag.py'
+        expected_job_dag_name = 'some_job_name_dag.py'
+        assert str(fname_local) == expected_fname_local
+        assert job_dag_name == expected_job_dag_name

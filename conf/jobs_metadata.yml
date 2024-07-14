@@ -378,6 +378,16 @@ jobs:
     output: {'path':'{{base_path}}/wiki_example/output_ex20_filelist/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
+  examples/deploy_airflow_job:
+    description: "Test deployment to airflow."
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input_json_format3/dataset.json", 'type':'json', 'df_type':'json_pandas'}
+    output: {'path':'{{base_path}}/load_example/json_format3/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
+    s3_dags: 's3://mylake-dev/pipelines_metadata/airflow_dags'
+    local_dags: './airflow_dags/'
+    spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------

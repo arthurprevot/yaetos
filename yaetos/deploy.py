@@ -38,7 +38,7 @@ class DeployPySparkScriptOnAws(object):
     """
     SCRIPTS = Pt('yaetos/scripts/')  # TODO: move to etl_utils.py
     TMP = Pt('tmp/files_to_ship/')
-    DAGS = Pt('tmp/files_to_ship/dags')
+    # DAGS = Pt('tmp/files_to_ship/dags')
 
     def __init__(self, deploy_args, app_args):
 
@@ -842,13 +842,18 @@ class DeployPySparkScriptOnAws(object):
         return parameterValues
 
     def run_aws_airflow(self):
-        fname_local = self.create_dags()
+        fname_local, job_dag_name = self.create_dags()
 
         s3 = self.s3_ops(self.session)
         if self.deploy_args.get('push_secrets', False):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
-        self.upload_dags(s3, fname_local)
+        s3_dags = self.app_args.get('s3_dags')
+        if s3_dags:
+            self.upload_dags(s3, s3_dags, job_dag_name, fname_local)
+        else:
+            terminate(error_message='dag not uploaded, dag path not provided')
+
 
     def create_dags(self):
         """
@@ -924,18 +929,23 @@ class DeployPySparkScriptOnAws(object):
         else:
             raise Exception("Should not get here")
 
-        if not os.path.isdir(self.DAGS):
-            os.mkdir(self.DAGS)
+        # Setup path
+        default_folder = 'tmp/files_to_ship/dags'
+        local_folder = Pt(self.app_args.get('local_dags', default_folder))
+        if not os.path.isdir(local_folder):
+            os.mkdir(local_folder)
 
+        # Get fname_local
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
-        fname_local = self.DAGS / Pt(job_dag_name)
+        fname_local = local_folder / Pt(job_dag_name)
 
+        # Write content to file 
         os.makedirs(fname_local.parent, exist_ok=True)
         with open(fname_local, 'w') as file:
             file.write(content)
             logger.info(f'Airflow DAG file created at {fname_local}')
 
-        return fname_local
+        return fname_local, job_dag_name
 
     def set_job_dag_name(self, jobname):
         suffix = '_dag.py'
@@ -946,13 +956,15 @@ class DeployPySparkScriptOnAws(object):
         else:
             return jobname + suffix
 
-    def upload_dags(self, s3, fname_local):
+    @staticmethod
+    def upload_dags(s3, s3_dags, job_dag_name, fname_local):
         """
         Move the dag files to S3
         """
-        job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
+        # job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
         # s3_dags = self.app_args['s3_dags'].replace('{{root_path}}', self.app_args['root_path'])  # TODO: remove 
-        s3_dags = CPt(self.app_args['s3_dags'] + '/' + job_dag_name)
+        # s3_dags = CPt(self.app_args['s3_dags'] + '/' + job_dag_name)
+        s3_dags = CPt(s3_dags + '/' + job_dag_name)
 
         s3.Object(s3_dags.bucket, s3_dags.key)\
           .put(Body=open(str(fname_local), 'rb'), ContentType='text/x-sh')
