@@ -1392,10 +1392,10 @@ def get_aws_setup(args):
     # self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
 
     # Save creds to env
-    credentials = session.get_frozen_credentials()  # other option get_credentials
+    credentials = session.get_credentials()  # other option get_credentials, or get_frozen_credentials
     os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
     os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
-    os.environ['AWS_SESSION_TOKEN'] = credentials.token
+    os.environ['AWS_SESSION_TOKEN'] = credentials.token or ''
     return session
 
 
