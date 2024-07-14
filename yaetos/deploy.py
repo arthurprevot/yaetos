@@ -951,8 +951,8 @@ class DeployPySparkScriptOnAws(object):
         Move the dag files to S3
         """
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
-        s3_dags = self.app_args['s3_dags'].replace('{{root_path}}', self.app_args['root_path'])
-        s3_dags = CPt(s3_dags + '/' + job_dag_name)
+        # s3_dags = self.app_args['s3_dags'].replace('{{root_path}}', self.app_args['root_path'])  # TODO: remove 
+        s3_dags = CPt(self.app_args['s3_dags'] + '/' + job_dag_name)
 
         s3.Object(s3_dags.bucket, s3_dags.key)\
           .put(Body=open(str(fname_local), 'rb'), ContentType='text/x-sh')
