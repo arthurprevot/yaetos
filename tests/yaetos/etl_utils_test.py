@@ -109,6 +109,7 @@ class Test_Job_Yml_Parser(object):
         actual_params = Job_Yml_Parser(job_name, job_param_file, yml_modes, skip_job).set_job_yml(job_name, job_param_file, yml_modes, skip_job)
         expected_params = {
             'aws_config_file': 'conf/aws_config.cfg',
+            'aws_region': 'eu-west-1',
             'aws_setup': 'dev',
             'base_path': '{{root_path}}/pipelines_data',
             'connection_file': 'conf/connections.cfg',
