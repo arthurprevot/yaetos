@@ -1,6 +1,8 @@
 from yaetos.deploy import DeployPySparkScriptOnAws as Dep
 import os
 from pathlib import Path as Pt
+from filecmp import cmp
+import difflib
 
 
 class Test_DeployPySparkScriptOnAws(object):
@@ -216,10 +218,53 @@ class Test_DeployPySparkScriptOnAws(object):
 
     def test_create_dags(self, deploy_args, app_args):
         # TODO: update test to not create local files, or to validate them
-        deploy_args['deploy'] = 'airflow'
+        deploy_args['deploy'] = 'airflow'  # TODO: change to 'airflow_emr'
+        app_args['local_dags'] = 'air/flow/dags/'  # TODO: move local_dags to deploy_args
+        app_args['job_name'] = 'ex/job_x'
+        app_args['emr_core_instances'] = 2
+        # app_args['root_path'] = 's3://mylake-dev'
+        app_args['s3_logs'] = 's3://mylake-dev/pipelines_metadata/manual_run_logs/'
         dep = Dep(deploy_args, app_args)
-        fname_local, job_dag_name = dep.create_dags()
-        expected_fname_local = 'tmp/files_to_ship/dags/some_job_name_dag.py'
-        expected_job_dag_name = 'some_job_name_dag.py'
-        assert str(fname_local) == expected_fname_local
-        assert job_dag_name == expected_job_dag_name
+        actual_fname, actual_job_dag_name = dep.create_dags()
+        actual_fname = str(actual_fname)
+        expected_fname = 'air/flow/dags/ex/job_x_dag.py'
+        expected_job_dag_name = 'ex/job_x_dag.py'
+        assert actual_fname == expected_fname
+        assert actual_job_dag_name == expected_job_dag_name
+        # with open(expected_fname_local) as expected, open(str(fname_local)) as actual:
+        #     assert cmp(expected, actual)
+
+        def compare_files(file1_path, file2_path):
+            with open(file1_path, 'r') as file1, open(file2_path, 'r') as file2:
+                file1_lines = file1.readlines()
+                file2_lines = file2.readlines()
+            
+            # Print the differences
+            # for line in diff:
+            #     print(line, end='')
+            # print('-----file1_lines',file1_lines)
+            # print('-----file2_lines',file2_lines)
+            diff = difflib.unified_diff(file1_lines, file2_lines, fromfile=file1_path, tofile=file2_path)
+            diff = list(diff)
+            diff_with_ignore = [line for line in diff if (line.startswith('- ')) and line.endswith('# ignore_in_diff')]
+            print('-----diff_with_ignore',''.join(diff_with_ignore))
+
+            if file1_lines == file2_lines:
+                print('-----equal',file2_lines)
+                return True, "No diff"
+            elif diff_with_ignore == []:
+                return True, "No diff, except may be for line that ends with , '# ignore_in_diff', i.e. paths typically ignored because of timestamps that make comparison harder."
+            else:
+                # print('-----diff1',file1_path, file2_path)
+                # print('-----diff2',diff)
+                # diff = ''.join(generate_diff(file1_lines, file2_lines))
+                return False, ''.join(diff)
+
+        # Read the files
+        file1_path = 'tests/fixtures/ref_airflow_emr_job_dag.py'
+        file2_path = actual_fname
+
+        are_equal, diff = compare_files(file1_path, file2_path)
+        assert are_equal, f"Files are different:\n{diff}"
+        # assert False, f"Files are different:\n{diff}"
+        # assert cmp(expected_fname, 'tests/fixtures/ref_airflow_emr_job_dag.py')
