@@ -933,7 +933,7 @@ class DeployPySparkScriptOnAws(object):
         default_folder = 'tmp/files_to_ship/dags'
         local_folder = Pt(self.app_args.get('local_dags', default_folder))
         if not os.path.isdir(local_folder):
-            os.mkdir(local_folder)
+            os.makedirs(local_folder, exist_ok=True)
 
         # Get fname_local
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
