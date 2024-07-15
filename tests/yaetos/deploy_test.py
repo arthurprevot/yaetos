@@ -5,6 +5,33 @@ from filecmp import cmp
 import difflib
 
 
+def compare_files(file1_path, file2_path):
+    with open(file1_path, 'r') as file1, open(file2_path, 'r') as file2:
+        file1_lines = file1.readlines()
+        file2_lines = file2.readlines()
+    
+    # Print the differences
+    # for line in diff:
+    #     print(line, end='')
+    # print('-----file1_lines',file1_lines)
+    # print('-----file2_lines',file2_lines)
+    diff = difflib.unified_diff(file1_lines, file2_lines, fromfile=file1_path, tofile=file2_path)
+    diff = list(diff)
+    diff_with_ignore = [line for line in diff if (line.startswith('- ')) and line.endswith('# ignore_in_diff')]
+    print('-----diff_with_ignore',''.join(diff_with_ignore))
+
+    if file1_lines == file2_lines:
+        print('-----equal',file2_lines)
+        return True, "No diff"
+    elif diff_with_ignore == []:
+        return True, "No diff, except may be for line that ends with , '# ignore_in_diff', i.e. paths typically ignored because of timestamps that make comparison harder."
+    else:
+        # print('-----diff1',file1_path, file2_path)
+        # print('-----diff2',diff)
+        # diff = ''.join(generate_diff(file1_lines, file2_lines))
+        return False, ''.join(diff)
+
+
 class Test_DeployPySparkScriptOnAws(object):
     def test_generate_pipeline_name(self):
         mode = 'n/a'  # TODO: remove need for mode param in generate_pipeline_name()
@@ -233,32 +260,6 @@ class Test_DeployPySparkScriptOnAws(object):
         assert actual_job_dag_name == expected_job_dag_name
         # with open(expected_fname_local) as expected, open(str(fname_local)) as actual:
         #     assert cmp(expected, actual)
-
-        def compare_files(file1_path, file2_path):
-            with open(file1_path, 'r') as file1, open(file2_path, 'r') as file2:
-                file1_lines = file1.readlines()
-                file2_lines = file2.readlines()
-            
-            # Print the differences
-            # for line in diff:
-            #     print(line, end='')
-            # print('-----file1_lines',file1_lines)
-            # print('-----file2_lines',file2_lines)
-            diff = difflib.unified_diff(file1_lines, file2_lines, fromfile=file1_path, tofile=file2_path)
-            diff = list(diff)
-            diff_with_ignore = [line for line in diff if (line.startswith('- ')) and line.endswith('# ignore_in_diff')]
-            print('-----diff_with_ignore',''.join(diff_with_ignore))
-
-            if file1_lines == file2_lines:
-                print('-----equal',file2_lines)
-                return True, "No diff"
-            elif diff_with_ignore == []:
-                return True, "No diff, except may be for line that ends with , '# ignore_in_diff', i.e. paths typically ignored because of timestamps that make comparison harder."
-            else:
-                # print('-----diff1',file1_path, file2_path)
-                # print('-----diff2',diff)
-                # diff = ''.join(generate_diff(file1_lines, file2_lines))
-                return False, ''.join(diff)
 
         # Read the files
         file1_path = 'tests/fixtures/ref_airflow_emr_job_dag.py'
