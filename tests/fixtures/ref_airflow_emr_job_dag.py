@@ -12,7 +12,7 @@ import os
 DAG_ARGS = {
     'dag_id': 'ex-job_x',
     'dagrun_timeout': timedelta(hours=2),
-    'start_date': dateutil.parser.parse("2024-07-15T00:00:00+00:00"),
+    'start_date': dateutil.parser.parse("2024-07-15T00:00:00+00:00"),  # ignore_in_diff
     'schedule': '@once',
     'tags': ['emr'],
     'default_args' : {
