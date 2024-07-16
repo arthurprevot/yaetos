@@ -904,7 +904,6 @@ class Job_Yml_Parser():
         yml_modes = self.get_yml_mode(common_yml, yml_modes)
         yml_modes = yml_modes.split(',')
         mode_spec_yml = {}
-        # import ipdb; ipdb.set_trace()
         for yml_mode in yml_modes:
             if yml_mode not in yml['common_params']['mode_specific_params']:
                 raise KeyError("Your yml mode '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(yml_mode, job_param_file))
@@ -922,10 +921,8 @@ class Job_Yml_Parser():
     def get_yml_mode(common_args, yml_modes):
         """ Get mode if needed, from 'default_*_modes' param """
         if yml_modes == 'EMR_compatible_mode_to_be_identified_in_yml':
-            # import ipdb; ipdb.set_trace()
             modes = common_args.get('default_aws_modes')
         elif yml_modes == 'local_compatible_mode_to_be_identified_in_yml':
-            # import ipdb; ipdb.set_trace()
             modes = common_args.get('default_local_modes')
         else:
             modes = yml_modes
@@ -970,7 +967,6 @@ class Job_Args_Parser():
         args.update(yml_args)
         args.update(job_args)
         args.update(cmd_args)
-        # args['mode'] = self.get_mode(args)
         logger.info("Job args: \n{}".format(pformat(args)))
         args = self.update_args(args, loaded_inputs)
         args = self.replace_placeholders(args)
@@ -989,14 +985,11 @@ class Job_Args_Parser():
     def get_mode(args):
         """Executed before (and after) loading yml, so no info """
         if args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s') and args.get('mode') and 'dev_local' in args['mode'].split(','): # using 'dev_local' because set by default.
-            # import ipdb; ipdb.set_trace()
             mode = args.get('default_aws_modes', 'EMR_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
         elif args.get('mode'):
             mode = args['mode']
         else:
             mode = args.get('default_local_modes', 'local_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
-            # return args.get('mode', 'None')
-        print(f'###----- mode={mode}')
         return mode
 
     def get_deploy_args(self):
@@ -1389,10 +1382,9 @@ def get_aws_setup(args):
     config.read(args['aws_config_file'])
     profile_name = config.get(args['aws_setup'], 'profile_name')
     session = boto3.Session(profile_name=profile_name)
-    # self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
 
     # Save creds to env
-    credentials = session.get_credentials()  # other option get_credentials, or get_frozen_credentials
+    credentials = session.get_credentials()  # TODO: check improvement with get_frozen_credentials()
     os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
     os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
     os.environ['AWS_SESSION_TOKEN'] = credentials.token or ''
@@ -1406,19 +1398,12 @@ def test_aws_connection(session):
         sns_client = session.client('sns')
         response = sns_client.list_topics()
         print("AWS Connection Successful")
-        # print("Connection Successful. Here's the list of SNS topics:")
-        # print(response['Topics'])
-        # works = True
     except NoCredentialsError:
         raise Exception("Credentials not available")
-        # works = False
     except PartialCredentialsError:
         raise Exception("Incomplete credentials")
-        # works = False
     except ClientError as e:
         raise Exception("AWS Error:", e)
-        # works = False
-    # return works
 
 
 class InputLoader():

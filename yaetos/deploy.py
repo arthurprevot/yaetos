@@ -38,7 +38,6 @@ class DeployPySparkScriptOnAws(object):
     """
     SCRIPTS = Pt('yaetos/scripts/')  # TODO: move to etl_utils.py
     TMP = Pt('tmp/files_to_ship/')
-    # DAGS = Pt('tmp/files_to_ship/dags')
 
     def __init__(self, deploy_args, app_args):
 
@@ -102,11 +101,9 @@ class DeployPySparkScriptOnAws(object):
             return False
 
         self.session = eu.get_aws_setup(self.deploy_args)
-        # import ipdb; ipdb.set_trace()
         if not self.app_args.get('skip_aws_check', False):
             eu.test_aws_connection(self.session)
 
-        # self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
         if self.deploy_args['deploy'] == 'EMR':
             self.run_direct()
         elif self.deploy_args['deploy'] == 'k8s':
@@ -961,9 +958,6 @@ class DeployPySparkScriptOnAws(object):
         """
         Move the dag files to S3
         """
-        # job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
-        # s3_dags = self.app_args['s3_dags'].replace('{{root_path}}', self.app_args['root_path'])  # TODO: remove 
-        # s3_dags = CPt(self.app_args['s3_dags'] + '/' + job_dag_name)
         s3_dags = CPt(s3_dags + '/' + job_dag_name)
 
         s3.Object(s3_dags.bucket, s3_dags.key)\

@@ -1,7 +1,6 @@
 from yaetos.deploy import DeployPySparkScriptOnAws as Dep
 import os
 from pathlib import Path as Pt
-from filecmp import cmp
 import difflib
 
 

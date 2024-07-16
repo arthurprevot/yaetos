@@ -131,7 +131,6 @@ class FS_Ops_Dispatcher():
 
     # --- list_files set of functions ----
     def list_files(self, path, regex=None, globy=None):
-        print('##### ----- list_files')
         return self.list_files_cluster(path, regex, globy) if self.is_s3_path(path) else self.list_files_local(path, regex, globy)
 
     @staticmethod
@@ -162,7 +161,6 @@ class FS_Ops_Dispatcher():
             for dirpath, dirnames, filenames in os.walk(path):
                 for filename in filenames:
                     files.append(os.path.join(dirpath, filename))
-        # import ipdb; ipdb.set_trace()
         
         return files
 
@@ -173,7 +171,6 @@ class FS_Ops_Dispatcher():
             files = []
             for (obj, file_name) in s3_iterator(s3, bucket_name, prefix, pattern, pattern_type):
                 files.append('s3://' + bucket_name + '/' + obj['Key'])
-            # files_df = pd.DataFrame(files, columns=['filenames'])
             return files
 
         def s3_iterator(s3, bucket_name, prefix, pattern, pattern_type):
@@ -215,7 +212,6 @@ class FS_Ops_Dispatcher():
         files = get_filenames(s3, bucket, key_prefix, pattern, pattern_type)
         return files
 
-
     # --- dir_exist set of functions ----
     def dir_exist(self, path):
         return self.dir_exist_cluster(path) if self.is_s3_path(path) else self.dir_exist_local(path)
@@ -237,7 +233,6 @@ class FS_Ops_Dispatcher():
         path_out_obj = Path(path_out)
         path_out_folder = str(path_out_obj.parent)
         os.makedirs(path_out_folder, exist_ok=True)
-        # destination_path = os.path.join(destination, new_name)
         shutil.copy2(path_in, path_out)
 
     @staticmethod
@@ -253,11 +248,9 @@ class FS_Ops_Dispatcher():
         key_out = path_out_obj.key
 
         copy_source = {'Bucket': bucket_in, 'Key': key_in}
-
         s3.copy(copy_source, bucket_out, key_out)
 
     # --- load_pandas set of functions ----
-
     def load_pandas(self, fname, file_type, globy, read_func, read_kwargs):
         return self.load_pandas_cluster(fname, file_type, globy, read_func, read_kwargs) if self.is_s3_path(fname) else self.load_pandas_local(fname, file_type, globy, read_func, read_kwargs)
 
@@ -296,7 +289,6 @@ class FS_Ops_Dispatcher():
         return df
 
     # --- save_pandas set of functions ----
-
     def save_pandas(self, df, fname, save_method, save_kwargs):
         return self.save_pandas_cluster(df, fname, save_method, save_kwargs) if self.is_s3_path(fname) else self.save_pandas_local(df, fname, save_method, save_kwargs)
 
@@ -327,7 +319,6 @@ class FS_Ops_Dispatcher():
             raise Exception("S3 couldn't be sent to S3")
         sleep(1)  # Prevent ThrottlingException
         return df
-
 
 
 class Cred_Ops_Dispatcher():
