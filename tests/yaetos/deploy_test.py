@@ -15,10 +15,10 @@ def compare_files(file1_path, file2_path, verbose=False):
     diff_without_ignore = [line for line in diff if line.startswith('-') and not line.strip().endswith('# ignore_in_diff') and not line.startswith('---')]
 
     if verbose:
-        print('------- file1_lines:', ''.join(file1_lines))
-        print('------- file2_lines:', ''.join(file2_lines))
-        print('------- diff:', ''.join(diff))
-        print('------- diff_with_ignore:', diff_without_ignore)
+        print('--- file1_lines:', ''.join(file1_lines))
+        print('--- file2_lines:', ''.join(file2_lines))
+        print('--- diff:', ''.join(diff))
+        print('--- diff_with_ignore:', diff_without_ignore)
 
     if file1_lines == file2_lines:
         return True, "No diff"
@@ -230,7 +230,6 @@ class Test_DeployPySparkScriptOnAws(object):
         assert actual == expected
 
     def test_create_dags_emr(self, deploy_args, app_args):
-        # TODO: update test to not create local files, or to validate them
         deploy_args['deploy'] = 'airflow'  # TODO: change to 'airflow_emr'
         app_args['local_dags'] = 'air/flow/dags/'  # TODO: move local_dags to deploy_args
         app_args['job_name'] = 'ex/job_x'
@@ -239,27 +238,25 @@ class Test_DeployPySparkScriptOnAws(object):
         dep = Dep(deploy_args, app_args)
         actual_fname, actual_job_dag_name = dep.create_dags()
         actual_fname = str(actual_fname)
+
         expected_fname = 'air/flow/dags/ex/job_x_dag.py'
         expected_job_dag_name = 'ex/job_x_dag.py'
         assert actual_fname == expected_fname
         assert actual_job_dag_name == expected_job_dag_name
         are_equal, diff_msg = compare_files('tests/fixtures/ref_airflow_emr_job_dag.py', actual_fname)
         assert are_equal, f"Assert result: {are_equal}, Diff message:\n{diff_msg}"
-        # assert False, 'asdf'
 
     def test_create_dags_k8s(self, deploy_args, app_args):
-        # TODO: update test to not create local files, or to validate them
         deploy_args['deploy'] = 'airflow_k8s'  # TODO: change to 'airflow_emr'
         app_args['local_dags'] = 'air/flow/dags/'  # TODO: move local_dags to deploy_args
         app_args['job_name'] = 'ex/job_x'
-        # app_args['emr_core_instances'] = 2
-        app_args['s3_logs'] = 's3://mylake-dev/pipelines_metadata/manual_run_logs/'
         dep = Dep(deploy_args, app_args)
         actual_fname, actual_job_dag_name = dep.create_dags()
         actual_fname = str(actual_fname)
+
         expected_fname = 'air/flow/dags/ex/job_x_dag.py'
         expected_job_dag_name = 'ex/job_x_dag.py'
         assert actual_fname == expected_fname
         assert actual_job_dag_name == expected_job_dag_name
-        are_equal, diff = compare_files('tests/fixtures/ref_airflow_k8s_job_dag.py', actual_fname)
-        assert are_equal, f"Files are different:\n{diff}"
+        are_equal, diff_msg = compare_files('tests/fixtures/ref_airflow_k8s_job_dag.py', actual_fname)
+        assert are_equal, f"Assert result: {are_equal}, Diff message:\n{diff_msg}"
