@@ -4,6 +4,7 @@ Set of operations that require dispatching between local and cloud environment.
 import boto3
 import os
 import re
+import fnmatch
 import glob as gb
 import shutil
 from pathlib import Path
