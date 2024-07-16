@@ -984,7 +984,7 @@ class Job_Args_Parser():
     @staticmethod
     def get_mode(args):
         """Executed before (and after) loading yml, so no info """
-        if args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s') and args.get('mode') and 'dev_local' in args['mode'].split(','): # using 'dev_local' because set by default.
+        if args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s') and args.get('mode') and 'dev_local' in args['mode'].split(','):  # using 'dev_local' because set by default.
             mode = args.get('default_aws_modes', 'EMR_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
         elif args.get('mode'):
             mode = args['mode']
@@ -1395,8 +1395,8 @@ def test_aws_connection(session):
     from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
 
     try:
-        sns_client = session.client('sns')
-        response = sns_client.list_topics()
+        sns_client = session.client('sns')  # querying a standard service (SNS), just to check connection.
+        _ = sns_client.list_topics()
         print("AWS Connection Successful")
     except NoCredentialsError:
         raise Exception("Credentials not available")

@@ -1,7 +1,7 @@
 """
 Function to create a generic airflow dag for spark-submit to AWS EKS, generic enought to be used by any yaetos job.
 """
-from textwrap import dedent, indent
+from textwrap import dedent
 
 
 def get_template_k8s(params, param_extras):
@@ -19,11 +19,9 @@ def get_template_k8s(params, param_extras):
     from airflow import DAG
     from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
     from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKubernetesSensor
-    from airflow.utils.dates import days_ago
-    import datetime
+    from airflow.utils.dates import days_ago  # noqa: F401
     from datetime import timedelta
     import dateutil
-    import os
 
 
     DAG_ARGS = {{
@@ -32,14 +30,14 @@ def get_template_k8s(params, param_extras):
         'start_date': {start_date},
         'schedule': {schedule},
         'tags': ['emr'],
-        'default_args' : {{
+        'default_args': {{
             'owner': 'me',
             'depends_on_past': False,
             'email': {emails},
             'email_on_failure': False,
             'email_on_retry': False,
-            }},
-        }}
+        }},
+    }}
     {extras}
 
     with DAG(**DAG_ARGS) as dag:

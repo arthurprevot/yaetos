@@ -33,13 +33,11 @@ def get_template(params, param_extras):
 
     template = """
     from airflow import DAG
-    from airflow.providers.amazon.aws.operators.emr import EmrCreateJobFlowOperator, EmrAddStepsOperator, EmrTerminateJobFlowOperator
-    from airflow.providers.amazon.aws.sensors.emr import EmrJobFlowSensor, EmrStepSensor
-    from airflow.utils.dates import days_ago
-    import datetime
+    from airflow.providers.amazon.aws.operators.emr import EmrCreateJobFlowOperator, EmrAddStepsOperator #, EmrTerminateJobFlowOperator
+    from airflow.providers.amazon.aws.sensors.emr import EmrStepSensor #, EmrJobFlowSensor
+    from airflow.utils.dates import days_ago  # noqa: F401
     from datetime import timedelta
     import dateutil
-    import os
 
 
     DAG_ARGS = {{
@@ -48,14 +46,14 @@ def get_template(params, param_extras):
         'start_date': {start_date},
         'schedule': {schedule},
         'tags': ['emr'],
-        'default_args' : {{
+        'default_args': {{
             'owner': 'me',
             'depends_on_past': False,
             'email': {emails},
             'email_on_failure': False,
             'email_on_retry': False,
-            }},
-        }}
+        }},
+    }}
     {extras}
 
     CLUSTER_JOB_FLOW_OVERRIDES = {{

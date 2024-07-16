@@ -1,12 +1,10 @@
 
 from airflow import DAG
-from airflow.providers.amazon.aws.operators.emr import EmrCreateJobFlowOperator, EmrAddStepsOperator, EmrTerminateJobFlowOperator
-from airflow.providers.amazon.aws.sensors.emr import EmrJobFlowSensor, EmrStepSensor
+from airflow.providers.amazon.aws.operators.emr import EmrCreateJobFlowOperator, EmrAddStepsOperator #, EmrTerminateJobFlowOperator
+from airflow.providers.amazon.aws.sensors.emr import EmrStepSensor #, EmrJobFlowSensor
 from airflow.utils.dates import days_ago
-import datetime
 from datetime import timedelta
 import dateutil
-import os
 
 
 DAG_ARGS = {
@@ -15,14 +13,14 @@ DAG_ARGS = {
     'start_date': dateutil.parser.parse("2024-07-15T00:00:00+00:00"),  # ignore_in_diff
     'schedule': '@once',
     'tags': ['emr'],
-    'default_args' : {
+    'default_args': {
         'owner': 'me',
         'depends_on_past': False,
         'email': [],
         'email_on_failure': False,
         'email_on_retry': False,
-        },
-    }
+    },
+}
 
 
 CLUSTER_JOB_FLOW_OVERRIDES = {

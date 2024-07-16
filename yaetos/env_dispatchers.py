@@ -144,13 +144,13 @@ class FS_Ops_Dispatcher():
                 compiled_regex = re.compile(regex)
             except re.error as e:
                 raise ValueError(f"Invalid regex pattern: {e}")
-            
+
             for dirpath, dirnames, filenames in os.walk(path):
                 for filename in filenames:
                     full_path = os.path.join(dirpath, filename)
                     if compiled_regex.search(full_path):
                         files.append(full_path)
-        
+
         # Use glob for filtering
         elif globy:
             full_glob_path = os.path.join(path, globy)
@@ -161,7 +161,7 @@ class FS_Ops_Dispatcher():
             for dirpath, dirnames, filenames in os.walk(path):
                 for filename in filenames:
                     files.append(os.path.join(dirpath, filename))
-        
+
         return files
 
     @staticmethod

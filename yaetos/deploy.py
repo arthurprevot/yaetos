@@ -14,7 +14,6 @@ from datetime import datetime
 import time
 import tarfile
 import zipfile
-import boto3
 import botocore
 import uuid
 import json
@@ -851,7 +850,6 @@ class DeployPySparkScriptOnAws(object):
         else:
             terminate(error_message='dag not uploaded, dag path not provided')
 
-
     def create_dags(self):
         """
         Create the .py dag file from job_metadata.yml info, based on a template in 'airflow_template.py'
@@ -936,7 +934,7 @@ class DeployPySparkScriptOnAws(object):
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
         fname_local = local_folder / Pt(job_dag_name)
 
-        # Write content to file 
+        # Write content to file
         os.makedirs(fname_local.parent, exist_ok=True)
         with open(fname_local, 'w') as file:
             file.write(content)
