@@ -5,7 +5,7 @@ from filecmp import cmp
 import difflib
 
 
-def compare_files(file1_path, file2_path, verbose=True):
+def compare_files(file1_path, file2_path, verbose=False):
     with open(file1_path, 'r') as file1, open(file2_path, 'r') as file2:
         file1_lines = file1.readlines()
         file2_lines = file2.readlines()
@@ -247,3 +247,19 @@ class Test_DeployPySparkScriptOnAws(object):
         assert are_equal, f"Assert result: {are_equal}, Diff message:\n{diff_msg}"
         # assert False, 'asdf'
 
+    def test_create_dags_k8s(self, deploy_args, app_args):
+        # TODO: update test to not create local files, or to validate them
+        deploy_args['deploy'] = 'airflow_k8s'  # TODO: change to 'airflow_emr'
+        app_args['local_dags'] = 'air/flow/dags/'  # TODO: move local_dags to deploy_args
+        app_args['job_name'] = 'ex/job_x'
+        # app_args['emr_core_instances'] = 2
+        app_args['s3_logs'] = 's3://mylake-dev/pipelines_metadata/manual_run_logs/'
+        dep = Dep(deploy_args, app_args)
+        actual_fname, actual_job_dag_name = dep.create_dags()
+        actual_fname = str(actual_fname)
+        expected_fname = 'air/flow/dags/ex/job_x_dag.py'
+        expected_job_dag_name = 'ex/job_x_dag.py'
+        assert actual_fname == expected_fname
+        assert actual_job_dag_name == expected_job_dag_name
+        are_equal, diff = compare_files('tests/fixtures/ref_airflow_k8s_job_dag.py', actual_fname)
+        assert are_equal, f"Files are different:\n{diff}"
