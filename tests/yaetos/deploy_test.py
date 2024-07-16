@@ -243,7 +243,7 @@ class Test_DeployPySparkScriptOnAws(object):
         expected_job_dag_name = 'ex/job_x_dag.py'
         assert actual_fname == expected_fname
         assert actual_job_dag_name == expected_job_dag_name
-        are_equal, diff_msg = compare_files('tests/fixtures/ref_airflow_emr_job_dag.py', actual_fname)
+        are_equal, diff_msg = compare_files('tests/fixtures/ref_airflow_emr_job_dag.py', actual_fname, verbose=False)
         assert are_equal, f"Assert result: {are_equal}, Diff message:\n{diff_msg}"
 
     def test_create_dags_k8s(self, deploy_args, app_args):
@@ -258,5 +258,5 @@ class Test_DeployPySparkScriptOnAws(object):
         expected_job_dag_name = 'ex/job_x_dag.py'
         assert actual_fname == expected_fname
         assert actual_job_dag_name == expected_job_dag_name
-        are_equal, diff_msg = compare_files('tests/fixtures/ref_airflow_k8s_job_dag.py', actual_fname)
+        are_equal, diff_msg = compare_files('tests/fixtures/ref_airflow_k8s_job_dag.py', actual_fname, verbose=False)
         assert are_equal, f"Assert result: {are_equal}, Diff message:\n{diff_msg}"
