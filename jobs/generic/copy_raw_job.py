@@ -1,7 +1,7 @@
 """
 Job meant to run locally to get data from AWS S3 to local. Updates required to run in cluster.
 """
-from yaetos.etl_utils import ETL_Base, Commandliner, get_aws_setup
+from yaetos.etl_utils import ETL_Base, Commandliner, get_aws_setup  # FS_Ops_Dispatcher
 import os
 from cloudpathlib import CloudPath as CPt
 import fnmatch
@@ -27,6 +27,9 @@ class Job(ETL_Base):
             pattern = '*'
             pattern_type = 'glob'
 
+        # TODO: replace code below (and all functions) with the commented code
+        # FS_Ops_Dispatcher().copy_file(path_in, path_out)
+
         session = get_aws_setup(self.jargs.merged_args)
         s3 = session.client('s3')
 
@@ -34,7 +37,7 @@ class Job(ETL_Base):
         self.logger.info(f"Number of files to be downloaded {file_number}")
 
         self.download_files(s3, path_raw_in.bucket, path_raw_in.key, pattern, pattern_type, path_raw_out)
-        self.logger.info("Finished downloading all files")
+        self.logger.info("Finished copying all files")
         return None
 
     def download_files(self, s3, bucket_name, prefix, pattern, pattern_type, path_raw_out):
