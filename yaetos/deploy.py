@@ -211,8 +211,7 @@ class DeployPySparkScriptOnAws(object):
             f'--name {app_args["k8s_name"]}',
             f'--conf spark.executor.instances={app_args["k8s_executor_instances"]}',
             f'--conf spark.kubernetes.namespace={app_args["k8s_namespace"]}',
-            f'--conf spark.kubernetes.container.image={app_args["k8s_image_service"]}',
-            ]
+            f'--conf spark.kubernetes.container.image={app_args["k8s_image_service"]}']
 
         spark_submit_aws = [
             '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',

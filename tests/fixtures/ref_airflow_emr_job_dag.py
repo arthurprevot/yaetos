@@ -1,7 +1,7 @@
 
 from airflow import DAG
-from airflow.providers.amazon.aws.operators.emr import EmrCreateJobFlowOperator, EmrAddStepsOperator #, EmrTerminateJobFlowOperator
-from airflow.providers.amazon.aws.sensors.emr import EmrStepSensor #, EmrJobFlowSensor
+from airflow.providers.amazon.aws.operators.emr import EmrCreateJobFlowOperator, EmrAddStepsOperator  # EmrTerminateJobFlowOperator
+from airflow.providers.amazon.aws.sensors.emr import EmrStepSensor  # EmrJobFlowSensor
 from airflow.utils.dates import days_ago  # noqa: F401
 from datetime import timedelta
 import dateutil
