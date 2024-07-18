@@ -191,8 +191,14 @@ class DeployPySparkScriptOnAws(object):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
         logger.info("Sending spark-submit to k8s cluster")
+        logger.info("To monitor progress:")
+        logger.info(f"kubectl get pods -n {self.app_args['k8s_namespace']}")
+        logger.info(f"kubectl logs your_spark_app_id_here -n {self.app_args['k8s_namespace']}")
         cmdline = self.get_spark_submit_args_k8s(self.app_file, self.app_args)
         self.launch_spark_submit_k8s(cmdline)
+        logger.info("Spark submit finished, see results with:")
+        logger.info(f"kubectl get pods -n {self.app_args['k8s_namespace']}")
+        logger.info(f"kubectl logs your_spark_app_id_here -n {self.app_args['k8s_namespace']}")
 
     @staticmethod
     def get_spark_submit_args_k8s(app_file, app_args):
@@ -271,6 +277,7 @@ class DeployPySparkScriptOnAws(object):
     def launch_spark_submit_k8s(self, cmdline):
         cmdline_str = " ".join(cmdline)
         logger.info(f'About to run spark submit command line: {cmdline_str}')
+        logger.info('About to run spark submit command line (formated): {}'.format(" \n".join(cmdline)))
         if not self.app_args.get('dry_run'):
             os.system(cmdline_str)
 
