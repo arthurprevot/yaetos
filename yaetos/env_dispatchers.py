@@ -196,11 +196,14 @@ class FS_Ops_Dispatcher():
         if regex and globy:
             raise ValueError("Please provide either a regex or a glob pattern, not both.")
         elif regex:
-            pattern = 'regex'
-            pattern_type = regex
+            pattern_type = 'regex'
+            pattern = regex
         elif globy:
-            pattern = 'glob'
-            pattern_type = globy
+            pattern_type = 'glob'
+            pattern = globy
+        else:
+            pattern_type = None
+            pattern = ''
 
         # Get path info
         s3 = boto3.client('s3')
