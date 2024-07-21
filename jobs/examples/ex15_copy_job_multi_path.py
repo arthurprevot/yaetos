@@ -43,7 +43,7 @@ class Job(ETL_Base):
         base_path = self.jargs.base_path
         path_partly_expanded = path.replace('{category}', category) \
                                    .replace('{subcategory}', subcategory)
-        path = Path_Handler(path_partly_expanded, base_path, self.jargs.merged_args.get('root_path')).expand_later()
+        path = Path_Handler(path_partly_expanded, base_path, self.jargs.merged_args.get('root_path')).expand_latest()
         return path
 
     def expand_output_path(self, path, now_dt, **kwargs):

@@ -362,7 +362,7 @@ class ETL_Base(object):
             else:
                 base_path = self.jargs.merged_args['base_path']
 
-            path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_later()
+            path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_latest()
             self.jargs.inputs[input_name]['path_expanded'] = path
 
         # Unstructured type
@@ -502,7 +502,7 @@ class ETL_Base(object):
         else:
             base_path = self.jargs.merged_args['base_path']
 
-        return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_later()
+        return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_latest()
 
     def expand_output_path(self, path, now_dt, **kwargs):
         # Function call isolated to be overridable.
@@ -884,10 +884,12 @@ class Job_Yml_Parser():
         return sql_file
 
     def set_job_yml(self, job_name, job_param_file, yml_modes, skip_job):
+        # Get full yml
         if job_param_file is None:
             return {}
         yml = self.load_meta(job_param_file)
 
+        # Get job_yml
         if job_name not in yml['jobs'] and not skip_job:
             raise KeyError("Your job '{}' can't be found in jobs_metadata file '{}'. Add it there or make sure the name matches".format(job_name, job_param_file))
         elif skip_job:
@@ -895,6 +897,11 @@ class Job_Yml_Parser():
         else:
             job_yml = yml['jobs'][job_name]
 
+        # Get common_yml
+        common_yml = yml['common_params']['all_mode_params']
+
+        # Get mode_spec_yml
+        yml_modes = self.get_yml_mode(common_yml, yml_modes)
         yml_modes = yml_modes.split(',')
         mode_spec_yml = {}
         for yml_mode in yml_modes:
@@ -905,10 +912,21 @@ class Job_Yml_Parser():
             mode_spec_yml.update(mode_spec)
 
         # Stacking params in right order (all_mode_params->mode_specific_params->job_params)
-        out = yml['common_params']['all_mode_params']
+        out = common_yml
         out.update(mode_spec_yml)
         out.update(job_yml)
         return out
+
+    @staticmethod
+    def get_yml_mode(common_args, yml_modes):
+        """ Get mode if needed, from 'default_*_modes' param """
+        if yml_modes == 'EMR_compatible_mode_to_be_identified_in_yml':
+            modes = common_args.get('default_aws_modes')
+        elif yml_modes == 'local_compatible_mode_to_be_identified_in_yml':
+            modes = common_args.get('default_local_modes')
+        else:
+            modes = yml_modes
+        return modes
 
     @staticmethod
     def load_meta(fname):
@@ -939,7 +957,7 @@ class Job_Args_Parser():
             args.update(job_args)
             args.update(cmd_args)
             args.update({'job_name': job_name} if job_name else {})
-            args['mode'] = self.get_default_mode(args)
+            args['mode'] = self.get_mode(args)
             assert 'job_name' in args.keys()
             yml_args = Job_Yml_Parser(args['job_name'], args['job_param_file'], args['mode'], args.get('skip_job', False)).yml_args
 
@@ -949,10 +967,10 @@ class Job_Args_Parser():
         args.update(yml_args)
         args.update(job_args)
         args.update(cmd_args)
-        args['mode'] = self.get_default_mode(args)
-        logger.info("Job args: \n{}".format(pformat(args)))
+        logger.info("Job args (pre param updates): \n{}".format(pformat(args)))
         args = self.update_args(args, loaded_inputs)
         args = self.replace_placeholders(args)
+        logger.info("Job args (post param updates): \n{}".format(pformat(args)))
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
         # Other access to vars
@@ -965,11 +983,15 @@ class Job_Args_Parser():
             self.validate()
 
     @staticmethod
-    def get_default_mode(args):
-        if args.get('mode') and 'dev_local' in args['mode'].split(',') and args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow'):
-            return args.get('default_aws_modes', 'dev_EMR')
+    def get_mode(args):
+        """Executed before (and after) loading yml, so no info """
+        if args.get('deploy') in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s') and args.get('mode') and 'dev_local' in args['mode'].split(','):  # using 'dev_local' because set by default.
+            mode = args.get('default_aws_modes', 'EMR_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
+        elif args.get('mode'):
+            mode = args['mode']
         else:
-            return args.get('mode', 'None')
+            mode = args.get('default_local_modes', 'local_compatible_mode_to_be_identified_in_yml')  # default_aws_modes will not be taken from yml here.
+        return mode
 
     def get_deploy_args(self):
         return {key: value for key, value in self.merged_args.items() if key in self.DEPLOY_ARGS_LIST or key.startswith('airflow.')}
@@ -1084,7 +1106,7 @@ class Path_Handler():
             path = path.replace('{{root_path}}', self.root_path)
         return path
 
-    def expand_later(self):
+    def expand_latest(self):
         path = self.path
         if '{{latest}}' in path:
             upstream_path = path.split('{{latest}}')[0]
@@ -1149,7 +1171,7 @@ class Runner():
             job = self.launch_run_mode(job)
         elif jargs.deploy == 'local_spark_submit' or (jargs.deploy == 'none' and jargs.merged_args.get('jar_job')):  # when running job on the spot through spark-submit.
             self.launch_run_mode_spark_submit(jargs)
-        elif jargs.deploy in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'code'):  # when deploying to AWS for execution there
+        elif jargs.deploy in ('EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s', 'code'):  # when deploying to AWS for execution there
             self.launch_deploy_mode(jargs.get_deploy_args(), jargs.get_app_args())
         return job
 
@@ -1174,7 +1196,7 @@ class Runner():
         # Defined here separatly from parsing for overridability.
         # Defaults should not be set in parser so they can be set outside of command line functionality.
         parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
+        parser.add_argument("-d", "--deploy", choices=set(['none', 'EMR', 'k8s', 'EMR_Scheduled', 'airflow', 'airflow_k8s', 'EMR_DataPipeTest', 'code', 'local_spark_submit']), help="Choose where to run the job.")
         parser.add_argument("-m", "--mode", help="Choose which set of params to use from jobs_metadata.yml file. Typically from ('dev_local', 'dev_EMR', 'prod_EMR') but could include others.")
         parser.add_argument("-j", "--job_param_file", help="Identify file to use. It can be set to 'False' to not load any file and provide all parameters through job or command line arguments.")
         parser.add_argument("-n", "--job_name", help="Identify registry job to use.")
@@ -1354,6 +1376,7 @@ def get_aws_setup(args):
         session = boto3.Session()  # to check : credentials = session.get_credentials()
         return session
 
+    # Pull creds from aws_config_file
     from configparser import ConfigParser
     config = ConfigParser()
     assert os.path.isfile(args['aws_config_file'])
@@ -1362,10 +1385,26 @@ def get_aws_setup(args):
     session = boto3.Session(profile_name=profile_name)
 
     # Save creds to env
-    credentials = session.get_credentials()
+    credentials = session.get_credentials()  # TODO: check improvement with get_frozen_credentials()
     os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
     os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+    os.environ['AWS_SESSION_TOKEN'] = credentials.token or ''
     return session
+
+
+def test_aws_connection(session):
+    from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
+
+    try:
+        sns_client = session.client('sns')  # querying a standard service (SNS), just to check connection.
+        _ = sns_client.list_topics()
+        print("AWS Connection Successful")
+    except NoCredentialsError:
+        raise Exception("Credentials not available")
+    except PartialCredentialsError:
+        raise Exception("Incomplete credentials")
+    except ClientError as e:
+        raise Exception("AWS Error:", e)
 
 
 class InputLoader():

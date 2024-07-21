@@ -109,6 +109,7 @@ class Test_Job_Yml_Parser(object):
         actual_params = Job_Yml_Parser(job_name, job_param_file, yml_modes, skip_job).set_job_yml(job_name, job_param_file, yml_modes, skip_job)
         expected_params = {
             'aws_config_file': 'conf/aws_config.cfg',
+            'aws_region': 'eu-west-1',
             'aws_setup': 'dev',
             'base_path': '{{root_path}}/pipelines_data',
             'connection_file': 'conf/connections.cfg',
@@ -116,6 +117,15 @@ class Test_Job_Yml_Parser(object):
             'emr_core_instances': 0,
             'enable_db_push': False,
             'jobs_folder': 'jobs/',
+            'k8s_driver_podTemplateFile': 'conf/k8s_setup_spark_submit_driver.yaml',
+            'k8s_executor_instances': '2',
+            'k8s_executor_podTemplateFile': 'conf/k8s_setup_spark_submit_executor.yaml',
+            'k8s_image_service': 'a_k8s_image_service',
+            'k8s_name': 'my-pyspark-job',
+            'k8s_namespace': 'a_k8s_namespace',
+            'k8s_podname': 'a_podname',
+            'k8s_upload_path': 's3a://a_k8s_upload_path',
+            'k8s_url': 'k8s://https://kubernetes.docker.internal:6443',
             'load_connectors': 'all',
             'manage_git_info': True,
             'aws_modes': ['dev_EMR', 'prod_EMR'],
@@ -185,15 +195,15 @@ class Test_Job_Args_Parser(object):
             'key1': ['I like {{key2}} pie', 'other_value'],
             'key2': 'some_value',
             'key3': {'other_key': 'a long string with {{key4}} in {{key5}}'},
-            'key4': 'value_2',
+            'key4': 'value_2 and {{key5}}',
             'key5': 'value_3'}
         actual = Job_Args_Parser.replace_placeholders(params)
 
         expected = {
             'key1': ['I like some_value pie', 'other_value'],
             'key2': 'some_value',
-            'key3': {'other_key': 'a long string with value_2 in value_3'},
-            'key4': 'value_2',
+            'key3': {'other_key': 'a long string with value_2 and value_3 in value_3'},
+            'key4': 'value_2 and value_3',
             'key5': 'value_3'}
         assert actual == expected
 

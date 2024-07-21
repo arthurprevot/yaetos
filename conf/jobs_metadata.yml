@@ -378,6 +378,16 @@ jobs:
     output: {'path':'{{base_path}}/wiki_example/output_ex20_filelist/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas'}
     spark_boot: False
 
+  examples/ex21_deploy_airflow_job:
+    description: "Test deployment to airflow."
+    py_job: jobs/generic/copy_job.py
+    inputs:
+      table_to_copy: {'path':"tests/fixtures/data_sample/wiki_example/input/dataset.csv", 'type':'csv'}
+    output: {'path':'{{base_path}}/load_example/test_files/{{now}}/dataset.csv', 'type':'csv'}
+    s3_dags: 's3://mylake-dev/pipelines_metadata/airflow_dags'
+    local_dags: './airflow_dags/'
+    spark_boot: False
+
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
   # ----- Marketing Jobs --------
@@ -458,6 +468,16 @@ common_params:
     redshift_s3_tmp_dir: s3a://dev-spark/tmp_spark/
     email_cred_section: some_email_cred_section  # Section from "connection_file"
     spark_version: '3.5' # options: '2.4', '3.0', '3.4' or '3.5'
+    k8s_url: 'k8s://https://kubernetes.docker.internal:6443'
+    k8s_name: 'my-pyspark-job'
+    k8s_executor_instances: '2'
+    k8s_namespace: 'a_k8s_namespace'
+    k8s_image_service: 'a_k8s_image_service'
+    k8s_upload_path: 's3a://a_k8s_upload_path'
+    k8s_driver_podTemplateFile: conf/k8s_setup_spark_submit_driver.yaml
+    k8s_executor_podTemplateFile: conf/k8s_setup_spark_submit_executor.yaml
+    aws_region: eu-west-1  # TODO: remove this.
+    k8s_podname: a_podname  # TODO: make it nullable so jobs can rerun back to back.
     default_aws_modes: 'dev_EMR'
     default_local_modes: 'dev_local'
     aws_modes: ['dev_EMR','prod_EMR']

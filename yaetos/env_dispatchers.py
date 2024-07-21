@@ -3,6 +3,12 @@ Set of operations that require dispatching between local and cloud environment.
 """
 import boto3
 import os
+import re
+import fnmatch
+import glob as gb
+import shutil
+from pathlib import Path
+from cloudpathlib import S3Path
 from time import sleep
 from io import StringIO, BytesIO
 # from sklearn.externals import joblib  # TODO: re-enable after fixing lib versions.
@@ -123,6 +129,92 @@ class FS_Ops_Dispatcher():
         paths = [item['Prefix'].split('/')[-2] for item in objects.search('CommonPrefixes')]
         return paths
 
+    # --- list_files set of functions ----
+    def list_files(self, path, regex=None, globy=None):
+        return self.list_files_cluster(path, regex, globy) if self.is_s3_path(path) else self.list_files_local(path, regex, globy)
+
+    @staticmethod
+    def list_files_local(path, regex, globy):
+        if regex and globy:
+            raise ValueError("Please provide either a regex or a glob pattern, not both.")
+
+        files = []
+        if regex:
+            try:
+                compiled_regex = re.compile(regex)
+            except re.error as e:
+                raise ValueError(f"Invalid regex pattern: {e}")
+
+            for dirpath, dirnames, filenames in os.walk(path):
+                for filename in filenames:
+                    full_path = os.path.join(dirpath, filename)
+                    if compiled_regex.search(full_path):
+                        files.append(full_path)
+
+        # Use glob for filtering
+        elif globy:
+            full_glob_path = os.path.join(path, globy)
+            files = gb.glob(full_glob_path, recursive=True)
+
+        # If no pattern is provided, list all files
+        else:
+            for dirpath, dirnames, filenames in os.walk(path):
+                for filename in filenames:
+                    files.append(os.path.join(dirpath, filename))
+
+        return files
+
+    @staticmethod
+    def list_files_cluster(path, regex, globy):
+
+        def get_filenames(s3, bucket_name, prefix, pattern, pattern_type):
+            files = []
+            for (obj, file_name) in s3_iterator(s3, bucket_name, prefix, pattern, pattern_type):
+                files.append('s3://' + bucket_name + '/' + obj['Key'])
+            return files
+
+        def s3_iterator(s3, bucket_name, prefix, pattern, pattern_type):
+            paginator = s3.get_paginator('list_objects_v2')
+            for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        file_name = obj['Key'][len(prefix):]
+                        match = get_match(file_name, pattern, pattern_type)
+                        if match:
+                            yield obj, file_name
+
+        def get_match(file_name, pattern, pattern_type):
+            if pattern_type == 'glob':
+                match = fnmatch.fnmatch(file_name, pattern)
+            elif pattern_type == 'regex':
+                match = re.match(pattern, file_name)
+            else:
+                match = True
+            return match
+
+        # Define pattern and pattern_type
+        if regex and globy:
+            raise ValueError("Please provide either a regex or a glob pattern, not both.")
+        elif regex:
+            pattern_type = 'regex'
+            pattern = regex
+        elif globy:
+            pattern_type = 'glob'
+            pattern = globy
+        else:
+            pattern_type = None
+            pattern = ''
+
+        # Get path info
+        s3 = boto3.client('s3')
+        path_obj = S3Path(path)
+        bucket = path_obj.bucket
+        key_prefix = path_obj.key
+
+        # Get filenames
+        files = get_filenames(s3, bucket, key_prefix, pattern, pattern_type)
+        return files
+
     # --- dir_exist set of functions ----
     def dir_exist(self, path):
         return self.dir_exist_cluster(path) if self.is_s3_path(path) else self.dir_exist_local(path)
@@ -135,8 +227,33 @@ class FS_Ops_Dispatcher():
     def dir_exist_cluster(path):
         raise NotImplementedError
 
-    # --- load_pandas set of functions ----
+    # --- copy_file set of functions ----
+    def copy_file(self, path_in, path_out):
+        return self.copy_file_cluster(path_in, path_out) if self.is_s3_path(path_in) else self.copy_file_local(path_in, path_out)
 
+    @staticmethod
+    def copy_file_local(path_in, path_out):
+        path_out_obj = Path(path_out)
+        path_out_folder = str(path_out_obj.parent)
+        os.makedirs(path_out_folder, exist_ok=True)
+        shutil.copy2(path_in, path_out)
+
+    @staticmethod
+    def copy_file_cluster(path_in, path_out):
+        s3 = boto3.client('s3')
+
+        path_in_obj = S3Path(path_in)
+        bucket_in = path_in_obj.bucket
+        key_in = path_in_obj.key
+
+        path_out_obj = S3Path(path_out)
+        bucket_out = path_out_obj.bucket
+        key_out = path_out_obj.key
+
+        copy_source = {'Bucket': bucket_in, 'Key': key_in}
+        s3.copy(copy_source, bucket_out, key_out)
+
+    # --- load_pandas set of functions ----
     def load_pandas(self, fname, file_type, globy, read_func, read_kwargs):
         return self.load_pandas_cluster(fname, file_type, globy, read_func, read_kwargs) if self.is_s3_path(fname) else self.load_pandas_local(fname, file_type, globy, read_func, read_kwargs)
 
@@ -175,7 +292,6 @@ class FS_Ops_Dispatcher():
         return df
 
     # --- save_pandas set of functions ----
-
     def save_pandas(self, df, fname, save_method, save_kwargs):
         return self.save_pandas_cluster(df, fname, save_method, save_kwargs) if self.is_s3_path(fname) else self.save_pandas_local(df, fname, save_method, save_kwargs)
 

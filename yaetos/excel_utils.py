@@ -16,7 +16,7 @@ def load_excel_pandas(jargs, input_name, **xls_args):
     path = jargs.inputs[input_name]['path']
     path = path.replace('s3://', 's3a://') if 'dev_local' in jargs.mode.split(',') else path
     logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-    path = Path_Handler(path, jargs.base_path).expand_later()
+    path = Path_Handler(path, jargs.base_path).expand_latest()
     logger.info("Input '{}' loaded from files '{}'.".format(input_name, path))
 
     pdf = pd.read_excel(io=path, engine='openpyxl', **xls_args)

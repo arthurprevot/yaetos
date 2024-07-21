@@ -14,7 +14,6 @@ from datetime import datetime
 import time
 import tarfile
 import zipfile
-import boto3
 import botocore
 import uuid
 import json
@@ -28,6 +27,7 @@ import yaetos.etl_utils as eu
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.logger import setup_logging
 from yaetos.airflow_template import get_template
+from yaetos.airflow_template_k8s import get_template_k8s
 logger = setup_logging('Deploy')
 
 
@@ -37,7 +37,6 @@ class DeployPySparkScriptOnAws(object):
     """
     SCRIPTS = Pt('yaetos/scripts/')  # TODO: move to etl_utils.py
     TMP = Pt('tmp/files_to_ship/')
-    DAGS = Pt('tmp/files_to_ship/dags')
 
     def __init__(self, deploy_args, app_args):
 
@@ -100,14 +99,17 @@ class DeployPySparkScriptOnAws(object):
         if self.continue_post_git_check() is False:
             return False
 
-        self.session = boto3.Session(profile_name=self.profile_name, region_name=self.s3_region)  # aka AWS IAM profile. TODO: check to remove region_name to grab it from profile.
+        self.session = eu.get_aws_setup(self.deploy_args)
+        if not self.app_args.get('skip_aws_check', False):
+            eu.test_aws_connection(self.session)
+
         if self.deploy_args['deploy'] == 'EMR':
             self.run_direct()
         elif self.deploy_args['deploy'] == 'k8s':
             self.run_direct_k8s()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
             self.run_aws_data_pipeline()
-        elif self.deploy_args['deploy'] in ('airflow'):
+        elif self.deploy_args['deploy'] in ('airflow', 'airflow_k8s'):
             self.run_aws_airflow()
         elif self.deploy_args['deploy'] in ('code'):
             self.run_push_code()
@@ -189,8 +191,14 @@ class DeployPySparkScriptOnAws(object):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
         logger.info("Sending spark-submit to k8s cluster")
+        logger.info("To monitor progress:")
+        logger.info(f"kubectl get pods -n {self.app_args['k8s_namespace']}")
+        logger.info(f"kubectl logs your_spark_app_id_here -n {self.app_args['k8s_namespace']}")
         cmdline = self.get_spark_submit_args_k8s(self.app_file, self.app_args)
         self.launch_spark_submit_k8s(cmdline)
+        logger.info("Spark submit finished, see results with:")
+        logger.info(f"kubectl get pods -n {self.app_args['k8s_namespace']}")
+        logger.info(f"kubectl logs your_spark_app_id_here -n {self.app_args['k8s_namespace']}")
 
     @staticmethod
     def get_spark_submit_args_k8s(app_file, app_args):
@@ -202,15 +210,17 @@ class DeployPySparkScriptOnAws(object):
             return app_args['spark_submit']
 
         # For k8s in AWS, for yaetos jobs.
-        spark_submit_conf = [
+        spark_submit_base = [
             'spark-submit',
             f'--master {app_args["k8s_url"]}',
             '--deploy-mode cluster',
             f'--name {app_args["k8s_name"]}',
             f'--conf spark.executor.instances={app_args["k8s_executor_instances"]}',
-            '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
             f'--conf spark.kubernetes.namespace={app_args["k8s_namespace"]}',
-            f'--conf spark.kubernetes.container.image={app_args["k8s_image_service"]}',
+            f'--conf spark.kubernetes.container.image={app_args["k8s_image_service"]}']
+
+        spark_submit_aws = [
+            '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
             f'--conf spark.kubernetes.file.upload.path={app_args["k8s_upload_path"]}',
             f'--conf spark.kubernetes.driver.podTemplateFile={app_args["k8s_driver_podTemplateFile"]}',
             f'--conf spark.kubernetes.executor.podTemplateFile={app_args["k8s_executor_podTemplateFile"]}',
@@ -223,9 +233,30 @@ class DeployPySparkScriptOnAws(object):
             f'--conf spark.hadoop.fs.s3a.endpoint=s3.{app_args["aws_region"]}.amazonaws.com',
             '--py-files tmp/files_to_ship/scripts.zip']
 
+        spark_submit_docker_desktop = [
+            '--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark-service-account',
+            '--conf spark.kubernetes.pyspark.pythonVersion=3',
+            '--conf spark.pyspark.python=python3',
+            '--conf spark.pyspark.driver.python=python3',
+            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
+            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
+            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
+            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
+            '--conf spark.kubernetes.file.upload.path=file:///yaetos_jobs/tmp/files_to_ship/scripts.zip',
+            '--py-files local:///mnt/yaetos_jobs/tmp/files_to_ship/scripts.zip']
+
+        if app_args.get('k8s_mode') == 'k8s_aws':
+            launcher = 'jobs/generic/launcher.py'
+            spark_submit_conf_plateform = spark_submit_aws
+        elif app_args.get('k8s_mode') == 'k8s_docker_desktop':
+            launcher = 'local:///mnt/yaetos_jobs/jobs/generic/launcher.py'
+            spark_submit_conf_plateform = spark_submit_docker_desktop
+        else:
+            raise Exception(f"k8s_mode not recognized, should be 'k8s_aws' or 'k8s_docker_desktop'. Set to {app_args.get('k8s_mode')}")
+
         spark_submit_conf_extra = app_args.get('spark_deploy_args', [])
         spark_submit_jobs = [
-            'jobs/generic/launcher.py',
+            launcher,
             f'--mode={app_args["mode"]}',  # need to make sure it uses a mode compatible with k8s
             '--deploy=none',
             '--storage=s3',
@@ -236,7 +267,8 @@ class DeployPySparkScriptOnAws(object):
         if app_args.get('dependencies'):
             spark_submit_jobs_extra += ['--dependencies']
 
-        spark_submit = spark_submit_conf \
+        spark_submit = spark_submit_base \
+            + spark_submit_conf_plateform \
             + spark_submit_conf_extra \
             + spark_submit_jobs \
             + spark_submit_jobs_extra
@@ -245,7 +277,8 @@ class DeployPySparkScriptOnAws(object):
     def launch_spark_submit_k8s(self, cmdline):
         cmdline_str = " ".join(cmdline)
         logger.info(f'About to run spark submit command line: {cmdline_str}')
-        if not self.jargs.merged_args.get('dry_run'):
+        logger.info('About to run spark submit command line (formated): {}'.format(" \n".join(cmdline)))
+        if not self.app_args.get('dry_run'):
             os.system(cmdline_str)
 
     def s3_ops(self, session):
@@ -811,12 +844,17 @@ class DeployPySparkScriptOnAws(object):
         return parameterValues
 
     def run_aws_airflow(self):
+        fname_local, job_dag_name = self.create_dags()
+
         s3 = self.s3_ops(self.session)
         if self.deploy_args.get('push_secrets', False):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
-        fname = self.create_dags()
-        self.upload_dags(s3, fname)
+        s3_dags = self.app_args.get('s3_dags')
+        if s3_dags:
+            self.upload_dags(s3, s3_dags, job_dag_name, fname_local)
+        else:
+            terminate(error_message='dag not uploaded, dag path not provided')
 
     def create_dags(self):
         """
@@ -844,39 +882,71 @@ class DeployPySparkScriptOnAws(object):
         else:
             schedule = f"'{freq_input}'"
 
-        params = {
-            'ec2_instance_slaves': self.ec2_instance_slaves,
-            'emr_core_instances': self.emr_core_instances,
-            'package_path_with_bucket': self.package_path_with_bucket,
-            'cmd_runner_args': self.get_spark_submit_args(self.app_file, self.app_args),
-            'pipeline_name': self.pipeline_name,
-            'emr_version': self.emr_version,
-            'ec2_instance_master': self.ec2_instance_master,
-            'deploy_args': self.deploy_args,
-            'ec2_key_name': self.ec2_key_name,
-            'ec2_subnet_id': self.ec2_subnet_id,
-            's3_bucket_logs': self.s3_bucket_logs,
-            'metadata_folder': self.metadata_folder,
-            'dag_nameid': self.app_args['job_name'].replace("/", "-"),
-            'start_date': start_date,
-            'schedule': schedule,
-            'emails': self.deploy_args.get('emails', '[]'),
-            'region': self.s3_region,
-        }
+        # Get content
+        if self.deploy_args['deploy'] == 'airflow':
+            params = {
+                'ec2_instance_slaves': self.ec2_instance_slaves,
+                'emr_core_instances': self.emr_core_instances,
+                'package_path_with_bucket': self.package_path_with_bucket,
+                'cmd_runner_args': self.get_spark_submit_args(self.app_file, self.app_args),
+                'pipeline_name': self.pipeline_name,
+                'emr_version': self.emr_version,
+                'ec2_instance_master': self.ec2_instance_master,
+                'deploy_args': self.deploy_args,
+                'ec2_key_name': self.ec2_key_name,
+                'ec2_subnet_id': self.ec2_subnet_id,
+                's3_bucket_logs': self.s3_bucket_logs,
+                'metadata_folder': self.metadata_folder,
+                # airflow specific
+                'dag_nameid': self.app_args['job_name'].replace("/", "-"),
+                'start_date': start_date,
+                'schedule': schedule,
+                'emails': self.deploy_args.get('emails', '[]'),
+                'region': self.s3_region,
+            }
+            param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
+            content = get_template(params, param_extras)
+        elif self.deploy_args['deploy'] == 'airflow_k8s':
+            params = {
+                'k8s_url': self.deploy_args.get('k8s_url'),
+                'k8s_name': self.deploy_args.get('k8s_name'),
+                'k8s_executor_instances': self.deploy_args.get('k8s_executor_instances'),
+                'k8s_namespace': self.deploy_args.get('k8s_namespace'),
+                'k8s_image_service': self.deploy_args.get('k8s_image_service'),
+                'k8s_upload_path': self.deploy_args.get('k8s_upload_path'),
+                'k8s_driver_podTemplateFile': self.deploy_args.get('k8s_driver_podTemplateFile'),
+                'k8s_executor_podTemplateFile': self.deploy_args.get('k8s_executor_podTemplateFile'),
+                'aws_region': self.s3_region,
+                'k8s_podname': self.deploy_args.get('k8s_podname'),
+                'k8s_airflow_spark_submit_yaml': self.deploy_args.get('k8s_airflow_spark_submit_yaml'),
+                # airflow specific
+                'dag_nameid': self.app_args['job_name'].replace("/", "-"),
+                'start_date': start_date,
+                'schedule': schedule,
+                'emails': self.deploy_args.get('emails', '[]'),
+            }
+            param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
+            content = get_template_k8s(params, param_extras)
+        else:
+            raise Exception("Should not get here")
 
-        param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
+        # Setup path
+        default_folder = 'tmp/files_to_ship/dags'
+        local_folder = Pt(self.app_args.get('local_dags', default_folder))
+        if not os.path.isdir(local_folder):
+            os.makedirs(local_folder, exist_ok=True)
 
-        content = get_template(params, param_extras)
-        if not os.path.isdir(self.DAGS):
-            os.mkdir(self.DAGS)
-
+        # Get fname_local
         job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
-        fname = self.DAGS / Pt(job_dag_name)
+        fname_local = local_folder / Pt(job_dag_name)
 
-        os.makedirs(fname.parent, exist_ok=True)
-        with open(fname, 'w') as file:
+        # Write content to file
+        os.makedirs(fname_local.parent, exist_ok=True)
+        with open(fname_local, 'w') as file:
             file.write(content)
-        return fname
+            logger.info(f'Airflow DAG file created at {fname_local}')
+
+        return fname_local, job_dag_name
 
     def set_job_dag_name(self, jobname):
         suffix = '_dag.py'
@@ -887,12 +957,11 @@ class DeployPySparkScriptOnAws(object):
         else:
             return jobname + suffix
 
-    def upload_dags(self, s3, fname_local):
+    @staticmethod
+    def upload_dags(s3, s3_dags, job_dag_name, fname_local):
         """
         Move the dag files to S3
         """
-        job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
-        s3_dags = self.app_args['s3_dags'].replace('{{root_path}}', self.app_args['root_path'])
         s3_dags = CPt(s3_dags + '/' + job_dag_name)
 
         s3.Object(s3_dags.bucket, s3_dags.key)\
