@@ -1,4 +1,4 @@
-from yaetos.etl_utils import ETL_Base, Commandliner, get_aws_setup
+from yaetos.etl_utils import ETL_Base, Commandliner, get_aws_setup  # FS_Ops_Dispatcher
 from cloudpathlib import CloudPath as CPt
 import fnmatch
 import re
@@ -25,6 +25,9 @@ class Job(ETL_Base):
         else:
             pattern = '*'
             pattern_type = 'glob'
+
+        # TODO: replace code below (and all functions) with the commented code
+        # files = FS_Ops_Dispatcher().list_files(path, regex=None, globy=None)
 
         session = get_aws_setup(self.jargs.merged_args)
 
