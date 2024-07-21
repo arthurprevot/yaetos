@@ -967,9 +967,10 @@ class Job_Args_Parser():
         args.update(yml_args)
         args.update(job_args)
         args.update(cmd_args)
-        logger.info("Job args: \n{}".format(pformat(args)))
+        logger.info("Job args (pre param updates): \n{}".format(pformat(args)))
         args = self.update_args(args, loaded_inputs)
         args = self.replace_placeholders(args)
+        logger.info("Job args (post param updates): \n{}".format(pformat(args)))
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
         # Other access to vars
