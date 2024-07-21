@@ -195,15 +195,15 @@ class Test_Job_Args_Parser(object):
             'key1': ['I like {{key2}} pie', 'other_value'],
             'key2': 'some_value',
             'key3': {'other_key': 'a long string with {{key4}} in {{key5}}'},
-            'key4': 'value_2',
+            'key4': 'value_2 and {{key5}}',
             'key5': 'value_3'}
         actual = Job_Args_Parser.replace_placeholders(params)
 
         expected = {
             'key1': ['I like some_value pie', 'other_value'],
             'key2': 'some_value',
-            'key3': {'other_key': 'a long string with value_2 in value_3'},
-            'key4': 'value_2',
+            'key3': {'other_key': 'a long string with value_2 and value_3 in value_3'},
+            'key4': 'value_2 and value_3',
             'key5': 'value_3'}
         assert actual == expected
 
