@@ -276,8 +276,8 @@ class DeployPySparkScriptOnAws(object):
 
     def launch_spark_submit_k8s(self, cmdline):
         cmdline_str = " ".join(cmdline)
-        logger.info(f'About to run spark submit command line: {cmdline_str}')
-        logger.info('About to run spark submit command line (formated): {}'.format(" \n".join(cmdline)))
+        logger.info(f'About to run spark submit command line (for reuse): {cmdline_str}')
+        logger.info('About to run spark submit command line (for visual check): \n{}'.format(" \n".join(cmdline)))
         if not self.app_args.get('dry_run'):
             os.system(cmdline_str)
 
