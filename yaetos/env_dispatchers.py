@@ -289,6 +289,11 @@ class FS_Ops_Dispatcher():
         logger.info(f"File copy finished, to {local_path}")
         df = load_dfs(local_path, file_type, globy, read_func, read_kwargs)
         logger.info(f"df loaded, size '{len(df)}'")
+        if os.path.isfile(local_path):
+            os.remove(local_path)
+        elif os.path.isdir(local_path):
+            shutil.rmtree(local_path)
+        logger.info(f"deleted file/folder '{local_path}'")
         return df
 
     # --- save_pandas set of functions ----
