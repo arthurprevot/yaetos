@@ -224,6 +224,8 @@ class DeployPySparkScriptOnAws(object):
             f'--conf spark.kubernetes.file.upload.path={app_args["k8s_upload_path"]}',
             f'--conf spark.kubernetes.driver.podTemplateFile={app_args["k8s_driver_podTemplateFile"]}',
             f'--conf spark.kubernetes.executor.podTemplateFile={app_args["k8s_executor_podTemplateFile"]}',
+            '--conf spark.kubernetes.executor.deleteOnTermination=false',
+            '--conf spark.kubernetes.container.imagePullPolicy=Always',
             '--conf spark.jars.ivy=/tmp/.ivy2',
             '--conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider',
             '--conf spark.hadoop.fs.s3a.access.key="${AWS_ACCESS_KEY_ID}"',
