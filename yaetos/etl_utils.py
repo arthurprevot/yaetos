@@ -623,17 +623,18 @@ class ETL_Base(object):
 
     def save(self, output, path, base_path, type, now_dt=None, is_incremental=None, incremental_type=None, partitionby=None, file_tag=None, **kwargs):
         """Used to save output to disk. Can be used too inside jobs to output 2nd output for testing."""
-        path = self.expand_output_path(path, now_dt, **kwargs)
-        self.jargs.output['path_expanded'] = path
-
         if type == 'None':
             logger.info('Did not write output to disk')
             return None
 
+        # Create 'path'
+        path = self.expand_output_path(path, now_dt, **kwargs)
+        self.jargs.output['path_expanded'] = path
         if is_incremental and incremental_type == 'no_schema':
             current_time = now_dt.strftime('%Y%m%d_%H%M%S_utc')  # no use of now_dt to make it updated for each inc.
             file_tag = ('_' + file_tag) if file_tag else ""  # TODO: make that param standard in cmd_args ?
             path += 'inc_{}{}/'.format(current_time, file_tag)
+        logger.info(f'About to save data to {path}')
 
         # TODO: rename 'partitioned' to 'spark_partitions' and 'no_schema' to 'yaetos_partitions'
         write_mode = 'append' if incremental_type == 'partitioned' or partitionby else 'error'
@@ -1535,6 +1536,7 @@ class Flow():
 
 
 def get_job_class(py_job):
+    # Check to add print of image_hash when run from k8s.
     name_import = py_job.replace('/', '.').replace('.py', '')
     try:
         mod = import_module(name_import)
