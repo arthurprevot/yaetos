@@ -178,7 +178,7 @@ class FS_Ops_Dispatcher():
             for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
                 if 'Contents' in page:
                     for obj in page['Contents']:
-                        file_name = obj['Key'][len(prefix):]
+                        file_name = obj['Key'][len(prefix):]  # TODO: could get more metadata about file, like filesize.
                         match = get_match(file_name, pattern, pattern_type)
                         if match:
                             yield obj, file_name
