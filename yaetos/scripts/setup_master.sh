@@ -44,13 +44,8 @@ echo "--- Copy S3 to EMR master (with pip ops to enable copy) ---"
 sudo pip3 show botocore  # worked with 1.34.14 on EMR7.0.0
 sudo pip3 show python-dateutil  # worked with 2.9.0.post0 on EMR7.0.0
 echo "PYTHONPATH, pre update = ${PYTHONPATH}"
-# If pb here (AWS EMR setup is ), uncomments lines below. May require starting new cluster to start clean.
 export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.9/site-packages # or /usr/lib/python3.9/site-packages
 echo "PYTHONPATH post_update = ${PYTHONPATH}"
-# sudo pip3 install python-dateutil --force-reinstall  # necessary for aws s3 cp for EMR7.0.0, not for EMR7.2.0
-# sudo pip3 install botocore --force-reinstall  # necessary for aws s3 cp
-# sudo pip3 show botocore  # worked with 1.34.14 on EMR7.0.0
-# sudo pip3 show python-dateutil  # worked with 2.9.0.post0 on EMR7.0.0
 
 aws s3 cp $s3_bucket_scripts /home/hadoop/scripts.tar.gz --force 2>error.log  # TODO check step worked or exit with failure, instead of failing silently.
 # Checking if last command ran successfully
