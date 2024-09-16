@@ -123,3 +123,8 @@ def check_pk(df, pks):
     else:
         logger.info("Given fields ({}) are PKs (i.e. unique). count=count_pk={}".format(pks, count))
         return True
+
+
+def add_created_at(pdf, start_dt):
+    pdf['_created_at'] = start_dt
+    return pdf

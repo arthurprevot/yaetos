@@ -40,8 +40,13 @@ print_lib_install() {
 }
 
 # Copy compressed script tar file from S3 to EMR master, after deploy.py moved it from laptop to S3.
-echo "--- Copy S3 to EMR master ---"
-sudo pip3 install python-dateutil --ignore-installed  # necessary for aws s3 cp
+echo "--- Copy S3 to EMR master (with pip ops to enable copy) ---"
+sudo pip3 show botocore  # worked with 1.34.14 on EMR7.0.0
+sudo pip3 show python-dateutil  # worked with 2.9.0.post0 on EMR7.0.0
+echo "PYTHONPATH, pre update = ${PYTHONPATH}"
+export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.9/site-packages # or /usr/lib/python3.9/site-packages
+echo "PYTHONPATH post_update = ${PYTHONPATH}"
+
 aws s3 cp $s3_bucket_scripts /home/hadoop/scripts.tar.gz --force 2>error.log  # TODO check step worked or exit with failure, instead of failing silently.
 # Checking if last command ran successfully
 if [ $? -eq 0 ]; then
@@ -49,7 +54,8 @@ if [ $? -eq 0 ]; then
 else
     echo "Copy operation failed."
     echo "Error details:"
-    cat error.log    
+    cat error.log
+    exit 1
 fi
 # Continue with other cp
 aws s3 cp "$s3_bucket/setup_master.sh" /home/hadoop/setup_master.sh --force  # Added for debugging purposes only

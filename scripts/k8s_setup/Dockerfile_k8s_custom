@@ -1,0 +1,60 @@
+## TODO: finish and validate setup
+#FROM apache/spark:3.5.1
+FROM apache/spark:3.5.1-scala2.12-java17-python3-r-ubuntu
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Initial user is 'spark'
+USER root
+
+# Install Python 3 and pip
+# RUN apt-get update && \
+#     apt-get install -y python3 python3-pip && \
+#     rm -rf /var/lib/apt/lists/*
+    
+# RUN sudo apt-get update && \
+#     sudo apt-get install -y python3 python3-pip && \
+#     rm -rf /var/lib/apt/lists/*
+
+# Install python 3.9 --- begin
+RUN apt update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt update && \
+    apt-get install -y python3.9 python3.9-distutils
+RUN rm -rf /var/lib/apt/lists/*
+
+# Update alternatives to use Python 3.9 as the default python3
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1
+
+# install pip for Python 3.9
+RUN apt-get install -y wget && \
+    wget https://bootstrap.pypa.io/get-pip.py && \
+    python3.9 get-pip.py
+
+# End --- Install python 3.9
+
+
+# USER spark  # commented now. TODO: check to put back later.
+
+# Set the Python interpreter used by PySpark
+ENV PYSPARK_PYTHON=python3
+
+# Install PySpark and any other required Python packages
+RUN pip3 install --upgrade pip && \
+    pip3 install pyspark==3.5.1
+# RUN pip3 install numpy pandas
+
+RUN pip3 install --no-deps yaetos==0.12.2
+# Force latest version to avoid using previous ones.
+RUN pip3 install -r /usr/local/lib/python3.9/dist-packages/yaetos/scripts/requirements_base.txt
+
+
+USER spark
+
+# Expose the necessary Spark UI ports
+# EXPOSE 4040 7077 8080
+
+# COPY start-spark.sh /opt/start-spark.sh
+# RUN chmod +x /opt/start-spark.sh

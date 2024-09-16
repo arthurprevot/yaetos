@@ -224,6 +224,8 @@ class DeployPySparkScriptOnAws(object):
             f'--conf spark.kubernetes.file.upload.path={app_args["k8s_upload_path"]}',
             f'--conf spark.kubernetes.driver.podTemplateFile={app_args["k8s_driver_podTemplateFile"]}',
             f'--conf spark.kubernetes.executor.podTemplateFile={app_args["k8s_executor_podTemplateFile"]}',
+            '--conf spark.kubernetes.executor.deleteOnTermination=false',
+            '--conf spark.kubernetes.container.imagePullPolicy=Always',
             '--conf spark.jars.ivy=/tmp/.ivy2',
             '--conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider',
             '--conf spark.hadoop.fs.s3a.access.key="${AWS_ACCESS_KEY_ID}"',
@@ -276,8 +278,8 @@ class DeployPySparkScriptOnAws(object):
 
     def launch_spark_submit_k8s(self, cmdline):
         cmdline_str = " ".join(cmdline)
-        logger.info(f'About to run spark submit command line: {cmdline_str}')
-        logger.info('About to run spark submit command line (formated): {}'.format(" \n".join(cmdline)))
+        logger.info(f'About to run spark submit command line (for reuse): {cmdline_str}')
+        logger.info('About to run spark submit command line (for visual check): \n{}'.format(" \n".join(cmdline)))
         if not self.app_args.get('dry_run'):
             os.system(cmdline_str)
 
@@ -351,8 +353,8 @@ class DeployPySparkScriptOnAws(object):
             # If it was a 404 error, then the bucket does not exist.
             error_code = int(e.response['Error']['Code'])
             if error_code == 404:
-                terminate(f"Bucket for temporary files does not exist: {self.s3_bucket_logs} {e.response}")
-            terminate(f"Error while connecting to temporary Bucket: {self.s3_bucket_logs} {e.response}")
+                terminate(f"Bucket for logs does not exist (check param 's3_logs'): {self.s3_bucket_logs} {e.response}")
+            terminate(f"Error while connecting to Bucket for logs (check param 's3_logs'): {self.s3_bucket_logs} {e.response}")
         logger.debug("S3 bucket for temporary files exists: " + self.s3_bucket_logs)
 
     def tar_python_scripts(self):
