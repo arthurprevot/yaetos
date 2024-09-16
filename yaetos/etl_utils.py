@@ -219,6 +219,10 @@ class ETL_Base(object):
             output.cache()
             schemas = Schema_Builder()
             schemas.generate_schemas(loaded_datasets, output)
+        elif output is not None and self.jargs.output['type'] in self.TABULAR_TYPES and self.jargs.output.get('df_type', 'spark') == 'pandas':
+            if self.jargs.merged_args.get('add_created_at') == 'true':
+                output = pu.add_created_at(output, self.start_dt)
+            schemas = None  # TODO: to be added for yaml output
         else:
             schemas = None
         return output, schemas
