@@ -1,7 +1,7 @@
 """ 
 Job meant to run locally to get data from AWS S3 to local. Updates required to run in cluster.
 """
-from yaetos.etl_utils import ETL_Base, Commandliner, get_aws_setup  # FS_Ops_Dispatcher
+from yaetos.etl_utils import ETL_Base, Commandliner, get_aws_setup, FS_Ops_Dispatcher
 import os
 from cloudpathlib import CloudPath as CPt
 import fnmatch
@@ -11,10 +11,12 @@ import re
 class Job(ETL_Base):
     def transform(self, files_to_copy):
         path_raw_in = self.jargs.inputs['files_to_copy']['path']
-        path_raw_in = self.expand_input_path(path_raw_in)
+        # path_raw_in = self.expand_input_path(path_raw_in)
         path_raw_in = CPt(path_raw_in)
+        self.logger.info(f"path_raw_in = {path_raw_in}")
         path_raw_out = self.jargs.output['path']
-        path_raw_out = self.expand_output_path(path_raw_out, now_dt=self.start_dt)
+        # path_raw_out = self.expand_output_path(path_raw_out, now_dt=self.start_dt)
+        self.logger.info(f"path_raw_out = {path_raw_out}")
 
         # Get pattern and pattern_type
         if 'glob' in self.jargs.inputs['files_to_copy'].keys():
@@ -28,16 +30,21 @@ class Job(ETL_Base):
             pattern_type = 'glob'
 
         # TODO: replace code below (and all functions) with the commented code
-        # FS_Ops_Dispatcher().copy_file(path_in, path_out)
+        # FS_Ops_Dispatcher().copy_file(path_raw_in, path_raw_out) # need to enable path_raw_in in cloud and path_raw_out in local
 
         session = get_aws_setup(self.jargs.merged_args)
+        
         s3 = session.client('s3')
+
+        if not CPt(f"s3://{path_raw_in.bucket}").exists() and self.jargs.merged_args.get('ignore_empty_bucket'):
+            self.logger.warning("Bucket doesn't exit, or credentials not valid")
+            return None
 
         file_number = self.get_size(s3, path_raw_in.bucket, path_raw_in.key, pattern, pattern_type)
         self.logger.info(f"Number of files to be downloaded {file_number}")
 
         self.download_files(s3, path_raw_in.bucket, path_raw_in.key, pattern, pattern_type, path_raw_out)
-        self.logger.info("Finished copying all files")
+        self.logger.info("Finished downloading all files")
         return None
 
     def download_files(self, s3, bucket_name, prefix, pattern, pattern_type, path_raw_out):
