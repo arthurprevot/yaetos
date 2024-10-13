@@ -1074,25 +1074,41 @@ class Job_Args_Parser():
     def replace_placeholders(params):
         placeholder_pattern = re.compile(r'\{\{(\w+)\}\}')  # regex to find placeholders like {{key}}
 
-        def replace_placeholders_recursively(item, params):
+        def replace_placeholders_recursively(item, params, n, limit):
             """ Recursively replace placeholders based on item type. """
+            # print(f'replace_placeholders_recursively, item={item}')
+            if n >= limit:
+                raise Exception(f"Reached the limit of {limit} executions of a recursive function (replace_placeholders_recursively()) to replace params in " + "{{param}} strings")
+
             if isinstance(item, str):
                 matches = placeholder_pattern.findall(item)
                 for key in matches:
-                    if key in params:
-                        print(f"Found placeholder in '{item}', replaced '{key}' by '{params[key]}'.")
+                    if key in params.keys():
+                        print(f"#### ---- Found placeholder in '{item}', replaced '{key}' by '{params[key]}'.")
                         item = item.replace(f'{{{{--key--}}}}'.replace(f"--key--", key), str(params[key]))  # noqa: F541
+                        # item = replace_placeholders_recursively(item, params, n+1, limit)
                 return item
             elif isinstance(item, dict):
-                return {k: replace_placeholders_recursively(v, params) for k, v in item.items()}
+                return {k: replace_placeholders_recursively(v, params, n+1, limit) for k, v in item.items()}
             elif isinstance(item, list):
-                return [replace_placeholders_recursively(elem, params) for elem in item]
+                return [replace_placeholders_recursively(elem, params, n+1, limit) for elem in item]
             else:
                 return item
 
         # Replace values for each key found in the original dictionary
-        params = {k: replace_placeholders_recursively(v, params) for k, v in params.items()}
+        limit = 100
+        params = {k: replace_placeholders_recursively(v, params, n=0, limit=limit) for k, v in params.items()}
+        # new_params = {}
+        # items = list(params.items())
+        # # items.reverse()
+        # for k, v in items:
+        #     print(f'---- replace_placeholders, key, value -> {k}: {v}')
+        #     params[k] = replace_placeholders_recursively(v, params, n=0, limit=limit)
+        #     # if k in ('output', 'base_path_common', 'regions'):
+        #     #     print(f'---- replace_placeholders, key, value -> {k}: {v}')
+        # import ipdb; ipdb.set_trace()
         return params
+        # return new_params
 
 
 class Path_Handler():
