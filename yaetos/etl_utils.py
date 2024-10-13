@@ -359,12 +359,13 @@ class ETL_Base(object):
             path = path.replace('s3://', 's3a://') if 'dev_local' in self.jargs.mode.split(',') else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
 
-            # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
-            if self.jargs.merged_args.get('name_base_in_param'):
-                base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-                path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
-            else:
-                base_path = self.jargs.merged_args['base_path']
+            # # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
+            # if self.jargs.merged_args.get('name_base_in_param'):
+            #     base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
+            #     path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
+            # else:
+            #     base_path = self.jargs.merged_args['base_path']
+            base_path = self.jargs.merged_args['base_path']
 
             path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_latest()
             self.jargs.inputs[input_name]['path_expanded'] = path
@@ -499,12 +500,13 @@ class ETL_Base(object):
 
     def expand_input_path(self, path, **kwargs):
         # Function call isolated to be overridable.
-        # Get base_path. TODO: centralize
-        if self.jargs.merged_args.get('name_base_in_param'):
-            base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-            path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
-        else:
-            base_path = self.jargs.merged_args['base_path']
+        # # Get base_path. TODO: centralize
+        # if self.jargs.merged_args.get('name_base_in_param'):
+        #     base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
+        #     path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
+        # else:
+        #     base_path = self.jargs.merged_args['base_path']
+        base_path = self.jargs.merged_args['base_path']
 
         return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_latest()
 
@@ -1014,11 +1016,12 @@ class Job_Args_Parser():
         if args.get('spark_app_args'):  # hack to have scala sample job working. TODO: remove hardcoded case when made more generic
 
             # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
-            if args.get('name_base_in_param'):  # TODO: check if requires name_base_in_param or name_base_out_param
-                base_path = args[args.get('name_base_in_param')]
-                args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
-            else:
-                base_path = args.get('base_path')
+            # if args.get('name_base_in_param'):  # TODO: check if requires name_base_in_param or name_base_out_param
+            #     base_path = args[args.get('name_base_in_param')]
+            #     args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
+            # else:
+            #     base_path = args.get('base_path')
+            base_path = args.get('base_path')
             args['spark_app_args'] = Path_Handler(args['spark_app_args'], base_path, args.get('root_path')).path  # TODO: remove root_path since it is now done with replace_placeholders
 
         return args
