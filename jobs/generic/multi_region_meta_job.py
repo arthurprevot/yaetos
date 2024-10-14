@@ -3,7 +3,7 @@ from yaetos.etl_utils import ETL_Base, Commandliner, get_job_class, Job_Args_Par
 
 class Job(ETL_Base):
     def transform(self, **kwargs):
-        py_job_single_region = self.jargs.merged_args['py_job_individual']
+        py_job_single_region = self.jargs.merged_args['py_job_region']
         JobSingleRegion = get_job_class(py_job_single_region)
         dfs = {}
         for region in self.jargs.regions_to_loop:
