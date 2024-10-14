@@ -389,13 +389,15 @@ jobs:
     spark_boot: False
 
   examples/ex22_multi_region_job:
+    description: "Test running a job multiple times for each region listed in 'regions_to_loop'. 
+      Requires setting 'inputs' as 'inputs_region', and 'output' as 'output_region', and setting the job code in 'py_job_individual'."
     py_job: jobs/generic/multi_region_meta_job.py
     py_job_individual: jobs/examples/ex7_pandas_job.py
     inputs_region:
       some_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas'}
       other_events: {'path':"{{base_path}}/wiki_example/input/{{latest}}/", 'type':'csv', 'df_type':'pandas', 'read_kwargs':{}}
     output_region: {'path':'{{base_path}}/wiki_example/output_ex7_pandas_{{region}}/{{now}}/dataset.csv', 'type':'csv', 'df_type':'pandas', 'save_kwargs':{'sep':'|'}}
-    regions_to_loop: ['us', 'eu'] # will run 1 job for each region.
+    regions_to_loop: ['us', 'eu']  # will run 1 job for each region.
 
   # wordcount_raw_job: #Job exists but doesn't rely on jobs_metadata entries
 
