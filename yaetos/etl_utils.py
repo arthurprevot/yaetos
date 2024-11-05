@@ -498,11 +498,12 @@ class ETL_Base(object):
     def expand_output_path(self, path, now_dt, **kwargs):
         # Function call isolated to be overridable.
         # Get base_path. TODO: centralize
-        if self.jargs.merged_args.get('name_base_out_param'):
-            base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_out_param')]
-            path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{{base_path}}')
-        else:
-            base_path = self.jargs.merged_args['base_path']
+        # if self.jargs.merged_args.get('name_base_out_param'):
+        #     base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_out_param')]
+        #     path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{{base_path}}')
+        # else:
+        #     base_path = self.jargs.merged_args['base_path']
+        base_path = self.jargs.merged_args['base_path']
 
         return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
 
