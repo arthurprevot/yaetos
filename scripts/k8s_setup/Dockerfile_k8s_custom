@@ -46,7 +46,7 @@ RUN pip3 install --upgrade pip && \
     pip3 install pyspark==3.5.1
 # RUN pip3 install numpy pandas
 
-RUN pip3 install --no-deps yaetos==0.12.2
+RUN pip3 install --no-deps yaetos==0.12.3
 # Force latest version to avoid using previous ones.
 RUN pip3 install -r /usr/local/lib/python3.9/dist-packages/yaetos/scripts/requirements_base.txt
 
