@@ -19,6 +19,7 @@ import argparse
 from time import time
 import networkx as nx
 import pandas as pd
+import copy
 import gc
 from pprint import pformat
 import smtplib
@@ -358,14 +359,7 @@ class ETL_Base(object):
             path = self.jargs.inputs[input_name]['path']
             path = path.replace('s3://', 's3a://') if 'dev_local' in self.jargs.mode.split(',') else path
             logger.info("Input '{}' to be loaded from files '{}'.".format(input_name, path))
-
-            # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
-            if self.jargs.merged_args.get('name_base_in_param'):
-                base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-                path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
-            else:
-                base_path = self.jargs.merged_args['base_path']
-
+            base_path = self.jargs.merged_args['base_path']
             path = Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_latest()
             self.jargs.inputs[input_name]['path_expanded'] = path
 
@@ -499,24 +493,12 @@ class ETL_Base(object):
 
     def expand_input_path(self, path, **kwargs):
         # Function call isolated to be overridable.
-        # Get base_path. TODO: centralize
-        if self.jargs.merged_args.get('name_base_in_param'):
-            base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_in_param')]
-            path = path.replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
-        else:
-            base_path = self.jargs.merged_args['base_path']
-
+        base_path = self.jargs.merged_args['base_path']
         return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_latest()
 
     def expand_output_path(self, path, now_dt, **kwargs):
         # Function call isolated to be overridable.
-        # Get base_path. TODO: centralize
-        if self.jargs.merged_args.get('name_base_out_param'):
-            base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_out_param')]
-            path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{{base_path}}')
-        else:
-            base_path = self.jargs.merged_args['base_path']
-
+        base_path = self.jargs.merged_args['base_path']
         return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
 
     def load_mysql(self, input_name):
@@ -974,12 +956,14 @@ class Job_Args_Parser():
         args.update(cmd_args)
         logger.info("Job args (pre param updates): \n{}".format(pformat(args)))
         args = self.update_args(args, loaded_inputs)
+        args_orig = copy.deepcopy(args)
         args = self.replace_placeholders(args)
         logger.info("Job args (post param updates): \n{}".format(pformat(args)))
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
         # Other access to vars
         self.merged_args = args
+        self.orig_args = args_orig
         self.defaults_args = defaults_args
         self.yml_args = yml_args
         self.job_args = job_args
@@ -1012,13 +996,7 @@ class Job_Args_Parser():
         if args.get('output'):
             args['output']['type'] = args.pop('output.type', None) or args['output'].get('type', 'none')
         if args.get('spark_app_args'):  # hack to have scala sample job working. TODO: remove hardcoded case when made more generic
-
-            # Get base_path. TODO: remove section (and all name_base_in_param and name_base_out_param) now that it is done with replace_placeholders
-            if args.get('name_base_in_param'):  # TODO: check if requires name_base_in_param or name_base_out_param
-                base_path = args[args.get('name_base_in_param')]
-                args['spark_app_args'] = args['spark_app_args'].replace('{' + self.jargs.merged_args.get('name_base_in_param') + '}', '{{base_path}}')
-            else:
-                base_path = args.get('base_path')
+            base_path = args.get('base_path')
             args['spark_app_args'] = Path_Handler(args['spark_app_args'], base_path, args.get('root_path')).path  # TODO: remove root_path since it is now done with replace_placeholders
 
         return args
@@ -1074,24 +1052,29 @@ class Job_Args_Parser():
     def replace_placeholders(params):
         placeholder_pattern = re.compile(r'\{\{(\w+)\}\}')  # regex to find placeholders like {{key}}
 
-        def replace_placeholders_recursively(item, params):
+        def replace_placeholders_recursively(item, params, n, limit):
             """ Recursively replace placeholders based on item type. """
+            if n >= limit:
+                raise Exception(f"Reached the limit of {limit} executions of a recursive function (replace_placeholders_recursively()) to replace params in " + "{{param}} strings")
+
             if isinstance(item, str):
                 matches = placeholder_pattern.findall(item)
                 for key in matches:
-                    if key in params:
+                    if key in params.keys():
                         print(f"Found placeholder in '{item}', replaced '{key}' by '{params[key]}'.")
                         item = item.replace(f'{{{{--key--}}}}'.replace(f"--key--", key), str(params[key]))  # noqa: F541
+                        item = replace_placeholders_recursively(item, params, n + 1, limit)
                 return item
             elif isinstance(item, dict):
-                return {k: replace_placeholders_recursively(v, params) for k, v in item.items()}
+                return {k: replace_placeholders_recursively(v, params, n + 1, limit) for k, v in item.items()}
             elif isinstance(item, list):
-                return [replace_placeholders_recursively(elem, params) for elem in item]
+                return [replace_placeholders_recursively(elem, params, n + 1, limit) for elem in item]
             else:
                 return item
 
         # Replace values for each key found in the original dictionary
-        params = {k: replace_placeholders_recursively(v, params) for k, v in params.items()}
+        limit = 100
+        params = {k: replace_placeholders_recursively(v, params, n=0, limit=limit) for k, v in params.items()}
         return params
 
 

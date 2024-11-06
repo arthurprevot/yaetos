@@ -207,6 +207,19 @@ class Test_Job_Args_Parser(object):
             'key5': 'value_3'}
         assert actual == expected
 
+    def test_replace_placeholders_pb_case(self):
+        params = {
+            'output': {'path': '{{base_path}}/some_path/'},
+            'base_path': 's3://some_bucket_in_{{region}}',
+            'region': 'us'}
+        actual = Job_Args_Parser.replace_placeholders(params)
+
+        expected = {
+            'output': {'path': 's3://some_bucket_in_us/some_path/'},
+            'base_path': 's3://some_bucket_in_us',
+            'region': 'us'}
+        assert actual == expected
+
     def test_replace_placeholders_missing_cases(self):
         params = {
             'key1': ['I like {{key2}} pie', 'other_value'],
