@@ -497,14 +497,7 @@ class ETL_Base(object):
 
     def expand_output_path(self, path, now_dt, **kwargs):
         # Function call isolated to be overridable.
-        # Get base_path. TODO: centralize
-        # if self.jargs.merged_args.get('name_base_out_param'):
-        #     base_path = self.jargs.merged_args[self.jargs.merged_args.get('name_base_out_param')]
-        #     path = path.replace('{' + self.jargs.merged_args.get('name_base_out_param') + '}', '{{base_path}}')
-        # else:
-        #     base_path = self.jargs.merged_args['base_path']
         base_path = self.jargs.merged_args['base_path']
-
         return Path_Handler(path, base_path, self.jargs.merged_args.get('root_path')).expand_now(now_dt)
 
     def load_mysql(self, input_name):
@@ -1067,12 +1060,12 @@ class Job_Args_Parser():
                     if key in params.keys():
                         print(f"Found placeholder in '{item}', replaced '{key}' by '{params[key]}'.")
                         item = item.replace(f'{{{{--key--}}}}'.replace(f"--key--", key), str(params[key]))  # noqa: F541
-                        item = replace_placeholders_recursively(item, params, n+1, limit)
+                        item = replace_placeholders_recursively(item, params, n + 1, limit)
                 return item
             elif isinstance(item, dict):
-                return {k: replace_placeholders_recursively(v, params, n+1, limit) for k, v in item.items()}
+                return {k: replace_placeholders_recursively(v, params, n + 1, limit) for k, v in item.items()}
             elif isinstance(item, list):
-                return [replace_placeholders_recursively(elem, params, n+1, limit) for elem in item]
+                return [replace_placeholders_recursively(elem, params, n + 1, limit) for elem in item]
             else:
                 return item
 
