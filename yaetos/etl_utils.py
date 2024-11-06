@@ -19,6 +19,7 @@ import argparse
 from time import time
 import networkx as nx
 import pandas as pd
+import copy
 import gc
 from pprint import pformat
 import smtplib
@@ -955,12 +956,14 @@ class Job_Args_Parser():
         args.update(cmd_args)
         logger.info("Job args (pre param updates): \n{}".format(pformat(args)))
         args = self.update_args(args, loaded_inputs)
+        args_orig = copy.deepcopy(args)
         args = self.replace_placeholders(args)
         logger.info("Job args (post param updates): \n{}".format(pformat(args)))
 
         [setattr(self, key, value) for key, value in args.items()]  # attach vars to self.*
         # Other access to vars
         self.merged_args = args
+        self.orig_args = args_orig
         self.defaults_args = defaults_args
         self.yml_args = yml_args
         self.job_args = job_args
