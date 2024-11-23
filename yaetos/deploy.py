@@ -186,7 +186,7 @@ class DeployPySparkScriptOnAws(object):
 
     def run_direct_k8s(self):
         # TODO: integrate deploy_k8s properly
-        Kuberneter().run_direct_k8s(self)
+        return Kuberneter().run_direct_k8s(self)
 
     @staticmethod
     def get_spark_submit_args_k8s(app_file, app_args):
@@ -196,7 +196,7 @@ class DeployPySparkScriptOnAws(object):
 
     def launch_spark_submit_k8s(self, cmdline):
         # TODO: integrate deploy_k8s properly
-        Kuberneter().launch_spark_submit_k8s(self, cmdline)
+        return Kuberneter().launch_spark_submit_k8s(self, cmdline)
 
     def s3_ops(self, session):
         s3 = session.resource('s3')
