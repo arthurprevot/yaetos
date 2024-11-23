@@ -26,8 +26,6 @@ import site
 import yaetos.etl_utils as eu
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.logger import setup_logging
-from yaetos.airflow_template import get_template
-from yaetos.airflow_template_k8s import get_template_k8s
 from yaetos.deploy_k8s import Kuberneter
 from yaetos.deploy_airflow import Airflower
 logger = setup_logging('Deploy')

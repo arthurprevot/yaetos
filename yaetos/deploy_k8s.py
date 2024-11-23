@@ -104,7 +104,7 @@ class Kuberneter():
         if not self.app_args.get('dry_run'):
             os.system(cmdline_str)
 
-    def get_airflow_code(self):
+    def get_airflow_code(self, start_date, schedule):
         params = {
             'k8s_url': self.deploy_args.get('k8s_url'),
             'k8s_name': self.deploy_args.get('k8s_name'),
