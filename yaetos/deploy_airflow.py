@@ -4,9 +4,8 @@ from pathlib import Path as Pt
 from cloudpathlib import CloudPath as CPt
 from yaetos.deploy_k8s import Kuberneter
 from yaetos.deploy import terminate
-from yaetos.logger import setup_logging
 from yaetos.airflow_template import get_template
-#from yaetos.airflow_template_k8s import get_template_k8s
+from yaetos.logger import setup_logging
 logger = setup_logging('Deploy')
 
 

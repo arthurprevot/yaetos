@@ -1,4 +1,6 @@
-# import os
+import time
+import botocore
+from yaetos.deploy import terminate
 from yaetos.logger import setup_logging
 logger = setup_logging('Deploy')
 

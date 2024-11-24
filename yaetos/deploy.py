@@ -11,12 +11,9 @@ Borrows from https://github.com/thomhopmans/themarketingtechnologist/tree/master
 
 import os
 from datetime import datetime
-import time
 import tarfile
 import zipfile
 import botocore
-import uuid
-import json
 from pathlib import Path as Pt
 from cloudpathlib import CloudPath as CPt
 from pprint import pformat
@@ -26,7 +23,7 @@ import site
 import yaetos.etl_utils as eu
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.logger import setup_logging
-from yaetos.deploy_k8s import EMRer
+from yaetos.deploy_emr import EMRer
 from yaetos.deploy_k8s import Kuberneter
 from yaetos.deploy_aws_data_pipeline import AWS_Data_Pipeliner
 from yaetos.deploy_airflow import Airflower
