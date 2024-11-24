@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path as Pt
 from cloudpathlib import CloudPath as CPt
 from yaetos.deploy_k8s import Kuberneter
-from yaetos.deploy import terminate
+from yaetos.deploy_utils import terminate
 from yaetos.airflow_template import get_template
 from yaetos.logger import setup_logging
 logger = setup_logging('Deploy')

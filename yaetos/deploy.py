@@ -602,15 +602,15 @@ def convert_to_linux_eol_if_needed(fname):
         convert_to_linux_eol(fname, fname)
 
 
-def terminate(error_message=None):
-    """
-    Method to exit the Python script. It will log the given message and then exit().
-    :param error_message:
-    """
-    if error_message:
-        logger.error(error_message)
-    logger.critical('The script is now terminating')
-    exit()
+# def terminate(error_message=None):
+#     """
+#     Method to exit the Python script. It will log the given message and then exit().
+#     :param error_message:
+#     """
+#     if error_message:
+#         logger.error(error_message)
+#     logger.critical('The script is now terminating')
+#     exit()
 
 
 def deploy_standalone(job_args_update={}):

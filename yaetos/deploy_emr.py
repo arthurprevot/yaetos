@@ -1,17 +1,11 @@
 import time
 import botocore
-from yaetos.deploy import terminate
+from yaetos.deploy_utils import terminate
 from yaetos.logger import setup_logging
 logger = setup_logging('Deploy')
 
 
 class EMRer():
-    # def run_direct_k8s(self):
-
-    # @staticmethod
-    # def get_spark_submit_args_k8s(app_file, app_args):
-
-    # def launch_spark_submit_k8s(self, cmdline):
 
     @staticmethod
     def run_direct(self):
