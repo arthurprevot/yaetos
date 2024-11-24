@@ -11,6 +11,7 @@ class EMRer():
 
     # def launch_spark_submit_k8s(self, cmdline):
 
+    @staticmethod
     def run_direct(self):
         """Useful to run job on cluster without bothering with aws data pipeline. Also useful to add steps to existing cluster."""
         self.s3_ops(self.session)
@@ -48,6 +49,7 @@ class EMRer():
             s3 = self.session.resource('s3')
             self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
 
+    @staticmethod
     def get_active_clusters(self, c):
         response = c.list_clusters(
             ClusterStates=['STARTING', 'BOOTSTRAPPING', 'RUNNING', 'WAITING'],
@@ -55,6 +57,7 @@ class EMRer():
         clusters = [(ii + 1, item['Id'], item['Name']) for ii, item in enumerate(response['Clusters'])]
         return clusters
 
+    @staticmethod
     def choose_cluster(self, clusters, cluster_id=None):
         if len(clusters) == 0:
             logger.info('No cluster found, will create a new one')
@@ -73,6 +76,7 @@ class EMRer():
         return {'id': clusters[int(answer) - 1][1],
                 'name': clusters[int(answer) - 1][2]}
 
+    @staticmethod
     def start_spark_cluster(self, c, emr_version):
         """
         :param c: EMR client
@@ -137,6 +141,7 @@ class EMRer():
 
         logger.info("Created Spark EMR cluster ({}) with cluster_id {}".format(emr_version, self.cluster_id))
 
+    @staticmethod
     def describe_status_until_terminated(self, c):
         """
         :param c:
@@ -153,10 +158,12 @@ class EMRer():
             logger.info('Cluster state:' + state)
             time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
 
+    @staticmethod
     def describe_status(self, c):
         description = c.describe_cluster(ClusterId=self.cluster_id)
         logger.info(f'Cluster description: {description}')
 
+    @staticmethod
     def step_run_setup_scripts(self, c):
         """
         :param c:
@@ -183,6 +190,7 @@ class EMRer():
             raise Exception("Step couldn't be added")
         time.sleep(1)  # Prevent ThrottlingException
 
+    @staticmethod
     def step_spark_submit(self, c, app_file, app_args):
         """
         :param c:

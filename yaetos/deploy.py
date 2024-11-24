@@ -151,21 +151,21 @@ class DeployPySparkScriptOnAws(object):
 
     def run_direct(self):
         # TODO: integrate deploy_emr properly
-        return EMRer().run_direct(self)
+        return EMRer.run_direct(self)
 
     def run_direct_k8s(self):
         # TODO: integrate deploy_k8s properly
-        return Kuberneter().run_direct_k8s(self)
+        return Kuberneter.run_direct_k8s(self)
 
     @staticmethod
     def get_spark_submit_args_k8s(app_file, app_args):
         # TODO: integrate deploy_k8s properly
-        spark_submit = Kuberneter().get_spark_submit_args_k8s(app_file, app_args)
+        spark_submit = Kuberneter.get_spark_submit_args_k8s(app_file, app_args)
         return spark_submit
 
     def launch_spark_submit_k8s(self, cmdline):
         # TODO: integrate deploy_k8s properly
-        return Kuberneter().launch_spark_submit_k8s(self, cmdline)
+        return Kuberneter.launch_spark_submit_k8s(self, cmdline)
 
     def s3_ops(self, session):
         s3 = session.resource('s3')
@@ -181,11 +181,11 @@ class DeployPySparkScriptOnAws(object):
 
     def get_active_clusters(self, c):
         # TODO: integrate deploy_emr properly
-        return EMRer().get_active_clusters(self, c)
+        return EMRer.get_active_clusters(self, c)
 
     def choose_cluster(self, clusters, cluster_id=None):
         # TODO: integrate deploy_emr properly
-        return EMRer().choose_cluster(self, clusters, cluster_id=None)
+        return EMRer.choose_cluster(self, clusters, cluster_id=None)
 
     @staticmethod
     def generate_pipeline_name(mode, job_name, user):
@@ -377,23 +377,23 @@ class DeployPySparkScriptOnAws(object):
 
     def start_spark_cluster(self, c, emr_version):
         # TODO: integrate deploy_emr properly
-        return EMRer().start_spark_cluster(self, c, emr_version)
+        return EMRer.start_spark_cluster(self, c, emr_version)
 
     def describe_status_until_terminated(self, c):
         # TODO: integrate deploy_emr properly
-        return EMRer().describe_status_until_terminated(self, c)
+        return EMRer.describe_status_until_terminated(self, c)
 
     def describe_status(self, c):
         # TODO: integrate deploy_emr properly
-        return EMRer().describe_status(self, c)
+        return EMRer.describe_status(self, c)
 
     def step_run_setup_scripts(self, c):
         # TODO: integrate deploy_emr properly
-        return EMRer().step_run_setup_scripts(self, c)
+        return EMRer.step_run_setup_scripts(self, c)
 
     def step_spark_submit(self, c, app_file, app_args):
         # TODO: integrate deploy_emr properly
-        return EMRer().step_spark_submit(self, c, app_file, app_args)
+        return EMRer.step_spark_submit(self, c, app_file, app_args)
 
     @staticmethod
     def get_spark_submit_args(app_file, app_args):
@@ -468,49 +468,49 @@ class DeployPySparkScriptOnAws(object):
 
     def run_aws_data_pipeline(self):
         # TODO: integrate deploy_aws_data_pipeline properly
-        return AWS_Data_Pipeliner().run_aws_data_pipeline(self)
+        return AWS_Data_Pipeliner.run_aws_data_pipeline(self)
 
     def create_data_pipeline(self, client):
         # TODO: integrate deploy_aws_data_pipeline properly
-        return AWS_Data_Pipeliner().create_data_pipeline(self, client)
+        return AWS_Data_Pipeliner.create_data_pipeline(self, client)
 
     def define_data_pipeline(self, client, pipe_id, emr_core_instances):
         # TODO: integrate deploy_aws_data_pipeline properly
-        return AWS_Data_Pipeliner().define_data_pipeline(self, client, pipe_id, emr_core_instances)
+        return AWS_Data_Pipeliner.define_data_pipeline(self, client, pipe_id, emr_core_instances)
 
     def activate_data_pipeline(self, client, pipe_id, parameterValues):
         # TODO: integrate deploy_aws_data_pipeline properly
-        return AWS_Data_Pipeliner().activate_data_pipeline(self, client, pipe_id, parameterValues)
+        return AWS_Data_Pipeliner.activate_data_pipeline(self, client, pipe_id, parameterValues)
 
     def list_data_pipeline(self, client):
         # TODO: integrate deploy_aws_data_pipeline properly
-        return AWS_Data_Pipeliner().list_data_pipeline(self, client)
+        return AWS_Data_Pipeliner.list_data_pipeline(self, client)
 
     def deactivate_similar_pipelines(self, client, pipeline_id):
         # TODO: integrate deploy_aws_data_pipeline properly
-        return AWS_Data_Pipeliner().deactivate_similar_pipelines(self, client, pipeline_id)
+        return AWS_Data_Pipeliner.deactivate_similar_pipelines(self, client, pipeline_id)
 
     def update_params(self, parameterValues):
         # TODO: integrate deploy_aws_data_pipeline properly
-        return AWS_Data_Pipeliner().update_params(self, parameterValues)
+        return AWS_Data_Pipeliner.update_params(self, parameterValues)
 
     def run_aws_airflow(self):
         # TODO: integrate deploy_airflow properly
-        return Airflower().run_aws_airflow(self)
+        return Airflower.run_aws_airflow(self)
 
     def create_dags(self):
         # TODO: integrate deploy_airflow properly
-        fname_local, job_dag_name = Airflower().create_dags(self)
+        fname_local, job_dag_name = Airflower.create_dags(self)
         return fname_local, job_dag_name
 
     def set_job_dag_name(self, jobname):
         # TODO: integrate deploy_airflow properly
-        return Airflower().set_job_dag_name(self, jobname)
+        return Airflower.set_job_dag_name(self, jobname)
 
     @staticmethod
     def upload_dags(s3, s3_dags, job_dag_name, fname_local):
         # TODO: integrate deploy_airflow properly
-        return Airflower().upload_dags(s3, s3_dags, job_dag_name, fname_local)
+        return Airflower.upload_dags(s3, s3_dags, job_dag_name, fname_local)
 
     def push_secrets(self, creds_or_file):
         client = self.session.client('secretsmanager')

@@ -10,6 +10,7 @@ logger = setup_logging('Deploy')
 
 class AWS_Data_Pipeliner():
     
+    @staticmethod
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)
         if self.deploy_args.get('push_secrets', False):
@@ -22,6 +23,7 @@ class AWS_Data_Pipeliner():
         parameterValues = self.define_data_pipeline(client, pipe_id, self.emr_core_instances)
         self.activate_data_pipeline(client, pipe_id, parameterValues)
 
+    @staticmethod
     def create_data_pipeline(self, client):
         unique_id = uuid.uuid1()
         create = client.create_pipeline(name=self.pipeline_name, uniqueId=str(unique_id))
@@ -32,6 +34,7 @@ class AWS_Data_Pipeliner():
         logger.debug('Pipeline description :' + str(client.describe_pipelines(pipelineIds=[pipe_id])))
         return pipe_id
 
+    @staticmethod
     def define_data_pipeline(self, client, pipe_id, emr_core_instances):
         import awscli.customizations.datapipeline.translator as trans
         base = self.get_package_path()
@@ -59,6 +62,7 @@ class AWS_Data_Pipeliner():
         logger.debug('put_pipeline_definition response: ' + str(response))
         return parameterValues
 
+    @staticmethod
     def activate_data_pipeline(self, client, pipe_id, parameterValues):
         response = client.activate_pipeline(
             pipelineId=pipe_id,
@@ -68,6 +72,7 @@ class AWS_Data_Pipeliner():
         logger.debug('activate_pipeline response: ' + str(response))
         logger.info('Activated pipeline ' + pipe_id)
 
+    @staticmethod
     def list_data_pipeline(self, client):
         out = client.list_pipelines(marker='')
         pipelines = out['pipelineIdList']
@@ -76,6 +81,7 @@ class AWS_Data_Pipeliner():
             pipelines += out['pipelineIdList']
         return pipelines
 
+    @staticmethod
     def deactivate_similar_pipelines(self, client, pipeline_id):
         pipelines = self.list_data_pipeline(client)
         for item in pipelines:
@@ -88,6 +94,7 @@ class AWS_Data_Pipeliner():
                 else:
                     raise Exception("Pipeline couldn't be deactivated. Error message: {}".format(response))
 
+    @staticmethod
     def update_params(self, parameterValues):
         # TODO: check if easier/simpler to change values at the source json instead of a processed one.
         # Change key pair

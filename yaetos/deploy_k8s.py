@@ -5,6 +5,8 @@ logger = setup_logging('Deploy')
 
 
 class Kuberneter():
+
+    @staticmethod
     def run_direct_k8s(self):
         """Useful to run job on cluster on the spot, without going through scheduler."""
         self.local_file_ops()
@@ -97,6 +99,7 @@ class Kuberneter():
             + spark_submit_jobs_extra
         return spark_submit
 
+    @staticmethod
     def launch_spark_submit_k8s(self, cmdline):
         cmdline_str = " ".join(cmdline)
         logger.info(f'About to run spark submit command line (for reuse): {cmdline_str}')
@@ -104,6 +107,7 @@ class Kuberneter():
         if not self.app_args.get('dry_run'):
             os.system(cmdline_str)
 
+    @staticmethod
     def get_airflow_code(self, start_date, schedule):
         params = {
             'k8s_url': self.deploy_args.get('k8s_url'),

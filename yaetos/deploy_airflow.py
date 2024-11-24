@@ -12,6 +12,7 @@ logger = setup_logging('Deploy')
 
 class Airflower():
     
+    @staticmethod
     def run_aws_airflow(self):
         fname_local, job_dag_name = self.create_dags()
 
@@ -25,6 +26,7 @@ class Airflower():
         else:
             terminate(error_message='dag not uploaded, dag path not provided')
 
+    @staticmethod
     def create_dags(self):
         """
         Create the .py dag file from job_metadata.yml info, based on a template in 'airflow_template.py'
@@ -98,6 +100,7 @@ class Airflower():
 
         return fname_local, job_dag_name
 
+    @staticmethod
     def set_job_dag_name(self, jobname):
         suffix = '_dag.py'
         if jobname.endswith('.py'):
