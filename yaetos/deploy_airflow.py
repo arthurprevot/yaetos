@@ -10,7 +10,7 @@ logger = setup_logging('Deploy')
 
 
 class Airflower():
-    
+
     @staticmethod
     def run_aws_airflow(self):
         fname_local, job_dag_name = self.create_dags()
