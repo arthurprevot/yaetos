@@ -6,7 +6,7 @@ logger = setup_logging('Deploy')
 
 
 class EMRer():
-
+    # TODO: change function call later. Current approach is quickest way to isolate code but not clean.
     @staticmethod
     def run_direct(self):
         """Useful to run job on cluster without bothering with aws data pipeline. Also useful to add steps to existing cluster."""

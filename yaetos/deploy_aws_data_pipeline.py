@@ -6,7 +6,7 @@ logger = setup_logging('Deploy')
 
 
 class AWS_Data_Pipeliner():
-
+    # TODO: change function call later. Current approach is quickest way to isolate code but not clean.
     @staticmethod
     def run_aws_data_pipeline(self):
         self.s3_ops(self.session)

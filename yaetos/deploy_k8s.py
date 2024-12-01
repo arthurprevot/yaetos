@@ -5,7 +5,7 @@ logger = setup_logging('Deploy')
 
 
 class Kuberneter():
-
+    # TODO: change function call later. Current approach is quickest way to isolate code but not clean.
     @staticmethod
     def run_direct_k8s(self):
         """Useful to run job on cluster on the spot, without going through scheduler."""
