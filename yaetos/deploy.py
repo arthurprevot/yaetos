@@ -22,11 +22,12 @@ from shutil import copyfile
 import site
 import yaetos.etl_utils as eu
 from yaetos.git_utils import Git_Config_Manager
-from yaetos.logger import setup_logging
 from yaetos.deploy_emr import EMRer
 from yaetos.deploy_k8s import Kuberneter
 from yaetos.deploy_aws_data_pipeline import AWS_Data_Pipeliner
 from yaetos.deploy_airflow import Airflower
+from yaetos.deploy_utils import terminate
+from yaetos.logger import setup_logging
 logger = setup_logging('Deploy')
 
 
