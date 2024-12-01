@@ -11,12 +11,9 @@ Borrows from https://github.com/thomhopmans/themarketingtechnologist/tree/master
 
 import os
 from datetime import datetime
-import time
 import tarfile
 import zipfile
 import botocore
-import uuid
-import json
 from pathlib import Path as Pt
 from cloudpathlib import CloudPath as CPt
 from pprint import pformat
@@ -25,9 +22,12 @@ from shutil import copyfile
 import site
 import yaetos.etl_utils as eu
 from yaetos.git_utils import Git_Config_Manager
+from yaetos.deploy_emr import EMRer
+from yaetos.deploy_k8s import Kuberneter
+from yaetos.deploy_aws_data_pipeline import AWS_Data_Pipeliner
+from yaetos.deploy_airflow import Airflower
+from yaetos.deploy_utils import terminate
 from yaetos.logger import setup_logging
-from yaetos.airflow_template import get_template
-from yaetos.airflow_template_k8s import get_template_k8s
 logger = setup_logging('Deploy')
 
 
@@ -148,140 +148,22 @@ class DeployPySparkScriptOnAws(object):
             self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
 
     def run_direct(self):
-        """Useful to run job on cluster without bothering with aws data pipeline. Also useful to add steps to existing cluster."""
-        self.s3_ops(self.session)
-        if self.deploy_args.get('push_secrets', False):
-            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
-
-        # EMR ops
-        c = self.session.client('emr')
-        clusters = self.get_active_clusters(c)
-        cluster = self.choose_cluster(clusters)
-        new_cluster = cluster['id'] is None
-        if new_cluster:
-            logger.info("Starting new cluster")
-            self.start_spark_cluster(c, self.emr_version)
-            logger.info("cluster name: %s, and id: %s" % (self.pipeline_name, self.cluster_id))
-            self.step_run_setup_scripts(c)
-            try:
-                self.step_run_setup_scripts(c)
-            except botocore.exceptions.ClientError as e:
-                self.describe_status(c)
-                logger.error(f"botocore.exceptions.ClientError : {e}")
-                raise
-        else:
-            logger.info("Reusing existing cluster, name: %s, and id: %s" % (cluster['name'], cluster['id']))
-            self.cluster_id = cluster['id']
-            self.step_run_setup_scripts(c)
-
-        # Run job
-        self.step_spark_submit(c, self.app_file, self.app_args)
-
-        # Clean
-        if new_cluster and not self.deploy_args.get('leave_on') and self.app_args.get('clean_post_run'):  # TODO: add clean_post_run in input options.
-            logger.info("New cluster setup to be deleted after job finishes.")
-            self.describe_status_until_terminated(c)
-            s3 = self.session.resource('s3')
-            self.remove_temp_files(s3)  # TODO: remove tmp files for existing clusters too but only tmp files for the job
+        # TODO: integrate deploy_emr properly
+        return EMRer.run_direct(self)
 
     def run_direct_k8s(self):
-        """Useful to run job on cluster on the spot, without going through scheduler."""
-        self.local_file_ops()
-        if self.deploy_args.get('push_secrets', False):
-            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
-
-        logger.info("Sending spark-submit to k8s cluster")
-        logger.info("To monitor progress:")
-        logger.info(f"kubectl get pods -n {self.app_args['k8s_namespace']}")
-        logger.info(f"kubectl logs your_spark_app_id_here -n {self.app_args['k8s_namespace']}")
-        cmdline = self.get_spark_submit_args_k8s(self.app_file, self.app_args)
-        self.launch_spark_submit_k8s(cmdline)
-        logger.info("Spark submit finished, see results with:")
-        logger.info(f"kubectl get pods -n {self.app_args['k8s_namespace']}")
-        logger.info(f"kubectl logs your_spark_app_id_here -n {self.app_args['k8s_namespace']}")
+        # TODO: integrate deploy_k8s properly
+        return Kuberneter.run_direct_k8s(self)
 
     @staticmethod
     def get_spark_submit_args_k8s(app_file, app_args):
-        """ app_file is launcher, might be py_job too, but may also be separate from py_job (ex python launcher.py --job_name=some_job_with_py_job)."""
-        # TODO: need to unify with get_spark_submit_args(), to account for jar jobs, to use eu.Runner.create_spark_submit()
-        # See spark-submit setup for k8s on docker_desktop.
-
-        if app_args.get('spark_submit'):
-            return app_args['spark_submit']
-
-        # For k8s in AWS, for yaetos jobs.
-        spark_submit_base = [
-            'spark-submit',
-            f'--master {app_args["k8s_url"]}',
-            '--deploy-mode cluster',
-            f'--name {app_args["k8s_name"]}',
-            f'--conf spark.executor.instances={app_args["k8s_executor_instances"]}',
-            f'--conf spark.kubernetes.namespace={app_args["k8s_namespace"]}',
-            f'--conf spark.kubernetes.container.image={app_args["k8s_image_service"]}']
-
-        spark_submit_aws = [
-            '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-core:1.11.563,com.amazonaws:aws-java-sdk-s3:1.11.563',
-            f'--conf spark.kubernetes.file.upload.path={app_args["k8s_upload_path"]}',
-            f'--conf spark.kubernetes.driver.podTemplateFile={app_args["k8s_driver_podTemplateFile"]}',
-            f'--conf spark.kubernetes.executor.podTemplateFile={app_args["k8s_executor_podTemplateFile"]}',
-            '--conf spark.kubernetes.executor.deleteOnTermination=false',
-            '--conf spark.kubernetes.container.imagePullPolicy=Always',
-            '--conf spark.jars.ivy=/tmp/.ivy2',
-            '--conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider',
-            '--conf spark.hadoop.fs.s3a.access.key="${AWS_ACCESS_KEY_ID}"',
-            '--conf spark.hadoop.fs.s3a.secret.key="${AWS_SECRET_ACCESS_KEY}"',
-            '--conf spark.hadoop.fs.s3a.session.token="${AWS_SESSION_TOKEN}"',
-            '--conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem',
-            f'--conf spark.hadoop.fs.s3a.endpoint=s3.{app_args["aws_region"]}.amazonaws.com',
-            '--py-files tmp/files_to_ship/scripts.zip']
-
-        spark_submit_docker_desktop = [
-            '--conf spark.kubernetes.authenticate.driver.serviceAccountName=spark-service-account',
-            '--conf spark.kubernetes.pyspark.pythonVersion=3',
-            '--conf spark.pyspark.python=python3',
-            '--conf spark.pyspark.driver.python=python3',
-            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
-            '--conf spark.kubernetes.driver.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
-            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.mount.path=/mnt/yaetos_jobs',
-            '--conf spark.kubernetes.executor.volumes.hostPath.spark-local-dir.options.path=/Users/aprevot/Synced/github/code/code_perso/yaetos/',
-            '--conf spark.kubernetes.file.upload.path=file:///yaetos_jobs/tmp/files_to_ship/scripts.zip',
-            '--py-files local:///mnt/yaetos_jobs/tmp/files_to_ship/scripts.zip']
-
-        if app_args.get('k8s_mode') == 'k8s_aws':
-            launcher = 'jobs/generic/launcher.py'
-            spark_submit_conf_plateform = spark_submit_aws
-        elif app_args.get('k8s_mode') == 'k8s_docker_desktop':
-            launcher = 'local:///mnt/yaetos_jobs/jobs/generic/launcher.py'
-            spark_submit_conf_plateform = spark_submit_docker_desktop
-        else:
-            raise Exception(f"k8s_mode not recognized, should be 'k8s_aws' or 'k8s_docker_desktop'. Set to {app_args.get('k8s_mode')}")
-
-        spark_submit_conf_extra = app_args.get('spark_deploy_args', [])
-        spark_submit_jobs = [
-            launcher,
-            f'--mode={app_args["mode"]}',  # need to make sure it uses a mode compatible with k8s
-            '--deploy=none',
-            '--storage=s3',
-            f'--job_name={app_args["job_name"]}',
-            '--runs_on=k8s']
-
-        spark_submit_jobs_extra = app_args.get('spark_app_args', [])
-        if app_args.get('dependencies'):
-            spark_submit_jobs_extra += ['--dependencies']
-
-        spark_submit = spark_submit_base \
-            + spark_submit_conf_plateform \
-            + spark_submit_conf_extra \
-            + spark_submit_jobs \
-            + spark_submit_jobs_extra
+        # TODO: integrate deploy_k8s properly
+        spark_submit = Kuberneter.get_spark_submit_args_k8s(app_file, app_args)
         return spark_submit
 
     def launch_spark_submit_k8s(self, cmdline):
-        cmdline_str = " ".join(cmdline)
-        logger.info(f'About to run spark submit command line (for reuse): {cmdline_str}')
-        logger.info('About to run spark submit command line (for visual check): \n{}'.format(" \n".join(cmdline)))
-        if not self.app_args.get('dry_run'):
-            os.system(cmdline_str)
+        # TODO: integrate deploy_k8s properly
+        return Kuberneter.launch_spark_submit_k8s(self, cmdline)
 
     def s3_ops(self, session):
         s3 = session.resource('s3')
@@ -296,29 +178,12 @@ class DeployPySparkScriptOnAws(object):
         self.convert_tar_to_zip()
 
     def get_active_clusters(self, c):
-        response = c.list_clusters(
-            ClusterStates=['STARTING', 'BOOTSTRAPPING', 'RUNNING', 'WAITING'],
-        )
-        clusters = [(ii + 1, item['Id'], item['Name']) for ii, item in enumerate(response['Clusters'])]
-        return clusters
+        # TODO: integrate deploy_emr properly
+        return EMRer.get_active_clusters(self, c)
 
     def choose_cluster(self, clusters, cluster_id=None):
-        if len(clusters) == 0:
-            logger.info('No cluster found, will create a new one')
-            return {'id': None,
-                    'name': None}
-
-        if cluster_id is not None:
-            logger.info('Cluster_id set by user to {}'.format(cluster_id))
-            return {'id': cluster_id,
-                    'name': None}
-
-        clusters.append((len(clusters) + 1, None, 'Create a new cluster'))
-        print('Clusters found for AWS account "%s":' % (self.aws_setup))
-        print('\n'.join(['[%s] %s' % (item[0], item[2]) for item in clusters]))
-        answer = input('Your choice ? ')
-        return {'id': clusters[int(answer) - 1][1],
-                'name': clusters[int(answer) - 1][2]}
+        # TODO: integrate deploy_emr properly
+        return EMRer.choose_cluster(self, clusters, cluster_id=None)
 
     @staticmethod
     def generate_pipeline_name(mode, job_name, user):
@@ -509,139 +374,24 @@ class DeployPySparkScriptOnAws(object):
                 logger.info("Removed '{}' from bucket for temporary files".format(key.key))
 
     def start_spark_cluster(self, c, emr_version):
-        """
-        :param c: EMR client
-        :return:
-        """
-        instance_groups = [{
-            'Name': 'EmrMaster',
-            'InstanceRole': 'MASTER',
-            'InstanceType': self.ec2_instance_master,
-            'InstanceCount': 1,
-        }]
-        if self.emr_core_instances != 0:
-            instance_groups += [{
-                'Name': 'EmrCore',
-                'InstanceRole': 'CORE',
-                'InstanceType': self.ec2_instance_slaves,
-                'InstanceCount': self.emr_core_instances,
-            }]
-
-        response = c.run_job_flow(
-            Name=self.pipeline_name,
-            LogUri="s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder),
-            ReleaseLabel=emr_version,
-            Instances={
-                'InstanceGroups': instance_groups,
-                'Ec2KeyName': self.ec2_key_name,
-                'KeepJobFlowAliveWhenNoSteps': self.deploy_args.get('leave_on', False),
-                'Ec2SubnetId': self.ec2_subnet_id,
-                # 'AdditionalMasterSecurityGroups': self.extra_security_gp,  # TODO : make optional in future. "[self.extra_security_gp] if self.extra_security_gp else []" doesn't work.
-            },
-            Applications=self.emr_applications,  # should be at a minimum [{'Name': 'Hadoop'}, {'Name': 'Spark'}],
-            Configurations=[
-                {  # Section to force python3 since emr-5.x uses python2 by default.
-                    "Classification": "spark-env",
-                    "Configurations": [{
-                        "Classification": "export",
-                        "Properties": {"PYSPARK_PYTHON": "/usr/bin/python3"}
-                    }]
-                },
-                # { # Section to add jars (redshift...), not used for now, since passed in spark-submit args.
-                # "Classification": "spark-defaults",
-                # "Properties": { "spark.jars": ["/home/hadoop/redshift_tbd.jar"], "spark.driver.memory": "40G", "maximizeResourceAllocation": "true"},
-                # }
-            ],
-            JobFlowRole=self.emr_ec2_role,
-            ServiceRole=self.emr_role,
-            VisibleToAllUsers=True,
-            BootstrapActions=[{
-                'Name': 'setup_nodes',
-                'ScriptBootstrapAction': {
-                    'Path': 's3n://{}/setup_nodes.sh'.format(self.package_path_with_bucket),
-                    'Args': []
-                }
-            }],
-        )
-        # Process response to determine if Spark cluster was started, and if so, the JobFlowId of the cluster
-        response_code = response['ResponseMetadata']['HTTPStatusCode']
-        if response_code == 200:
-            self.cluster_id = response['JobFlowId']
-        else:
-            terminate("Could not create EMR cluster (status code {})".format(response_code))
-
-        logger.info("Created Spark EMR cluster ({}) with cluster_id {}".format(emr_version, self.cluster_id))
+        # TODO: integrate deploy_emr properly
+        return EMRer.start_spark_cluster(self, c, emr_version)
 
     def describe_status_until_terminated(self, c):
-        """
-        :param c:
-        :return:
-        """
-        logger.info('Waiting for job to finish on cluster')
-        stop = False
-        while stop is False:
-            description = c.describe_cluster(ClusterId=self.cluster_id)
-            state = description['Cluster']['Status']['State']
-            if state == 'TERMINATED' or state == 'TERMINATED_WITH_ERRORS':
-                stop = True
-                logger.info('Job is finished')
-            logger.info('Cluster state:' + state)
-            time.sleep(30)  # Prevent ThrottlingException by limiting number of requests
+        # TODO: integrate deploy_emr properly
+        return EMRer.describe_status_until_terminated(self, c)
 
     def describe_status(self, c):
-        description = c.describe_cluster(ClusterId=self.cluster_id)
-        logger.info(f'Cluster description: {description}')
+        # TODO: integrate deploy_emr properly
+        return EMRer.describe_status(self, c)
 
     def step_run_setup_scripts(self, c):
-        """
-        :param c:
-        :return:
-        """
-        response = c.add_job_flow_steps(
-            JobFlowId=self.cluster_id,
-            Steps=[{
-                'Name': 'Run Setup',
-                'ActionOnFailure': 'CONTINUE',
-                'HadoopJarStep': {
-                    'Jar': f's3://{self.s3_region}.elasticmapreduce/libs/script-runner/script-runner.jar',
-                    'Args': [
-                        "s3://{}/setup_master.sh".format(self.package_path_with_bucket),
-                        "s3://{}".format(self.package_path_with_bucket),
-                    ]
-                }
-            }]
-        )
-        response_code = response['ResponseMetadata']['HTTPStatusCode']
-        if response_code == 200:
-            logger.debug(f"Added step 'run setup', using s3://{self.package_path_with_bucket}/setup_master.sh")
-        else:
-            raise Exception("Step couldn't be added")
-        time.sleep(1)  # Prevent ThrottlingException
+        # TODO: integrate deploy_emr properly
+        return EMRer.step_run_setup_scripts(self, c)
 
     def step_spark_submit(self, c, app_file, app_args):
-        """
-        :param c:
-        :return:
-        """
-        cmd_runner_args = self.get_spark_submit_args(app_file, app_args)
-
-        response = c.add_job_flow_steps(
-            JobFlowId=self.cluster_id,
-            Steps=[{
-                'Name': 'Spark Application',
-                'ActionOnFailure': 'CONTINUE',
-                'HadoopJarStep': {
-                    'Jar': 'command-runner.jar',
-                    'Args': cmd_runner_args
-                }
-            }]
-        )
-        response_code = response['ResponseMetadata']['HTTPStatusCode']
-        if response_code == 200:
-            logger.info("Added step 'spark-submit' with command line '{}'".format(' '.join(cmd_runner_args)))
-        else:
-            raise Exception("Step couldn't be added")
-        time.sleep(1)  # Prevent ThrottlingException
+        # TODO: integrate deploy_emr properly
+        return EMRer.step_spark_submit(self, c, app_file, app_args)
 
     @staticmethod
     def get_spark_submit_args(app_file, app_args):
@@ -715,261 +465,50 @@ class DeployPySparkScriptOnAws(object):
         return eu.Runner.create_spark_submit(jargs)
 
     def run_aws_data_pipeline(self):
-        self.s3_ops(self.session)
-        if self.deploy_args.get('push_secrets', False):
-            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
-
-        # AWSDataPipeline ops
-        client = self.session.client('datapipeline')
-        self.deactivate_similar_pipelines(client, self.pipeline_name)
-        pipe_id = self.create_data_pipeline(client)
-        parameterValues = self.define_data_pipeline(client, pipe_id, self.emr_core_instances)
-        self.activate_data_pipeline(client, pipe_id, parameterValues)
+        # TODO: integrate deploy_aws_data_pipeline properly
+        return AWS_Data_Pipeliner.run_aws_data_pipeline(self)
 
     def create_data_pipeline(self, client):
-        unique_id = uuid.uuid1()
-        create = client.create_pipeline(name=self.pipeline_name, uniqueId=str(unique_id))
-        logger.debug('Pipeline created :' + str(create))
-
-        pipe_id = create['pipelineId']  # format: 'df-0624751J5O10SBRYJJF'
-        logger.info('Created pipeline with id ' + pipe_id)
-        logger.debug('Pipeline description :' + str(client.describe_pipelines(pipelineIds=[pipe_id])))
-        return pipe_id
+        # TODO: integrate deploy_aws_data_pipeline properly
+        return AWS_Data_Pipeliner.create_data_pipeline(self, client)
 
     def define_data_pipeline(self, client, pipe_id, emr_core_instances):
-        import awscli.customizations.datapipeline.translator as trans
-        base = self.get_package_path()
-
-        if emr_core_instances != 0:
-            definition_file = base / 'yaetos/definition.json'  # see syntax in datapipeline-dg.pdf p285 # to add in there: /*"AdditionalMasterSecurityGroups": "#{}",  /* To add later to match EMR mode */
-        else:
-            definition_file = base / 'yaetos/definition_standalone_cluster.json'
-            # TODO: have 1 json for both to avoid having to track duplication.
-
-        definition = json.load(open(definition_file, 'r'))  # Note: Data Pipeline doesn't support emr-6.0.0 yet.
-
-        pipelineObjects = trans.definition_to_api_objects(definition)
-        parameterObjects = trans.definition_to_api_parameters(definition)
-        parameterValues = trans.definition_to_parameter_values(definition)
-        parameterValues = self.update_params(parameterValues)
-        logger.debug(f'Filled pipeline with data from {definition_file}')
-
-        response = client.put_pipeline_definition(
-            pipelineId=pipe_id,
-            pipelineObjects=pipelineObjects,
-            parameterObjects=parameterObjects,
-            parameterValues=parameterValues
-        )
-        logger.debug('put_pipeline_definition response: ' + str(response))
-        return parameterValues
+        # TODO: integrate deploy_aws_data_pipeline properly
+        return AWS_Data_Pipeliner.define_data_pipeline(self, client, pipe_id, emr_core_instances)
 
     def activate_data_pipeline(self, client, pipe_id, parameterValues):
-        response = client.activate_pipeline(
-            pipelineId=pipe_id,
-            parameterValues=parameterValues,  # optional. If set, need to specify all params as per json.
-            # startTimestamp=datetime(2018, 12, 1)  # optional
-        )
-        logger.debug('activate_pipeline response: ' + str(response))
-        logger.info('Activated pipeline ' + pipe_id)
+        # TODO: integrate deploy_aws_data_pipeline properly
+        return AWS_Data_Pipeliner.activate_data_pipeline(self, client, pipe_id, parameterValues)
 
     def list_data_pipeline(self, client):
-        out = client.list_pipelines(marker='')
-        pipelines = out['pipelineIdList']
-        while out['hasMoreResults'] is True:
-            out = client.list_pipelines(marker=out['marker'])
-            pipelines += out['pipelineIdList']
-        return pipelines
+        # TODO: integrate deploy_aws_data_pipeline properly
+        return AWS_Data_Pipeliner.list_data_pipeline(self, client)
 
     def deactivate_similar_pipelines(self, client, pipeline_id):
-        pipelines = self.list_data_pipeline(client)
-        for item in pipelines:
-            job_name = self.get_job_name(item['name'])
-            if job_name == self.app_args['job_name']:
-                response = client.deactivate_pipeline(pipelineId=item['id'], cancelActive=True)
-                response_code = response['ResponseMetadata']['HTTPStatusCode']
-                if response_code == 200:
-                    logger.info('Deactivated pipeline {}, {}, {}'.format(job_name, item['name'], item['id']))
-                else:
-                    raise Exception("Pipeline couldn't be deactivated. Error message: {}".format(response))
+        # TODO: integrate deploy_aws_data_pipeline properly
+        return AWS_Data_Pipeliner.deactivate_similar_pipelines(self, client, pipeline_id)
 
     def update_params(self, parameterValues):
-        # TODO: check if easier/simpler to change values at the source json instead of a processed one.
-        # Change key pair
-        myScheduleType = {'EMR_Scheduled': 'cron', 'EMR_DataPipeTest': 'ONDEMAND'}[self.deploy_args.get('deploy')]
-        myPeriod = self.deploy_args['frequency'] or '1 Day'
-        if self.deploy_args['start_date'] and isinstance(self.deploy_args['start_date'], datetime):
-            myStartDateTime = self.deploy_args['start_date'].strftime('%Y-%m-%dT%H:%M:%S')
-        elif self.deploy_args['start_date'] and isinstance(self.deploy_args['start_date'], str):
-            myStartDateTime = self.deploy_args['start_date'].format(today=datetime.today().strftime('%Y-%m-%d'))
-        else:
-            myStartDateTime = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
-        bootstrap = 's3://{}/setup_nodes.sh'.format(self.package_path_with_bucket)
-
-        for ii, item in enumerate(parameterValues):
-            if 'myEC2KeyPair' in item.values():
-                parameterValues[ii] = {'id': u'myEC2KeyPair', 'stringValue': self.ec2_key_name}
-            elif 'mySubnet' in item.values():
-                parameterValues[ii] = {'id': u'mySubnet', 'stringValue': self.ec2_subnet_id}
-            elif 'myPipelineLogUri' in item.values():
-                parameterValues[ii] = {'id': u'myPipelineLogUri', 'stringValue': "s3://{}/{}/scheduled_run_logs/".format(self.s3_bucket_logs, self.metadata_folder)}
-            elif 'myScheduleType' in item.values():
-                parameterValues[ii] = {'id': u'myScheduleType', 'stringValue': myScheduleType}
-            elif 'myPeriod' in item.values():
-                parameterValues[ii] = {'id': u'myPeriod', 'stringValue': myPeriod}
-            elif 'myStartDateTime' in item.values():
-                parameterValues[ii] = {'id': u'myStartDateTime', 'stringValue': myStartDateTime}
-            elif 'myBootstrapAction' in item.values():
-                parameterValues[ii] = {'id': u'myBootstrapAction', 'stringValue': bootstrap}
-            elif 'myTerminateAfter' in item.values():
-                parameterValues[ii] = {'id': u'myTerminateAfter', 'stringValue': self.deploy_args.get('terminate_after', '180 Minutes')}
-            elif 'myEMRReleaseLabel' in item.values():
-                parameterValues[ii] = {'id': u'myEMRReleaseLabel', 'stringValue': self.emr_version}
-            elif 'myMasterInstanceType' in item.values():
-                parameterValues[ii] = {'id': u'myMasterInstanceType', 'stringValue': self.ec2_instance_master}
-            elif 'myCoreInstanceCount' in item.values():
-                parameterValues[ii] = {'id': u'myCoreInstanceCount', 'stringValue': str(self.emr_core_instances)}
-            elif 'myCoreInstanceType' in item.values():
-                parameterValues[ii] = {'id': u'myCoreInstanceType', 'stringValue': self.ec2_instance_slaves}
-
-        # Change steps to include proper path
-        setup_command = 's3://{s3_region}.elasticmapreduce/libs/script-runner/script-runner.jar,s3://{s3_tmp_path}/setup_master.sh,s3://{s3_tmp_path}'.format(s3_tmp_path=self.package_path_with_bucket, s3_region=self.s3_region)  # s3://elasticmapreduce/libs/script-runner/script-runner.jar,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/setup_master.sh,s3://bucket-tempo/ex1_frameworked_job.arthur_user1.20181129.231423/
-        spark_submit_command = 'command-runner.jar,' + ','.join([item.replace(',', '\\\,') for item in self.get_spark_submit_args(self.app_file, self.app_args)])   # command-runner.jar,spark-submit,--py-files,/home/hadoop/app/scripts.zip,--packages=com.amazonaws:aws-java-sdk-pom:1.11.760\\\\,org.apache.hadoop:hadoop-aws:2.7.0,/home/hadoop/app/jobs/examples/ex1_frameworked_job.py,--storage=s3  # instructions about \\\ part: https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-object-emractivity.html
-
-        commands = [setup_command, spark_submit_command]
-        mm = 0
-        for ii, item in enumerate(parameterValues):
-            if 'myEmrStep' in item.values() and mm < 2:  # TODO: make more generic and cleaner
-                parameterValues[ii] = {'id': u'myEmrStep', 'stringValue': commands[mm]}
-                mm += 1
-
-        logger.debug('parameterValues after changes: ' + str(parameterValues))
-        return parameterValues
+        # TODO: integrate deploy_aws_data_pipeline properly
+        return AWS_Data_Pipeliner.update_params(self, parameterValues)
 
     def run_aws_airflow(self):
-        fname_local, job_dag_name = self.create_dags()
-
-        s3 = self.s3_ops(self.session)
-        if self.deploy_args.get('push_secrets', False):
-            self.push_secrets(creds_or_file=self.app_args['connection_file'])  # TODO: fix privileges to get creds in dev env
-
-        s3_dags = self.app_args.get('s3_dags')
-        if s3_dags:
-            self.upload_dags(s3, s3_dags, job_dag_name, fname_local)
-        else:
-            terminate(error_message='dag not uploaded, dag path not provided')
+        # TODO: integrate deploy_airflow properly
+        return Airflower.run_aws_airflow(self)
 
     def create_dags(self):
-        """
-        Create the .py dag file from job_metadata.yml info, based on a template in 'airflow_template.py'
-        """
-
-        # Set start_date, should be string evaluable in python, or string compatible with airflow
-        start_input = self.deploy_args.get('start_date', '{today}T00:00:00+00:00')
-        if '{today}' in start_input:
-            start_date = start_input.replace('{today}', datetime.today().strftime('%Y-%m-%d'))
-            start_date = f'dateutil.parser.parse("{start_date}")'
-        elif start_input.startswith('{') and start_input.endswith('}'):
-            start_date = start_input[1:-1]
-        elif start_input == 'None':
-            start_date = 'None'
-        else:
-            start_date = f'dateutil.parser.parse("{start_date}")'
-
-        # Set schedule, should be string evaluable in python, or string compatible with airflow
-        freq_input = self.deploy_args.get('frequency', '@once')
-        if freq_input.startswith('{') and freq_input.endswith('}'):
-            schedule = freq_input[1:-1]
-        elif freq_input == 'None':
-            schedule = 'None'
-        else:
-            schedule = f"'{freq_input}'"
-
-        # Get content
-        if self.deploy_args['deploy'] == 'airflow':
-            params = {
-                'ec2_instance_slaves': self.ec2_instance_slaves,
-                'emr_core_instances': self.emr_core_instances,
-                'package_path_with_bucket': self.package_path_with_bucket,
-                'cmd_runner_args': self.get_spark_submit_args(self.app_file, self.app_args),
-                'pipeline_name': self.pipeline_name,
-                'emr_version': self.emr_version,
-                'ec2_instance_master': self.ec2_instance_master,
-                'deploy_args': self.deploy_args,
-                'ec2_key_name': self.ec2_key_name,
-                'ec2_subnet_id': self.ec2_subnet_id,
-                's3_bucket_logs': self.s3_bucket_logs,
-                'metadata_folder': self.metadata_folder,
-                # airflow specific
-                'dag_nameid': self.app_args['job_name'].replace("/", "-"),
-                'start_date': start_date,
-                'schedule': schedule,
-                'emails': self.deploy_args.get('emails', '[]'),
-                'region': self.s3_region,
-            }
-            param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
-            content = get_template(params, param_extras)
-        elif self.deploy_args['deploy'] == 'airflow_k8s':
-            params = {
-                'k8s_url': self.deploy_args.get('k8s_url'),
-                'k8s_name': self.deploy_args.get('k8s_name'),
-                'k8s_executor_instances': self.deploy_args.get('k8s_executor_instances'),
-                'k8s_namespace': self.deploy_args.get('k8s_namespace'),
-                'k8s_image_service': self.deploy_args.get('k8s_image_service'),
-                'k8s_upload_path': self.deploy_args.get('k8s_upload_path'),
-                'k8s_driver_podTemplateFile': self.deploy_args.get('k8s_driver_podTemplateFile'),
-                'k8s_executor_podTemplateFile': self.deploy_args.get('k8s_executor_podTemplateFile'),
-                'aws_region': self.s3_region,
-                'k8s_podname': self.deploy_args.get('k8s_podname'),
-                'k8s_airflow_spark_submit_yaml': self.deploy_args.get('k8s_airflow_spark_submit_yaml'),
-                # airflow specific
-                'dag_nameid': self.app_args['job_name'].replace("/", "-"),
-                'start_date': start_date,
-                'schedule': schedule,
-                'emails': self.deploy_args.get('emails', '[]'),
-            }
-            param_extras = {key: self.deploy_args[key] for key in self.deploy_args if key.startswith('airflow.')}
-            content = get_template_k8s(params, param_extras)
-        else:
-            raise Exception("Should not get here")
-
-        # Setup path
-        default_folder = 'tmp/files_to_ship/dags'
-        local_folder = Pt(self.app_args.get('local_dags', default_folder))
-        if not os.path.isdir(local_folder):
-            os.makedirs(local_folder, exist_ok=True)
-
-        # Get fname_local
-        job_dag_name = self.set_job_dag_name(self.app_args['job_name'])
-        fname_local = local_folder / Pt(job_dag_name)
-
-        # Write content to file
-        os.makedirs(fname_local.parent, exist_ok=True)
-        with open(fname_local, 'w') as file:
-            file.write(content)
-            logger.info(f'Airflow DAG file created at {fname_local}')
-
+        # TODO: integrate deploy_airflow properly
+        fname_local, job_dag_name = Airflower.create_dags(self)
         return fname_local, job_dag_name
 
     def set_job_dag_name(self, jobname):
-        suffix = '_dag.py'
-        if jobname.endswith('.py'):
-            return jobname.replace('.py', '_py' + suffix)
-        elif jobname.endswith('.sql'):
-            return jobname.replace('.sql', '_sql' + suffix)
-        else:
-            return jobname + suffix
+        # TODO: integrate deploy_airflow properly
+        return Airflower.set_job_dag_name(self, jobname)
 
     @staticmethod
     def upload_dags(s3, s3_dags, job_dag_name, fname_local):
-        """
-        Move the dag files to S3
-        """
-        s3_dags = CPt(s3_dags + '/' + job_dag_name)
-
-        s3.Object(s3_dags.bucket, s3_dags.key)\
-          .put(Body=open(str(fname_local), 'rb'), ContentType='text/x-sh')
-        logger.info(f"Uploaded dag job files to path '{s3_dags}'")
-        return True
+        # TODO: integrate deploy_airflow properly
+        return Airflower.upload_dags(s3, s3_dags, job_dag_name, fname_local)
 
     def push_secrets(self, creds_or_file):
         client = self.session.client('secretsmanager')
@@ -1064,15 +603,15 @@ def convert_to_linux_eol_if_needed(fname):
         convert_to_linux_eol(fname, fname)
 
 
-def terminate(error_message=None):
-    """
-    Method to exit the Python script. It will log the given message and then exit().
-    :param error_message:
-    """
-    if error_message:
-        logger.error(error_message)
-    logger.critical('The script is now terminating')
-    exit()
+# def terminate(error_message=None):
+#     """
+#     Method to exit the Python script. It will log the given message and then exit().
+#     :param error_message:
+#     """
+#     if error_message:
+#         logger.error(error_message)
+#     logger.critical('The script is now terminating')
+#     exit()
 
 
 def deploy_standalone(job_args_update={}):
