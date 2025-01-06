@@ -10,6 +10,7 @@ from yaetos.deploy_k8s import Kuberneter
 from yaetos.deploy_aws_data_pipeline import AWS_Data_Pipeliner
 from yaetos.deploy_airflow import Airflower
 
+# --- Fixtures ---
 
 @pytest.fixture
 def basic_deploy_args():
@@ -53,6 +54,8 @@ emr_role = EMR_DefaultRole
 def deployer(basic_deploy_args, basic_app_args, mock_aws_config):
     basic_deploy_args['aws_config_file'] = mock_aws_config
     return DeployPySparkScriptOnAws(basic_deploy_args, basic_app_args)
+
+# --- DeployPySparkScriptOnAws Tests ---
 
 def test_generate_pipeline_name():
     """Test pipeline name generation"""

@@ -196,8 +196,18 @@ class DeployPySparkScriptOnAws(object):
 
     @staticmethod
     def get_job_name(pipeline_name):
-        """Opposite of generate_pipeline_name()"""
+        """Extracts the original job name from a pipeline name by reversing the transformations done in generate_pipeline_name()."""
         return pipeline_name.split('__')[2].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
+        # if not pipeline_name or '__' not in pipeline_name:
+        #     return None
+            
+        # parts = pipeline_name.split('__')
+        # if len(parts) != 3:
+        #     return None
+            
+        # transformed_name = parts[1]
+        # job_name = transformed_name.replace('_d_', '.').replace('_s_', '/')
+        # return job_name
 
     def get_job_log_path(self):
         if self.deploy_args.get('mode') and 'prod_EMR' in self.deploy_args.get('mode').split(','):  # TODO: check if should be replaced by app_args
