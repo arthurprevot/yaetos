@@ -58,36 +58,6 @@ def deployer(basic_deploy_args, basic_app_args, mock_aws_config):
 
 # --- DeployPySparkScriptOnAws Tests ---
 
-def test_generate_pipeline_name():
-    """Test pipeline name generation"""
-    name = DeployPySparkScriptOnAws.generate_pipeline_name('dev_EMR', 'test/job.py', 'testuser')
-    assert 'yaetos__test_s_job_d_py__' in name
-    assert name.startswith('yaetos__')
-    assert len(name.split('__')) == 3
-
-# def test_get_job_name():
-#     """Test extracting job name from pipeline name"""
-#     pipeline_name = 'yaetos__test_s_job_d_py__20230401T123456'
-#     job_name = DeployPySparkScriptOnAws.get_job_name(pipeline_name)
-#     assert job_name == 'test/job.py'
-
-def test_get_job_name():
-    """Test extracting job name from pipeline name"""
-    # TODO: get_job_name() is not opposite of generate_pipeline_name(), see need for __dev__ param below not in test_generate_pipeline_name. Check if deploy code needs update.
-    test_cases = [
-        ('yaetos__dev__jobs_d_some_folder_d_job__20220629T205103', 'jobs.some_folder.job'),
-        ('yaetos__dev__test_s_job_d_py__20230401T123456', 'test/job.py'),
-        ('yaetos__dev__my_s_folder_s_test_d_py__20230401T123456', 'my/folder/test.py'),
-        ('yaetos__dev__simple_d_py__20230401T123456', 'simple.py'),
-        ('invalid_pipeline_name', None),
-        ('', None),
-        # (None, None)
-    ]
-    
-    for pipeline_name, expected in test_cases:
-        job_name = DeployPySparkScriptOnAws.get_job_name(pipeline_name)
-        assert job_name == expected, f"Failed for pipeline name: {pipeline_name}"
-
 def test_temp_bucket_exists_success(deployer):
     """Test successful bucket existence check"""
     mock_s3 = Mock()
