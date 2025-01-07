@@ -137,14 +137,14 @@ def test_get_active_clusters(deployer):
     mock_client = Mock()
     mock_client.list_clusters.return_value = {
         'Clusters': [
-            {'Id': 'j-123', 'Status': {'State': 'WAITING'}},
-            {'Id': 'j-456', 'Status': {'State': 'RUNNING'}}
+            {'Id': 'j-123', 'Name': 'Test Cluster 1', 'Status': {'State': 'WAITING'}},
+            {'Id': 'j-456', 'Name': 'Test Cluster 2', 'Status': {'State': 'RUNNING'}}
         ]
     }
     
     clusters = deployer.get_active_clusters(mock_client)
     assert len(clusters) == 2
-    assert clusters[0]['Id'] == 'j-123'
+    assert clusters == [(1, 'j-123', 'Test Cluster 1'), (2, 'j-456', 'Test Cluster 2')]
 
 def test_choose_cluster(deployer):
     clusters = [
