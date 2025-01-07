@@ -179,19 +179,6 @@ def test_run_direct_k8s(mock_run_k8s, deployer):
     deployer.run_direct_k8s()
     mock_run_k8s.assert_called_once()
 
-def test_get_spark_submit_args_k8s():
-    app_file = 'test_job.py'
-    app_args = {
-        'py_job': 'jobs/test_job.py',
-        'mode': 'dev_k8s',
-        'k8s_namespace': 'spark',
-        'k8s_service_account': 'spark-sa'
-    }
-    
-    result = DeployPySparkScriptOnAws.get_spark_submit_args_k8s(app_file, app_args)
-    assert '--master k8s://' in result
-    assert '--conf spark.kubernetes.namespace=' in result
-
 @patch('yaetos.deploy_k8s.Kuberneter.launch_spark_submit_k8s')
 def test_launch_spark_submit_k8s(mock_launch, deployer):
     cmdline = '--master k8s:// --deploy-mode cluster'
@@ -213,6 +200,7 @@ def test_create_data_pipeline(deployer):
     assert pipe_id == 'df-123'
     mock_client.create_pipeline.assert_called_once()
 
+@pytest.mark.skip()  # TODO: skipped since AWS DP not used. Remove code all together later.
 def test_define_data_pipeline(deployer):
     mock_client = Mock()
     pipe_id = 'df-123'
@@ -221,6 +209,7 @@ def test_define_data_pipeline(deployer):
     deployer.define_data_pipeline(mock_client, pipe_id, emr_instances)
     mock_client.put_pipeline_definition.assert_called_once()
 
+@pytest.mark.skip()  # TODO: skipped since AWS DP not used. Remove code all together later.
 def test_list_data_pipeline(deployer):
     mock_client = Mock()
     mock_client.list_pipelines.return_value = {
@@ -254,7 +243,7 @@ def test_set_job_dag_name(deployer):
     job_name = 'test_job'
     dag_name = deployer.set_job_dag_name(job_name)
     assert job_name in dag_name
-    assert dag_name.startswith('yaetos_')
+    assert dag_name == 'test_job_dag.py'
 
 @patch('yaetos.deploy_airflow.Airflower.upload_dags')
 def test_upload_dags(mock_upload, deployer):

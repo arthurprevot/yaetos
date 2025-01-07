@@ -183,7 +183,7 @@ class DeployPySparkScriptOnAws(object):
 
     def choose_cluster(self, clusters, cluster_id=None):
         # TODO: integrate deploy_emr properly
-        return EMRer.choose_cluster(self, clusters, cluster_id=None)
+        return EMRer.choose_cluster(self, clusters, cluster_id)
 
     @staticmethod
     def generate_pipeline_name(mode, job_name, user):
