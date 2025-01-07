@@ -111,6 +111,7 @@ def test_tar_python_scripts(mock_walk, mock_listdir, mock_tarfile, deployer, tmp
     ]
     mock_listdir.return_value = ['test_file.py']
     mock_tar = Mock()
+    mock_tar.getnames.return_value = ['test_job.py', 'test_file.py']
     mock_tarfile.return_value = mock_tar
     
     # Create temp directory structure
@@ -119,9 +120,17 @@ def test_tar_python_scripts(mock_walk, mock_listdir, mock_tarfile, deployer, tmp
     
     deployer.tar_python_scripts()
     
-    # Verify tar file was created
-    assert mock_tar.add.called
-    assert (deployer.TMP / "scripts.tar.gz").exists()
+    # Verify that tarfile.open was called with the correct parameters
+    mock_tarfile.assert_called_with((deployer.TMP / "scripts.tar.gz"), "w:gz")
+    
+    # Verify that files were added to the tar (i.e. that add() was called at least once)
+    add_calls = mock_tar.add.call_args_list
+    assert len(add_calls) > 0
+    
+    # Verify specific files were added (will have more than the 2 files set above)
+    added_files = [call[0][0] for call in add_calls]  # Extract the filenames that were added
+    # assert 'test_job.py' in added_files or any('test_job.py' in str(f) for f in added_files)
+    assert any('test_job.py' in str(f) for f in added_files)
 
 def test_get_spark_submit_args():
     """Test spark submit arguments generation"""
