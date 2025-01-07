@@ -85,9 +85,9 @@ def test_s3_ops(mock_session, deployer):
     mock_session.resource.return_value = mock_s3
 
     with patch.object(deployer, 'temp_bucket_exists') as mock_bucket_check, \
-        patch.object(deployer, 'local_file_ops') as mock_local_ops, \
-        patch.object(deployer, 'move_bash_to_local_temp') as mock_move_bash, \
-        patch.object(deployer, 'upload_temp_files') as mock_upload:
+         patch.object(deployer, 'local_file_ops') as mock_local_ops, \
+         patch.object(deployer, 'move_bash_to_local_temp') as mock_move_bash, \
+         patch.object(deployer, 'upload_temp_files') as mock_upload:
 
         deployer.s3_ops(mock_session)
 
@@ -122,7 +122,7 @@ def test_tar_python_scripts(mock_walk, mock_listdir, mock_tarfile, deployer, tmp
     # Verify that files were added to the tar (i.e. that add() was called at least once)
     add_calls = mock_tar.add.call_args_list
     assert len(add_calls) > 0
-    
+
     # Verify specific files were added (will have more than the 2 files set above)
     added_files = [call[0][0] for call in add_calls]
     assert any('test_job.py' in str(f) for f in added_files)
@@ -244,7 +244,7 @@ def test_run_aws_airflow(mock_run_airflow, deployer):
 
 def test_create_dags(deployer):
     with patch('builtins.open', create=True), \
-        patch('yaetos.deploy_airflow.Airflower.create_dags') as mock_create:
+         patch('yaetos.deploy_airflow.Airflower.create_dags') as mock_create:
 
         mock_create.return_value = ('local_dag.py', 'test_dag')
         fname_local, job_dag_name = deployer.create_dags()
