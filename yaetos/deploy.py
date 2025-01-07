@@ -183,7 +183,7 @@ class DeployPySparkScriptOnAws(object):
 
     def choose_cluster(self, clusters, cluster_id=None):
         # TODO: integrate deploy_emr properly
-        return EMRer.choose_cluster(self, clusters, cluster_id=None)
+        return EMRer.choose_cluster(self, clusters, cluster_id)
 
     @staticmethod
     def generate_pipeline_name(mode, job_name, user):
@@ -196,7 +196,7 @@ class DeployPySparkScriptOnAws(object):
 
     @staticmethod
     def get_job_name(pipeline_name):
-        """Opposite of generate_pipeline_name()"""
+        """Extracts the original job name from a pipeline name by reversing the transformations done in generate_pipeline_name()."""
         return pipeline_name.split('__')[2].replace('_d_', '.').replace('_s_', '/') if '__' in pipeline_name else None
 
     def get_job_log_path(self):
