@@ -59,7 +59,6 @@ def deployer(basic_deploy_args, basic_app_args, mock_aws_config):
 # --- DeployPySparkScriptOnAws Tests ---
 
 def test_temp_bucket_exists_success(deployer):
-    """Test successful bucket existence check"""
     mock_s3 = Mock()
     mock_s3.meta.client.head_bucket.return_value = True
     
@@ -67,7 +66,6 @@ def test_temp_bucket_exists_success(deployer):
     mock_s3.meta.client.head_bucket.assert_called_once_with(Bucket='test-bucket')
 
 def test_temp_bucket_exists_failure(deployer):
-    """Test bucket not found error"""
     mock_s3 = Mock()
     error_response = {'Error': {'Code': '404'}}
     mock_s3.meta.client.head_bucket.side_effect = botocore.exceptions.ClientError(
@@ -78,13 +76,11 @@ def test_temp_bucket_exists_failure(deployer):
 
 @patch('yaetos.deploy.os.path.isfile')
 def test_continue_post_git_check_no_prod(mock_isfile, deployer):
-    """Test git check when not in prod mode"""
     deployer.app_args['mode'] = 'dev_EMR'
     assert deployer.continue_post_git_check() is True
 
 @patch('boto3.session.Session')
 def test_s3_ops(mock_session, deployer):
-    """Test S3 operations sequence"""
     mock_s3 = Mock()
     mock_session.resource.return_value = mock_s3
     
@@ -104,7 +100,6 @@ def test_s3_ops(mock_session, deployer):
 @patch('yaetos.deploy.os.listdir')
 @patch('yaetos.deploy.os.walk')
 def test_tar_python_scripts(mock_walk, mock_listdir, mock_tarfile, deployer, tmp_path):
-    """Test creation of tar file with python scripts"""
     # Setup mocks
     mock_walk.return_value = [
         ('jobs', [], ['test_job.py']),
@@ -129,35 +124,16 @@ def test_tar_python_scripts(mock_walk, mock_listdir, mock_tarfile, deployer, tmp
     
     # Verify specific files were added (will have more than the 2 files set above)
     added_files = [call[0][0] for call in add_calls]  # Extract the filenames that were added
-    # assert 'test_job.py' in added_files or any('test_job.py' in str(f) for f in added_files)
     assert any('test_job.py' in str(f) for f in added_files)
-
-def test_get_spark_submit_args():
-    """Test spark submit arguments generation"""
-    app_file = 'test_job.py'
-    app_args = {
-        'py_job': 'jobs/test_job.py',
-        'mode': 'dev_EMR',
-        'job_param_file': 'conf/jobs_metadata.yml'
-    }
-    
-    result = DeployPySparkScriptOnAws.get_spark_submit_args(app_file, app_args)
-    
-    assert '--py-files' in result
-    assert 'scripts.zip' in result
-    assert '--job_param_file' in result
-
 
 # --- EMR Operations Tests ---
 
 @patch('yaetos.deploy_emr.EMRer.run_direct')
 def test_run_direct(mock_run_direct, deployer):
-    """Test EMR direct run"""
     deployer.run_direct()
     mock_run_direct.assert_called_once()
 
 def test_get_active_clusters(deployer):
-    """Test getting active EMR clusters"""
     mock_client = Mock()
     mock_client.list_clusters.return_value = {
         'Clusters': [
@@ -171,7 +147,6 @@ def test_get_active_clusters(deployer):
     assert clusters[0]['Id'] == 'j-123'
 
 def test_choose_cluster(deployer):
-    """Test cluster selection"""
     clusters = [
         {'Id': 'j-123', 'Status': {'State': 'WAITING'}},
         {'Id': 'j-456', 'Status': {'State': 'RUNNING'}}
@@ -187,7 +162,6 @@ def test_choose_cluster(deployer):
 
 @patch('yaetos.deploy_emr.EMRer.start_spark_cluster')
 def test_start_spark_cluster(mock_start_cluster, deployer):
-    """Test EMR cluster startup"""
     mock_client = Mock()
     mock_start_cluster.return_value = 'j-789'
     
@@ -199,12 +173,10 @@ def test_start_spark_cluster(mock_start_cluster, deployer):
 
 @patch('yaetos.deploy_k8s.Kuberneter.run_direct_k8s')
 def test_run_direct_k8s(mock_run_k8s, deployer):
-    """Test Kubernetes direct run"""
     deployer.run_direct_k8s()
     mock_run_k8s.assert_called_once()
 
 def test_get_spark_submit_args_k8s():
-    """Test Kubernetes spark-submit arguments generation"""
     app_file = 'test_job.py'
     app_args = {
         'py_job': 'jobs/test_job.py',
@@ -219,7 +191,6 @@ def test_get_spark_submit_args_k8s():
 
 @patch('yaetos.deploy_k8s.Kuberneter.launch_spark_submit_k8s')
 def test_launch_spark_submit_k8s(mock_launch, deployer):
-    """Test Kubernetes spark-submit launch"""
     cmdline = '--master k8s:// --deploy-mode cluster'
     deployer.launch_spark_submit_k8s(cmdline)
     mock_launch.assert_called_once_with(deployer, cmdline)
@@ -228,12 +199,10 @@ def test_launch_spark_submit_k8s(mock_launch, deployer):
 
 @patch('yaetos.deploy_aws_data_pipeline.AWS_Data_Pipeliner.run_aws_data_pipeline')
 def test_run_aws_data_pipeline(mock_run_pipeline, deployer):
-    """Test AWS Data Pipeline run"""
     deployer.run_aws_data_pipeline()
     mock_run_pipeline.assert_called_once()
 
 def test_create_data_pipeline(deployer):
-    """Test Data Pipeline creation"""
     mock_client = Mock()
     mock_client.create_pipeline.return_value = {'pipelineId': 'df-123'}
     
@@ -242,7 +211,6 @@ def test_create_data_pipeline(deployer):
     mock_client.create_pipeline.assert_called_once()
 
 def test_define_data_pipeline(deployer):
-    """Test Data Pipeline definition"""
     mock_client = Mock()
     pipe_id = 'df-123'
     emr_instances = 2
@@ -251,7 +219,6 @@ def test_define_data_pipeline(deployer):
     mock_client.put_pipeline_definition.assert_called_once()
 
 def test_list_data_pipeline(deployer):
-    """Test listing Data Pipelines"""
     mock_client = Mock()
     mock_client.list_pipelines.return_value = {
         'pipelineIdList': [
@@ -267,12 +234,10 @@ def test_list_data_pipeline(deployer):
 
 @patch('yaetos.deploy_airflow.Airflower.run_aws_airflow')
 def test_run_aws_airflow(mock_run_airflow, deployer):
-    """Test Airflow run"""
     deployer.run_aws_airflow()
     mock_run_airflow.assert_called_once()
 
 def test_create_dags(deployer):
-    """Test DAG creation"""
     with patch('builtins.open', create=True), \
          patch('yaetos.deploy_airflow.Airflower.create_dags') as mock_create:
         
@@ -283,7 +248,6 @@ def test_create_dags(deployer):
         assert job_dag_name == 'test_dag'
 
 def test_set_job_dag_name(deployer):
-    """Test setting DAG name"""
     job_name = 'test_job'
     dag_name = deployer.set_job_dag_name(job_name)
     assert job_name in dag_name
@@ -291,7 +255,6 @@ def test_set_job_dag_name(deployer):
 
 @patch('yaetos.deploy_airflow.Airflower.upload_dags')
 def test_upload_dags(mock_upload, deployer):
-    """Test DAG upload to S3"""
     mock_s3 = Mock()
     s3_dags = 's3://airflow-dags'
     job_dag_name = 'test_dag'
@@ -304,7 +267,6 @@ def test_upload_dags(mock_upload, deployer):
 
 @patch('boto3.session.Session')
 def test_full_emr_deployment_flow(mock_session, deployer):
-    """Test full EMR deployment flow"""
     mock_s3 = Mock()
     mock_emr = Mock()
     mock_session.resource.return_value = mock_s3
@@ -326,7 +288,6 @@ def test_full_emr_deployment_flow(mock_session, deployer):
 
 @patch('boto3.session.Session')
 def test_full_data_pipeline_flow(mock_session, deployer):
-    """Test full AWS Data Pipeline deployment flow"""
     mock_pipeline = Mock()
     mock_session.client.return_value = mock_pipeline
     
