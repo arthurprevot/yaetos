@@ -257,26 +257,36 @@ def test_upload_dags(mock_upload, deployer):
 
 # --- Integration Test Examples ---
 
-@patch('boto3.session.Session')
-def test_full_emr_deployment_flow(mock_session, deployer):
+# @patch('boto3.session.Session')
+# def test_full_emr_deployment_flow(mock_session, deployer):
+@patch.object(DeployPySparkScriptOnAws, 's3_ops')
+@patch.object(DeployPySparkScriptOnAws, 'start_spark_cluster')
+@patch.object(DeployPySparkScriptOnAws, 'step_spark_submit')
+def test_full_emr_deployment_flow(mock_submit, mock_start_cluster, mock_s3_ops, deployer):
     mock_s3 = Mock()
     mock_emr = Mock()
+    mock_session = Mock()
     mock_session.resource.return_value = mock_s3
     mock_session.client.return_value = mock_emr
+    deployer.session = mock_session
     
     # Setup EMR mock responses
     mock_emr.list_clusters.return_value = {'Clusters': []}
-    mock_emr.run_job_flow.return_value = {'JobFlowId': 'j-123'}
+    mock_emr.add_job_flow_steps.return_value = {
+        'ResponseMetadata': {'HTTPStatusCode': 200},
+        'StepIds': ['s-123']
+    }
+    mock_emr.run_job_flow.return_value = {
+        'JobFlowId': 'j-123',
+        'ResponseMetadata': {'HTTPStatusCode': 200}  # Add proper response structure
+    }
+    deployer.cluster_id = 'j-123'  # TODO: check if this should be fixed in code start_spark_cluster()
+            
+    deployer.run_direct()
     
-    with patch.object(deployer, 's3_ops') as mock_s3_ops, \
-         patch.object(deployer, 'start_spark_cluster') as mock_start_cluster, \
-         patch.object(deployer, 'step_spark_submit') as mock_submit:
-        
-        deployer.run_direct()
-        
-        mock_s3_ops.assert_called_once()
-        mock_start_cluster.assert_called_once()
-        mock_submit.assert_called_once()
+    mock_s3_ops.assert_called_once()
+    mock_start_cluster.assert_called_once()
+    mock_submit.assert_called_once()
 
 @patch('boto3.session.Session')
 def test_full_data_pipeline_flow(mock_session, deployer):
