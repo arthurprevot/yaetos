@@ -288,23 +288,29 @@ def test_full_emr_deployment_flow(mock_submit, mock_start_cluster, mock_s3_ops, 
     mock_start_cluster.assert_called_once()
     mock_submit.assert_called_once()
 
-@patch('boto3.session.Session')
-def test_full_data_pipeline_flow(mock_session, deployer):
+@patch.object(DeployPySparkScriptOnAws, 's3_ops')
+@patch.object(DeployPySparkScriptOnAws, 'define_data_pipeline')
+@patch.object(DeployPySparkScriptOnAws, 'activate_data_pipeline')
+def test_full_data_pipeline_flow(mock_activate, mock_define, mock_s3_ops, deployer):
     mock_pipeline = Mock()
+    mock_session = Mock()
     mock_session.client.return_value = mock_pipeline
+    deployer.session = mock_session
     
     # Setup Pipeline mock responses
     mock_pipeline.create_pipeline.return_value = {'pipelineId': 'df-123'}
-    
-    with patch.object(deployer, 's3_ops') as mock_s3_ops, \
-         patch.object(deployer, 'define_data_pipeline') as mock_define, \
-         patch.object(deployer, 'activate_data_pipeline') as mock_activate:
-        
-        deployer.run_aws_data_pipeline()
-        
-        mock_s3_ops.assert_called_once()
-        mock_define.assert_called_once()
-        mock_activate.assert_called_once()
+    mock_pipeline.list_pipelines.return_value = {
+        'pipelineIdList': [
+            {'id': 'df-123', 'name': 'test-pipeline'}
+        ],
+        'hasMoreResults': False        
+    }
+
+    deployer.run_aws_data_pipeline()
+
+    mock_s3_ops.assert_called_once()
+    mock_define.assert_called_once()
+    mock_activate.assert_called_once()
 
 
 if __name__ == '__main__':
