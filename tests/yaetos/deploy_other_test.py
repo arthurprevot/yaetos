@@ -146,19 +146,22 @@ def test_get_active_clusters(deployer):
     assert len(clusters) == 2
     assert clusters == [(1, 'j-123', 'Test Cluster 1'), (2, 'j-456', 'Test Cluster 2')]
 
-def test_choose_cluster(deployer):
+@patch('builtins.input')
+def test_choose_cluster(mock_input, deployer):
     clusters = [
-        {'Id': 'j-123', 'Status': {'State': 'WAITING'}},
-        {'Id': 'j-456', 'Status': {'State': 'RUNNING'}}
+        (1, 'j-123', 'Test Cluster 1'),
+        (2, 'j-456', 'Test Cluster 2')
     ]
     
     # Test with specific cluster ID
     selected = deployer.choose_cluster(clusters, cluster_id='j-456')
-    assert selected['Id'] == 'j-456'
+    assert selected['id'] == 'j-456'
     
     # Test without specific cluster ID (should take first available)
+    mock_input.return_value = '1'  # Simulate user entering "1"
     selected = deployer.choose_cluster(clusters)
-    assert selected['Id'] == 'j-123'
+    assert selected['id'] == 'j-123'
+    mock_input.assert_called_once_with('Your choice ? ')
 
 @patch('yaetos.deploy_emr.EMRer.start_spark_cluster')
 def test_start_spark_cluster(mock_start_cluster, deployer):
