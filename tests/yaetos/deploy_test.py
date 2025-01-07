@@ -348,9 +348,9 @@ class Test_DeployPySparkScriptOnAws(object):
         mock_session.resource.return_value = mock_s3
 
         with patch.object(deployer, 'temp_bucket_exists') as mock_bucket_check, \
-            patch.object(deployer, 'local_file_ops') as mock_local_ops, \
-            patch.object(deployer, 'move_bash_to_local_temp') as mock_move_bash, \
-            patch.object(deployer, 'upload_temp_files') as mock_upload:
+             patch.object(deployer, 'local_file_ops') as mock_local_ops, \
+             patch.object(deployer, 'move_bash_to_local_temp') as mock_move_bash, \
+             patch.object(deployer, 'upload_temp_files') as mock_upload:
 
             deployer.s3_ops(mock_session)
 
@@ -490,7 +490,7 @@ class Test_DeployPySparkScriptOnAws(object):
 
     def test_create_dags(self, deployer):
         with patch('builtins.open', create=True), \
-            patch('yaetos.deploy_airflow.Airflower.create_dags') as mock_create:
+             patch('yaetos.deploy_airflow.Airflower.create_dags') as mock_create:
 
             mock_create.return_value = ('local_dag.py', 'test_dag')
             fname_local, job_dag_name = deployer.create_dags()
