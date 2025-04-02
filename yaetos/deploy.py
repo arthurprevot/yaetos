@@ -438,8 +438,8 @@ class DeployPySparkScriptOnAws(object):
         args.update(unoverridable_args)
 
         if app_args.get('load_connectors', '') == 'all':
-            args['packages'] = app_args.get('spark_packages') or ','.join(eu.PACKAGES_EMR_SPARK_3),  # may not be used in spark-submit depending on 'load_connectors' para above.
-            args['jars'] = app_args.get('spark_jars') or eu.JARS,  # may not be used in spark-submit depending on 'load_connectors' para above.
+            args['packages'] = app_args.get('spark_packages') or ','.join(eu.PACKAGES_EMR_SPARK_3)  # may not be used in spark-submit depending on 'load_connectors' para above.
+            args['jars'] = app_args.get('spark_jars') or eu.JARS  # may not be used in spark-submit depending on 'load_connectors' para above.
             args['spark_submit_keys'] += '--packages--jars'
 
         if app_args.get('dependencies'):
