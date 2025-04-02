@@ -394,7 +394,7 @@ class DeployPySparkScriptOnAws(object):
         return EMRer.step_spark_submit(self, c, app_file, app_args)
 
     @staticmethod
-    def get_spark_submit_args(app_file, app_args):
+    def get_spark_submit_args(app_file, app_args) -> list:
         """ app_file is launcher, might be py_job too, but may also be separate from py_job (ex python launcher.py --job_name=some_job_with_py_job)."""
 
         if app_args.get('py_job'):
@@ -438,8 +438,8 @@ class DeployPySparkScriptOnAws(object):
         args.update(unoverridable_args)
 
         if app_args.get('load_connectors', '') == 'all':
-            args['packages'] = app_args.get('spark_packages') or ','.join(eu.PACKAGES_EMR_SPARK_3),  # may not be used in spark-submit depending on 'load_connectors' para above.
-            args['jars'] = app_args.get('spark_jars') or eu.JARS,  # may not be used in spark-submit depending on 'load_connectors' para above.
+            args['packages'] = app_args.get('spark_packages') or ','.join(eu.PACKAGES_EMR_SPARK_3)  # may not be used in spark-submit depending on 'load_connectors' para above.
+            args['jars'] = app_args.get('spark_jars') or eu.JARS  # may not be used in spark-submit depending on 'load_connectors' para above.
             args['spark_submit_keys'] += '--packages--jars'
 
         if app_args.get('dependencies'):
@@ -462,7 +462,8 @@ class DeployPySparkScriptOnAws(object):
 
         # TODO: implement better way to handle params, less case by case, to only deal with overloaded params
         jargs = eu.Job_Args_Parser(defaults_args={}, yml_args={}, job_args=args, cmd_args={}, build_yml_args=False, loaded_inputs={})
-        return eu.Runner.create_spark_submit(jargs)
+        spk_submit = eu.Runner.create_spark_submit(jargs)
+        return spk_submit
 
     def run_aws_data_pipeline(self):
         # TODO: integrate deploy_aws_data_pipeline properly
