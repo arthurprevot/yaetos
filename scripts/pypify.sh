@@ -42,7 +42,8 @@ rm -r yaetos.egg-info/
 rm -r build/
 
 # Build
-python -m build --wheel  # requires "pip install build"
+# python -m build --wheel  # requires "pip install build"  # old way, stopped working in last months.
+python setup.py sdist bdist_wheel  # new way
 
 # Ship to pip servers.
 twine check dist/*  #  requires "pip install twine"
