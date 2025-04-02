@@ -569,5 +569,49 @@ class Test_DeployPySparkScriptOnAws(object):
         mock_activate.assert_called_once()
 
 
+# --- Error Cases: ---
+def test_temp_bucket_exists_other_error(deployer):
+    """Test bucket check with non-404 error."""
+    mock_s3 = Mock()
+    error_response = {'Error': {'Code': '500'}}
+    mock_s3.meta.client.head_bucket.side_effect = botocore.exceptions.ClientError(
+        error_response, 'HeadBucket')
+    with pytest.raises(SystemExit):
+        deployer.temp_bucket_exists(mock_s3)
+
+
+def test_continue_post_git_check_prod_dirty(deployer):
+    """Test git check with dirty repo in prod mode."""
+    deployer.app_args['mode'] = 'prod_EMR'
+    deployer.git_yml = {
+        'is_dirty_current': True,
+        'is_dirty_yaetos': False,
+        'branch_current': 'main',
+        'branch_yaetos': 'main'
+    }
+    with patch('builtins.input', return_value='n'):
+        assert deployer.continue_post_git_check() is False
+
+
+def test_choose_cluster_no_clusters(deployer):
+    """Test cluster selection with empty cluster list."""
+    clusters = []
+    out = deployer.choose_cluster(clusters)
+    assert out == {'id': None, 'name': None}
+
+
+# --- Production Flows: ---
+def test_continue_post_git_check_prod_clean(deployer):
+    """Test git check with clean repo in prod mode."""
+    deployer.app_args['mode'] = 'prod_EMR'
+    deployer.git_yml = {
+        'is_dirty_current': False,
+        'is_dirty_yaetos': False,
+        'branch_current': 'main',
+        'branch_yaetos': 'main'
+    }
+    assert deployer.continue_post_git_check() is True
+
+
 if __name__ == '__main__':
     pytest.main([__file__])
