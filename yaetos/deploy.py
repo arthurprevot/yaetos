@@ -462,7 +462,8 @@ class DeployPySparkScriptOnAws(object):
 
         # TODO: implement better way to handle params, less case by case, to only deal with overloaded params
         jargs = eu.Job_Args_Parser(defaults_args={}, yml_args={}, job_args=args, cmd_args={}, build_yml_args=False, loaded_inputs={})
-        return eu.Runner.create_spark_submit(jargs)
+        spk_submit = eu.Runner.create_spark_submit(jargs)
+        return spk_submit
 
     def run_aws_data_pipeline(self):
         # TODO: integrate deploy_aws_data_pipeline properly
