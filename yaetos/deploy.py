@@ -394,7 +394,7 @@ class DeployPySparkScriptOnAws(object):
         return EMRer.step_spark_submit(self, c, app_file, app_args)
 
     @staticmethod
-    def get_spark_submit_args(app_file, app_args):
+    def get_spark_submit_args(app_file, app_args) -> list:
         """ app_file is launcher, might be py_job too, but may also be separate from py_job (ex python launcher.py --job_name=some_job_with_py_job)."""
 
         if app_args.get('py_job'):
