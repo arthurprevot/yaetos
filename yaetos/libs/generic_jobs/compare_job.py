@@ -34,6 +34,8 @@ def compare_dfs(tableA, tableB, pksA, pksB, compareA, compareB):
         print('The deltas in columns are: ', diff_columns)
         print('The columns in common are: ', common_columns)
         print('Rest of the comparison will be based on columns in common')
+        # tableA = tableA.drop_duplicates()
+        # tableB = tableB.drop_duplicates()
     else:
         print(f'datasets have same columns, i.e. {common_columns}')
     print(f'TableA columns {tableA.columns}')
