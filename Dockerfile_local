@@ -1,0 +1,33 @@
+# Yaetos — Local Docker build (replaces bitnami/spark which was removed from Docker Hub)
+# Based on official Apache Spark image with Python support
+FROM apache/spark-py:latest
+
+USER root
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y git g++ nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY yaetos/scripts/requirements_base.txt /tmp/requirements.txt
+COPY yaetos/scripts/requirements_dev.txt /tmp/requirements_dev.txt
+COPY conf/requirements_extra.txt /tmp/requirements_extra.txt
+
+WORKDIR /tmp/
+RUN python3 -m pip install --upgrade pip && \
+    pip3 install --no-cache-dir -r requirements.txt && \
+    pip3 install --no-cache-dir -r requirements_dev.txt && \
+    pip3 install --no-cache-dir -r requirements_extra.txt
+
+WORKDIR /mnt/yaetos
+
+ENV YAETOS_FRAMEWORK_HOME=/mnt/yaetos/
+ENV PYTHONPATH="${YAETOS_FRAMEWORK_HOME}:${PYTHONPATH}"
+ENV SPARK_HOME=/opt/spark
+ENV PYTHONPATH="${SPARK_HOME}/python:${SPARK_HOME}/python/build:${PYTHONPATH}"
+
+ENV YAETOS_JOBS_HOME=/mnt/yaetos_jobs/
+ENV PYTHONPATH="${YAETOS_JOBS_HOME}:${PYTHONPATH}"
+
+EXPOSE 4040 8080 8081 8888
