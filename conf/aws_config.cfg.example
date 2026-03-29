@@ -1,5 +1,27 @@
+# AWS Configuration for Yaetos
+#
+# Two authentication methods supported:
+#
+# Option 1: Direct credentials (no ~/.aws/credentials needed)
+#   Provide aws_access_key_id and aws_secret_access_key directly.
+#   Optionally include aws_session_token for temporary credentials (STS/SSO).
+#
+# Option 2: AWS profile (original method)
+#   Set profile_name to reference a profile in ~/.aws/credentials.
+#   Requires awscli configured on the host.
+#
+# Option 1 takes precedence if both are provided.
+
 [dev]
+# --- Option 1: Direct credentials ---
+# aws_access_key_id    : AKIA...
+# aws_secret_access_key: wJal...
+# aws_session_token    : FwoG...  # optional, for temporary/STS credentials
+
+# --- Option 2: AWS profile ---
 profile_name         : to_be_filled
+
+# --- Common settings ---
 ec2_key_name         : to_be_filled
 user                 : to_be_filled
 s3_region            : to_be_filled
@@ -9,7 +31,15 @@ emr_ec2_role         : to_be_filled # optional
 emr_role             : to_be_filled # optional
 
 [prod]
+# --- Option 1: Direct credentials ---
+# aws_access_key_id    : AKIA...
+# aws_secret_access_key: wJal...
+# aws_session_token    : FwoG...  # optional
+
+# --- Option 2: AWS profile ---
 profile_name         : to_be_filled
+
+# --- Common settings ---
 ec2_key_name         : to_be_filled
 user                 : to_be_filled
 s3_region            : to_be_filled
