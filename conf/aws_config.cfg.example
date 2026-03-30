@@ -14,9 +14,9 @@
 
 [dev]
 # --- Option 1: Direct credentials ---
-# aws_access_key_id    : AKIA...
-# aws_secret_access_key: wJal...
-# aws_session_token    : FwoG...  # optional, for temporary/STS credentials
+# aws_access_key_id    : to_be_filled
+# aws_secret_access_key: to_be_filled
+# aws_session_token    : to_be_filled  # optional, for temporary/STS credentials
 
 # --- Option 2: AWS profile ---
 profile_name         : to_be_filled
@@ -32,9 +32,9 @@ emr_role             : to_be_filled # optional
 
 [prod]
 # --- Option 1: Direct credentials ---
-# aws_access_key_id    : AKIA...
-# aws_secret_access_key: wJal...
-# aws_session_token    : FwoG...  # optional
+# aws_access_key_id    : to_be_filled
+# aws_secret_access_key: to_be_filled
+# aws_session_token    : to_be_filled  # optional
 
 # --- Option 2: AWS profile ---
 profile_name         : to_be_filled
