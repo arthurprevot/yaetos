@@ -1359,58 +1359,8 @@ class Runner():
         return sc, sc_sql
 
 
-def get_aws_setup(args):
-    if os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'):
-        session = boto3.Session()  # to check : credentials = session.get_credentials()
-        return session
-
-    # Pull creds from aws_config_file
-    from configparser import ConfigParser
-    config = ConfigParser()
-    assert os.path.isfile(args['aws_config_file']), f"AWS config file not found: {args['aws_config_file']}"
-    config.read(args['aws_config_file'])
-    section = args['aws_setup']
-
-    # Option 1: Direct credentials in aws_config.cfg (aws_access_key_id, aws_secret_access_key, aws_session_token)
-    aws_access_key = config.get(section, 'aws_access_key_id', fallback=None)
-    aws_secret_key = config.get(section, 'aws_secret_access_key', fallback=None)
-
-    if aws_access_key and aws_secret_key:
-        aws_session_token = config.get(section, 'aws_session_token', fallback=None)
-        session = boto3.Session(
-            aws_access_key_id=aws_access_key.strip(),
-            aws_secret_access_key=aws_secret_key.strip(),
-            aws_session_token=aws_session_token.strip() if aws_session_token else None,
-            region_name=config.get(section, 's3_region', fallback=None),
-        )
-        logger.info(f"AWS session created from direct credentials in {args['aws_config_file']} [{section}]")
-    else:
-        # Option 2: Use profile_name to pull from ~/.aws/credentials (original behavior)
-        profile_name = config.get(section, 'profile_name')
-        session = boto3.Session(profile_name=profile_name)
-        logger.info(f"AWS session created from profile '{profile_name}'")
-
-    # Save creds to env for downstream use (Spark, etc.)
-    credentials = session.get_credentials()  # TODO: check improvement with get_frozen_credentials()
-    os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
-    os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
-    os.environ['AWS_SESSION_TOKEN'] = credentials.token or ''
-    return session
-
-
-def test_aws_connection(session):
-    from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
-
-    try:
-        sns_client = session.client('sns')  # querying a standard service (SNS), just to check connection.
-        _ = sns_client.list_topics()
-        print("AWS Connection Successful")
-    except NoCredentialsError:
-        raise Exception("Credentials not available")
-    except PartialCredentialsError:
-        raise Exception("Incomplete credentials")
-    except ClientError as e:
-        raise Exception("AWS Error:", e)
+# AWS credentials — delegated to yaetos/aws_creds.py
+from yaetos.aws_creds import get_aws_setup, test_aws_connection  # noqa: F401 — re-exported for backward compat
 
 
 class InputLoader():

@@ -42,7 +42,8 @@ mock_logger = MagicMock()
 sys.modules["yaetos.logger"].setup_logging = MagicMock(return_value=mock_logger)
 
 # Now we can import get_aws_setup
-from yaetos.etl_utils import get_aws_setup
+from yaetos.aws_creds import get_aws_setup, get_session_from_direct_creds, get_session_from_profile
+from yaetos.aws_creds import test_aws_connection as verify_aws_connection
 
 
 def _reset_boto3_mock():
@@ -202,8 +203,8 @@ class TestErrors:
         _clear_aws_env()
 
     def test_missing_config_file_raises(self):
-        """Should raise AssertionError if config file doesn't exist."""
-        with pytest.raises(AssertionError):
+        """Should raise FileNotFoundError if config file doesn't exist."""
+        with pytest.raises(FileNotFoundError):
             get_aws_setup({"aws_config_file": "/nonexistent/path.cfg", "aws_setup": "dev"})
 
     def test_uses_correct_section(self, tmp_path):
