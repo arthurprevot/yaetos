@@ -925,7 +925,7 @@ class Job_Yml_Parser():
 class Job_Args_Parser():
 
     DEPLOY_ARGS_LIST = ['aws_config_file', 'aws_setup', 'leave_on', 'push_secrets', 'frequency', 'start_date',
-                        'emails', 'mode', 'deploy', 'terminate_after', 'spark_version']
+                        'emails', 'mode', 'deploy', 'terminate_after', 'spark_version', 'stream_logs']
 
     def __init__(self, defaults_args, yml_args, job_args, cmd_args, job_name=None, build_yml_args=True, loaded_inputs={}, validate=True):
         """Mix all params, add more and tweak them when needed (like depending on storage type, execution mode...).
@@ -1202,6 +1202,7 @@ class Runner():
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster when deploy=EMR.")
         parser.add_argument("-p", "--push_secrets", action='store_true', help="Pushing secrets to cluster. Only relevant if choosing to deploy to a cluster.")
+        parser.add_argument("--stream_logs", action='store_true', help="Stream EMR step logs to terminal in real-time. Waits for job to complete and prints stdout/stderr. Only relevant with --deploy=EMR.")
         # --inputs and --output args can be set from job or commandline too, just not set here.
         defaults = {
             'deploy': 'none',

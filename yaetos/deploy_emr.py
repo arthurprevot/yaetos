@@ -38,6 +38,20 @@ class EMRer():
         # Run job
         self.step_spark_submit(c, self.app_file, self.app_args)
 
+        # Stream logs if requested
+        if self.deploy_args.get('stream_logs', False):
+            from yaetos.emr_log_streamer import stream_emr_job
+            s3_log_uri = "s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder)
+            logger.info("Streaming EMR logs to terminal...")
+            result = stream_emr_job(
+                session=self.session,
+                cluster_id=self.cluster_id,
+                s3_log_uri=s3_log_uri,
+                step_name='Spark Application',
+            )
+            if result and result.get('state') == 'FAILED':
+                logger.error("Job failed on EMR. See logs above for details.")
+
         # Clean
         if new_cluster and not self.deploy_args.get('leave_on') and self.app_args.get('clean_post_run'):  # TODO: add clean_post_run in input options.
             logger.info("New cluster setup to be deleted after job finishes.")
