@@ -39,7 +39,7 @@ class EMRer():
         self.step_spark_submit(c, self.app_file, self.app_args)
 
         # Stream logs if requested
-        if self.deploy_args.get('stream_logs', False):
+        if self.deploy_args.get('stream_logs', True) and not self.deploy_args.get('no_stream_logs', False):
             from yaetos.emr_log_streamer import stream_emr_job
             s3_log_uri = "s3://{}/{}/manual_run_logs/".format(self.s3_bucket_logs, self.metadata_folder)
             logger.info("Streaming EMR logs to terminal...")

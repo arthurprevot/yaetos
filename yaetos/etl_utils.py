@@ -1202,7 +1202,8 @@ class Runner():
         parser.add_argument("-a", "--aws_setup", help="Choose aws setup from conf/aws_config.cfg, typically 'prod' or 'dev'. Only relevant if choosing to deploy to a cluster.")
         parser.add_argument("-o", "--leave_on", action='store_true', help="Use arg to not terminate cluster after running the job. Mostly for testing. Only relevant when creating a new cluster when deploy=EMR.")
         parser.add_argument("-p", "--push_secrets", action='store_true', help="Pushing secrets to cluster. Only relevant if choosing to deploy to a cluster.")
-        parser.add_argument("--stream_logs", action='store_true', help="Stream EMR step logs to terminal in real-time. Waits for job to complete and prints stdout/stderr. Only relevant with --deploy=EMR.")
+        parser.add_argument("--stream_logs", action='store_true', default=True, help="Stream EMR step logs to terminal in real-time (enabled by default). Waits for job to complete and prints stdout/stderr. Only relevant with --deploy=EMR.")
+        parser.add_argument("--no_stream_logs", action='store_true', help="Disable log streaming (fire-and-forget mode).")
         # --inputs and --output args can be set from job or commandline too, just not set here.
         defaults = {
             'deploy': 'none',
