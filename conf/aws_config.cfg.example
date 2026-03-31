@@ -8,6 +8,10 @@ extra_security_gp    : to_be_filled # optional
 emr_ec2_role         : to_be_filled # optional
 emr_role             : to_be_filled # optional
 
+# --- EMR Serverless (optional) ---
+# emr_serverless_app_id : (auto-created if not set)
+# emr_serverless_role   : arn:aws:iam::123456789012:role/EMRServerlessRole
+
 [prod]
 profile_name         : to_be_filled
 ec2_key_name         : to_be_filled

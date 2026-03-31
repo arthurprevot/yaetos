@@ -23,6 +23,7 @@ import site
 import yaetos.etl_utils as eu
 from yaetos.git_utils import Git_Config_Manager
 from yaetos.deploy_emr import EMRer
+from yaetos.deploy_emr_serverless import EMRServerlesser
 from yaetos.deploy_k8s import Kuberneter
 from yaetos.deploy_aws_data_pipeline import AWS_Data_Pipeliner
 from yaetos.deploy_airflow import Airflower
@@ -105,6 +106,8 @@ class DeployPySparkScriptOnAws(object):
 
         if self.deploy_args['deploy'] == 'EMR':
             self.run_direct()
+        elif self.deploy_args['deploy'] == 'EMR_Serverless':
+            self.run_direct_serverless()
         elif self.deploy_args['deploy'] == 'k8s':
             self.run_direct_k8s()
         elif self.deploy_args['deploy'] in ('EMR_Scheduled', 'EMR_DataPipeTest'):
@@ -150,6 +153,9 @@ class DeployPySparkScriptOnAws(object):
     def run_direct(self):
         # TODO: integrate deploy_emr properly
         return EMRer.run_direct(self)
+
+    def run_direct_serverless(self):
+        return EMRServerlesser.run_direct(self)
 
     def run_direct_k8s(self):
         # TODO: integrate deploy_k8s properly
